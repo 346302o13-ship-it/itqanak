@@ -1,0 +1,28 @@
+FROM node:22.14.0-alpine AS base
+
+ENV PNPM_HOME=/pnpm
+ENV PATH=$PNPM_HOME:$PATH
+WORKDIR /workspace
+
+RUN corepack enable && corepack prepare pnpm@9.15.4 --activate
+
+FROM base AS development
+
+# Source is bind-mounted by compose.yaml. Keeping this target small speeds up
+# the edit/run loop and prevents a stale source copy from masking local edits.
+COPY . .
+RUN --mount=type=cache,id=itqanak-pnpm-store,target=/pnpm/store \
+    pnpm install --frozen-lockfile
+CMD ["pnpm", "db:migrate"]
+
+FROM base AS runner
+
+COPY . .
+RUN --mount=type=cache,id=itqanak-pnpm-store,target=/pnpm/store \
+    pnpm install --frozen-lockfile
+RUN pnpm turbo run build --filter=@itqanak/db...
+
+USER node
+# The production migrator must not ask Corepack/npm for a package-manager
+# version at runtime: its network is intentionally backend-only.
+CMD ["node", "packages/db/dist/cli.js", "migrate"]
