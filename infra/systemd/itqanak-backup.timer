@@ -1,0 +1,11 @@
+[Unit]
+Description=Run ITQANAK PostgreSQL backup daily
+
+[Timer]
+OnCalendar=*-*-* 02:15:00 UTC
+Persistent=true
+RandomizedDelaySec=15m
+Unit=itqanak-backup.service
+
+[Install]
+WantedBy=timers.target

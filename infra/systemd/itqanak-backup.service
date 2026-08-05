@@ -1,0 +1,17 @@
+[Unit]
+Description=ITQANAK PostgreSQL backup
+Wants=docker.service
+After=docker.service
+
+[Service]
+Type=oneshot
+User=itqanak
+Group=itqanak
+WorkingDirectory=/srv/itqanak
+EnvironmentFile=/etc/itqanak/backup.env
+ExecStart=/usr/bin/docker compose -f compose.production.yaml --profile operations run --rm backup
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectHome=true
+ProtectSystem=strict
+ReadWritePaths=/srv/itqanak-backups
