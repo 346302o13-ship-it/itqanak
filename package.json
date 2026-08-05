@@ -1,0 +1,39 @@
+{
+  "name": "itqanak",
+  "version": "0.1.0",
+  "private": true,
+  "description": "ITQANAK (إتقانك) platform foundation",
+  "packageManager": "pnpm@9.15.4",
+  "engines": {
+    "node": ">=22.14.0 <23",
+    "pnpm": ">=9.15.4 <10"
+  },
+  "scripts": {
+    "dev": "turbo run dev --parallel",
+    "build": "turbo run build",
+    "lint": "turbo run lint",
+    "typecheck": "turbo run typecheck",
+    "test": "turbo run test",
+    "test:unit": "vitest run",
+    "test:integration": "vitest run --config vitest.integration.config.ts",
+    "test:smoke": "playwright test",
+    "db:migrate": "pnpm --filter @itqanak/db db:migrate",
+    "db:status": "pnpm --filter @itqanak/db db:status",
+    "db:verify": "pnpm --filter @itqanak/db db:verify",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "verify": "pnpm lint && pnpm typecheck && pnpm test && pnpm build"
+  },
+  "devDependencies": {
+    "@eslint/js": "9.35.0",
+    "@playwright/test": "1.55.0",
+    "@types/node": "22.15.3",
+    "eslint": "9.35.0",
+    "eslint-config-prettier": "10.1.8",
+    "prettier": "3.5.3",
+    "turbo": "2.5.6",
+    "typescript": "5.9.2",
+    "typescript-eslint": "8.42.0",
+    "vitest": "3.2.4"
+  }
+}

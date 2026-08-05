@@ -1,0 +1,30 @@
+# Environment and secrets
+.env
+.env.*
+!.env.example
+secrets/*
+!secrets/.gitkeep
+*.pem
+*.key
+
+# Dependencies and build artifacts
+node_modules/
+.next/
+dist/
+coverage/
+playwright-report/
+test-results/
+.turbo/
+
+# Runtime data and local backups
+backups/
+uploads/
+storage-data/
+postgres-data/
+redis-data/
+clamav-data/
+
+# Editor and operating system files
+.DS_Store
+*.swp
+.vscode/

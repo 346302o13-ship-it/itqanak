@@ -1,0 +1,17 @@
+{
+  "extends": "./tsconfig.base.json",
+  "compilerOptions": {
+    "noEmit": true,
+    "baseUrl": ".",
+    "paths": {
+      "@itqanak/auth": ["packages/auth/src/index.ts"],
+      "@itqanak/config": ["packages/config/src/index.ts"],
+      "@itqanak/core": ["packages/core/src/index.ts"],
+      "@itqanak/db": ["packages/db/src/index.ts"],
+      "@itqanak/observability": ["packages/observability/src/index.ts"],
+      "@itqanak/storage": ["packages/storage/src/index.ts"],
+      "@itqanak/ui": ["packages/ui/src/index.ts"]
+    }
+  },
+  "include": []
+}

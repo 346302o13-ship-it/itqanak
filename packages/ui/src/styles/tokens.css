@@ -1,0 +1,18 @@
+:root {
+  --itq-color-canvas: #f8fafc;
+  --itq-color-ink: #172033;
+  --itq-color-muted: #5f6f85;
+  --itq-color-border: #d9e1eb;
+  --itq-color-brand-50: #edf7f7;
+  --itq-color-brand-100: #d5eeee;
+  --itq-color-brand-200: #addddd;
+  --itq-color-brand-600: #0d7778;
+  --itq-color-brand-700: #075e60;
+  --itq-color-brand-800: #064b4e;
+  --itq-color-success-50: #ecfdf3;
+  --itq-color-success-700: #137547;
+  --itq-color-warning-50: #fff8e7;
+  --itq-color-warning-800: #9a5c00;
+  --itq-shadow-card: 0 16px 48px rgb(23 32 51 / 8%);
+  --it-radius-card: 1.5rem;
+}
