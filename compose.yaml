@@ -1,0 +1,236 @@
+name: itqanak
+
+# Development topology. PostgreSQL, Redis, ClamAV, and MinIO are never
+# published to the host; the gateway is the only host-facing service.
+x-logging: &default-logging
+  driver: local
+  options:
+    max-size: "10m"
+    max-file: "3"
+
+services:
+  postgres:
+    image: postgres:17.4-alpine
+    environment:
+      POSTGRES_DB: itqanak
+      POSTGRES_USER: itqanak
+      # Development only. Production always uses POSTGRES_PASSWORD_FILE.
+      POSTGRES_HOST_AUTH_METHOD: trust
+      PGDATA: /var/lib/postgresql/data/pgdata
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    networks:
+      - backend
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready --username=itqanak --dbname=itqanak"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+      start_period: 10s
+    logging: *default-logging
+
+  redis:
+    image: redis:7.4.2-alpine
+    command: ["redis-server", "--appendonly", "yes", "--save", "60", "1", "--loglevel", "warning"]
+    volumes:
+      - redis-data:/data
+    networks:
+      - backend
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+    logging: *default-logging
+
+  clamav:
+    image: clamav/clamav:1.5.3
+    volumes:
+      - clamav-data:/var/lib/clamav
+    networks:
+      - backend
+      - egress
+    healthcheck:
+      test: ["CMD-SHELL", "clamdscan --ping 1 >/dev/null 2>&1"]
+      interval: 15s
+      timeout: 10s
+      retries: 20
+      start_period: 120s
+    logging: *default-logging
+
+  # Local object storage is deliberately opt-in. Export non-committed
+  # MINIO_ROOT_USER and MINIO_ROOT_PASSWORD before enabling this profile.
+  minio:
+    profiles: ["storage"]
+    image: minio/minio:RELEASE.2025-02-18T16-25-55Z
+    entrypoint: ["/bin/sh", "/etc/itqanak/minio-entrypoint.sh"]
+    volumes:
+      - minio-data:/data
+      - ./infra/minio/dev-entrypoint.sh:/etc/itqanak/minio-entrypoint.sh:ro
+    environment:
+      MINIO_ROOT_USER:
+      MINIO_ROOT_PASSWORD:
+    command: ["server", "/data", "--console-address", ":9001"]
+    networks:
+      - backend
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS http://127.0.0.1:9000/minio/health/live >/dev/null"]
+      interval: 10s
+      timeout: 3s
+      retries: 20
+    logging: *default-logging
+
+  migrate:
+    build:
+      context: .
+      dockerfile: infra/docker/Dockerfile.migrate
+      target: development
+    working_dir: /workspace
+    command: ["/bin/sh", "-ec", "pnpm turbo run build --filter=@itqanak/db... && pnpm db:migrate"]
+    environment:
+      NODE_ENV: development
+      DATABASE_URL: postgresql://itqanak@postgres:5432/itqanak
+      REDIS_URL: redis://redis:6379/0
+      MIGRATIONS_DIR: /workspace/migrations
+    volumes:
+      - ./:/workspace
+      - pnpm-store:/pnpm/store
+      - root-node-modules:/workspace/node_modules
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - backend
+    restart: "no"
+    logging: *default-logging
+
+  web:
+    build:
+      context: .
+      dockerfile: apps/web/Dockerfile
+      target: development
+    working_dir: /workspace
+    command:
+      [
+        "/bin/sh",
+        "-ec",
+        "pnpm turbo run build --filter=@itqanak/web... && pnpm --filter @itqanak/web dev",
+      ]
+    environment:
+      NODE_ENV: development
+      DATABASE_URL: postgresql://itqanak@postgres:5432/itqanak
+      REDIS_URL: redis://redis:6379/0
+      PORT: "3000"
+      WATCHPACK_POLLING: "true"
+      MIGRATIONS_DIR: /workspace/migrations
+    volumes:
+      - ./:/workspace
+      - pnpm-store:/pnpm/store
+      - root-node-modules:/workspace/node_modules
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+      redis:
+        condition: service_healthy
+    networks:
+      - backend
+      - egress
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          'node -e "fetch(''http://127.0.0.1:3000/api/health/live'').then((r) => process.exit(r.ok ? 0 : 1)).catch(() => process.exit(1))"',
+        ]
+      interval: 10s
+      timeout: 4s
+      retries: 12
+      start_period: 20s
+    logging: *default-logging
+
+  worker:
+    build:
+      context: .
+      dockerfile: apps/worker/Dockerfile
+      target: development
+    working_dir: /workspace
+    command:
+      [
+        "/bin/sh",
+        "-ec",
+        "pnpm turbo run build --filter=@itqanak/worker... && pnpm --filter @itqanak/worker dev",
+      ]
+    environment:
+      NODE_ENV: development
+      DATABASE_URL: postgresql://itqanak@postgres:5432/itqanak
+      REDIS_URL: redis://redis:6379/0
+      WORKER_HEARTBEAT_FILE: /tmp/itqanak-worker-heartbeat
+      MIGRATIONS_DIR: /workspace/migrations
+    volumes:
+      - ./:/workspace
+      - pnpm-store:/pnpm/store
+      - root-node-modules:/workspace/node_modules
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+      redis:
+        condition: service_healthy
+    networks:
+      - backend
+      - egress
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          'node -e "const fs = require(''node:fs''); try { const age = Date.now() - fs.statSync(''/tmp/itqanak-worker-heartbeat'').mtimeMs; process.exit(age < 45000 ? 0 : 1); } catch { process.exit(1); }"',
+        ]
+      interval: 15s
+      timeout: 3s
+      retries: 8
+      start_period: 30s
+    logging: *default-logging
+
+  gateway:
+    build:
+      context: .
+      dockerfile: infra/nginx/Dockerfile
+    ports:
+      - "127.0.0.1:8080:8080"
+    depends_on:
+      web:
+        condition: service_healthy
+    networks:
+      - backend
+      - frontend
+    read_only: true
+    tmpfs:
+      - /tmp:rw,noexec,nosuid,size=16m,uid=101,gid=101,mode=0700
+      - /var/cache/nginx:rw,noexec,nosuid,size=16m,uid=101,gid=101,mode=0750
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q -O /dev/null http://127.0.0.1:8080/_gateway/health"]
+      interval: 10s
+      timeout: 3s
+      retries: 10
+    logging: *default-logging
+
+networks:
+  # Data services are isolated from both the host and the internet.
+  backend:
+    internal: true
+  # Only services that need dependency installs/updates or future external APIs
+  # join this network. It has no published host ports.
+  egress:
+  # Docker needs one non-internal attachment in order to publish the gateway's
+  # loopback-only port. No application or data service joins this network.
+  frontend:
+
+volumes:
+  postgres-data:
+  redis-data:
+  clamav-data:
+  minio-data:
+  pnpm-store:
+  root-node-modules:

@@ -1,0 +1,28 @@
+@import "@itqanak/ui/styles.css";
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+* {
+  box-sizing: border-box;
+}
+
+html {
+  background: var(--itq-color-canvas);
+  color: var(--itq-color-ink);
+}
+
+body {
+  min-height: 100vh;
+  margin: 0;
+  background:
+    radial-gradient(circle at 88% 0%, rgb(213 238 238 / 72%), transparent 31rem),
+    var(--itq-color-canvas);
+  font-family: Arial, Tahoma, sans-serif;
+}
+
+:focus-visible {
+  outline: 3px solid var(--itq-color-brand-600);
+  outline-offset: 3px;
+}

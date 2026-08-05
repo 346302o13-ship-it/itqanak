@@ -1,0 +1,359 @@
+name: itqanak
+
+# Production topology. Set the five *_SECRET_FILE variables to absolute paths
+# that are readable only by the deploy account. Their contents are never put in
+# this repository, the Compose model, or container environment variables.
+x-logging: &default-logging
+  driver: local
+  options:
+    max-size: "10m"
+    max-file: "5"
+
+x-hardened-app: &hardened-app
+  init: true
+  read_only: true
+  tmpfs:
+    - /tmp:rw,noexec,nosuid,size=64m
+  security_opt:
+    - no-new-privileges:true
+  cap_drop:
+    - ALL
+  logging: *default-logging
+
+services:
+  postgres:
+    image: postgres:17.4-alpine
+    environment:
+      POSTGRES_DB: itqanak
+      POSTGRES_USER: itqanak
+      POSTGRES_PASSWORD_FILE: /run/secrets/postgres_password
+      PGDATA: /var/lib/postgresql/data/pgdata
+    secrets:
+      - postgres_password
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    networks:
+      - backend
+    restart: unless-stopped
+    stop_grace_period: 60s
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready --username=itqanak --dbname=itqanak"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 15s
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    deploy:
+      resources:
+        limits:
+          cpus: "1.00"
+          memory: 1G
+          pids: 128
+    logging: *default-logging
+
+  redis:
+    image: redis:7.4.2-alpine
+    command:
+      - /bin/sh
+      - -ec
+      - 'exec redis-server --appendonly yes --save 60 1 --requirepass "$$(cat /run/secrets/redis_password)" --loglevel warning'
+    secrets:
+      - redis_password
+    volumes:
+      - redis-data:/data
+    networks:
+      - backend
+    restart: unless-stopped
+    read_only: true
+    tmpfs:
+      - /tmp:rw,noexec,nosuid,size=32m
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          'redis-cli --no-auth-warning --user default --pass "$$(cat /run/secrets/redis_password)" ping | grep -qx PONG',
+        ]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 10s
+    deploy:
+      resources:
+        limits:
+          cpus: "0.50"
+          memory: 256M
+          pids: 128
+    logging: *default-logging
+
+  clamav:
+    image: clamav/clamav:1.5.3
+    volumes:
+      - clamav-data:/var/lib/clamav
+    networks:
+      - backend
+      - egress
+    restart: unless-stopped
+    read_only: true
+    tmpfs:
+      - /tmp:rw,noexec,nosuid,size=128m
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    healthcheck:
+      test: ["CMD-SHELL", "clamdscan --ping 1 >/dev/null 2>&1"]
+      interval: 30s
+      timeout: 15s
+      retries: 10
+      start_period: 180s
+    deploy:
+      resources:
+        limits:
+          cpus: "1.00"
+          memory: 1G
+          pids: 256
+    logging: *default-logging
+
+  # A forward-only migration job gates application startup. It deliberately
+  # retains no volume and cannot be restarted as a long-running service.
+  migrate:
+    build:
+      context: .
+      dockerfile: infra/docker/Dockerfile.migrate
+      target: runner
+    environment:
+      NODE_ENV: production
+      APP_ENV: production
+      PUBLIC_APP_URL: https://itqanqhelpstudent.online
+      ADMIN_APP_URL: https://admin.itqanqhelpstudent.online
+      MIGRATIONS_DIR: /workspace/migrations
+      DATABASE_URL_FILE: /run/secrets/database_url
+      REDIS_URL_FILE: /run/secrets/redis_url
+    secrets:
+      - database_url
+      - redis_url
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - backend
+    restart: "no"
+    read_only: true
+    tmpfs:
+      - /tmp:rw,noexec,nosuid,size=64m
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    deploy:
+      resources:
+        limits:
+          cpus: "0.50"
+          memory: 512M
+          pids: 128
+    logging: *default-logging
+
+  web:
+    <<: *hardened-app
+    build:
+      context: .
+      dockerfile: apps/web/Dockerfile
+      target: runner
+    environment:
+      NODE_ENV: production
+      APP_ENV: production
+      PUBLIC_APP_URL: https://itqanqhelpstudent.online
+      ADMIN_APP_URL: https://admin.itqanqhelpstudent.online
+      MIGRATIONS_DIR: /app/migrations
+      VERIFY_SCHEMA_ON_STARTUP: "true"
+      DATABASE_URL_FILE: /run/secrets/database_url
+      REDIS_URL_FILE: /run/secrets/redis_url
+      PORT: "3000"
+      HOSTNAME: 0.0.0.0
+    secrets:
+      - database_url
+      - redis_url
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+      redis:
+        condition: service_healthy
+      clamav:
+        condition: service_healthy
+    networks:
+      - backend
+      - egress
+    restart: unless-stopped
+    stop_grace_period: 30s
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          'node -e "fetch(''http://127.0.0.1:3000/api/health/live'').then((r) => process.exit(r.ok ? 0 : 1)).catch(() => process.exit(1))"',
+        ]
+      interval: 15s
+      timeout: 5s
+      retries: 8
+      start_period: 20s
+    deploy:
+      resources:
+        limits:
+          cpus: "1.00"
+          memory: 512M
+          pids: 256
+
+  worker:
+    <<: *hardened-app
+    build:
+      context: .
+      dockerfile: apps/worker/Dockerfile
+      target: runner
+    environment:
+      NODE_ENV: production
+      APP_ENV: production
+      PUBLIC_APP_URL: https://itqanqhelpstudent.online
+      ADMIN_APP_URL: https://admin.itqanqhelpstudent.online
+      MIGRATIONS_DIR: /app/migrations
+      DATABASE_URL_FILE: /run/secrets/database_url
+      REDIS_URL_FILE: /run/secrets/redis_url
+      WORKER_HEARTBEAT_FILE: /tmp/itqanak-worker-heartbeat
+    secrets:
+      - database_url
+      - redis_url
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+      redis:
+        condition: service_healthy
+      clamav:
+        condition: service_healthy
+    networks:
+      - backend
+      - egress
+    restart: unless-stopped
+    stop_grace_period: 45s
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          'node -e "const fs = require(''node:fs''); try { const age = Date.now() - fs.statSync(''/tmp/itqanak-worker-heartbeat'').mtimeMs; process.exit(age < 45000 ? 0 : 1); } catch { process.exit(1); }"',
+        ]
+      interval: 20s
+      timeout: 5s
+      retries: 6
+      start_period: 30s
+    deploy:
+      resources:
+        limits:
+          cpus: "1.00"
+          memory: 512M
+          pids: 256
+
+  gateway:
+    build:
+      context: .
+      dockerfile: infra/nginx/Dockerfile
+    ports:
+      - "127.0.0.1:8080:8080"
+    depends_on:
+      web:
+        condition: service_healthy
+    networks:
+      - backend
+      - frontend
+    restart: unless-stopped
+    read_only: true
+    tmpfs:
+      - /tmp:rw,noexec,nosuid,size=16m,uid=101,gid=101,mode=0700
+      - /var/cache/nginx:rw,noexec,nosuid,size=16m,uid=101,gid=101,mode=0750
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q -O /dev/null http://127.0.0.1:8080/_gateway/health"]
+      interval: 15s
+      timeout: 4s
+      retries: 8
+    deploy:
+      resources:
+        limits:
+          cpus: "0.25"
+          memory: 128M
+          pids: 128
+    logging: *default-logging
+
+  # Invoked explicitly by systemd or an operator:
+  # docker compose -f compose.production.yaml --profile operations run --rm backup
+  backup:
+    profiles: ["operations"]
+    build:
+      context: .
+      dockerfile: infra/docker/Dockerfile.backup
+    environment:
+      DATABASE_URL_FILE: /run/secrets/database_url
+      VERIFY_DATABASE_URL_FILE: /run/secrets/verify_database_url
+      BACKUP_DIR: /backups
+      BACKUP_RETENTION_DAYS: "30"
+    secrets:
+      - database_url
+      - verify_database_url
+    volumes:
+      # This is runtime backup data, not application code. Keep it mode 0700
+      # and excluded from Git; set ITQANAK_BACKUP_DIR to an absolute host path.
+      - ${ITQANAK_BACKUP_DIR:-./backups}:/backups
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - backend
+      - egress
+    restart: "no"
+    read_only: true
+    tmpfs:
+      - /tmp:rw,noexec,nosuid,size=64m
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    deploy:
+      resources:
+        limits:
+          cpus: "0.50"
+          memory: 512M
+          pids: 128
+    logging: *default-logging
+
+networks:
+  backend:
+    internal: true
+  # Web/worker have outbound access for future approved integrations. No service
+  # on this network publishes a host port.
+  egress:
+  # This is deliberately gateway-only: it permits Docker to publish the
+  # loopback-bound port without exposing backend services.
+  frontend:
+
+volumes:
+  postgres-data:
+  redis-data:
+  clamav-data:
+
+secrets:
+  database_url:
+    file: ${ITQANAK_DATABASE_URL_SECRET_FILE:?Set ITQANAK_DATABASE_URL_SECRET_FILE to a protected secret-file path}
+  redis_url:
+    file: ${ITQANAK_REDIS_URL_SECRET_FILE:?Set ITQANAK_REDIS_URL_SECRET_FILE to a protected secret-file path}
+  postgres_password:
+    file: ${ITQANAK_POSTGRES_PASSWORD_SECRET_FILE:?Set ITQANAK_POSTGRES_PASSWORD_SECRET_FILE to a protected secret-file path}
+  redis_password:
+    file: ${ITQANAK_REDIS_PASSWORD_SECRET_FILE:?Set ITQANAK_REDIS_PASSWORD_SECRET_FILE to a protected secret-file path}
+  verify_database_url:
+    file: ${ITQANAK_VERIFY_DATABASE_URL_SECRET_FILE:?Set ITQANAK_VERIFY_DATABASE_URL_SECRET_FILE to a protected secret-file path}
