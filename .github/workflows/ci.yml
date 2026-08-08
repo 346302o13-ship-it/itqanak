@@ -35,6 +35,8 @@ jobs:
           ITQANAK_POSTGRES_PASSWORD_SECRET_FILE=/dev/null
           ITQANAK_REDIS_PASSWORD_SECRET_FILE=/dev/null
           ITQANAK_VERIFY_DATABASE_URL_SECRET_FILE=/dev/null
+          ITQANAK_AUTH_EMAIL_PAYLOAD_KEY_SECRET_FILE=/dev/null
+          ITQANAK_SMTP_PASSWORD_SECRET_FILE=/dev/null
           docker compose -f compose.production.yaml config --quiet
 
   integration:
@@ -53,13 +55,44 @@ jobs:
           docker compose run --rm --no-deps
           -e TEST_DATABASE_URL=postgresql://itqanak@postgres:5432/itqanak
           migrate /bin/sh -ec
-          'pnpm turbo run build --filter=@itqanak/db... && pnpm test:integration'
+          'pnpm turbo run build --filter=@itqanak/auth... && pnpm test:integration'
       - run: docker compose up -d --build --wait --wait-timeout 300
       - run: docker compose ps
       - run: curl --fail --retry 20 --retry-connrefused http://127.0.0.1:8080/api/health/live
       - run: curl --fail --retry 20 --retry-connrefused http://127.0.0.1:8080/api/health/ready
       - if: always()
         run: docker compose down
+
+  auth-e2e:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 35
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22.14.0
+      - run: corepack enable
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm exec playwright install --with-deps chromium
+      - name: Run authentication browser flow through the gateway and Mailpit
+        shell: bash
+        run: |
+          set -euo pipefail
+          AUTH_EMAIL_PAYLOAD_KEY="$(openssl rand -base64 32)"
+          export AUTH_EMAIL_PAYLOAD_KEY
+          export EMAIL_DELIVERY_MODE=smtp
+          export SMTP_HOST=mailpit
+          export SMTP_PORT=1025
+          export SMTP_SECURE=false
+          export SMTP_FROM_ADDRESS=auth@example.test
+          export SMTP_PASSWORD=local-e2e-only
+          docker compose --profile mail up -d --build --wait --wait-timeout 300 \
+            mailpit web worker gateway
+          pnpm test:auth-e2e
+      - if: failure()
+        run: docker compose --profile mail ps --all
+      - if: always()
+        run: docker compose --profile mail down
 
   smoke:
     runs-on: ubuntu-24.04
