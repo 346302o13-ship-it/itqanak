@@ -1,4 +1,5 @@
 import { BrandMark, StatusChip, Surface } from "@itqanak/ui";
+import Link from "next/link";
 
 const nextSteps = [
   "بنية آمنة قابلة للتوسع",
@@ -49,6 +50,12 @@ export default function ArabicLandingPage() {
             >
               تواصل معنا
             </a>
+            <Link
+              className="mt-4 inline-flex rounded-xl bg-white px-4 py-3 text-sm font-bold text-[var(--itq-color-brand-700)] transition hover:bg-[var(--itq-color-brand-50)]"
+              href="/ar/auth/login"
+            >
+              دخول الحساب
+            </Link>
           </aside>
         </div>
       </Surface>
