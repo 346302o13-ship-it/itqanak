@@ -42,7 +42,10 @@ temporary_path="$(mktemp "${backup_dir}/.itqanak-backup.XXXXXX")"
 [[ ! -e "$backup_path" ]] || fail "refusing to overwrite an existing backup"
 
 cleanup() {
-  [[ -f "$temporary_path" ]] && : >"$temporary_path"
+  if [[ -f "$temporary_path" ]]; then
+    : >"$temporary_path"
+    rm -f -- "$temporary_path"
+  fi
 }
 trap cleanup EXIT INT TERM
 
