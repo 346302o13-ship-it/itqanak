@@ -23,11 +23,15 @@ export type LogLevel = (typeof logLevels)[number];
 export const whatsappModes = ["disabled", "dry-run", "enabled"] as const;
 export type WhatsAppMode = (typeof whatsappModes)[number];
 
+export const emailDeliveryModes = ["disabled", "smtp", "test"] as const;
+export type EmailDeliveryMode = (typeof emailDeliveryModes)[number];
+
 export interface ConfigRequirements {
   readonly database?: boolean;
   readonly redis?: boolean;
   readonly sessionSecret?: boolean;
   readonly whatsappCredentials?: boolean;
+  readonly authEmailPayloadKey?: boolean;
 }
 
 export interface LoadConfigOptions {
@@ -63,6 +67,27 @@ export interface AppConfig {
     readonly localPath?: string;
     readonly maxUploadBytes: number;
   };
+  readonly auth: {
+    readonly studentSessionAbsoluteTtlSeconds: number;
+    readonly studentSessionIdleTtlSeconds: number;
+    readonly adminSessionAbsoluteTtlSeconds: number;
+    readonly adminSessionIdleTtlSeconds: number;
+    readonly emailVerificationTtlSeconds: number;
+    readonly passwordResetTtlSeconds: number;
+    readonly rateLimitEnabled: boolean;
+    readonly emailDeliveryMode: EmailDeliveryMode;
+    readonly termsVersion: string;
+    readonly privacyVersion: string;
+    readonly emailPayloadKey?: string;
+    readonly smtp?: {
+      readonly host: string;
+      readonly port: number;
+      readonly secure: boolean;
+      readonly fromName: string;
+      readonly fromAddress: string;
+      readonly password: string;
+    };
+  };
   readonly databaseUrl?: string;
   readonly redisUrl?: string;
   readonly sessionSecret?: string;
@@ -81,13 +106,18 @@ export interface SafeAppConfig {
   readonly logLevel: LogLevel;
   readonly whatsapp: AppConfig["whatsapp"];
   readonly storage: AppConfig["storage"];
+  readonly auth: Omit<AppConfig["auth"], "emailPayloadKey" | "smtp"> & {
+    readonly hasSmtpConfiguration: boolean;
+  };
   readonly hasDatabaseUrl: boolean;
   readonly hasRedisUrl: boolean;
   readonly hasSessionSecret: boolean;
+  readonly hasAuthEmailPayloadKey: boolean;
 }
 
 const urlSchema = z.string().trim().url();
 const positiveIntegerSchema = z.coerce.number().int().positive().max(1_073_741_824);
+const booleanSchema = z.enum(["true", "false"]);
 
 function pushIssue(
   issues: ConfigIssue[],
@@ -159,6 +189,61 @@ function parsePositiveInteger(
     return fallback;
   }
   return parsed.data;
+}
+
+function parseBoolean(
+  issues: ConfigIssue[],
+  field: string,
+  value: string | undefined,
+  fallback: boolean,
+): boolean {
+  if (value === undefined || value.trim() === "") {
+    return fallback;
+  }
+  const parsed = booleanSchema.safeParse(value.trim().toLowerCase());
+  if (!parsed.success) {
+    pushIssue(issues, field, "invalid", "must be true or false");
+    return fallback;
+  }
+  return parsed.data === "true";
+}
+
+function parseRequiredText(
+  issues: ConfigIssue[],
+  field: string,
+  value: string | undefined,
+  fallback: string,
+): string {
+  const parsed = (value ?? fallback).trim();
+  if (parsed.length === 0) {
+    pushIssue(issues, field, "missing", "is required");
+    return fallback;
+  }
+  return parsed;
+}
+
+function parseOptionalEmail(
+  issues: ConfigIssue[],
+  field: string,
+  value: string | undefined,
+): string | undefined {
+  if (value === undefined || value.trim() === "") {
+    return undefined;
+  }
+  const parsed = z.string().trim().email().safeParse(value);
+  if (!parsed.success) {
+    pushIssue(issues, field, "invalid", "must be a valid email address");
+    return undefined;
+  }
+  return parsed.data;
+}
+
+function isValidAuthPayloadKey(value: string): boolean {
+  try {
+    return Buffer.from(value, "base64").length === 32;
+  } catch {
+    return false;
+  }
 }
 
 function hasWeakProductionMarker(value: string): boolean {
@@ -283,12 +368,18 @@ export function loadConfig(options: LoadConfigOptions = {}): AppConfig {
   let sessionSecret: string | undefined;
   let whatsappAppSecret: string | undefined;
   let whatsappVerifyToken: string | undefined;
+  let authEmailPayloadKey: string | undefined;
+  let smtpPassword: string | undefined;
   try {
     databaseUrl = resolveSecret(environment, "DATABASE_URL", { secretDirectory });
     redisUrl = resolveSecret(environment, "REDIS_URL", { secretDirectory });
     sessionSecret = resolveSecret(environment, "SESSION_SECRET", { secretDirectory });
     whatsappAppSecret = resolveSecret(environment, "WHATSAPP_APP_SECRET", { secretDirectory });
     whatsappVerifyToken = resolveSecret(environment, "WHATSAPP_VERIFY_TOKEN", { secretDirectory });
+    authEmailPayloadKey = resolveSecret(environment, "AUTH_EMAIL_PAYLOAD_KEY", {
+      secretDirectory,
+    });
+    smtpPassword = resolveSecret(environment, "SMTP_PASSWORD", { secretDirectory });
   } catch (error: unknown) {
     if (error instanceof ConfigError) {
       issues.push(...error.issues);
@@ -299,6 +390,15 @@ export function loadConfig(options: LoadConfigOptions = {}): AppConfig {
 
   databaseUrl = parseOptionalUrl(issues, "DATABASE_URL", databaseUrl);
   redisUrl = parseOptionalUrl(issues, "REDIS_URL", redisUrl);
+  if (authEmailPayloadKey !== undefined && !isValidAuthPayloadKey(authEmailPayloadKey)) {
+    pushIssue(
+      issues,
+      "AUTH_EMAIL_PAYLOAD_KEY",
+      "invalid",
+      "must decode to exactly 32 bytes of key material",
+    );
+    authEmailPayloadKey = undefined;
+  }
 
   const appName = (environment.APP_NAME ?? "ITQANAK").trim();
   if (appName.length === 0) {
@@ -341,6 +441,131 @@ export function loadConfig(options: LoadConfigOptions = {}): AppConfig {
     ["local", "s3"] as const,
     "local",
   );
+  const emailDeliveryMode = parseEnum(
+    issues,
+    "EMAIL_DELIVERY_MODE",
+    environment.EMAIL_DELIVERY_MODE,
+    emailDeliveryModes,
+    "disabled",
+  );
+  const studentSessionAbsoluteTtlSeconds = parsePositiveInteger(
+    issues,
+    "AUTH_STUDENT_SESSION_ABSOLUTE_TTL_SECONDS",
+    environment.AUTH_STUDENT_SESSION_ABSOLUTE_TTL_SECONDS,
+    2_592_000,
+  );
+  const studentSessionIdleTtlSeconds = parsePositiveInteger(
+    issues,
+    "AUTH_STUDENT_SESSION_IDLE_TTL_SECONDS",
+    environment.AUTH_STUDENT_SESSION_IDLE_TTL_SECONDS,
+    604_800,
+  );
+  const adminSessionAbsoluteTtlSeconds = parsePositiveInteger(
+    issues,
+    "AUTH_ADMIN_SESSION_ABSOLUTE_TTL_SECONDS",
+    environment.AUTH_ADMIN_SESSION_ABSOLUTE_TTL_SECONDS,
+    43_200,
+  );
+  const adminSessionIdleTtlSeconds = parsePositiveInteger(
+    issues,
+    "AUTH_ADMIN_SESSION_IDLE_TTL_SECONDS",
+    environment.AUTH_ADMIN_SESSION_IDLE_TTL_SECONDS,
+    7_200,
+  );
+  if (studentSessionIdleTtlSeconds > studentSessionAbsoluteTtlSeconds) {
+    pushIssue(
+      issues,
+      "AUTH_STUDENT_SESSION_IDLE_TTL_SECONDS",
+      "invalid",
+      "must not exceed the absolute session TTL",
+    );
+  }
+  if (adminSessionIdleTtlSeconds > adminSessionAbsoluteTtlSeconds) {
+    pushIssue(
+      issues,
+      "AUTH_ADMIN_SESSION_IDLE_TTL_SECONDS",
+      "invalid",
+      "must not exceed the absolute session TTL",
+    );
+  }
+  if (adminSessionAbsoluteTtlSeconds >= studentSessionAbsoluteTtlSeconds) {
+    pushIssue(
+      issues,
+      "AUTH_ADMIN_SESSION_ABSOLUTE_TTL_SECONDS",
+      "invalid",
+      "must be shorter than the student absolute session TTL",
+    );
+  }
+  if (emailDeliveryMode === "test" && nodeEnv !== "test") {
+    pushIssue(issues, "EMAIL_DELIVERY_MODE", "unsafe_production_value", "test mode is test-only");
+  }
+  const smtpHost = (environment.SMTP_HOST ?? "").trim();
+  const smtpFromAddress = parseOptionalEmail(
+    issues,
+    "SMTP_FROM_ADDRESS",
+    environment.SMTP_FROM_ADDRESS,
+  );
+  const smtpPort = parsePositiveInteger(issues, "SMTP_PORT", environment.SMTP_PORT, 587);
+  const smtpSecure = parseBoolean(issues, "SMTP_SECURE", environment.SMTP_SECURE, false);
+  const smtpFromName = parseRequiredText(
+    issues,
+    "SMTP_FROM_NAME",
+    environment.SMTP_FROM_NAME,
+    appName.length === 0 ? "ITQANAK" : appName,
+  );
+  const auth = {
+    studentSessionAbsoluteTtlSeconds,
+    studentSessionIdleTtlSeconds,
+    adminSessionAbsoluteTtlSeconds,
+    adminSessionIdleTtlSeconds,
+    emailVerificationTtlSeconds: parsePositiveInteger(
+      issues,
+      "AUTH_EMAIL_VERIFICATION_TTL_SECONDS",
+      environment.AUTH_EMAIL_VERIFICATION_TTL_SECONDS,
+      86_400,
+    ),
+    passwordResetTtlSeconds: parsePositiveInteger(
+      issues,
+      "AUTH_PASSWORD_RESET_TTL_SECONDS",
+      environment.AUTH_PASSWORD_RESET_TTL_SECONDS,
+      1_800,
+    ),
+    rateLimitEnabled: parseBoolean(
+      issues,
+      "AUTH_RATE_LIMIT_ENABLED",
+      environment.AUTH_RATE_LIMIT_ENABLED,
+      true,
+    ),
+    emailDeliveryMode,
+    termsVersion: parseRequiredText(issues, "TERMS_VERSION", environment.TERMS_VERSION, "2026-08"),
+    privacyVersion: parseRequiredText(
+      issues,
+      "PRIVACY_VERSION",
+      environment.PRIVACY_VERSION,
+      "2026-08",
+    ),
+    ...(authEmailPayloadKey === undefined ? {} : { emailPayloadKey: authEmailPayloadKey }),
+  } satisfies Omit<AppConfig["auth"], "smtp">;
+
+  if (emailDeliveryMode !== "disabled" && authEmailPayloadKey === undefined) {
+    pushIssue(
+      issues,
+      "AUTH_EMAIL_PAYLOAD_KEY",
+      "missing",
+      "is required when auth email delivery is enabled",
+    );
+  }
+  if (emailDeliveryMode === "smtp") {
+    if (smtpHost.length === 0) {
+      pushIssue(issues, "SMTP_HOST", "missing", "is required in smtp delivery mode");
+    }
+    if (smtpFromAddress === undefined) {
+      pushIssue(issues, "SMTP_FROM_ADDRESS", "missing", "is required in smtp delivery mode");
+    }
+    if (smtpPassword === undefined || smtpPassword.length === 0) {
+      pushIssue(issues, "SMTP_PASSWORD", "missing", "is required in smtp delivery mode");
+    }
+  }
 
   const config: AppConfig = {
     nodeEnv,
@@ -375,6 +600,23 @@ export function loadConfig(options: LoadConfigOptions = {}): AppConfig {
         26_214_400,
       ),
     },
+    auth: {
+      ...auth,
+      ...(emailDeliveryMode !== "smtp" ||
+      smtpFromAddress === undefined ||
+      smtpPassword === undefined
+        ? {}
+        : {
+            smtp: {
+              host: smtpHost,
+              port: smtpPort,
+              secure: smtpSecure,
+              fromName: smtpFromName,
+              fromAddress: smtpFromAddress,
+              password: smtpPassword,
+            },
+          }),
+    },
     ...(databaseUrl === undefined ? {} : { databaseUrl }),
     ...(redisUrl === undefined ? {} : { redisUrl }),
     ...(sessionSecret === undefined || sessionSecret.length === 0 ? {} : { sessionSecret }),
@@ -404,6 +646,9 @@ export function loadConfig(options: LoadConfigOptions = {}): AppConfig {
       pushIssue(issues, "WHATSAPP_VERIFY_TOKEN", "missing", "is required by this service");
     }
   }
+  if (requirements.authEmailPayloadKey === true && config.auth.emailPayloadKey === undefined) {
+    pushIssue(issues, "AUTH_EMAIL_PAYLOAD_KEY", "missing", "is required by this service");
+  }
 
   assertProductionSafety(config, issues);
   if (issues.length > 0) {
@@ -425,8 +670,22 @@ export function toSafeConfig(config: AppConfig): SafeAppConfig {
     logLevel: config.logLevel,
     whatsapp: config.whatsapp,
     storage: config.storage,
+    auth: {
+      studentSessionAbsoluteTtlSeconds: config.auth.studentSessionAbsoluteTtlSeconds,
+      studentSessionIdleTtlSeconds: config.auth.studentSessionIdleTtlSeconds,
+      adminSessionAbsoluteTtlSeconds: config.auth.adminSessionAbsoluteTtlSeconds,
+      adminSessionIdleTtlSeconds: config.auth.adminSessionIdleTtlSeconds,
+      emailVerificationTtlSeconds: config.auth.emailVerificationTtlSeconds,
+      passwordResetTtlSeconds: config.auth.passwordResetTtlSeconds,
+      rateLimitEnabled: config.auth.rateLimitEnabled,
+      emailDeliveryMode: config.auth.emailDeliveryMode,
+      termsVersion: config.auth.termsVersion,
+      privacyVersion: config.auth.privacyVersion,
+      hasSmtpConfiguration: config.auth.smtp !== undefined,
+    },
     hasDatabaseUrl: config.databaseUrl !== undefined,
     hasRedisUrl: config.redisUrl !== undefined,
     hasSessionSecret: config.sessionSecret !== undefined,
+    hasAuthEmailPayloadKey: config.auth.emailPayloadKey !== undefined,
   };
 }

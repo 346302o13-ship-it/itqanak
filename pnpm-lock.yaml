@@ -16,6 +16,9 @@ importers:
       "@types/node":
         specifier: 22.15.3
         version: 22.15.3
+      "@types/nodemailer":
+        specifier: 8.0.1
+        version: 8.0.1
       eslint:
         specifier: 9.35.0
         version: 9.35.0(jiti@1.21.7)
@@ -40,6 +43,9 @@ importers:
 
   apps/web:
     dependencies:
+      "@itqanak/auth":
+        specifier: workspace:*
+        version: link:../../packages/auth
       "@itqanak/config":
         specifier: workspace:*
         version: link:../../packages/config
@@ -83,6 +89,9 @@ importers:
 
   apps/worker:
     dependencies:
+      "@itqanak/auth":
+        specifier: workspace:*
+        version: link:../../packages/auth
       "@itqanak/config":
         specifier: workspace:*
         version: link:../../packages/config
@@ -105,9 +114,34 @@ importers:
 
   packages/auth:
     dependencies:
+      "@itqanak/config":
+        specifier: workspace:*
+        version: link:../config
       "@itqanak/core":
         specifier: workspace:*
         version: link:../core
+      "@itqanak/db":
+        specifier: workspace:*
+        version: link:../db
+      "@itqanak/observability":
+        specifier: workspace:*
+        version: link:../observability
+      argon2:
+        specifier: 0.45.1
+        version: 0.45.1
+      ioredis:
+        specifier: 6.0.0
+        version: 6.0.0
+      nodemailer:
+        specifier: 9.0.4
+        version: 9.0.4
+      zod:
+        specifier: 3.24.2
+        version: 3.24.2
+    devDependencies:
+      tsx:
+        specifier: 4.19.3
+        version: 4.19.3
 
   packages/config:
     dependencies:
@@ -460,6 +494,12 @@ packages:
     resolution:
       {
         integrity: sha512-Xz4Tpyki7XyrpbUK1jR1AhdAdaXyhhY4lZ3neLodmhpuWfy2PAQN5B46sAiU4liOXGLkHypn/qU+jvfWSCYYLA==,
+      }
+
+  "@epic-web/invariant@1.0.0":
+    resolution:
+      {
+        integrity: sha512-lrTPqgvfFQtR/eY/qkIzp98OGdNJu0m5ji3q/nJI8v3SXkRKEnWiOxMmbvcSoAIzv/cGiuvRy57k4suKQSAdwA==,
       }
 
   "@esbuild/aix-ppc64@0.25.12":
@@ -1396,6 +1436,13 @@ packages:
       }
     engines: { node: ">= 8" }
 
+  "@phc/format@1.0.0":
+    resolution:
+      {
+        integrity: sha512-m7X9U6BG2+J+R1lSOdCiITLLrxm+cWlNI3HUFA92oLO77ObGNzaKdh8pMLqdZcshtkKuV84olNNXDfMc4FezBQ==,
+      }
+    engines: { node: ">=10" }
+
   "@playwright/test@1.55.0":
     resolution:
       {
@@ -1941,6 +1988,12 @@ packages:
         integrity: sha512-lX7HFZeHf4QG/J7tBZqrCAXwz9J5RD56Y6MpP0eJkka8p+K0RY/yBTW7CYFJ4VGCclxqOLKmiGP5juQc6MKgcw==,
       }
 
+  "@types/nodemailer@8.0.1":
+    resolution:
+      {
+        integrity: sha512-PxpaInm8V1JQDd4j0ds5HfvWQk8JupS1C0Picb96QJsrrRDjBH+DlK7L4ZdNSqNULhiZRQHc40nLVShaGxXAMw==,
+      }
+
   "@types/react-dom@19.2.4":
     resolution:
       {
@@ -2148,6 +2201,13 @@ packages:
         integrity: sha512-PYjyFOLKQ9y57JvQ6QLo8dAgNqswh8M1RMJYdQduT6xbWSgK36P/Z/v+p888pM69jMMfS8Xd8F6I1kQ/I9HUGg==,
       }
 
+  argon2@0.45.1:
+    resolution:
+      {
+        integrity: sha512-skm+/WCjkGqCQxF7FG1LuZXM5yvbFjgbfiCGsud2oLgaDhh6b6dbH0b1EkghbM+xx4Bj8Ape+KKgixoIlWZicQ==,
+      }
+    engines: { node: ">=16.17.0" }
+
   argparse@2.0.1:
     resolution:
       {
@@ -2318,6 +2378,14 @@ packages:
       {
         integrity: sha512-/Srv4dswyQNBfohGpz9o6Yb3Gz3SrUDqBH5rTuhGR7ahtlbYKnVxw2bCFMRljaA7EXHaXZ8wsHdodFvbkhKmqg==,
       }
+
+  cross-env@10.1.0:
+    resolution:
+      {
+        integrity: sha512-GsYosgnACZTADcmEyJctkJIoqAhHjttw7RsFrVoJNXbsWWqaq6Ym+7kZjq6mS45O0jij6vtiReppKQEtqWy6Dw==,
+      }
+    engines: { node: ">=20" }
+    hasBin: true
 
   cross-spawn@7.0.6:
     resolution:
@@ -2939,12 +3007,33 @@ packages:
       sass:
         optional: true
 
+  node-addon-api@8.9.1:
+    resolution:
+      {
+        integrity: sha512-4eUQWVPCUUUiBjLnHS3cXWeC6ryoPUc0U3rP7IuzapoGbzMqd/r6KKO0clr0b+snQhsrueFEhCZDdK+LK7hxKg==,
+      }
+    engines: { node: ^18 || ^20 || >= 21 }
+
+  node-gyp-build@4.8.4:
+    resolution:
+      {
+        integrity: sha512-LA4ZjwlnUblHVgq0oBF3Jl/6h/Nvs5fzBLwdEF4nuxnFdsfajde4WfxtJr3CaiH+F6ewcIB/q4jQ4UzPyid+CQ==,
+      }
+    hasBin: true
+
   node-releases@2.0.52:
     resolution:
       {
         integrity: sha512-MRlTqhAfoMx/4mhEbPo3Hi02g9LJZaJkka69V6h67Cb1gjrAG0jsTE4CZX1eptNx+VCAwJmfpnDIF4P0Nh1A7A==,
       }
     engines: { node: ">=18" }
+
+  nodemailer@9.0.4:
+    resolution:
+      {
+        integrity: sha512-LmJNRVRtfSCULxcZpy0Cpg4WWenlUZ9+zbmTO+S7v9wD6XreYLjXRFtDjtV/4F0HT5p1GyZfA0Ux/myxHb18CQ==,
+      }
+    engines: { node: ">=6.0.0" }
 
   normalize-path@3.0.0:
     resolution:
@@ -4215,6 +4304,8 @@ snapshots:
       tslib: 2.8.1
     optional: true
 
+  "@epic-web/invariant@1.0.0": {}
+
   "@esbuild/aix-ppc64@0.25.12":
     optional: true
 
@@ -4595,6 +4686,8 @@ snapshots:
       "@nodelib/fs.scandir": 2.1.5
       fastq: 1.20.1
 
+  "@phc/format@1.0.0": {}
+
   "@playwright/test@1.55.0":
     dependencies:
       playwright: 1.55.0
@@ -4911,6 +5004,10 @@ snapshots:
     dependencies:
       undici-types: 6.21.0
 
+  "@types/nodemailer@8.0.1":
+    dependencies:
+      "@types/node": 22.15.3
+
   "@types/react-dom@19.2.4(@types/react@19.2.18)":
     dependencies:
       "@types/react": 19.2.18
@@ -5084,6 +5181,13 @@ snapshots:
 
   arg@5.0.2: {}
 
+  argon2@0.45.1:
+    dependencies:
+      "@phc/format": 1.0.0
+      cross-env: 10.1.0
+      node-addon-api: 8.9.1
+      node-gyp-build: 4.8.4
+
   argparse@2.0.1: {}
 
   assertion-error@2.0.1: {}
@@ -5175,6 +5279,11 @@ snapshots:
   commander@4.1.1: {}
 
   concat-map@0.0.1: {}
+
+  cross-env@10.1.0:
+    dependencies:
+      "@epic-web/invariant": 1.0.0
+      cross-spawn: 7.0.6
 
   cross-spawn@7.0.6:
     dependencies:
@@ -5562,7 +5671,13 @@ snapshots:
       - "@types/node"
       - babel-plugin-macros
 
+  node-addon-api@8.9.1: {}
+
+  node-gyp-build@4.8.4: {}
+
   node-releases@2.0.52: {}
+
+  nodemailer@9.0.4: {}
 
   normalize-path@3.0.0: {}
 

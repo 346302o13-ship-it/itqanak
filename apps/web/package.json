@@ -13,6 +13,7 @@
   },
   "dependencies": {
     "@itqanak/config": "workspace:*",
+    "@itqanak/auth": "workspace:*",
     "@itqanak/db": "workspace:*",
     "@itqanak/observability": "workspace:*",
     "@itqanak/ui": "workspace:*",

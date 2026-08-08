@@ -60,6 +60,28 @@ function readSecretFile(name: string, filePath: string, secretDirectory: string)
   }
 }
 
+function readOptionalConventionalSecretFile(
+  name: string,
+  filePath: string,
+  secretDirectory: string,
+): string | undefined {
+  try {
+    return readSecretFile(name, filePath, secretDirectory);
+  } catch (error: unknown) {
+    if (
+      error instanceof ConfigError &&
+      error.issues.length === 1 &&
+      error.issues[0]?.message === "must not be empty"
+    ) {
+      // Compose may mount an intentionally empty optional secret while an
+      // integration is disabled. Required consumers still fail later through
+      // their normal configuration requirement checks.
+      return undefined;
+    }
+    throw error;
+  }
+}
+
 /**
  * Resolves NAME_FILE before NAME. If neither is configured, a Docker-style
  * lowercase file (for example /run/secrets/database_url) is used when present.
@@ -83,11 +105,15 @@ export function resolveSecret(
 
   const conventionalFile = resolve(secretDirectory, name.toLowerCase());
   if (existsSync(/* turbopackIgnore: true */ conventionalFile)) {
-    return readSecretFile(name, conventionalFile, secretDirectory);
+    return readOptionalConventionalSecretFile(name, conventionalFile, secretDirectory);
   }
 
   const directValue = environment[name];
-  return directValue === undefined ? undefined : directValue.trim();
+  if (directValue === undefined) {
+    return undefined;
+  }
+  const normalized = directValue.trim();
+  return normalized.length === 0 ? undefined : normalized;
 }
 
 export const defaultSecretDirectory = DEFAULT_SECRET_DIRECTORY;

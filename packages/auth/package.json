@@ -19,9 +19,25 @@
     "build": "tsc -p tsconfig.json",
     "lint": "eslint src --max-warnings=0",
     "typecheck": "tsc -p tsconfig.json --noEmit",
-    "test": "vitest run"
+    "test": "vitest run",
+    "auth:create-admin": "tsx src/cli.ts create-admin",
+    "auth:grant-role": "tsx src/cli.ts grant-role",
+    "auth:revoke-role": "tsx src/cli.ts revoke-role",
+    "auth:cleanup-expired": "tsx src/cli.ts cleanup-expired",
+    "auth:list-sessions": "tsx src/cli.ts list-sessions",
+    "auth:benchmark-password": "tsx src/benchmark-password.ts"
   },
   "dependencies": {
-    "@itqanak/core": "workspace:*"
+    "@itqanak/config": "workspace:*",
+    "@itqanak/core": "workspace:*",
+    "@itqanak/db": "workspace:*",
+    "@itqanak/observability": "workspace:*",
+    "argon2": "0.45.1",
+    "ioredis": "6.0.0",
+    "nodemailer": "9.0.4",
+    "zod": "3.24.2"
+  },
+  "devDependencies": {
+    "tsx": "4.19.3"
   }
 }
