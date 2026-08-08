@@ -1,8 +1,8 @@
 name: itqanak
 
-# Production topology. Set the five *_SECRET_FILE variables to absolute paths
-# that are readable only by the deploy account. Their contents are never put in
-# this repository, the Compose model, or container environment variables.
+# Production topology. Set the *_SECRET_FILE variables to absolute paths that
+# are readable only by the deploy account. Their contents are never put in this
+# repository, the Compose model, or container environment variables.
 x-logging: &default-logging
   driver: local
   options:
@@ -177,9 +177,26 @@ services:
       REDIS_URL_FILE: /run/secrets/redis_url
       PORT: "3000"
       HOSTNAME: 0.0.0.0
+      AUTH_STUDENT_SESSION_ABSOLUTE_TTL_SECONDS: ${AUTH_STUDENT_SESSION_ABSOLUTE_TTL_SECONDS:-2592000}
+      AUTH_STUDENT_SESSION_IDLE_TTL_SECONDS: ${AUTH_STUDENT_SESSION_IDLE_TTL_SECONDS:-604800}
+      AUTH_ADMIN_SESSION_ABSOLUTE_TTL_SECONDS: ${AUTH_ADMIN_SESSION_ABSOLUTE_TTL_SECONDS:-43200}
+      AUTH_ADMIN_SESSION_IDLE_TTL_SECONDS: ${AUTH_ADMIN_SESSION_IDLE_TTL_SECONDS:-7200}
+      AUTH_EMAIL_VERIFICATION_TTL_SECONDS: ${AUTH_EMAIL_VERIFICATION_TTL_SECONDS:-86400}
+      AUTH_PASSWORD_RESET_TTL_SECONDS: ${AUTH_PASSWORD_RESET_TTL_SECONDS:-1800}
+      AUTH_RATE_LIMIT_ENABLED: ${AUTH_RATE_LIMIT_ENABLED:-true}
+      TERMS_VERSION: ${TERMS_VERSION:-2026-08}
+      PRIVACY_VERSION: ${PRIVACY_VERSION:-2026-08}
+      EMAIL_DELIVERY_MODE: ${EMAIL_DELIVERY_MODE:-disabled}
+      SMTP_HOST: ${SMTP_HOST:-}
+      SMTP_PORT: ${SMTP_PORT:-587}
+      SMTP_SECURE: ${SMTP_SECURE:-false}
+      SMTP_FROM_NAME: ${SMTP_FROM_NAME:-ITQANAK}
+      SMTP_FROM_ADDRESS: ${SMTP_FROM_ADDRESS:-}
     secrets:
       - database_url
       - redis_url
+      - auth_email_payload_key
+      - smtp_password
     depends_on:
       migrate:
         condition: service_completed_successfully
@@ -224,9 +241,26 @@ services:
       DATABASE_URL_FILE: /run/secrets/database_url
       REDIS_URL_FILE: /run/secrets/redis_url
       WORKER_HEARTBEAT_FILE: /tmp/itqanak-worker-heartbeat
+      AUTH_STUDENT_SESSION_ABSOLUTE_TTL_SECONDS: ${AUTH_STUDENT_SESSION_ABSOLUTE_TTL_SECONDS:-2592000}
+      AUTH_STUDENT_SESSION_IDLE_TTL_SECONDS: ${AUTH_STUDENT_SESSION_IDLE_TTL_SECONDS:-604800}
+      AUTH_ADMIN_SESSION_ABSOLUTE_TTL_SECONDS: ${AUTH_ADMIN_SESSION_ABSOLUTE_TTL_SECONDS:-43200}
+      AUTH_ADMIN_SESSION_IDLE_TTL_SECONDS: ${AUTH_ADMIN_SESSION_IDLE_TTL_SECONDS:-7200}
+      AUTH_EMAIL_VERIFICATION_TTL_SECONDS: ${AUTH_EMAIL_VERIFICATION_TTL_SECONDS:-86400}
+      AUTH_PASSWORD_RESET_TTL_SECONDS: ${AUTH_PASSWORD_RESET_TTL_SECONDS:-1800}
+      AUTH_RATE_LIMIT_ENABLED: ${AUTH_RATE_LIMIT_ENABLED:-true}
+      TERMS_VERSION: ${TERMS_VERSION:-2026-08}
+      PRIVACY_VERSION: ${PRIVACY_VERSION:-2026-08}
+      EMAIL_DELIVERY_MODE: ${EMAIL_DELIVERY_MODE:-disabled}
+      SMTP_HOST: ${SMTP_HOST:-}
+      SMTP_PORT: ${SMTP_PORT:-587}
+      SMTP_SECURE: ${SMTP_SECURE:-false}
+      SMTP_FROM_NAME: ${SMTP_FROM_NAME:-ITQANAK}
+      SMTP_FROM_ADDRESS: ${SMTP_FROM_ADDRESS:-}
     secrets:
       - database_url
       - redis_url
+      - auth_email_payload_key
+      - smtp_password
     depends_on:
       migrate:
         condition: service_completed_successfully
@@ -357,3 +391,9 @@ secrets:
     file: ${ITQANAK_REDIS_PASSWORD_SECRET_FILE:?Set ITQANAK_REDIS_PASSWORD_SECRET_FILE to a protected secret-file path}
   verify_database_url:
     file: ${ITQANAK_VERIFY_DATABASE_URL_SECRET_FILE:?Set ITQANAK_VERIFY_DATABASE_URL_SECRET_FILE to a protected secret-file path}
+  # Optional until SMTP delivery is enabled. The auth configuration rejects an
+  # empty mounted key only when an auth email flow is configured to deliver.
+  auth_email_payload_key:
+    file: ${ITQANAK_AUTH_EMAIL_PAYLOAD_KEY_SECRET_FILE:-/dev/null}
+  smtp_password:
+    file: ${ITQANAK_SMTP_PASSWORD_SECRET_FILE:-/dev/null}

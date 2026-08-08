@@ -3,6 +3,7 @@ import { writeFile } from "node:fs/promises";
 
 import Redis from "ioredis";
 
+import { AuthEmailOutboxProcessor, createAuthEmailSender } from "@itqanak/auth";
 import { loadConfig, type AppConfig } from "@itqanak/config";
 import { checkDatabaseHealth, closeDatabase, createDatabase } from "@itqanak/db";
 import { createLogger, type Logger } from "@itqanak/observability";
@@ -40,6 +41,17 @@ async function startWorker(config: AppConfig, logger: Logger, signal: AbortSigna
     retryStrategy: () => null,
   });
   const outbox = new DeferredOutboxWorkLoop(logger.child({ workerName }));
+  const authEmailSender = createAuthEmailSender(config);
+  const authEmailOutbox =
+    authEmailSender === undefined
+      ? undefined
+      : new AuthEmailOutboxProcessor(
+          database,
+          config,
+          authEmailSender,
+          logger.child({ workerName, deliveryMode: config.auth.emailDeliveryMode }),
+          workerName,
+        );
 
   const heartbeat = async (): Promise<void> => {
     const databaseConnected = await checkDatabaseHealth(database);
@@ -58,7 +70,10 @@ async function startWorker(config: AppConfig, logger: Logger, signal: AbortSigna
   try {
     await assertRedisReady(redis);
     await heartbeat();
-    logger.info("worker_started", { workerName });
+    logger.info("worker_started", {
+      workerName,
+      authEmailDeliveryEnabled: authEmailOutbox !== undefined,
+    });
 
     let failedAttempts = 0;
     let lastHeartbeatAt = Date.now();
@@ -70,6 +85,7 @@ async function startWorker(config: AppConfig, logger: Logger, signal: AbortSigna
           lastHeartbeatAt = now;
         }
         await outbox.poll();
+        await authEmailOutbox?.processBatch();
         failedAttempts = 0;
         await waitFor(idleIntervalMs, signal);
       } catch {

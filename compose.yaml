@@ -80,6 +80,31 @@ services:
       retries: 20
     logging: *default-logging
 
+  # Development-only SMTP sink. It is opt-in, exposes only its inbox UI on
+  # loopback, and never publishes SMTP to the host. To use it, set
+  # EMAIL_DELIVERY_MODE=smtp, SMTP_HOST=mailpit, and local non-production
+  # sender credentials in .env before enabling the profile.
+  mailpit:
+    profiles: ["mail"]
+    image: axllent/mailpit:v1.30.0
+    environment:
+      MP_SMTP_AUTH_ACCEPT_ANY: "true"
+      # The local sink intentionally has no TLS certificate. This is confined to
+      # the opt-in development profile and permits the Worker SMTP smoke test.
+      MP_SMTP_AUTH_ALLOW_INSECURE: "true"
+    ports:
+      - "127.0.0.1:8025:8025"
+    networks:
+      - egress
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q -O /dev/null http://127.0.0.1:8025/livez"]
+      interval: 10s
+      timeout: 3s
+      retries: 10
+    mem_limit: 128m
+    pids_limit: 128
+    logging: *default-logging
+
   migrate:
     build:
       context: .
@@ -123,6 +148,28 @@ services:
       PORT: "3000"
       WATCHPACK_POLLING: "true"
       MIGRATIONS_DIR: /workspace/migrations
+      # Browser-visible URLs must describe the loopback gateway, not the
+      # internal `web` service or config fallback, so form redirects and CSP
+      # form-action remain same-origin in development.
+      PUBLIC_APP_URL: ${PUBLIC_APP_URL:-http://127.0.0.1:8080}
+      ADMIN_APP_URL: ${ADMIN_APP_URL:-http://127.0.0.1:8080/ar/admin}
+      AUTH_STUDENT_SESSION_ABSOLUTE_TTL_SECONDS: ${AUTH_STUDENT_SESSION_ABSOLUTE_TTL_SECONDS:-2592000}
+      AUTH_STUDENT_SESSION_IDLE_TTL_SECONDS: ${AUTH_STUDENT_SESSION_IDLE_TTL_SECONDS:-604800}
+      AUTH_ADMIN_SESSION_ABSOLUTE_TTL_SECONDS: ${AUTH_ADMIN_SESSION_ABSOLUTE_TTL_SECONDS:-43200}
+      AUTH_ADMIN_SESSION_IDLE_TTL_SECONDS: ${AUTH_ADMIN_SESSION_IDLE_TTL_SECONDS:-7200}
+      AUTH_EMAIL_VERIFICATION_TTL_SECONDS: ${AUTH_EMAIL_VERIFICATION_TTL_SECONDS:-86400}
+      AUTH_PASSWORD_RESET_TTL_SECONDS: ${AUTH_PASSWORD_RESET_TTL_SECONDS:-1800}
+      AUTH_RATE_LIMIT_ENABLED: ${AUTH_RATE_LIMIT_ENABLED:-true}
+      TERMS_VERSION: ${TERMS_VERSION:-2026-08}
+      PRIVACY_VERSION: ${PRIVACY_VERSION:-2026-08}
+      EMAIL_DELIVERY_MODE: ${EMAIL_DELIVERY_MODE:-disabled}
+      SMTP_HOST: ${SMTP_HOST:-}
+      SMTP_PORT: ${SMTP_PORT:-587}
+      SMTP_SECURE: ${SMTP_SECURE:-false}
+      SMTP_FROM_NAME: ${SMTP_FROM_NAME:-ITQANAK}
+      SMTP_FROM_ADDRESS: ${SMTP_FROM_ADDRESS:-}
+      AUTH_EMAIL_PAYLOAD_KEY: ${AUTH_EMAIL_PAYLOAD_KEY:-}
+      SMTP_PASSWORD: ${SMTP_PASSWORD:-}
     volumes:
       - ./:/workspace
       - pnpm-store:/pnpm/store
@@ -165,6 +212,25 @@ services:
       REDIS_URL: redis://redis:6379/0
       WORKER_HEARTBEAT_FILE: /tmp/itqanak-worker-heartbeat
       MIGRATIONS_DIR: /workspace/migrations
+      PUBLIC_APP_URL: ${PUBLIC_APP_URL:-http://127.0.0.1:8080}
+      ADMIN_APP_URL: ${ADMIN_APP_URL:-http://127.0.0.1:8080/ar/admin}
+      AUTH_STUDENT_SESSION_ABSOLUTE_TTL_SECONDS: ${AUTH_STUDENT_SESSION_ABSOLUTE_TTL_SECONDS:-2592000}
+      AUTH_STUDENT_SESSION_IDLE_TTL_SECONDS: ${AUTH_STUDENT_SESSION_IDLE_TTL_SECONDS:-604800}
+      AUTH_ADMIN_SESSION_ABSOLUTE_TTL_SECONDS: ${AUTH_ADMIN_SESSION_ABSOLUTE_TTL_SECONDS:-43200}
+      AUTH_ADMIN_SESSION_IDLE_TTL_SECONDS: ${AUTH_ADMIN_SESSION_IDLE_TTL_SECONDS:-7200}
+      AUTH_EMAIL_VERIFICATION_TTL_SECONDS: ${AUTH_EMAIL_VERIFICATION_TTL_SECONDS:-86400}
+      AUTH_PASSWORD_RESET_TTL_SECONDS: ${AUTH_PASSWORD_RESET_TTL_SECONDS:-1800}
+      AUTH_RATE_LIMIT_ENABLED: ${AUTH_RATE_LIMIT_ENABLED:-true}
+      TERMS_VERSION: ${TERMS_VERSION:-2026-08}
+      PRIVACY_VERSION: ${PRIVACY_VERSION:-2026-08}
+      EMAIL_DELIVERY_MODE: ${EMAIL_DELIVERY_MODE:-disabled}
+      SMTP_HOST: ${SMTP_HOST:-}
+      SMTP_PORT: ${SMTP_PORT:-587}
+      SMTP_SECURE: ${SMTP_SECURE:-false}
+      SMTP_FROM_NAME: ${SMTP_FROM_NAME:-ITQANAK}
+      SMTP_FROM_ADDRESS: ${SMTP_FROM_ADDRESS:-}
+      AUTH_EMAIL_PAYLOAD_KEY: ${AUTH_EMAIL_PAYLOAD_KEY:-}
+      SMTP_PASSWORD: ${SMTP_PASSWORD:-}
     volumes:
       - ./:/workspace
       - pnpm-store:/pnpm/store
