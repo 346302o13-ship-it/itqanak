@@ -4,9 +4,12 @@
 
 Git, monorepo, Docker topology, configuration/secrets boundary, database migrations, health endpoints, storage abstraction, Worker heartbeat, backups, and recovery documentation.
 
-## Phase 2 — Authentication
+## Phase 2 — Authentication (complete)
 
-Email verification, password lifecycle, server-managed sessions, account security events, roles and permissions.
+Email verification, password lifecycle, server-managed sessions, account security
+events, roles/permissions, protected Arabic account UI, Redis throttling, and an
+encrypted auth-email outbox. Refer to the authentication documentation for
+operational constraints.
 
 ## Phase 3 — Catalog and student requests
 
@@ -24,9 +27,11 @@ Request conversations, text/image/audio/file/system messages, secure private sto
 
 Quotes, invoices, credits, revisions, refunds, payment gateway integration, and append-oriented financial ledger.
 
-## Phase 7 — Notifications
+## Phase 7 — Product notifications
 
-In-app and email delivery, outbox processor, WhatsApp Cloud API configuration, webhooks, consent, redaction, retries, and idempotency.
+In-app and product email delivery, WhatsApp Cloud API configuration, webhooks,
+consent, redaction, retries, and idempotency. The Phase 2 outbox is limited to
+authentication email.
 
 ## Phase 8 — Content and production hardening
 

@@ -1,6 +1,6 @@
 # Recovered product scope
 
-This document preserves the recovered requirements of the previous ITQANAK platform so a future host loss cannot erase product knowledge. It is a scope record, not evidence that every item is implemented in Phase 1.
+This document preserves the recovered requirements of the previous ITQANAK platform so a future host loss cannot erase product knowledge. It is a scope record, not evidence that every item is implemented. Phase 2 now implements the initial account and authorization slice described below.
 
 ## Product, localization, and roles
 
@@ -19,7 +19,10 @@ The future public site includes an Arabic landing page, services and categories,
 
 ## Student account
 
-Future account features are email registration and verification, sign-in and sign-out, password recovery, session management, student profile, language and notification preferences, recorded consent to data processing, and a security audit trail for sensitive operations. Sessions and tokens must never be stored in `localStorage`.
+Email registration/verification, sign-in/out, password recovery, session management,
+display-name profile, recorded Terms/Privacy consent, and a security audit trail
+are implemented in Phase 2. Preferences and email-change flows remain later work.
+Sessions and tokens are never stored in `localStorage`.
 
 ## Service requests
 

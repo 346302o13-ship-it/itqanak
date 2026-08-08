@@ -1,7 +1,8 @@
 # ITQANAK — إتقانك
 
-أساس المرحلة الأولى لمنصة إتقانك: Monorepo عربي RTL مبني بـ Next.js وTypeScript
-وPostgreSQL وRedis وWorker مستقل. هذا المستودع لا يحتوي على بيانات طلاب أو أسرار أو
+منصة إتقانك العربية (RTL) مبنية بـ Next.js وTypeScript وPostgreSQL وRedis وWorker
+مستقل. اكتملت المرحلة الثانية: حسابات الطلاب، تأكيد البريد، كلمات المرور، جلسات
+خادمية، صلاحيات RBAC، وسجل أمان. لا يحتوي المستودع على بيانات طلاب أو أسرار أو
 تكاملات دفع/WhatsApp حقيقية.
 
 ## المتطلبات
@@ -83,6 +84,11 @@ ITQANAK_VERIFY_DATABASE_URL_SECRET_FILE
 `*_FILE` أو `/run/secrets/<name>` ولا تسجّل القيم. Gateway فقط يستمع محلياً على
 `127.0.0.1:8080`؛ اربط Cloudflare بعد نجاح اختبارات النشر.
 
+إذا فُعّل إرسال بريد المصادقة، أضف أيضاً ملفاً عشوائياً بطول 32 بايت مرمّز Base64
+لمتغير `ITQANAK_AUTH_EMAIL_PAYLOAD_KEY_SECRET_FILE`. وعند اختيار `smtp` أضف ملف
+`ITQANAK_SMTP_PASSWORD_SECRET_FILE`. المفتاح مطلوب لتشفير حمولة طابور البريد في
+قاعدة البيانات؛ كلمة مرور SMTP لا تُطلب عند بقاء البريد معطلاً.
+
 ```bash
 docker compose -f compose.production.yaml config
 docker compose -f compose.production.yaml up -d --build
@@ -100,11 +106,20 @@ scripts/verify-backup.sh /path/to/backup.dump
 تُحفظ النسخ خارج الخادم في object storage متوافق مع S3. خطوات الاستعادة الكاملة
 والـsystemd timer موثقة في [`docs/BACKUP_RESTORE.md`](./docs/BACKUP_RESTORE.md).
 
-## حدود المرحلة الأولى
+## المصادقة والحسابات
 
-توجد واجهات وحواجز معمارية للتخزين الخاص، فحص الملفات، الـOutbox، الصلاحيات،
-وسير حالات الطلب. التسجيل الفعلي، حسابات الطلاب، الطلبات، المحادثة، الدفع،
-والإشعارات الخارجية مؤجلة للمراحل التالية. انظر
+المسارات العربية هي `/ar/auth/register` و`/ar/auth/login` و`/ar/account`.
+تستعمل الجلسات cookies خادمية `HttpOnly` فقط؛ لا توجد JWT ولا `localStorage`.
+يمكن تجربة البريد محلياً عبر Mailpit الاختياري، وتفاصيله في
+[`docs/AUTH_EMAIL.md`](./docs/AUTH_EMAIL.md). راجع أيضاً
+[`docs/AUTHENTICATION.md`](./docs/AUTHENTICATION.md) و
+[`docs/AUTHORIZATION.md`](./docs/AUTHORIZATION.md) و
+[`docs/SESSION_MANAGEMENT.md`](./docs/SESSION_MANAGEMENT.md).
+
+## ما بقي للمراحل اللاحقة
+
+توجد واجهات وحواجز معمارية للتخزين الخاص، فحص الملفات، وسير حالات الطلب. الطلبات،
+المحادثة، الدفع، والـWhatsApp ما زالت مؤجلة. انظر
 [`docs/ROADMAP.md`](./docs/ROADMAP.md) و[`docs/RECOVERED_SCOPE.md`](./docs/RECOVERED_SCOPE.md).
 
 ## التوثيق
@@ -113,3 +128,6 @@ scripts/verify-backup.sh /path/to/backup.dump
 - [`docs/SECURITY.md`](./docs/SECURITY.md)
 - [`docs/OPERATIONS.md`](./docs/OPERATIONS.md)
 - [`docs/INCIDENT_RECOVERY.md`](./docs/INCIDENT_RECOVERY.md)
+- [`docs/AUTHENTICATION.md`](./docs/AUTHENTICATION.md)
+- [`docs/AUTH_EMAIL.md`](./docs/AUTH_EMAIL.md)
+- [`docs/ADMIN_BOOTSTRAP.md`](./docs/ADMIN_BOOTSTRAP.md)

@@ -2,7 +2,10 @@
 
 ## Purpose
 
-ITQANAK is an Arabic-first (`ar`, RTL) platform foundation for legitimate educational support. Phase 1 deliberately contains no student accounts, real orders, payment processing, email delivery, or WhatsApp traffic. It establishes the boundaries required to add them safely.
+ITQANAK is an Arabic-first (`ar`, RTL) platform for legitimate educational support.
+Phase 2 adds student accounts, verification, password lifecycle, server-side
+sessions, RBAC, and a durable authentication-email outbox. It deliberately does
+not add real orders, payment processing, WhatsApp traffic, or public file access.
 
 ```text
 Browser / Cloudflare (future)
@@ -24,17 +27,17 @@ Only `gateway` publishes a port, bound to loopback. PostgreSQL, Redis, ClamAV, M
 
 ## Repository shape
 
-| Area                     | Responsibility                                                                            |
-| ------------------------ | ----------------------------------------------------------------------------------------- |
-| `apps/web`               | Next.js App Router, Arabic placeholder UI, safe errors, liveness and readiness endpoints. |
-| `apps/worker`            | Graceful process, database/Redis connectivity, heartbeat, future outbox seam.             |
-| `packages/config`        | Strict startup configuration, production safeguards, `/run/secrets` support.              |
-| `packages/core`          | Roles, centralized request state machine, JSON/outbox contracts.                          |
-| `packages/db`            | Raw `postgres.js` client and forward-only migration runner.                               |
-| `packages/auth`          | Authorization primitives only; credentials and sessions are Phase 2.                      |
-| `packages/observability` | Structured JSON logger and recursive redaction.                                           |
-| `packages/storage`       | Private local/S3-compatible object-store abstraction and upload allowlists.               |
-| `packages/ui`            | Shared design tokens and minimal reusable React components.                               |
+| Area                     | Responsibility                                                                                  |
+| ------------------------ | ----------------------------------------------------------------------------------------------- |
+| `apps/web`               | Next.js App Router, Arabic account UI, protected form routes, safe errors, health endpoints.    |
+| `apps/worker`            | Graceful process, database/Redis connectivity, heartbeat, and auth-email outbox delivery.       |
+| `packages/config`        | Strict startup configuration, production safeguards, `/run/secrets` support.                    |
+| `packages/core`          | Roles, centralized request state machine, JSON/outbox contracts.                                |
+| `packages/db`            | Raw `postgres.js` client and forward-only migration runner.                                     |
+| `packages/auth`          | Credentials, opaque sessions, token lifecycle, authorization, rate limits, audit, email outbox. |
+| `packages/observability` | Structured JSON logger and recursive redaction.                                                 |
+| `packages/storage`       | Private local/S3-compatible object-store abstraction and upload allowlists.                     |
+| `packages/ui`            | Shared design tokens and minimal reusable React components.                                     |
 
 All TypeScript projects use strict mode, `noUncheckedIndexedAccess`, and `exactOptionalPropertyTypes`. Domain state rules remain in `packages/core`, not in a page component or route handler.
 
@@ -42,13 +45,16 @@ All TypeScript projects use strict mode, `noUncheckedIndexedAccess`, and `exactO
 
 Services call `loadConfig()` at startup. Development can explicitly load `.env`; production cannot. Values may come from `NAME_FILE` only when that path resolves inside `/run/secrets`, or from a conventional `/run/secrets/name` Docker secret. Errors name only the invalid setting—never its value or file path. The config layer rejects HTTP public URLs and common placeholder values in production.
 
-No secret belongs in a Dockerfile, compose file, git, `.env.example`, logs, or browser storage. The phase does not define a browser token transport; Phase 2 will use server-managed, `HttpOnly`, `Secure`, `SameSite` sessions.
+No secret belongs in a Dockerfile, compose file, git, `.env.example`, logs, or browser storage. Authentication uses server-managed opaque sessions in `HttpOnly`, `Secure` (production), `SameSite=Lax` cookies. There are no browser JWTs or local-storage credentials. The auth email encryption key and SMTP password use Docker secrets in production.
 
 ## Database and migrations
 
 `schema_migrations` is an internal ledger with an identity id, filename, SHA-256 checksum, timestamp, and execution duration. The runner reads sorted `NNN_name.sql` files, verifies applied files still exist and match their checksums, holds a PostgreSQL advisory lock, runs each unapplied file inside its own transaction, inserts its ledger row only in that transaction, and rejects pending, missing, changed, or failed migrations in `db:verify`.
 
-The first migration creates only platform metadata, a durable outbox table, and worker heartbeats. Product tables must arrive in later forward-only files.
+Migration `002_identity_authentication.sql` adds identity, credentials, roles,
+permissions, opaque sessions, single-use verification/reset token tables, legal
+acceptances, security audit events, and encrypted authentication-email outbox
+records. Product request tables remain later-phase work.
 
 ## Readiness contract
 
@@ -70,9 +76,14 @@ validate extension + declared type + size
 
 The browser Content-Type is never authoritative. Future upload routes must sniff content, enforce per-file and aggregate request limits, and never serve active content from the application origin without isolation controls.
 
-## Event and notification boundary
+## Authentication and email boundary
 
-An aggregate mutation and its outbox event must be written in one database transaction. The Worker will later claim rows idempotently, retry transient failures with bounded exponential backoff and jitter, and send permanent or ambiguous failures to manual review/dead-letter handling. The current Worker does not send email, WhatsApp, or any external notification.
+Account mutations use transactions: registration/reset creates the corresponding
+single-use token and encrypted email work in the same commit. The Worker claims
+email work with `SKIP LOCKED`, retries bounded failures with jitter, reclaims stale
+processing locks, and sends exhausted rows to `DEAD`. Delivery is disabled by
+default; Mailpit is an opt-in local SMTP sink. WhatsApp and non-auth product
+notifications remain future work.
 
 ## Deployment model
 

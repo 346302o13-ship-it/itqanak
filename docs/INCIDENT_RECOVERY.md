@@ -15,6 +15,17 @@
 3. Inspect redacted access/audit records and provider-side credential activity.
 4. Remove the cause, add a regression check, and assess whether users/regulators require notification.
 
+## Suspected account/session compromise
+
+1. Preserve redacted request and security-audit evidence; do not copy cookies,
+   reset links, passwords, or raw token material into a ticket.
+2. Revoke the affected sessions through the account session interface or protected
+   operator access. A password reset/change invalidates all active sessions.
+3. Check role assignments and revoke an unexpected `ADMIN` role with the protected
+   CLI; role changes invalidate sessions.
+4. Rotate relevant infrastructure/auth-email secrets when exposure reaches the
+   service boundary, notify through an approved process, and document the cause.
+
 ## Host loss
 
 Follow `BACKUP_RESTORE.md`: rebuild from Git, retrieve off-server database and

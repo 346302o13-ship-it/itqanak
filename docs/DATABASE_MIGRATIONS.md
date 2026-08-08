@@ -27,6 +27,15 @@ checks the ledger before applying, wraps each file and ledger insert in a single
 transaction, records execution milliseconds, and rechecks compatibility at the
 end. A failed SQL statement rolls back that file and does not mark it applied.
 
+## Phase 2 schema
+
+`002_identity_authentication.sql` is applied forward-only and owns the identity
+tables: users, credentials, roles/permissions, sessions, verification/reset
+tokens, legal acceptances, audit events, and the authentication-email outbox.
+It has already been applied to the development ledger; never edit it to adjust
+authentication behavior. Add a new ordered migration for any corrective index,
+constraint, or data change.
+
 ## Incident response
 
 If `db:verify` reports a mismatch, stop deployment. Do not modify historical SQL
