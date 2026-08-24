@@ -23,6 +23,8 @@ export {
 export {
   assertCsrfToken,
   assertExpectedFormContentType,
+  assertExpectedFormContentLength,
+  assertExpectedRawUploadContentType,
   assertTrustedHost,
   assertTrustedOrigin,
   CsrfError,
@@ -33,7 +35,16 @@ export {
   AuthEmailPayloadError,
   type AuthEmailPayload,
 } from "./email-payload.js";
-export { maskEmailForDisplay, normalizeDisplayName, normalizeEmail } from "./identity.js";
+export {
+  isPhoneCountryCode,
+  maskEmailForDisplay,
+  maskPhoneForDisplay,
+  normalizeDisplayName,
+  normalizeEmail,
+  normalizePhone,
+  phoneCountryCodes,
+  type PhoneCountryCode,
+} from "./identity.js";
 export {
   argon2idOptions,
   assertPasswordPolicy,
@@ -54,11 +65,16 @@ export { safeInternalPath } from "./redirects.js";
 export {
   AuthService,
   type AuthServiceOptions,
+  type AdminCreateStudentInput,
   type ChangePasswordInput,
   type CreatedSession,
   type CreateSessionInput,
   type LoginInput,
+  type ConfirmPhoneVerificationInput,
+  type IssuePhonePasswordResetInput,
+  type RejectPhonePasswordResetInput,
   type RegisterStudentInput,
+  type RequestPhonePasswordResetInput,
   type ResetPasswordInput,
 } from "./service.js";
 export { generateOpaqueToken, hashValidator, parseOpaqueToken, validatorsMatch } from "./tokens.js";
@@ -66,11 +82,23 @@ export {
   AuthenticationError,
   AuthorizationError,
   permissionCodes,
+  phonePasswordResetStatuses,
+  phoneVerificationStatuses,
   RegistrationError,
   userStatuses,
   type AuthenticatedPrincipal,
+  type AdminCreatedStudent,
+  type AdminStudentListInput,
+  type AdminStudentListResult,
+  type AdminStudentSummary,
   type GeneratedOpaqueToken,
+  type IssuedPhonePasswordReset,
   type Permission,
+  type PendingPhoneVerification,
+  type PhonePasswordResetReference,
+  type PhonePasswordResetRequest,
+  type PhonePasswordResetStatus,
+  type PhoneVerificationStatus,
   type PublicAccount,
   type RequestAuditContext,
   type SessionSummary,

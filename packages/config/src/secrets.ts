@@ -8,6 +8,13 @@ export type EnvironmentVariables = Readonly<Record<string, string | undefined>>;
 export interface SecretResolverOptions {
   /** Directory used by Docker and systemd secret mounts. */
   readonly secretDirectory?: string;
+  /**
+   * When true, an explicitly configured NAME_FILE whose contents are empty is
+   * treated as unset (returns undefined) instead of failing validation. This
+   * lets a service start while an integration is disabled even when compose
+   * still mounts an optional secret that defaults to /dev/null.
+   */
+  readonly allowEmpty?: boolean;
 }
 
 const DEFAULT_SECRET_DIRECTORY = "/run/secrets";
@@ -60,7 +67,7 @@ function readSecretFile(name: string, filePath: string, secretDirectory: string)
   }
 }
 
-function readOptionalConventionalSecretFile(
+function readOptionalSecretFile(
   name: string,
   filePath: string,
   secretDirectory: string,
@@ -96,6 +103,9 @@ export function resolveSecret(
   const secretDirectory = options.secretDirectory ?? DEFAULT_SECRET_DIRECTORY;
   const configuredFile = environment[`${name}_FILE`];
   if (configuredFile !== undefined && configuredFile.trim() !== "") {
+    if (options.allowEmpty === true) {
+      return readOptionalSecretFile(name, configuredFile.trim(), secretDirectory);
+    }
     return readSecretFile(name, configuredFile.trim(), secretDirectory);
   }
 
@@ -105,7 +115,7 @@ export function resolveSecret(
 
   const conventionalFile = resolve(secretDirectory, name.toLowerCase());
   if (existsSync(/* turbopackIgnore: true */ conventionalFile)) {
-    return readOptionalConventionalSecretFile(name, conventionalFile, secretDirectory);
+    return readOptionalSecretFile(name, conventionalFile, secretDirectory);
   }
 
   const directValue = environment[name];

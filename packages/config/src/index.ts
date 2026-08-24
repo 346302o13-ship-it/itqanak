@@ -1,6 +1,6 @@
 import { config as loadDotenvFile } from "dotenv";
 import { existsSync } from "node:fs";
-import { dirname, join, resolve } from "node:path";
+import { dirname, isAbsolute, join, resolve } from "node:path";
 import { z } from "zod";
 
 import { ConfigError, type ConfigIssue } from "./errors.js";
@@ -26,12 +26,17 @@ export type WhatsAppMode = (typeof whatsappModes)[number];
 export const emailDeliveryModes = ["disabled", "smtp", "test"] as const;
 export type EmailDeliveryMode = (typeof emailDeliveryModes)[number];
 
+export const fileScanModes = ["disabled", "clamav"] as const;
+export type FileScanMode = (typeof fileScanModes)[number];
+
 export interface ConfigRequirements {
   readonly database?: boolean;
   readonly redis?: boolean;
   readonly sessionSecret?: boolean;
   readonly whatsappCredentials?: boolean;
   readonly authEmailPayloadKey?: boolean;
+  readonly storage?: boolean;
+  readonly fileScanning?: boolean;
 }
 
 export interface LoadConfigOptions {
@@ -54,6 +59,7 @@ export interface AppConfig {
   readonly defaultLocale: "ar" | "en";
   readonly publicAppUrl: string;
   readonly adminAppUrl: string;
+  readonly academicIntegrityVersion: string;
   readonly migrationsDirectory: string;
   readonly logLevel: LogLevel;
   readonly whatsapp: {
@@ -61,11 +67,37 @@ export interface AppConfig {
     readonly phoneNumberId?: string;
     readonly templateName?: string;
     readonly templateLanguage?: string;
+    readonly graphApiVersion: string;
+    readonly supportRecipientE164?: string;
+    readonly maxAttempts: number;
+    readonly notificationsNotBefore?: string;
   };
   readonly storage: {
     readonly driver: "local" | "s3";
-    readonly localPath?: string;
-    readonly maxUploadBytes: number;
+    readonly localPath: string;
+    readonly maxFileBytes: number;
+    readonly maxFilesPerRequest: number;
+    readonly maxTotalBytesPerRequest: number;
+    readonly s3?: {
+      readonly endpoint?: string;
+      readonly region: string;
+      readonly bucket: string;
+      readonly forcePathStyle: boolean;
+      readonly accessKeyId: string;
+      readonly secretAccessKey: string;
+    };
+  };
+  readonly fileScanning: {
+    readonly mode: FileScanMode;
+    readonly clamavHost: string;
+    readonly clamavPort: number;
+    readonly connectTimeoutMs: number;
+    readonly scanTimeoutMs: number;
+    readonly maxAttempts: number;
+  };
+  readonly operationalControls: {
+    /** Maximum staleness of the public maintenance-mode decision. */
+    readonly maintenanceCacheTtlMs: number;
   };
   readonly auth: {
     readonly studentSessionAbsoluteTtlSeconds: number;
@@ -93,6 +125,7 @@ export interface AppConfig {
   readonly sessionSecret?: string;
   readonly whatsappAppSecret?: string;
   readonly whatsappVerifyToken?: string;
+  readonly whatsappAccessToken?: string;
 }
 
 export interface SafeAppConfig {
@@ -102,10 +135,21 @@ export interface SafeAppConfig {
   readonly defaultLocale: "ar" | "en";
   readonly publicAppUrl: string;
   readonly adminAppUrl: string;
+  readonly academicIntegrityVersion: string;
   readonly migrationsDirectory: string;
   readonly logLevel: LogLevel;
   readonly whatsapp: AppConfig["whatsapp"];
-  readonly storage: AppConfig["storage"];
+  readonly storage: {
+    readonly driver: AppConfig["storage"]["driver"];
+    readonly maxFileBytes: number;
+    readonly maxFilesPerRequest: number;
+    readonly maxTotalBytesPerRequest: number;
+    readonly hasLocalPath: boolean;
+    readonly hasS3Configuration: boolean;
+  };
+  /** Intentionally exposes only the operating mode, never scanner network details. */
+  readonly fileScanning: Pick<AppConfig["fileScanning"], "mode">;
+  readonly operationalControls: AppConfig["operationalControls"];
   readonly auth: Omit<AppConfig["auth"], "emailPayloadKey" | "smtp"> & {
     readonly hasSmtpConfiguration: boolean;
   };
@@ -113,6 +157,7 @@ export interface SafeAppConfig {
   readonly hasRedisUrl: boolean;
   readonly hasSessionSecret: boolean;
   readonly hasAuthEmailPayloadKey: boolean;
+  readonly hasWhatsAppAccessToken: boolean;
 }
 
 const urlSchema = z.string().trim().url();
@@ -253,7 +298,27 @@ function hasWeakProductionMarker(value: string): boolean {
   );
 }
 
-function assertProductionSafety(config: AppConfig, issues: ConfigIssue[]): void {
+function isPrivateDockerS3Endpoint(value: string): boolean {
+  try {
+    const endpoint = new URL(value);
+    return (
+      endpoint.protocol === "http:" &&
+      endpoint.hostname === "minio" &&
+      (endpoint.port === "" || endpoint.port === "9000") &&
+      endpoint.pathname === "/" &&
+      endpoint.search === "" &&
+      endpoint.hash === ""
+    );
+  } catch {
+    return false;
+  }
+}
+
+function assertProductionSafety(
+  config: AppConfig,
+  requirements: ConfigRequirements,
+  issues: ConfigIssue[],
+): void {
   if (config.nodeEnv !== "production") {
     return;
   }
@@ -263,6 +328,25 @@ function assertProductionSafety(config: AppConfig, issues: ConfigIssue[]): void 
   }
   if (!config.adminAppUrl.startsWith("https://")) {
     pushIssue(issues, "ADMIN_APP_URL", "unsafe_production_value", "must use HTTPS in production");
+  }
+  if (requirements.fileScanning === true && config.fileScanning.mode !== "clamav") {
+    pushIssue(issues, "FILE_SCAN_MODE", "unsafe_production_value", "must be clamav in production");
+  }
+  if (requirements.storage === true && config.storage.driver !== "s3") {
+    pushIssue(issues, "STORAGE_DRIVER", "unsafe_production_value", "must be s3 in production");
+  }
+  if (
+    requirements.storage === true &&
+    config.storage.s3?.endpoint !== undefined &&
+    !config.storage.s3.endpoint.startsWith("https://") &&
+    !isPrivateDockerS3Endpoint(config.storage.s3.endpoint)
+  ) {
+    pushIssue(
+      issues,
+      "STORAGE_S3_ENDPOINT",
+      "unsafe_production_value",
+      "must use HTTPS in production when configured",
+    );
   }
 
   for (const [field, value] of [
@@ -368,18 +452,34 @@ export function loadConfig(options: LoadConfigOptions = {}): AppConfig {
   let sessionSecret: string | undefined;
   let whatsappAppSecret: string | undefined;
   let whatsappVerifyToken: string | undefined;
+  let whatsappAccessToken: string | undefined;
   let authEmailPayloadKey: string | undefined;
   let smtpPassword: string | undefined;
+  let storageS3AccessKeyId: string | undefined;
+  let storageS3SecretAccessKey: string | undefined;
   try {
     databaseUrl = resolveSecret(environment, "DATABASE_URL", { secretDirectory });
     redisUrl = resolveSecret(environment, "REDIS_URL", { secretDirectory });
     sessionSecret = resolveSecret(environment, "SESSION_SECRET", { secretDirectory });
     whatsappAppSecret = resolveSecret(environment, "WHATSAPP_APP_SECRET", { secretDirectory });
     whatsappVerifyToken = resolveSecret(environment, "WHATSAPP_VERIFY_TOKEN", { secretDirectory });
+    whatsappAccessToken = resolveSecret(environment, "WHATSAPP_ACCESS_TOKEN", {
+      secretDirectory,
+      // The token is only required when WHATSAPP_MODE is enabled (validated
+      // below). Compose mounts an intentionally empty optional secret while
+      // WhatsApp is disabled, so an empty file must not fail configuration.
+      allowEmpty: true,
+    });
     authEmailPayloadKey = resolveSecret(environment, "AUTH_EMAIL_PAYLOAD_KEY", {
       secretDirectory,
     });
     smtpPassword = resolveSecret(environment, "SMTP_PASSWORD", { secretDirectory });
+    storageS3AccessKeyId = resolveSecret(environment, "STORAGE_S3_ACCESS_KEY_ID", {
+      secretDirectory,
+    });
+    storageS3SecretAccessKey = resolveSecret(environment, "STORAGE_S3_SECRET_ACCESS_KEY", {
+      secretDirectory,
+    });
   } catch (error: unknown) {
     if (error instanceof ConfigError) {
       issues.push(...error.issues);
@@ -434,6 +534,84 @@ export function loadConfig(options: LoadConfigOptions = {}): AppConfig {
     whatsappModes,
     "disabled",
   );
+  const whatsappPhoneNumberId = environment.WHATSAPP_PHONE_NUMBER_ID?.trim();
+  const whatsappTemplateName = environment.WHATSAPP_TEMPLATE_NAME?.trim();
+  const whatsappTemplateLanguage = (environment.WHATSAPP_TEMPLATE_LANGUAGE ?? "ar").trim();
+  const whatsappGraphApiVersion = (environment.WHATSAPP_GRAPH_API_VERSION ?? "v25.0").trim();
+  const whatsappSupportRecipientE164 = environment.WHATSAPP_SUPPORT_RECIPIENT_E164?.trim();
+  const whatsappNotificationsNotBefore = environment.WHATSAPP_NOTIFICATIONS_NOT_BEFORE?.trim();
+  const whatsappMaxAttempts = parsePositiveInteger(
+    issues,
+    "WHATSAPP_MAX_ATTEMPTS",
+    environment.WHATSAPP_MAX_ATTEMPTS,
+    8,
+  );
+  if (whatsappMaxAttempts > 20) {
+    pushIssue(issues, "WHATSAPP_MAX_ATTEMPTS", "invalid", "must not exceed 20");
+  }
+  if (!/^v[0-9]{1,3}\.[0-9]{1,3}$/u.test(whatsappGraphApiVersion)) {
+    pushIssue(issues, "WHATSAPP_GRAPH_API_VERSION", "invalid", "must look like v25.0");
+  }
+  if (
+    whatsappSupportRecipientE164 !== undefined &&
+    !/^\+[1-9][0-9]{7,14}$/u.test(whatsappSupportRecipientE164)
+  ) {
+    pushIssue(
+      issues,
+      "WHATSAPP_SUPPORT_RECIPIENT_E164",
+      "invalid",
+      "must be an E.164 phone number",
+    );
+  }
+  let normalizedWhatsAppNotificationsNotBefore: string | undefined;
+  if (whatsappNotificationsNotBefore !== undefined && whatsappNotificationsNotBefore !== "") {
+    const parsed = new Date(whatsappNotificationsNotBefore);
+    if (
+      !/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d{1,3})?Z$/u.test(
+        whatsappNotificationsNotBefore,
+      ) ||
+      Number.isNaN(parsed.getTime())
+    ) {
+      pushIssue(
+        issues,
+        "WHATSAPP_NOTIFICATIONS_NOT_BEFORE",
+        "invalid",
+        "must be an RFC 3339 UTC timestamp",
+      );
+    } else {
+      normalizedWhatsAppNotificationsNotBefore = parsed.toISOString();
+    }
+  }
+  if (whatsappMode === "enabled") {
+    if (whatsappPhoneNumberId === undefined || !/^[0-9]{5,30}$/u.test(whatsappPhoneNumberId)) {
+      pushIssue(issues, "WHATSAPP_PHONE_NUMBER_ID", "missing", "is required in enabled mode");
+    }
+    if (whatsappTemplateName === undefined || !/^[a-z0-9_]{1,512}$/u.test(whatsappTemplateName)) {
+      pushIssue(issues, "WHATSAPP_TEMPLATE_NAME", "missing", "is required in enabled mode");
+    }
+    if (!/^[a-z]{2,3}(?:_[A-Z]{2})?$/u.test(whatsappTemplateLanguage)) {
+      pushIssue(issues, "WHATSAPP_TEMPLATE_LANGUAGE", "invalid", "is not a valid locale code");
+    }
+    if (whatsappSupportRecipientE164 === undefined) {
+      pushIssue(
+        issues,
+        "WHATSAPP_SUPPORT_RECIPIENT_E164",
+        "missing",
+        "is required in enabled mode",
+      );
+    }
+    if (whatsappAccessToken === undefined || whatsappAccessToken.trim().length < 20) {
+      pushIssue(issues, "WHATSAPP_ACCESS_TOKEN", "missing", "is required in enabled mode");
+    }
+    if (normalizedWhatsAppNotificationsNotBefore === undefined) {
+      pushIssue(
+        issues,
+        "WHATSAPP_NOTIFICATIONS_NOT_BEFORE",
+        "missing",
+        "is required in enabled mode to prevent historical notification delivery",
+      );
+    }
+  }
   const storageDriver = parseEnum(
     issues,
     "STORAGE_DRIVER",
@@ -441,6 +619,27 @@ export function loadConfig(options: LoadConfigOptions = {}): AppConfig {
     ["local", "s3"] as const,
     "local",
   );
+  const fileScanMode = parseEnum(
+    issues,
+    "FILE_SCAN_MODE",
+    environment.FILE_SCAN_MODE,
+    fileScanModes,
+    "disabled",
+  );
+  const maintenanceCacheTtlMs = parsePositiveInteger(
+    issues,
+    "OPERATIONAL_STATE_CACHE_TTL_MS",
+    environment.OPERATIONAL_STATE_CACHE_TTL_MS,
+    2_000,
+  );
+  if (maintenanceCacheTtlMs < 250 || maintenanceCacheTtlMs > 10_000) {
+    pushIssue(
+      issues,
+      "OPERATIONAL_STATE_CACHE_TTL_MS",
+      "invalid",
+      "must be between 250 and 10000 milliseconds",
+    );
+  }
   const emailDeliveryMode = parseEnum(
     issues,
     "EMAIL_DELIVERY_MODE",
@@ -513,6 +712,101 @@ export function loadConfig(options: LoadConfigOptions = {}): AppConfig {
     environment.SMTP_FROM_NAME,
     appName.length === 0 ? "ITQANAK" : appName,
   );
+  const storageLocalPath = parseRequiredText(
+    issues,
+    "STORAGE_LOCAL_PATH",
+    environment.STORAGE_LOCAL_PATH,
+    "/var/lib/itqanak/private-uploads",
+  );
+  const maxFileBytes = parsePositiveInteger(
+    issues,
+    "UPLOAD_MAX_FILE_BYTES",
+    environment.UPLOAD_MAX_FILE_BYTES,
+    20 * 1_024 * 1_024,
+  );
+  const maxFilesPerRequest = parsePositiveInteger(
+    issues,
+    "UPLOAD_MAX_FILES_PER_REQUEST",
+    environment.UPLOAD_MAX_FILES_PER_REQUEST,
+    10,
+  );
+  const maxTotalBytesPerRequest = parsePositiveInteger(
+    issues,
+    "UPLOAD_MAX_TOTAL_BYTES_PER_REQUEST",
+    environment.UPLOAD_MAX_TOTAL_BYTES_PER_REQUEST,
+    100 * 1_024 * 1_024,
+  );
+  if (maxFilesPerRequest > 100) {
+    pushIssue(issues, "UPLOAD_MAX_FILES_PER_REQUEST", "invalid", "must not exceed 100");
+  }
+  if (maxTotalBytesPerRequest < maxFileBytes) {
+    pushIssue(
+      issues,
+      "UPLOAD_MAX_TOTAL_BYTES_PER_REQUEST",
+      "invalid",
+      "must be at least UPLOAD_MAX_FILE_BYTES",
+    );
+  }
+  if (
+    storageDriver === "local" &&
+    (!isAbsolute(storageLocalPath) || resolve(/* turbopackIgnore: true */ storageLocalPath) === "/")
+  ) {
+    pushIssue(
+      issues,
+      "STORAGE_LOCAL_PATH",
+      "invalid",
+      "must be a safe absolute directory for local storage",
+    );
+  }
+
+  const storageS3Endpoint = parseOptionalUrl(
+    issues,
+    "STORAGE_S3_ENDPOINT",
+    environment.STORAGE_S3_ENDPOINT,
+  );
+  const storageS3Region = (environment.STORAGE_S3_REGION ?? "").trim();
+  const storageS3Bucket = (environment.STORAGE_S3_BUCKET ?? "").trim();
+  let storageS3: AppConfig["storage"]["s3"];
+  if (storageDriver === "s3") {
+    if (storageS3Region.length === 0) {
+      pushIssue(issues, "STORAGE_S3_REGION", "missing", "is required for s3 storage");
+    } else if (storageS3Region.length > 64 || !/^[a-z0-9-]+$/u.test(storageS3Region)) {
+      pushIssue(issues, "STORAGE_S3_REGION", "invalid", "must be a valid region identifier");
+    }
+    if (storageS3Bucket.length === 0) {
+      pushIssue(issues, "STORAGE_S3_BUCKET", "missing", "is required for s3 storage");
+    } else if (!/^[a-z0-9][a-z0-9.-]{1,61}[a-z0-9]$/u.test(storageS3Bucket)) {
+      pushIssue(issues, "STORAGE_S3_BUCKET", "invalid", "must be a valid private bucket name");
+    }
+    if (storageS3Endpoint !== undefined) {
+      const parsedEndpoint = new URL(storageS3Endpoint);
+      if (parsedEndpoint.protocol !== "http:" && parsedEndpoint.protocol !== "https:") {
+        pushIssue(issues, "STORAGE_S3_ENDPOINT", "invalid", "must use HTTP or HTTPS");
+      }
+      if (parsedEndpoint.username.length > 0 || parsedEndpoint.password.length > 0) {
+        pushIssue(issues, "STORAGE_S3_ENDPOINT", "invalid", "must not contain credentials");
+      }
+    }
+    if (storageS3AccessKeyId === undefined) {
+      pushIssue(issues, "STORAGE_S3_ACCESS_KEY_ID", "missing", "is required for s3 storage");
+    }
+    if (storageS3SecretAccessKey === undefined) {
+      pushIssue(issues, "STORAGE_S3_SECRET_ACCESS_KEY", "missing", "is required for s3 storage");
+    }
+    storageS3 = {
+      ...(storageS3Endpoint === undefined ? {} : { endpoint: storageS3Endpoint }),
+      region: storageS3Region,
+      bucket: storageS3Bucket,
+      forcePathStyle: parseBoolean(
+        issues,
+        "STORAGE_S3_FORCE_PATH_STYLE",
+        environment.STORAGE_S3_FORCE_PATH_STYLE,
+        false,
+      ),
+      accessKeyId: storageS3AccessKeyId ?? "",
+      secretAccessKey: storageS3SecretAccessKey ?? "",
+    };
+  }
   const auth = {
     studentSessionAbsoluteTtlSeconds,
     studentSessionIdleTtlSeconds,
@@ -574,32 +868,60 @@ export function loadConfig(options: LoadConfigOptions = {}): AppConfig {
     defaultLocale,
     publicAppUrl,
     adminAppUrl,
+    academicIntegrityVersion: parseRequiredText(
+      issues,
+      "ACADEMIC_INTEGRITY_VERSION",
+      environment.ACADEMIC_INTEGRITY_VERSION,
+      "2026-08",
+    ),
     migrationsDirectory: (environment.MIGRATIONS_DIR ?? "migrations").trim() || "migrations",
     logLevel,
     whatsapp: {
       mode: whatsappMode,
-      ...(environment.WHATSAPP_PHONE_NUMBER_ID?.trim()
-        ? { phoneNumberId: environment.WHATSAPP_PHONE_NUMBER_ID.trim() }
+      ...(whatsappPhoneNumberId ? { phoneNumberId: whatsappPhoneNumberId } : {}),
+      ...(whatsappTemplateName ? { templateName: whatsappTemplateName } : {}),
+      templateLanguage: whatsappTemplateLanguage,
+      graphApiVersion: whatsappGraphApiVersion,
+      ...(whatsappSupportRecipientE164
+        ? { supportRecipientE164: whatsappSupportRecipientE164 }
         : {}),
-      ...(environment.WHATSAPP_TEMPLATE_NAME?.trim()
-        ? { templateName: environment.WHATSAPP_TEMPLATE_NAME.trim() }
-        : {}),
-      ...(environment.WHATSAPP_TEMPLATE_LANGUAGE?.trim()
-        ? { templateLanguage: environment.WHATSAPP_TEMPLATE_LANGUAGE.trim() }
+      maxAttempts: whatsappMaxAttempts,
+      ...(normalizedWhatsAppNotificationsNotBefore
+        ? { notificationsNotBefore: normalizedWhatsAppNotificationsNotBefore }
         : {}),
     },
     storage: {
       driver: storageDriver,
-      ...(environment.STORAGE_LOCAL_PATH?.trim()
-        ? { localPath: environment.STORAGE_LOCAL_PATH.trim() }
-        : {}),
-      maxUploadBytes: parsePositiveInteger(
+      localPath: storageLocalPath,
+      maxFileBytes,
+      maxFilesPerRequest,
+      maxTotalBytesPerRequest,
+      ...(storageS3 === undefined ? {} : { s3: storageS3 }),
+    },
+    fileScanning: {
+      mode: fileScanMode,
+      clamavHost: parseRequiredText(issues, "CLAMAV_HOST", environment.CLAMAV_HOST, "clamav"),
+      clamavPort: parsePositiveInteger(issues, "CLAMAV_PORT", environment.CLAMAV_PORT, 3310),
+      connectTimeoutMs: parsePositiveInteger(
         issues,
-        "MAX_UPLOAD_BYTES",
-        environment.MAX_UPLOAD_BYTES,
-        26_214_400,
+        "CLAMAV_CONNECT_TIMEOUT_MS",
+        environment.CLAMAV_CONNECT_TIMEOUT_MS,
+        3_000,
+      ),
+      scanTimeoutMs: parsePositiveInteger(
+        issues,
+        "CLAMAV_SCAN_TIMEOUT_MS",
+        environment.CLAMAV_SCAN_TIMEOUT_MS,
+        30_000,
+      ),
+      maxAttempts: parsePositiveInteger(
+        issues,
+        "FILE_SCAN_MAX_ATTEMPTS",
+        environment.FILE_SCAN_MAX_ATTEMPTS,
+        5,
       ),
     },
+    operationalControls: { maintenanceCacheTtlMs },
     auth: {
       ...auth,
       ...(emailDeliveryMode !== "smtp" ||
@@ -626,7 +948,23 @@ export function loadConfig(options: LoadConfigOptions = {}): AppConfig {
     ...(whatsappVerifyToken === undefined || whatsappVerifyToken.length === 0
       ? {}
       : { whatsappVerifyToken }),
+    ...(whatsappAccessToken === undefined || whatsappAccessToken.length === 0
+      ? {}
+      : { whatsappAccessToken }),
   };
+
+  if (config.fileScanning.clamavPort > 65_535) {
+    pushIssue(issues, "CLAMAV_PORT", "invalid", "must be a valid TCP port");
+  }
+  if (config.fileScanning.connectTimeoutMs > 60_000) {
+    pushIssue(issues, "CLAMAV_CONNECT_TIMEOUT_MS", "invalid", "must not exceed 60000");
+  }
+  if (config.fileScanning.scanTimeoutMs > 300_000) {
+    pushIssue(issues, "CLAMAV_SCAN_TIMEOUT_MS", "invalid", "must not exceed 300000");
+  }
+  if (config.fileScanning.maxAttempts > 20) {
+    pushIssue(issues, "FILE_SCAN_MAX_ATTEMPTS", "invalid", "must not exceed 20");
+  }
 
   const requirements = options.requirements ?? {};
   if (requirements.database === true && config.databaseUrl === undefined) {
@@ -650,7 +988,7 @@ export function loadConfig(options: LoadConfigOptions = {}): AppConfig {
     pushIssue(issues, "AUTH_EMAIL_PAYLOAD_KEY", "missing", "is required by this service");
   }
 
-  assertProductionSafety(config, issues);
+  assertProductionSafety(config, requirements, issues);
   if (issues.length > 0) {
     throw new ConfigError(issues);
   }
@@ -666,10 +1004,20 @@ export function toSafeConfig(config: AppConfig): SafeAppConfig {
     defaultLocale: config.defaultLocale,
     publicAppUrl: config.publicAppUrl,
     adminAppUrl: config.adminAppUrl,
+    academicIntegrityVersion: config.academicIntegrityVersion,
     migrationsDirectory: config.migrationsDirectory,
     logLevel: config.logLevel,
     whatsapp: config.whatsapp,
-    storage: config.storage,
+    storage: {
+      driver: config.storage.driver,
+      maxFileBytes: config.storage.maxFileBytes,
+      maxFilesPerRequest: config.storage.maxFilesPerRequest,
+      maxTotalBytesPerRequest: config.storage.maxTotalBytesPerRequest,
+      hasLocalPath: config.storage.localPath.length > 0,
+      hasS3Configuration: config.storage.s3 !== undefined,
+    },
+    fileScanning: { mode: config.fileScanning.mode },
+    operationalControls: config.operationalControls,
     auth: {
       studentSessionAbsoluteTtlSeconds: config.auth.studentSessionAbsoluteTtlSeconds,
       studentSessionIdleTtlSeconds: config.auth.studentSessionIdleTtlSeconds,
@@ -687,5 +1035,6 @@ export function toSafeConfig(config: AppConfig): SafeAppConfig {
     hasRedisUrl: config.redisUrl !== undefined,
     hasSessionSecret: config.sessionSecret !== undefined,
     hasAuthEmailPayloadKey: config.auth.emailPayloadKey !== undefined,
+    hasWhatsAppAccessToken: config.whatsappAccessToken !== undefined,
   };
 }

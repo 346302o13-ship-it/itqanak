@@ -1,7 +1,7 @@
 name: itqanak
 
-# Development topology. PostgreSQL, Redis, ClamAV, and MinIO are never
-# published to the host; the gateway is the only host-facing service.
+# Development topology. PostgreSQL, Redis, optional ClamAV, and optional MinIO
+# are never published to the host; the gateway is the only host-facing service.
 x-logging: &default-logging
   driver: local
   options:
@@ -10,7 +10,7 @@ x-logging: &default-logging
 
 services:
   postgres:
-    image: postgres:17.4-alpine
+    image: postgres:17.10-alpine
     environment:
       POSTGRES_DB: itqanak
       POSTGRES_USER: itqanak
@@ -30,7 +30,7 @@ services:
     logging: *default-logging
 
   redis:
-    image: redis:7.4.2-alpine
+    image: redis:7.4.10-alpine
     command: ["redis-server", "--appendonly", "yes", "--save", "60", "1", "--loglevel", "warning"]
     volumes:
       - redis-data:/data
@@ -44,7 +44,11 @@ services:
     logging: *default-logging
 
   clamav:
-    image: clamav/clamav:1.5.3
+    profiles: ["antivirus"]
+    build:
+      context: .
+      dockerfile: infra/docker/Dockerfile.clamav
+    init: true
     volumes:
       - clamav-data:/var/lib/clamav
     networks:
@@ -56,13 +60,24 @@ services:
       timeout: 10s
       retries: 20
       start_period: 120s
+    restart: unless-stopped
+    read_only: true
+    tmpfs:
+      - /tmp:rw,noexec,nosuid,size=128m
+      - /var/log/clamav:rw,noexec,nosuid,size=32m,uid=100,gid=101,mode=0750
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    mem_limit: 2g
+    pids_limit: 256
     logging: *default-logging
 
   # Local object storage is deliberately opt-in. Export non-committed
   # MINIO_ROOT_USER and MINIO_ROOT_PASSWORD before enabling this profile.
   minio:
     profiles: ["storage"]
-    image: minio/minio:RELEASE.2025-02-18T16-25-55Z
+    image: minio/minio:RELEASE.2025-09-07T16-13-09Z
     entrypoint: ["/bin/sh", "/etc/itqanak/minio-entrypoint.sh"]
     volumes:
       - minio-data:/data
@@ -78,6 +93,30 @@ services:
       interval: 10s
       timeout: 3s
       retries: 20
+    logging: *default-logging
+
+  minio-init:
+    profiles: ["storage"]
+    image: minio/mc:RELEASE.2025-08-13T08-35-41Z
+    entrypoint: ["/bin/sh", "-ec"]
+    command:
+      - |
+        : "$${MINIO_ROOT_USER:?Set MINIO_ROOT_USER before enabling the storage profile}"
+        : "$${MINIO_ROOT_PASSWORD:?Set MINIO_ROOT_PASSWORD before enabling the storage profile}"
+        : "$${MINIO_BUCKET:?Set MINIO_BUCKET before enabling the storage profile}"
+        mc alias set itqanak-local http://minio:9000 "$${MINIO_ROOT_USER}" "$${MINIO_ROOT_PASSWORD}"
+        mc mb --ignore-existing "itqanak-local/$${MINIO_BUCKET}"
+        mc anonymous set none "itqanak-local/$${MINIO_BUCKET}"
+    environment:
+      MINIO_ROOT_USER:
+      MINIO_ROOT_PASSWORD:
+      MINIO_BUCKET: ${STORAGE_S3_BUCKET:-itqanak-private}
+    depends_on:
+      minio:
+        condition: service_healthy
+    networks:
+      - backend
+    restart: "no"
     logging: *default-logging
 
   # Development-only SMTP sink. It is opt-in, exposes only its inbox UI on
@@ -153,6 +192,7 @@ services:
       # form-action remain same-origin in development.
       PUBLIC_APP_URL: ${PUBLIC_APP_URL:-http://127.0.0.1:8080}
       ADMIN_APP_URL: ${ADMIN_APP_URL:-http://127.0.0.1:8080/ar/admin}
+      ACADEMIC_INTEGRITY_VERSION: ${ACADEMIC_INTEGRITY_VERSION:-2026-08}
       AUTH_STUDENT_SESSION_ABSOLUTE_TTL_SECONDS: ${AUTH_STUDENT_SESSION_ABSOLUTE_TTL_SECONDS:-2592000}
       AUTH_STUDENT_SESSION_IDLE_TTL_SECONDS: ${AUTH_STUDENT_SESSION_IDLE_TTL_SECONDS:-604800}
       AUTH_ADMIN_SESSION_ABSOLUTE_TTL_SECONDS: ${AUTH_ADMIN_SESSION_ABSOLUTE_TTL_SECONDS:-43200}
@@ -170,10 +210,28 @@ services:
       SMTP_FROM_ADDRESS: ${SMTP_FROM_ADDRESS:-}
       AUTH_EMAIL_PAYLOAD_KEY: ${AUTH_EMAIL_PAYLOAD_KEY:-}
       SMTP_PASSWORD: ${SMTP_PASSWORD:-}
+      STORAGE_DRIVER: ${STORAGE_DRIVER:-local}
+      STORAGE_LOCAL_PATH: /var/lib/itqanak/private-uploads
+      STORAGE_S3_ENDPOINT: ${STORAGE_S3_ENDPOINT:-}
+      STORAGE_S3_REGION: ${STORAGE_S3_REGION:-}
+      STORAGE_S3_BUCKET: ${STORAGE_S3_BUCKET:-}
+      STORAGE_S3_FORCE_PATH_STYLE: ${STORAGE_S3_FORCE_PATH_STYLE:-true}
+      STORAGE_S3_ACCESS_KEY_ID: ${STORAGE_S3_ACCESS_KEY_ID:-}
+      STORAGE_S3_SECRET_ACCESS_KEY: ${STORAGE_S3_SECRET_ACCESS_KEY:-}
+      UPLOAD_MAX_FILE_BYTES: ${UPLOAD_MAX_FILE_BYTES:-20971520}
+      UPLOAD_MAX_FILES_PER_REQUEST: ${UPLOAD_MAX_FILES_PER_REQUEST:-10}
+      UPLOAD_MAX_TOTAL_BYTES_PER_REQUEST: ${UPLOAD_MAX_TOTAL_BYTES_PER_REQUEST:-104857600}
+      FILE_SCAN_MODE: ${FILE_SCAN_MODE:-disabled}
+      CLAMAV_HOST: clamav
+      CLAMAV_PORT: "3310"
+      CLAMAV_CONNECT_TIMEOUT_MS: ${CLAMAV_CONNECT_TIMEOUT_MS:-3000}
+      CLAMAV_SCAN_TIMEOUT_MS: ${CLAMAV_SCAN_TIMEOUT_MS:-30000}
+      FILE_SCAN_MAX_ATTEMPTS: ${FILE_SCAN_MAX_ATTEMPTS:-5}
     volumes:
       - ./:/workspace
       - pnpm-store:/pnpm/store
       - root-node-modules:/workspace/node_modules
+      - private-uploads:/var/lib/itqanak/private-uploads
     depends_on:
       migrate:
         condition: service_completed_successfully
@@ -214,6 +272,7 @@ services:
       MIGRATIONS_DIR: /workspace/migrations
       PUBLIC_APP_URL: ${PUBLIC_APP_URL:-http://127.0.0.1:8080}
       ADMIN_APP_URL: ${ADMIN_APP_URL:-http://127.0.0.1:8080/ar/admin}
+      ACADEMIC_INTEGRITY_VERSION: ${ACADEMIC_INTEGRITY_VERSION:-2026-08}
       AUTH_STUDENT_SESSION_ABSOLUTE_TTL_SECONDS: ${AUTH_STUDENT_SESSION_ABSOLUTE_TTL_SECONDS:-2592000}
       AUTH_STUDENT_SESSION_IDLE_TTL_SECONDS: ${AUTH_STUDENT_SESSION_IDLE_TTL_SECONDS:-604800}
       AUTH_ADMIN_SESSION_ABSOLUTE_TTL_SECONDS: ${AUTH_ADMIN_SESSION_ABSOLUTE_TTL_SECONDS:-43200}
@@ -231,10 +290,28 @@ services:
       SMTP_FROM_ADDRESS: ${SMTP_FROM_ADDRESS:-}
       AUTH_EMAIL_PAYLOAD_KEY: ${AUTH_EMAIL_PAYLOAD_KEY:-}
       SMTP_PASSWORD: ${SMTP_PASSWORD:-}
+      STORAGE_DRIVER: ${STORAGE_DRIVER:-local}
+      STORAGE_LOCAL_PATH: /var/lib/itqanak/private-uploads
+      STORAGE_S3_ENDPOINT: ${STORAGE_S3_ENDPOINT:-}
+      STORAGE_S3_REGION: ${STORAGE_S3_REGION:-}
+      STORAGE_S3_BUCKET: ${STORAGE_S3_BUCKET:-}
+      STORAGE_S3_FORCE_PATH_STYLE: ${STORAGE_S3_FORCE_PATH_STYLE:-true}
+      STORAGE_S3_ACCESS_KEY_ID: ${STORAGE_S3_ACCESS_KEY_ID:-}
+      STORAGE_S3_SECRET_ACCESS_KEY: ${STORAGE_S3_SECRET_ACCESS_KEY:-}
+      UPLOAD_MAX_FILE_BYTES: ${UPLOAD_MAX_FILE_BYTES:-20971520}
+      UPLOAD_MAX_FILES_PER_REQUEST: ${UPLOAD_MAX_FILES_PER_REQUEST:-10}
+      UPLOAD_MAX_TOTAL_BYTES_PER_REQUEST: ${UPLOAD_MAX_TOTAL_BYTES_PER_REQUEST:-104857600}
+      FILE_SCAN_MODE: ${FILE_SCAN_MODE:-disabled}
+      CLAMAV_HOST: clamav
+      CLAMAV_PORT: "3310"
+      CLAMAV_CONNECT_TIMEOUT_MS: ${CLAMAV_CONNECT_TIMEOUT_MS:-3000}
+      CLAMAV_SCAN_TIMEOUT_MS: ${CLAMAV_SCAN_TIMEOUT_MS:-30000}
+      FILE_SCAN_MAX_ATTEMPTS: ${FILE_SCAN_MAX_ATTEMPTS:-5}
     volumes:
       - ./:/workspace
       - pnpm-store:/pnpm/store
       - root-node-modules:/workspace/node_modules
+      - private-uploads:/var/lib/itqanak/private-uploads
     depends_on:
       migrate:
         condition: service_completed_successfully
@@ -260,7 +337,7 @@ services:
       context: .
       dockerfile: infra/nginx/Dockerfile
     ports:
-      - "127.0.0.1:8080:8080"
+      - "127.0.0.1:${ITQANAK_GATEWAY_HOST_PORT:-8080}:8080"
     depends_on:
       web:
         condition: service_healthy
@@ -298,5 +375,6 @@ volumes:
   redis-data:
   clamav-data:
   minio-data:
+  private-uploads:
   pnpm-store:
   root-node-modules:

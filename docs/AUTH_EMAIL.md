@@ -60,10 +60,19 @@ Open the loopback inbox, complete a registration with a disposable
 link/token into a terminal or ticket. After the check, return to
 `EMAIL_DELIVERY_MODE=disabled` and recreate the web/worker services.
 
-With that same Mailpit stack running, `pnpm test:auth-e2e` automates registration,
-verification, login, reset, fresh login, and revoke-all against disposable local
-data. It reads the local Mailpit API only in memory and disables Playwright traces
-so one-time links are not retained as artifacts.
+Mailpit remains a manual exercise for legacy email verification and password recovery.
+The current `pnpm test:auth-e2e` suite instead exercises phone-first registration and
+audited manual WhatsApp confirmation through the administrator UI. It deliberately
+refuses to run unless a local gateway and PostgreSQL container belong to an explicitly
+named disposable `e2e`/`test` Compose project; see the CI job for the complete environment.
+Email token behavior remains covered by service-level unit and isolated integration tests,
+where one-time links are never retained in Playwright artifacts.
+
+Public phone-first student registration requires both an email address and a supported mobile
+number. The email is normalized and stored as a unique contact/login identity, but it is not an
+activation factor and no verification email is queued. The account remains
+`PENDING_VERIFICATION` until an administrator confirms the registered WhatsApp number. The
+email-verification flow described above is retained only for legacy email-only identities.
 
 ## Production secrets
 

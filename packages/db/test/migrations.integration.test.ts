@@ -8,7 +8,7 @@ import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { closeDatabase, createDatabase } from "../src/database.js";
 import { getSchemaStatus, MigrationError, runMigrations } from "../src/migrations.js";
 
-const integrationDatabaseUrl = process.env.TEST_DATABASE_URL ?? process.env.DATABASE_URL;
+const integrationDatabaseUrl = process.env.TEST_DATABASE_URL;
 const integrationDescribe = integrationDatabaseUrl === undefined ? describe.skip : describe;
 
 function identifier(prefix: string): string {
@@ -36,6 +36,23 @@ integrationDescribe("Migration Runner", () => {
 
   afterAll(async () => {
     if (database !== undefined) {
+      await database.unsafe(`
+        DO $cleanup$
+        DECLARE target record;
+        BEGIN
+          FOR target IN
+            SELECT tablename FROM pg_tables
+            WHERE schemaname = 'public'
+              AND (
+                tablename ~ '^(checksum|concurrent|migration)_probe_[0-9a-f]{16}$'
+                OR tablename ~ '^schema_migrations_test_[0-9a-f]{16}$'
+              )
+          LOOP
+            EXECUTE format('DROP TABLE public.%I', target.tablename);
+          END LOOP;
+        END
+        $cleanup$;
+      `);
       await closeDatabase(database);
     }
   });

@@ -1,64 +1,226 @@
-import { BrandMark, StatusChip, Surface } from "@itqanak/ui";
-import Link from "next/link";
+import type { Metadata } from "next";
 
-const nextSteps = [
-  "بنية آمنة قابلة للتوسع",
-  "خدمات تعليمية ملتزمة بالنزاهة الأكاديمية",
-  "تجربة عربية أولاً مع جاهزية للإنجليزية",
-];
+import { LandingPage, type LandingPageCopy } from "@/components/marketing";
+import { PublicShell } from "@/components/public-shell";
+import { createContentRuntime } from "@/lib/content-runtime";
 
-export default function ArabicLandingPage() {
+export const metadata: Metadata = {
+  title: "إتقانك | دعم تعليمي بوضوح وثقة",
+  description:
+    "استعرض خدمات إتقانك التعليمية، أرسل طلبك بأمان، وتابع حالته وملفاته من بوابة طالب عربية واضحة.",
+  alternates: { canonical: "/ar", languages: { "ar-SA": "/ar", en: "/en" } },
+  openGraph: {
+    title: "إتقانك | دعم تعليمي بوضوح وثقة",
+    description: "خدمات تعليمية مشروعة، طلبات خاصة، ومتابعة واضحة من مكان واحد.",
+    locale: "ar_SA",
+    type: "website",
+    url: "/ar",
+    images: [{ url: "/images/itqanak-hero-v2.png", alt: "منصة إتقانك للدعم التعليمي" }],
+  },
+};
+export const dynamic = "force-dynamic";
+
+const landingCopy = {
+  hero: {
+    eyebrow: "منصتك من الطلب إلى المتابعة",
+    title: "دعم تعليمي منظّم،",
+    highlightedTitle: "بتجربة أوضح.",
+    description:
+      "اختر الخدمة المناسبة، أرسل تفاصيل احتياجك وملفاتك بأمان، ثم تابع كل تحديث من بوابة واحدة مصممة لتبقيك على اطلاع.",
+    status: "الخدمات متاحة",
+    primaryLabel: "استعرض الخدمات",
+    whatsappLabel: "اسألنا عبر واتساب",
+    whatsappMessage: "مرحباً، أود معرفة الخدمة التعليمية الأنسب لاحتياجي في منصة إتقانك.",
+    imageAlt: "تصميم تجريدي يعرض حاسوباً وملفات محمية ومحادثة صوتية ترمز لمتابعة الطلب التعليمي",
+  },
+  trustItems: [
+    {
+      icon: "shield",
+      title: "طلب خاص وآمن",
+      description: "تفاصيل طلبك وملفاتك لا تظهر إلا لك وللفريق المخوّل.",
+    },
+    {
+      icon: "route",
+      title: "متابعة خطوة بخطوة",
+      description: "حالة واضحة وسجل مرتب لكل تحديث يطرأ على طلبك.",
+    },
+    {
+      icon: "message",
+      title: "دعم قريب منك",
+      description: "تواصل مباشر عبر واتساب لمساعدتك في اختيار الخدمة.",
+    },
+  ],
+  services: {
+    eyebrow: "خدمات تناسب احتياجك",
+    title: "خبرات تعليمية وعملية في مكان واحد",
+    description:
+      "خدمات مشروعة تساعدك على تحسين عملك وفهمه وتقديمه بصورة أفضل، مع بقاء المحتوى الأكاديمي ومسؤوليته لك.",
+    items: [
+      {
+        icon: "translate",
+        title: "الترجمة",
+        description: "ترجمة بشرية واضحة للمستندات مع الحفاظ على المعنى والتنسيق الأساسي.",
+        slug: "document-translation",
+      },
+      {
+        icon: "palette",
+        title: "التصميم والعروض",
+        description: "تنظيم بصري وقوالب متناسقة تجعل المحتوى أسهل قراءة وأكثر حضوراً.",
+        slug: "presentation-visual-design",
+      },
+      {
+        icon: "document",
+        title: "التنسيق والمراجعة",
+        description: "مراجعة لغوية وتنسيق احترافي للنصوص والمستندات التي أعددتها.",
+        slug: "document-formatting-review",
+      },
+      {
+        icon: "code",
+        title: "الدعم التقني",
+        description: "تشخيص المشكلة وشرح خطوات عملية وآمنة تساعدك على معالجتها.",
+        slug: "technical-consultation",
+      },
+      {
+        icon: "compass",
+        title: "الإرشاد البحثي",
+        description: "توجيه منهجي لتطوير خطة البحث وفهم الخيارات والمصادر المناسبة.",
+        slug: "research-method-guidance",
+      },
+      {
+        icon: "training",
+        title: "التدريب والشرح",
+        description: "جلسات تعليمية تفاعلية تركّز على الفهم وبناء مهارة مستقلة.",
+        slug: "guided-learning-session",
+      },
+    ],
+    itemCta: "اكتشف الخدمة",
+    allCta: "عرض جميع الخدمات",
+  },
+  process: {
+    eyebrow: "رحلة بسيطة وواضحة",
+    title: "ثلاث خطوات تفصل بين احتياجك وبداية المتابعة",
+    description:
+      "صممنا رحلة الطلب لتكون قصيرة ومفهومة، مع مساحة كافية لشرح المطلوب وإرفاق ما يساعد الفريق على فهمه.",
+    steps: [
+      {
+        title: "اختر خدمتك",
+        description: "استعرض تفاصيل الخدمات وحدد الأقرب إلى النتيجة التي تريد الوصول إليها.",
+      },
+      {
+        title: "أرسل التفاصيل",
+        description: "أنشئ طلباً، اشرح المطلوب، وأضف الموعد والملفات ذات الصلة عند الحاجة.",
+      },
+      {
+        title: "تابع التحديثات",
+        description: "ارجع إلى بوابتك في أي وقت لمعرفة الحالة ومراجعة سجل الطلب وملفاته.",
+      },
+    ],
+  },
+  portal: {
+    eyebrow: "كل طلب في مكانه",
+    title: "بوابة تمنحك الصورة الكاملة، دون تشتيت",
+    description:
+      "من لحظة حفظ المسودة إلى آخر تحديث، تبقى بيانات الطلب وحالته وملفاته مجتمعة في صفحة واحدة سهلة الرجوع إليها.",
+    points: [
+      "رقم واضح لكل طلب لسهولة الرجوع والمتابعة.",
+      "حالات مفهومة توضّح أين وصل الطلب وما إذا كان يحتاج إجراءك.",
+      "سجل زمني يحفظ التحديثات المهمة بالترتيب.",
+      "مرفقات خاصة تمر عبر ضوابط تخزين وفحص محددة.",
+    ],
+    cta: "دخول بوابة الطالب",
+  },
+  why: {
+    eyebrow: "لماذا إتقانك؟",
+    title: "تجربة صُممت حول الوضوح والخصوصية",
+    description:
+      "لا نكتفي بعرض خدمة؛ بل ننظم رحلة الطلب كاملة حتى تعرف ما أرسلته وما الذي تغيّر ومتى.",
+    items: [
+      {
+        icon: "lock",
+        title: "خصوصية حقيقية",
+        description: "طلباتك ومرفقاتك محمية بصلاحيات وصول مرتبطة بحسابك.",
+      },
+      {
+        icon: "files",
+        title: "ملفات منظمة",
+        description: "كل ملف مرتبط بطلبه مع حالة تخزين وفحص واضحة.",
+      },
+      {
+        icon: "route",
+        title: "حالات مفهومة",
+        description: "لغة واضحة تساعدك على معرفة المرحلة الحالية بسرعة.",
+      },
+      {
+        icon: "headphones",
+        title: "دعم بشري",
+        description: "قناة واتساب مباشرة عندما تحتاج مساعدة قبل إنشاء الطلب.",
+      },
+    ],
+  },
+  integrity: {
+    eyebrow: "تعلم مسؤول",
+    title: "النزاهة الأكاديمية جزء من الخدمة",
+    description:
+      "نساعد في الشرح والمراجعة والتنسيق والإرشاد والتطوير المشروع، ولا نقدم خدمات انتحال الشخصية أو أداء الاختبارات أو تجاوز أنظمة المؤسسة التعليمية.",
+    commitment:
+      "تبقى الأفكار والنتائج والعمل الأكاديمي المقيم مسؤولية الطالب، وتعمل خدماتنا على دعم الفهم وتحسين طريقة العرض.",
+  },
+  faq: {
+    eyebrow: "أسئلة شائعة",
+    title: "إجابات سريعة قبل أن تبدأ",
+    description: "هذه أبرز الأسئلة عن الطلب والملفات والتواصل. ويمكنك سؤالنا مباشرة عند الحاجة.",
+    items: [
+      {
+        question: "كيف أختار الخدمة المناسبة؟",
+        answer:
+          "اقرأ وصف كل خدمة والنتيجة التي تغطيها. إذا كان احتياجك يجمع أكثر من جانب أو لم تجد الخيار الواضح، تواصل معنا عبر واتساب وسنساعدك في توجيه الطلب.",
+      },
+      {
+        question: "هل تظهر أسعار الخدمات على المنصة؟",
+        answer:
+          "لا نعرض أسعاراً عامة؛ لأن نطاق كل طلب وملفاته وموعده قد تختلف. يمكنك إرسال تفاصيل احتياجك أو الاستفسار عبر واتساب قبل البدء.",
+      },
+      {
+        question: "هل يمكنني إرفاق ملفات مع الطلب؟",
+        answer:
+          "نعم، عندما تسمح الخدمة بذلك. تعرض صفحة الخدمة ما إذا كانت تقبل ملفات، وتظهر في بوابة الطلب حالة كل ملف بعد رفعه.",
+      },
+      {
+        question: "من يستطيع رؤية طلبي وملفاتي؟",
+        answer:
+          "الطلب خاص بصاحب الحساب، ولا تصل إليه إلا الحسابات المخوّلة بتنفيذ العمل أو إدارته ضمن المنصة.",
+      },
+      {
+        question: "ما الطلبات التي لا تقبلها إتقانك؟",
+        answer:
+          "لا نقبل دخول حسابات الغير أو أداء الاختبارات والواجبات المقيمة نيابة عن الطالب أو أي طلب يهدف إلى الغش أو انتحال العمل الأكاديمي.",
+      },
+    ],
+    supportTitle: "لم تجد إجابتك؟",
+    supportDescription: "اكتب لنا احتياجك باختصار وسنساعدك في تحديد نقطة البداية.",
+    whatsappLabel: "تحدث مع الدعم",
+  },
+  finalCta: {
+    eyebrow: "ابدأ عندما تكون جاهزاً",
+    title: "حوّل احتياجك إلى طلب واضح يمكن متابعته",
+    description:
+      "استعرض الخدمات أولاً، أو أرسل لنا سؤالك عبر واتساب إذا كنت تحتاج مساعدة في الاختيار.",
+    primaryLabel: "ابدأ من الخدمات",
+    whatsappLabel: "اسأل عبر واتساب",
+  },
+} satisfies LandingPageCopy;
+
+export default async function ArabicLandingPage() {
+  const runtime = await createContentRuntime();
+  let contentBlocks;
+  try {
+    contentBlocks = await runtime.content.listPublishedBlocks("LANDING");
+  } finally {
+    await runtime.close();
+  }
   return (
-    <main className="mx-auto flex min-h-screen max-w-6xl items-center px-5 py-12 sm:px-8">
-      <Surface className="w-full overflow-hidden p-0">
-        <div className="grid lg:grid-cols-[1.3fr_0.7fr]">
-          <section className="p-7 sm:p-12">
-            <div className="mb-10 flex items-center gap-3">
-              <BrandMark />
-              <span className="text-xl font-extrabold tracking-tight">إتقانك</span>
-              <StatusChip tone="warning">قيد إعادة البناء</StatusChip>
-            </div>
-            <p className="mb-3 text-sm font-bold text-[var(--itq-color-brand-700)]">ITQANAK</p>
-            <h1 className="max-w-2xl text-4xl font-black leading-[1.25] tracking-tight sm:text-5xl">
-              نعيد بناء تجربة تعليمية أكثر أماناً ووضوحاً.
-            </h1>
-            <p className="mt-6 max-w-xl text-lg leading-8 text-[var(--itq-color-muted)]">
-              نعمل حالياً على منصة جديدة لخدمات الشرح، المراجعة، التدريب، الترجمة، والتوجيه البحثي
-              ضمن سياسة واضحة للنزاهة الأكاديمية.
-            </p>
-            <ul className="mt-9 grid gap-3" aria-label="مزايا المنصة القادمة">
-              {nextSteps.map((item) => (
-                <li key={item} className="flex items-center gap-3 text-sm font-bold">
-                  <span
-                    aria-hidden="true"
-                    className="size-2 rounded-full bg-[var(--itq-color-brand-600)]"
-                  />
-                  {item}
-                </li>
-              ))}
-            </ul>
-          </section>
-          <aside className="bg-[var(--itq-color-brand-700)] p-7 text-white sm:p-12">
-            <p className="text-sm font-bold text-[var(--itq-color-brand-100)]">مرحلة التأسيس</p>
-            <h2 className="mt-4 text-2xl font-black leading-9">الخدمة ستتوفر قريباً.</h2>
-            <p className="mt-5 leading-7 text-[var(--itq-color-brand-100)]">
-              لا نقبل طلبات أو ملفات أو بيانات شخصية خلال فترة إعادة البناء.
-            </p>
-            <a
-              className="mt-10 inline-flex rounded-xl border border-white/35 px-4 py-3 text-sm font-bold transition hover:bg-white/10"
-              href="mailto:info@itqanqhelpstudent.online"
-            >
-              تواصل معنا
-            </a>
-            <Link
-              className="mt-4 inline-flex rounded-xl bg-white px-4 py-3 text-sm font-bold text-[var(--itq-color-brand-700)] transition hover:bg-[var(--itq-color-brand-50)]"
-              href="/ar/auth/login"
-            >
-              دخول الحساب
-            </Link>
-          </aside>
-        </div>
-      </Surface>
-    </main>
+    <PublicShell active="home" locale="ar">
+      <LandingPage contentBlocks={contentBlocks} copy={landingCopy} locale="ar" />
+    </PublicShell>
   );
 }

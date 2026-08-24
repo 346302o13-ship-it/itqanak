@@ -12,7 +12,7 @@ export default defineConfig({
   },
   projects: [{ name: "chromium", use: { ...devices["Desktop Chrome"] } }],
   webServer: {
-    command: `PORT=${port} HOSTNAME=127.0.0.1 VERIFY_SCHEMA_ON_STARTUP=false node apps/web/.next/standalone/apps/web/server.js`,
+    command: `PORT=${port} HOSTNAME=127.0.0.1 PUBLIC_APP_URL=http://127.0.0.1:${port} ADMIN_APP_URL=http://127.0.0.1:${port} VERIFY_SCHEMA_ON_STARTUP=false node apps/web/.next/standalone/apps/web/server.js`,
     port,
     reuseExistingServer: process.env.CI !== "true",
     timeout: 60_000,

@@ -2,7 +2,9 @@ import { describe, expect, it } from "vitest";
 
 import {
   assertCsrfToken,
+  assertExpectedFormContentLength,
   assertExpectedFormContentType,
+  assertExpectedRawUploadContentType,
   assertTrustedHost,
   assertTrustedOrigin,
   CsrfError,
@@ -58,5 +60,21 @@ describe("CSRF request validation", () => {
     ).not.toThrow();
     expect(() => assertExpectedFormContentType("application/json")).toThrow(CsrfError);
     expect(() => assertExpectedFormContentType(null)).toThrow(CsrfError);
+  });
+
+  it("rejects missing, malformed, or oversized protected form bodies before parsing", () => {
+    expect(() => assertExpectedFormContentLength("1024")).not.toThrow();
+    expect(() => assertExpectedFormContentLength(null)).toThrow(CsrfError);
+    expect(() => assertExpectedFormContentLength("unknown")).toThrow(CsrfError);
+    expect(() => assertExpectedFormContentLength(String(64 * 1_024 + 1))).toThrow(CsrfError);
+  });
+
+  it("accepts only a raw media type for the streaming upload protocol", () => {
+    expect(() => assertExpectedRawUploadContentType("application/pdf")).not.toThrow();
+    expect(() => assertExpectedRawUploadContentType("image/png; charset=binary")).not.toThrow();
+    expect(() => assertExpectedRawUploadContentType("multipart/form-data; boundary=x")).toThrow(
+      CsrfError,
+    );
+    expect(() => assertExpectedRawUploadContentType(null)).toThrow(CsrfError);
   });
 });

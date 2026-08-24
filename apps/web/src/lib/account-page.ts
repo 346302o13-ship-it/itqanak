@@ -3,16 +3,25 @@ import { redirect } from "next/navigation";
 
 import { currentPrincipal } from "./auth-runtime";
 
-export async function requirePagePrincipal(next: string): Promise<AuthenticatedPrincipal> {
+export async function requirePagePrincipal(
+  next: string,
+  locale: "ar" | "en" = "ar",
+): Promise<AuthenticatedPrincipal> {
   const principal = await currentPrincipal();
   if (principal === undefined) {
-    redirect(`/ar/auth/login?next=${encodeURIComponent(next)}`);
+    redirect(`/${locale}/auth/login?next=${encodeURIComponent(next)}`);
   }
   return principal;
 }
 
 export function formatArabicDate(value: Date): string {
   return new Intl.DateTimeFormat("ar-SA", { dateStyle: "medium", timeStyle: "short" }).format(
+    value,
+  );
+}
+
+export function formatEnglishDate(value: Date): string {
+  return new Intl.DateTimeFormat("en-GB", { dateStyle: "medium", timeStyle: "short" }).format(
     value,
   );
 }

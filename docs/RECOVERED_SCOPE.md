@@ -1,81 +1,149 @@
 # Recovered product scope
 
-This document preserves the recovered requirements of the previous ITQANAK platform so a future host loss cannot erase product knowledge. It is a scope record, not evidence that every item is implemented. Phase 2 now implements the initial account and authorization slice described below.
+This document preserves recovered requirements so a host loss cannot erase product
+knowledge. It distinguishes current implementation from future scope; a listed future item
+is not evidence that its UI, API or provider integration exists.
 
-## Product, localization, and roles
+## Product, localization and roles
 
-- Product name: **ITQANAK — إتقانك**.
-- Arabic RTL is the primary language; English must be addable without redesign.
+- Product: **ITQANAK — إتقانك**.
+- Arabic RTL is primary; English must remain addable without redesign.
 - Historical public domain: `itqanqhelpstudent.online`.
 - Historical administrative domain: `admin.itqanqhelpstudent.online`.
-- Historical administration route: `/ar/admin`.
+- Administrative route: `/ar/admin`.
 - Roles: `VISITOR`, `STUDENT`, `ADMIN`, `SYSTEM`.
-- Recovered stack: Next.js, TypeScript, pnpm, Turborepo, PostgreSQL, Redis, Docker Compose, ClamAV, a Web app, a Worker, Core/DB/Auth shared packages.
-- Recovered service names: postgres, redis, clamav, file-storage-init, web, worker. The new stack replaces `file-storage-init` with an explicit storage boundary and optional MinIO development profile.
+- Stack: Next.js, TypeScript, pnpm/Turborepo, PostgreSQL, Redis, Docker Compose, ClamAV,
+  Web/Worker and shared Core/DB/Auth/Catalog/Requests/Storage packages.
 
-## Public site
+The replacement uses an explicit private storage port. Development has a shared local
+volume and opt-in MinIO profile; production configuration requires an external
+S3-compatible private bucket.
 
-The future public site includes an Arabic landing page, services and categories, informational pages, FAQ, privacy policy, terms and conditions, academic integrity policy, contact form, CMS-managed content, SEO metadata, sitemap and robots, plus English localization. Phase 1 supplies a temporary Arabic landing page and the metadata/sitemap/robots seams only.
+## Public site and catalog
 
-## Student account
+Phase 3 implements Arabic service-category listing and service details at `/ar/services`,
+with active-only queries, catalog pricing metadata, semantic Arabic pages, canonical/
+OpenGraph metadata and active service sitemap entries. An explicit development/test seed
+provides legitimate sample services and refuses production.
 
-Email registration/verification, sign-in/out, password recovery, session management,
-display-name profile, recorded Terms/Privacy consent, and a security audit trail
-are implemented in Phase 2. Preferences and email-change flows remain later work.
-Sessions and tokens are never stored in `localStorage`.
+Future public content still includes a complete landing experience, FAQ, privacy, terms,
+academic-integrity and contact pages, CMS-managed content, English localization and wider
+content SEO. Catalog base price is informational; quote/invoice/payment behavior is not
+implemented.
 
-## Service requests
+## Student account and portal
 
-A student request will eventually contain a human-readable request number, service type, category/subcategory, short title, detailed description, deadline, urgency, budget or estimated price, university/study level where needed, language, attached files, privacy choice, required consents, and a `submissionKey` to prevent browser double-submit.
+Phase 2 implements registration/verification, sign-in/out, recovery, server-managed session
+management, display-name profile, Terms/Privacy acceptance, RBAC and security audit. Tokens
+and sessions never use `localStorage`.
 
-The extensible lifecycle is `DRAFT`, `SUBMITTED`, `UNDER_REVIEW`, `WAITING_FOR_STUDENT`, `QUOTED`, `ACCEPTED`, `IN_PROGRESS`, `DELIVERED`, `REVISION_REQUESTED`, `COMPLETED`, `CANCELLED`, and `REJECTED`. The exact legal transitions are centralized in the Core state machine, never scattered through the UI.
+Phase 3 implements `/ar/student` dashboard counts/recent requests, server-side request
+search/filter/sort/pagination, new draft and request detail/history. Email change and richer
+preferences remain later work.
 
-## Administration
+## Service requests — implemented in Phase 3
 
-The administrative dashboard will have Cloudflare Access as a future outer boundary and `ADMIN` authorization inside the application. Planned functions:
+Each request has a human number, internal UUID, owning student, active service, title,
+description, deadline, urgency, optional budget/currency, language, academic level,
+institution, privacy choice, policy acceptance/version, timestamps and optimistic version.
 
-- overview dashboard, students, requests, team assignment, overdue tracking;
-- request conversations and attachments;
-- notifications, consents, services/prices, CMS content, and financial flows;
-- immutable-from-UI audit trail;
-- search, filters, pagination, exports with explicit permissions; and
-- logs that do not expose sensitive data.
+Creation uses a per-student UUID `submissionKey` plus payload fingerprint, so identical
+retries return one request and changed reuse conflicts. Students can save/edit drafts, add or
+remove eligible attachments, submit complete requests and cancel `DRAFT`/`SUBMITTED`.
+Ownership predicates and RBAC prevent IDOR; stale versions fail rather than overwrite.
 
-## Request conversation
+The centralized lifecycle is:
 
-One request-scoped conversation supports `TEXT`, `IMAGE`, `AUDIO`, `FILE`, and `SYSTEM` messages. Each message has sender, creation time, delivery state, student/admin read states, attachments, and system events. Authorization must prevent users from reading another request or bypassing access via direct attachment links. It must work over polling or SSE; WebSockets are optional later, not the sole delivery design.
+`DRAFT`, `SUBMITTED`, `UNDER_REVIEW`, `WAITING_FOR_STUDENT`, `QUOTED`, `ACCEPTED`,
+`IN_PROGRESS`, `DELIVERED`, `REVISION_REQUESTED`, `COMPLETED`, `CANCELLED`, `REJECTED`.
 
-## Files
+Only student Phase 3 transitions have routes today. Administrative review, assignment,
+quotes, execution, delivery and completion come later. Typed request events are append-only;
+important domain events share the existing transactional outbox, and sensitive actions
+enter the audit ledger.
 
-Storage is abstracted. Local/MinIO are development-only; production is S3-compatible object storage. System-generated names are stored as keys and original names only as metadata. Required controls are extension/MIME allowlists, distrust of browser Content-Type, per-file/aggregate size limits, ClamAV scanning before availability, statuses `PENDING_SCAN`, `CLEAN`, `INFECTED`, `REJECTED`, private short-lived signed links, no public objects, no active content on the same origin without controls, and future PDF/DOCX CDR.
+## Administration — future workflow
 
-## Notifications and WhatsApp (future only)
+The Phase 2 `/ar/admin` boundary is real and application-authorized, but request management
+is not implemented. Phase 4 plans overview, student/request management, staff assignment,
+deadline/overdue controls, search, filters, exports with explicit permissions and an
+immutable-from-UI audit trail. Cloudflare Access is a future outer boundary and cannot
+replace ADMIN authorization.
 
-Notifications include in-app and email delivery, then WhatsApp, using a transactional outbox, idempotency, safe retry, dead-letter/manual review, and structured redacted logs. WhatsApp must use the official WhatsApp Business Platform Cloud API only; no real Meta call is implemented now.
+## Request conversation — future
 
-Recovered non-secret configuration: phone number ID `1260466807145770`, webhook path `/api/integrations/whatsapp/webhook`, expected webhook URL `https://admin.itqanqhelpstudent.online/api/integrations/whatsapp/webhook`, and historical template name `new_service_request_ar1`. These are configuration, not assumptions about current approval or availability.
+Phase 5 plans one request-scoped student/admin conversation with `TEXT`, `IMAGE`, `AUDIO`,
+`FILE` and `SYSTEM` messages, sender/time, delivery and separate read states. Polling or SSE
+must work; WebSockets are optional rather than the only design. Message/files must reuse the
+Phase 3 ownership, private storage and scanning boundaries.
 
-Future WhatsApp rules:
+## Request attachments — implemented in Phase 3
 
-- sequential assignment across configured Saudi team numbers;
-- per-recipient consent, immediate disable, and active/consent re-check before every send;
-- no student name, email, or request description in an external notification;
-- only request number, service type, requested deadline, and protected admin link; student `wa.me` links require the student to press Send;
-- dry-run mode, number redaction in logs, and persistence of successful `wamid`;
-- webhook processing for `sent`, `delivered`, `read`, `failed` after `X-Hub-Signature-256` verification;
-- a separate Verify Token and App Secret; System User Token from a secret file;
-- 429/5xx exponential backoff with jitter (historical max eight attempts), 400 permanent failure, 401/403 blocked pending permission repair, timeout after request start marked `UNKNOWN` without automatic resend, at-least-once rather than exactly-once semantics, and correlation data linking callbacks.
+Local storage is development-only; production config requires private S3. Keys are opaque
+and original names are metadata. The current allowlist is PDF, DOCX, PPTX, XLSX, UTF-8 TXT,
+PNG and JPEG, with safe names, exact size, global/service count and aggregate limits,
+extension + declared MIME + detected-content validation, bounded OOXML ZIP inspection,
+streaming SHA-256 and no public object access.
 
-## Financial operations
+`FILE_SCAN_MODE=disabled` is the development/test default and records
+`SCAN_SKIPPED_DEVELOPMENT`, never clean. ClamAV is an opt-in `antivirus` development profile
+and required for production Web/Worker. Worker jobs retry bounded failures; downloads require
+owner authorization and `CLEAN` in production. Upload and delete use explicit DB states,
+compensation and reconciliation because PostgreSQL and S3 are not ACID together.
 
-Future scope includes quotes, invoices, payments, student credit, logged financial adjustments, refund/credit, append-only ledger where possible, no card number storage, external gateway integration, idempotent payment webhooks, and explicit authorization/two-person review for sensitive operations.
+Future hardening includes CDR/isolated previews where justified and the separate message-
+attachment model.
+
+## Notifications and WhatsApp — future only
+
+Product notifications include in-app/email then WhatsApp, using a transactional outbox,
+idempotency, safe retry, dead-letter/manual review and redacted logs. The implemented Phase 2
+email outbox is authentication-only. No real Meta call exists.
+
+Recovered non-secret configuration: phone-number ID `1260466807145770`, webhook path
+`/api/integrations/whatsapp/webhook`, expected historical URL
+`https://admin.itqanqhelpstudent.online/api/integrations/whatsapp/webhook`, and historical
+template `new_service_request_ar1`. These do not prove current provider approval.
+
+Future WhatsApp rules include consent and active-recipient recheck, minimal payloads without
+student name/email/description, official Cloud API only, signature verification, successful
+`wamid` persistence, redacted numbers, bounded 429/5xx retry, permanent 400 handling,
+permission-blocked 401/403 handling and `UNKNOWN` after ambiguous post-send timeout without
+blind resend.
+
+## Financial operations — future
+
+Quotes, invoices, payments, credits, revisions, refunds and an append-oriented ledger remain
+Phase 6. No card data belongs in ITQANAK. Provider webhooks require signatures, idempotency,
+explicit ambiguous outcomes and stronger authorization/two-person review for sensitive
+adjustments.
 
 ## Academic integrity
 
-The product must reject impersonation, taking examinations for a student, cheating or bypassing university systems, plagiarized/stolen content, and illegal work. Legitimate educational services include explanation/teaching, review and improvement, training, design/presentations, translation, formatting, research guidance, and lawful technical help.
+The platform rejects impersonation, examination taking, cheating, bypassing institution
+systems and plagiarized/stolen content. Legitimate services include teaching/explanation,
+review and improvement, training, design/presentations, translation, formatting, research
+guidance and lawful technical help. Phase 3 records the exact configured policy version and
+acceptance timestamp at submission.
 
 ## Recovered failure modes and mandatory protections
 
-The old system lacked a clear Migration Runner. Code queried `request_kind` before its migration ran, producing PostgreSQL SQLSTATE `42703` and an administrative outage. Backups and code lived on the same server, some SQL was manual and partial, and server loss could destroy code, backups, files, and conversations together.
+The old system queried `request_kind` before its migration existed, causing PostgreSQL
+SQLSTATE `42703` and an administrative outage. Some SQL was manual/partial, and code,
+backups, files and conversations could be lost with one host.
 
-The replacement requires Git from the start, automatic forward-only migrations, `schema_migrations`, checksums, advisory locking, per-file transactions where possible, `pnpm db:migrate`, `pnpm db:status`, `pnpm db:verify`, deployment failure when migrations are pending, production Web schema compatibility checks, off-server automated backups with periodic restore testing, external production object storage, and a documented recovery process.
+The replacement therefore requires Git, forward-only checksummed migrations, advisory
+locking, per-file transactions, deployment/readiness schema gates, external production
+object storage, off-server database backups, object-storage protection, periodic restore
+tests and documented recovery. A PostgreSQL backup alone cannot recover attachment bytes;
+database and object recovery must be verified together without pretending they form one
+cross-system transaction.
+
+## Remaining phases
+
+- Phase 4: admin request management, assignment, staff actions and internal controls.
+- Phase 5: unified request chat and text/image/audio/file/system messages.
+- Phase 6: quotes, billing, credits, revisions and financial ledger.
+- Phase 7: in-app/email/WhatsApp product notifications and recipient/webhook workflow.
+- Phase 8: CMS, reports, analytics, production hardening, disaster recovery and Cloudflare
+  production controls.

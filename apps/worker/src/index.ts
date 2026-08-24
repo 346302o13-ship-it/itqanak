@@ -7,9 +7,20 @@ import { AuthEmailOutboxProcessor, createAuthEmailSender } from "@itqanak/auth";
 import { loadConfig, type AppConfig } from "@itqanak/config";
 import { checkDatabaseHealth, closeDatabase, createDatabase } from "@itqanak/db";
 import { createLogger, type Logger } from "@itqanak/observability";
+import { PlatformOperationsService } from "@itqanak/operations";
+import {
+  AttachmentScanProcessor,
+  AttachmentStorageReconciler,
+  UnifiedAttachmentScanProcessor,
+  UnifiedAttachmentStorageReconciler,
+} from "@itqanak/requests";
+import { createMalwareScanner, createObjectStorage } from "@itqanak/storage";
 
 import { nextBackoffDelay, waitFor } from "./backoff.js";
+import { runPeriodicHeartbeat } from "./heartbeat.js";
 import { DeferredOutboxWorkLoop } from "./outbox.js";
+import { MetaWhatsAppCloudSender, WhatsAppSupportOutboxProcessor } from "./whatsapp.js";
+import { shouldProcessAttachmentScans } from "./scan-queue-control.js";
 
 const heartbeatIntervalMs = 15_000;
 const idleIntervalMs = 5_000;
@@ -41,6 +52,47 @@ async function startWorker(config: AppConfig, logger: Logger, signal: AbortSigna
     retryStrategy: () => null,
   });
   const outbox = new DeferredOutboxWorkLoop(logger.child({ workerName }));
+  const whatsappNotifications =
+    config.whatsapp.mode === "disabled"
+      ? undefined
+      : new WhatsAppSupportOutboxProcessor(
+          database,
+          config,
+          new MetaWhatsAppCloudSender(config),
+          logger.child({ workerName }),
+          workerName,
+        );
+  const operations = new PlatformOperationsService({ database });
+  const objectStorage = createObjectStorage(config.storage);
+  const malwareScanner = createMalwareScanner(config.fileScanning);
+  const attachmentScans = new AttachmentScanProcessor({
+    database,
+    storage: objectStorage,
+    scanner: malwareScanner,
+    logger: logger.child({ workerName }),
+    workerId: workerName,
+    maxAttempts: config.fileScanning.maxAttempts,
+    scanTimeoutMs: config.fileScanning.scanTimeoutMs,
+  });
+  const unifiedAttachmentScans = new UnifiedAttachmentScanProcessor({
+    database,
+    storage: objectStorage,
+    scanner: malwareScanner,
+    logger: logger.child({ workerName }),
+    workerId: workerName,
+    maxAttempts: config.fileScanning.maxAttempts,
+    scanTimeoutMs: config.fileScanning.scanTimeoutMs,
+  });
+  const attachmentStorageReconciliation = new AttachmentStorageReconciler({
+    database,
+    storage: objectStorage,
+    logger: logger.child({ workerName }),
+  });
+  const unifiedAttachmentStorageReconciliation = new UnifiedAttachmentStorageReconciler({
+    database,
+    storage: objectStorage,
+    logger: logger.child({ workerName }),
+  });
   const authEmailSender = createAuthEmailSender(config);
   const authEmailOutbox =
     authEmailSender === undefined
@@ -59,6 +111,14 @@ async function startWorker(config: AppConfig, logger: Logger, signal: AbortSigna
       throw new Error("Database connection is unavailable.");
     }
     await assertRedisReady(redis);
+    const operationalState = await operations.getRuntimeState();
+    if (
+      config.fileScanning.mode === "clamav" &&
+      !operationalState.fileScanQueuePaused &&
+      (await malwareScanner.checkReadiness()) !== "healthy"
+    ) {
+      throw new Error("Required malware scanner is unavailable.");
+    }
     await database`
       INSERT INTO worker_heartbeats (worker_name, last_seen_at)
       VALUES (${workerName}, now())
@@ -73,19 +133,41 @@ async function startWorker(config: AppConfig, logger: Logger, signal: AbortSigna
     logger.info("worker_started", {
       workerName,
       authEmailDeliveryEnabled: authEmailOutbox !== undefined,
+      fileScannerMode: config.fileScanning.mode,
+      whatsappNotificationMode: config.whatsapp.mode,
     });
 
     let failedAttempts = 0;
-    let lastHeartbeatAt = Date.now();
+    const heartbeatLoop = runPeriodicHeartbeat({
+      intervalMs: heartbeatIntervalMs,
+      signal,
+      heartbeat,
+      onFailure: () => logger.warn("worker_heartbeat_failed", { workerName }),
+    });
+    let previousScanQueuePaused: boolean | undefined;
     while (!signal.aborted) {
       try {
-        const now = Date.now();
-        if (now - lastHeartbeatAt >= heartbeatIntervalMs) {
-          await heartbeat();
-          lastHeartbeatAt = now;
-        }
         await outbox.poll();
-        await authEmailOutbox?.processBatch();
+        await whatsappNotifications?.processBatch(1);
+        await authEmailOutbox?.processBatch(1);
+        const operationalState = await operations.getRuntimeState();
+        if (previousScanQueuePaused !== operationalState.fileScanQueuePaused) {
+          logger.info("attachment_scan_queue_state_observed", {
+            paused: operationalState.fileScanQueuePaused,
+            version: operationalState.version,
+            workerName,
+          });
+          previousScanQueuePaused = operationalState.fileScanQueuePaused;
+        }
+        if (shouldProcessAttachmentScans(operationalState)) {
+          // Claim one external-storage job at a time. This bounds the delay to
+          // unrelated work if S3 is slow and avoids expiring leases for queued
+          // jobs that this process has not started yet.
+          await attachmentScans.processBatch(1);
+          await unifiedAttachmentScans.processBatch(1);
+        }
+        await attachmentStorageReconciliation.processBatch(1);
+        await unifiedAttachmentStorageReconciliation.processBatch(1);
         failedAttempts = 0;
         await waitFor(idleIntervalMs, signal);
       } catch {
@@ -95,6 +177,7 @@ async function startWorker(config: AppConfig, logger: Logger, signal: AbortSigna
         await waitFor(delayMs, signal);
       }
     }
+    await heartbeatLoop;
   } finally {
     redis.disconnect(false);
     await closeDatabase(database);
@@ -111,7 +194,7 @@ async function main(): Promise<void> {
   try {
     config = loadConfig({
       serviceName: "worker",
-      requirements: { database: true, redis: true },
+      requirements: { database: true, redis: true, storage: true, fileScanning: true },
       loadDotenv: process.env.NODE_ENV !== "production",
     });
   } catch {

@@ -1,8 +1,10 @@
 name: itqanak
 
 # Production topology. Set the *_SECRET_FILE variables to absolute paths that
-# are readable only by the deploy account. Their contents are never put in this
-# repository, the Compose model, or container environment variables.
+# are owned by the deploy account, group-readable by the dedicated deployment
+# secrets group, and mode 0440. Set ITQANAK_SECRETS_GID to that group's numeric
+# GID (default 20000). Their contents are never put in this repository, the
+# Compose model, or container environment variables.
 x-logging: &default-logging
   driver: local
   options:
@@ -11,6 +13,8 @@ x-logging: &default-logging
 
 x-hardened-app: &hardened-app
   init: true
+  group_add:
+    - ${ITQANAK_SECRETS_GID:-20000}
   read_only: true
   tmpfs:
     - /tmp:rw,noexec,nosuid,size=64m
@@ -22,7 +26,13 @@ x-hardened-app: &hardened-app
 
 services:
   postgres:
-    image: postgres:17.4-alpine
+    image: postgres:17.10-alpine
+    # The image entrypoint supports initialization as the packaged postgres
+    # user. This avoids relying on root, gosu, or ownership capabilities when
+    # Docker creates a brand-new named volume.
+    user: "postgres"
+    group_add:
+      - ${ITQANAK_SECRETS_GID:-20000}
     environment:
       POSTGRES_DB: itqanak
       POSTGRES_USER: itqanak
@@ -36,6 +46,10 @@ services:
       - backend
     restart: unless-stopped
     stop_grace_period: 60s
+    read_only: true
+    tmpfs:
+      - /tmp:rw,noexec,nosuid,size=32m,uid=70,gid=70,mode=0700
+      - /run/postgresql:rw,noexec,nosuid,size=16m,uid=70,gid=70,mode=3775
     healthcheck:
       test: ["CMD-SHELL", "pg_isready --username=itqanak --dbname=itqanak"]
       interval: 10s
@@ -55,11 +69,14 @@ services:
     logging: *default-logging
 
   redis:
-    image: redis:7.4.2-alpine
-    command:
-      - /bin/sh
-      - -ec
-      - 'exec redis-server --appendonly yes --save 60 1 --requirepass "$$(cat /run/secrets/redis_password)" --loglevel warning'
+    build:
+      context: .
+      dockerfile: infra/docker/Dockerfile.redis
+    user: "redis"
+    group_add:
+      - ${ITQANAK_SECRETS_GID:-20000}
+    environment:
+      REDIS_PASSWORD_FILE: /run/secrets/redis_password
     secrets:
       - redis_password
     volumes:
@@ -75,11 +92,7 @@ services:
     cap_drop:
       - ALL
     healthcheck:
-      test:
-        [
-          "CMD-SHELL",
-          'redis-cli --no-auth-warning --user default --pass "$$(cat /run/secrets/redis_password)" ping | grep -qx PONG',
-        ]
+      test: ["CMD", "/usr/local/bin/itqanak-redis-healthcheck"]
       interval: 10s
       timeout: 5s
       retries: 10
@@ -92,8 +105,95 @@ services:
           pids: 128
     logging: *default-logging
 
+  # Private S3-compatible object storage for request attachments. It is
+  # reachable only on the internal backend network and has no published port.
+  minio:
+    image: minio/minio:RELEASE.2025-09-07T16-13-09Z
+    user: "1000:20000"
+    group_add:
+      - ${ITQANAK_SECRETS_GID:-20000}
+    environment:
+      MC_CONFIG_DIR: /tmp/.mc
+      MINIO_ROOT_USER_FILE: /run/secrets/storage_s3_root_access_key_id
+      MINIO_ROOT_PASSWORD_FILE: /run/secrets/storage_s3_root_secret_access_key
+    command: ["server", "/data"]
+    secrets:
+      - storage_s3_root_access_key_id
+      - storage_s3_root_secret_access_key
+    volumes:
+      - object-storage-data:/data
+    networks:
+      - backend
+    restart: unless-stopped
+    stop_grace_period: 30s
+    read_only: true
+    tmpfs:
+      - /tmp:rw,noexec,nosuid,size=64m,uid=1000,gid=1000,mode=0700
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    healthcheck:
+      test: ["CMD", "mc", "ready", "local"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 15s
+    deploy:
+      resources:
+        limits:
+          cpus: "0.50"
+          memory: 384M
+          pids: 128
+    logging: *default-logging
+
+  minio-init:
+    image: minio/mc:RELEASE.2025-08-13T08-35-41Z
+    user: "1000:20000"
+    group_add:
+      - ${ITQANAK_SECRETS_GID:-20000}
+    environment:
+      MC_CONFIG_DIR: /tmp/.mc
+      MINIO_ROOT_USER_FILE: /run/secrets/storage_s3_root_access_key_id
+      MINIO_ROOT_PASSWORD_FILE: /run/secrets/storage_s3_root_secret_access_key
+      MINIO_APP_USER_FILE: /run/secrets/storage_s3_access_key_id
+      MINIO_APP_PASSWORD_FILE: /run/secrets/storage_s3_secret_access_key
+      MINIO_BUCKET: ${ITQANAK_STORAGE_S3_BUCKET:?Set ITQANAK_STORAGE_S3_BUCKET}
+    entrypoint: ["/bin/sh", "/usr/local/bin/itqanak-minio-init"]
+    secrets:
+      - storage_s3_root_access_key_id
+      - storage_s3_root_secret_access_key
+      - storage_s3_access_key_id
+      - storage_s3_secret_access_key
+    configs:
+      - source: minio_init
+        target: /usr/local/bin/itqanak-minio-init
+        mode: 0555
+    depends_on:
+      minio:
+        condition: service_healthy
+    networks:
+      - backend
+    restart: "no"
+    read_only: true
+    tmpfs:
+      - /tmp:rw,noexec,nosuid,size=16m,uid=1000,gid=1000,mode=0700
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    logging: *default-logging
+
   clamav:
-    image: clamav/clamav:1.5.3
+    # Opt-in capability. The host reconciler starts this exact service only
+    # after the administrator enables scanning; ordinary production startup
+    # does not allocate ClamAV memory.
+    profiles: ["antivirus"]
+    build:
+      context: .
+      dockerfile: infra/docker/Dockerfile.clamav
+    user: "clamav"
+    init: true
     volumes:
       - clamav-data:/var/lib/clamav
     networks:
@@ -103,6 +203,7 @@ services:
     read_only: true
     tmpfs:
       - /tmp:rw,noexec,nosuid,size=128m
+      - /var/log/clamav:rw,noexec,nosuid,size=32m,uid=100,gid=101,mode=0750
     security_opt:
       - no-new-privileges:true
     cap_drop:
@@ -117,7 +218,9 @@ services:
       resources:
         limits:
           cpus: "1.00"
-          memory: 1G
+          # Concurrent database reloads are disabled by the supervised
+          # entrypoint, keeping one signature image resident at a time.
+          memory: 2G
           pids: 256
     logging: *default-logging
 
@@ -131,14 +234,17 @@ services:
     environment:
       NODE_ENV: production
       APP_ENV: production
-      PUBLIC_APP_URL: https://itqanqhelpstudent.online
-      ADMIN_APP_URL: https://admin.itqanqhelpstudent.online
+      PUBLIC_APP_URL: ${PUBLIC_APP_URL:-https://itqanqhelpstudent.online}
+      ADMIN_APP_URL: ${ADMIN_APP_URL:-https://admin.itqanqhelpstudent.online}
+      ACADEMIC_INTEGRITY_VERSION: ${ACADEMIC_INTEGRITY_VERSION:-2026-08}
       MIGRATIONS_DIR: /workspace/migrations
       DATABASE_URL_FILE: /run/secrets/database_url
       REDIS_URL_FILE: /run/secrets/redis_url
     secrets:
       - database_url
       - redis_url
+    group_add:
+      - ${ITQANAK_SECRETS_GID:-20000}
     depends_on:
       postgres:
         condition: service_healthy
@@ -162,6 +268,11 @@ services:
 
   web:
     <<: *hardened-app
+    # Keep the application root immutable while giving Next's image optimizer
+    # a bounded, non-executable cache owned by the unprivileged runtime user.
+    tmpfs:
+      - /tmp:rw,noexec,nosuid,size=64m,uid=1001,gid=1001,mode=0700
+      - /app/apps/web/.next/cache:rw,noexec,nosuid,size=64m,uid=1001,gid=1001,mode=0700
     build:
       context: .
       dockerfile: apps/web/Dockerfile
@@ -169,11 +280,16 @@ services:
     environment:
       NODE_ENV: production
       APP_ENV: production
-      PUBLIC_APP_URL: https://itqanqhelpstudent.online
-      ADMIN_APP_URL: https://admin.itqanqhelpstudent.online
+      PUBLIC_APP_URL: ${PUBLIC_APP_URL:-https://itqanqhelpstudent.online}
+      ADMIN_APP_URL: ${ADMIN_APP_URL:-https://admin.itqanqhelpstudent.online}
+      CLOUDFLARE_ACCESS_MODE: ${CLOUDFLARE_ACCESS_MODE:-disabled}
+      CLOUDFLARE_ACCESS_TEAM_DOMAIN: ${CLOUDFLARE_ACCESS_TEAM_DOMAIN:-}
+      CLOUDFLARE_ACCESS_AUDIENCE: ${CLOUDFLARE_ACCESS_AUDIENCE:-}
+      CLOUDFLARE_ACCESS_ADMIN_EMAIL: ${CLOUDFLARE_ACCESS_ADMIN_EMAIL:-}
+      ACADEMIC_INTEGRITY_VERSION: ${ACADEMIC_INTEGRITY_VERSION:-2026-08}
       MIGRATIONS_DIR: /app/migrations
       VERIFY_SCHEMA_ON_STARTUP: "true"
-      DATABASE_URL_FILE: /run/secrets/database_url
+      DATABASE_URL_FILE: /run/secrets/runtime_database_url
       REDIS_URL_FILE: /run/secrets/redis_url
       PORT: "3000"
       HOSTNAME: 0.0.0.0
@@ -187,23 +303,50 @@ services:
       TERMS_VERSION: ${TERMS_VERSION:-2026-08}
       PRIVACY_VERSION: ${PRIVACY_VERSION:-2026-08}
       EMAIL_DELIVERY_MODE: ${EMAIL_DELIVERY_MODE:-disabled}
+      # Non-secret delivery descriptors for the administrator monitoring page.
+      # The Meta token remains mounted only in the Worker service.
+      WHATSAPP_MONITORING_MODE: ${WHATSAPP_MODE:-disabled}
+      WHATSAPP_MONITORING_PHONE_NUMBER_ID: ${WHATSAPP_PHONE_NUMBER_ID:-}
+      WHATSAPP_MONITORING_TEMPLATE_NAME: ${WHATSAPP_TEMPLATE_NAME:-}
+      WHATSAPP_MONITORING_TEMPLATE_LANGUAGE: ${WHATSAPP_TEMPLATE_LANGUAGE:-ar}
+      WHATSAPP_MONITORING_SUPPORT_RECIPIENT_E164: ${WHATSAPP_SUPPORT_RECIPIENT_E164:-+966564202263}
+      WHATSAPP_MONITORING_NOTIFICATIONS_NOT_BEFORE: ${WHATSAPP_NOTIFICATIONS_NOT_BEFORE:-}
       SMTP_HOST: ${SMTP_HOST:-}
       SMTP_PORT: ${SMTP_PORT:-587}
       SMTP_SECURE: ${SMTP_SECURE:-false}
       SMTP_FROM_NAME: ${SMTP_FROM_NAME:-ITQANAK}
       SMTP_FROM_ADDRESS: ${SMTP_FROM_ADDRESS:-}
+      STORAGE_DRIVER: s3
+      STORAGE_S3_ENDPOINT: ${ITQANAK_STORAGE_S3_ENDPOINT:-}
+      STORAGE_S3_REGION: ${ITQANAK_STORAGE_S3_REGION:?Set ITQANAK_STORAGE_S3_REGION}
+      STORAGE_S3_BUCKET: ${ITQANAK_STORAGE_S3_BUCKET:?Set ITQANAK_STORAGE_S3_BUCKET}
+      STORAGE_S3_FORCE_PATH_STYLE: ${ITQANAK_STORAGE_S3_FORCE_PATH_STYLE:-false}
+      STORAGE_S3_ACCESS_KEY_ID_FILE: /run/secrets/storage_s3_access_key_id
+      STORAGE_S3_SECRET_ACCESS_KEY_FILE: /run/secrets/storage_s3_secret_access_key
+      UPLOAD_MAX_FILE_BYTES: ${UPLOAD_MAX_FILE_BYTES:-20971520}
+      UPLOAD_MAX_FILES_PER_REQUEST: ${UPLOAD_MAX_FILES_PER_REQUEST:-10}
+      UPLOAD_MAX_TOTAL_BYTES_PER_REQUEST: ${UPLOAD_MAX_TOTAL_BYTES_PER_REQUEST:-104857600}
+      FILE_SCAN_MODE: clamav
+      CLAMAV_HOST: clamav
+      CLAMAV_PORT: "3310"
+      CLAMAV_CONNECT_TIMEOUT_MS: ${CLAMAV_CONNECT_TIMEOUT_MS:-3000}
+      CLAMAV_SCAN_TIMEOUT_MS: ${CLAMAV_SCAN_TIMEOUT_MS:-30000}
+      FILE_SCAN_MAX_ATTEMPTS: ${FILE_SCAN_MAX_ATTEMPTS:-5}
+      OPERATIONAL_STATE_CACHE_TTL_MS: ${OPERATIONAL_STATE_CACHE_TTL_MS:-2000}
     secrets:
-      - database_url
+      - runtime_database_url
       - redis_url
       - auth_email_payload_key
       - smtp_password
+      - storage_s3_access_key_id
+      - storage_s3_secret_access_key
     depends_on:
       migrate:
         condition: service_completed_successfully
       redis:
         condition: service_healthy
-      clamav:
-        condition: service_healthy
+      minio-init:
+        condition: service_completed_successfully
     networks:
       - backend
       - egress
@@ -237,8 +380,9 @@ services:
       APP_ENV: production
       PUBLIC_APP_URL: https://itqanqhelpstudent.online
       ADMIN_APP_URL: https://admin.itqanqhelpstudent.online
+      ACADEMIC_INTEGRITY_VERSION: ${ACADEMIC_INTEGRITY_VERSION:-2026-08}
       MIGRATIONS_DIR: /app/migrations
-      DATABASE_URL_FILE: /run/secrets/database_url
+      DATABASE_URL_FILE: /run/secrets/runtime_database_url
       REDIS_URL_FILE: /run/secrets/redis_url
       WORKER_HEARTBEAT_FILE: /tmp/itqanak-worker-heartbeat
       AUTH_STUDENT_SESSION_ABSOLUTE_TTL_SECONDS: ${AUTH_STUDENT_SESSION_ABSOLUTE_TTL_SECONDS:-2592000}
@@ -251,23 +395,52 @@ services:
       TERMS_VERSION: ${TERMS_VERSION:-2026-08}
       PRIVACY_VERSION: ${PRIVACY_VERSION:-2026-08}
       EMAIL_DELIVERY_MODE: ${EMAIL_DELIVERY_MODE:-disabled}
+      WHATSAPP_MODE: ${WHATSAPP_MODE:-disabled}
+      WHATSAPP_PHONE_NUMBER_ID: ${WHATSAPP_PHONE_NUMBER_ID:-}
+      WHATSAPP_TEMPLATE_NAME: ${WHATSAPP_TEMPLATE_NAME:-}
+      WHATSAPP_TEMPLATE_LANGUAGE: ${WHATSAPP_TEMPLATE_LANGUAGE:-ar}
+      WHATSAPP_GRAPH_API_VERSION: ${WHATSAPP_GRAPH_API_VERSION:-v25.0}
+      WHATSAPP_SUPPORT_RECIPIENT_E164: ${WHATSAPP_SUPPORT_RECIPIENT_E164:-+966564202263}
+      WHATSAPP_MAX_ATTEMPTS: ${WHATSAPP_MAX_ATTEMPTS:-8}
+      WHATSAPP_NOTIFICATIONS_NOT_BEFORE: ${WHATSAPP_NOTIFICATIONS_NOT_BEFORE:-}
+      WHATSAPP_ACCESS_TOKEN_FILE: /run/secrets/whatsapp_access_token
       SMTP_HOST: ${SMTP_HOST:-}
       SMTP_PORT: ${SMTP_PORT:-587}
       SMTP_SECURE: ${SMTP_SECURE:-false}
       SMTP_FROM_NAME: ${SMTP_FROM_NAME:-ITQANAK}
       SMTP_FROM_ADDRESS: ${SMTP_FROM_ADDRESS:-}
+      STORAGE_DRIVER: s3
+      STORAGE_S3_ENDPOINT: ${ITQANAK_STORAGE_S3_ENDPOINT:-}
+      STORAGE_S3_REGION: ${ITQANAK_STORAGE_S3_REGION:?Set ITQANAK_STORAGE_S3_REGION}
+      STORAGE_S3_BUCKET: ${ITQANAK_STORAGE_S3_BUCKET:?Set ITQANAK_STORAGE_S3_BUCKET}
+      STORAGE_S3_FORCE_PATH_STYLE: ${ITQANAK_STORAGE_S3_FORCE_PATH_STYLE:-false}
+      STORAGE_S3_ACCESS_KEY_ID_FILE: /run/secrets/storage_s3_access_key_id
+      STORAGE_S3_SECRET_ACCESS_KEY_FILE: /run/secrets/storage_s3_secret_access_key
+      UPLOAD_MAX_FILE_BYTES: ${UPLOAD_MAX_FILE_BYTES:-20971520}
+      UPLOAD_MAX_FILES_PER_REQUEST: ${UPLOAD_MAX_FILES_PER_REQUEST:-10}
+      UPLOAD_MAX_TOTAL_BYTES_PER_REQUEST: ${UPLOAD_MAX_TOTAL_BYTES_PER_REQUEST:-104857600}
+      FILE_SCAN_MODE: clamav
+      CLAMAV_HOST: clamav
+      CLAMAV_PORT: "3310"
+      CLAMAV_CONNECT_TIMEOUT_MS: ${CLAMAV_CONNECT_TIMEOUT_MS:-3000}
+      CLAMAV_SCAN_TIMEOUT_MS: ${CLAMAV_SCAN_TIMEOUT_MS:-30000}
+      FILE_SCAN_MAX_ATTEMPTS: ${FILE_SCAN_MAX_ATTEMPTS:-5}
+      OPERATIONAL_STATE_CACHE_TTL_MS: ${OPERATIONAL_STATE_CACHE_TTL_MS:-2000}
     secrets:
-      - database_url
+      - runtime_database_url
       - redis_url
       - auth_email_payload_key
       - smtp_password
+      - whatsapp_access_token
+      - storage_s3_access_key_id
+      - storage_s3_secret_access_key
     depends_on:
       migrate:
         condition: service_completed_successfully
       redis:
         condition: service_healthy
-      clamav:
-        condition: service_healthy
+      minio-init:
+        condition: service_completed_successfully
     networks:
       - backend
       - egress
@@ -333,12 +506,13 @@ services:
       dockerfile: infra/docker/Dockerfile.backup
     environment:
       DATABASE_URL_FILE: /run/secrets/database_url
-      VERIFY_DATABASE_URL_FILE: /run/secrets/verify_database_url
+      VERIFY_DATABASE_NAME: itqanak_restore_verification
       BACKUP_DIR: /backups
       BACKUP_RETENTION_DAYS: "30"
     secrets:
       - database_url
-      - verify_database_url
+    group_add:
+      - ${ITQANAK_SECRETS_GID:-20000}
     volumes:
       # This is runtime backup data, not application code. Keep it mode 0700
       # and excluded from Git; set ITQANAK_BACKUP_DIR to an absolute host path.
@@ -379,21 +553,36 @@ volumes:
   postgres-data:
   redis-data:
   clamav-data:
+  object-storage-data:
+
+configs:
+  minio_init:
+    file: ./infra/minio/initialize.sh
 
 secrets:
   database_url:
     file: ${ITQANAK_DATABASE_URL_SECRET_FILE:?Set ITQANAK_DATABASE_URL_SECRET_FILE to a protected secret-file path}
+  runtime_database_url:
+    file: ${ITQANAK_RUNTIME_DATABASE_URL_SECRET_FILE:?Set ITQANAK_RUNTIME_DATABASE_URL_SECRET_FILE to a protected secret-file path}
   redis_url:
     file: ${ITQANAK_REDIS_URL_SECRET_FILE:?Set ITQANAK_REDIS_URL_SECRET_FILE to a protected secret-file path}
   postgres_password:
     file: ${ITQANAK_POSTGRES_PASSWORD_SECRET_FILE:?Set ITQANAK_POSTGRES_PASSWORD_SECRET_FILE to a protected secret-file path}
   redis_password:
     file: ${ITQANAK_REDIS_PASSWORD_SECRET_FILE:?Set ITQANAK_REDIS_PASSWORD_SECRET_FILE to a protected secret-file path}
-  verify_database_url:
-    file: ${ITQANAK_VERIFY_DATABASE_URL_SECRET_FILE:?Set ITQANAK_VERIFY_DATABASE_URL_SECRET_FILE to a protected secret-file path}
   # Optional until SMTP delivery is enabled. The auth configuration rejects an
   # empty mounted key only when an auth email flow is configured to deliver.
   auth_email_payload_key:
     file: ${ITQANAK_AUTH_EMAIL_PAYLOAD_KEY_SECRET_FILE:-/dev/null}
   smtp_password:
     file: ${ITQANAK_SMTP_PASSWORD_SECRET_FILE:-/dev/null}
+  whatsapp_access_token:
+    file: ${ITQANAK_WHATSAPP_ACCESS_TOKEN_SECRET_FILE:-/dev/null}
+  storage_s3_access_key_id:
+    file: ${ITQANAK_STORAGE_S3_ACCESS_KEY_ID_SECRET_FILE:?Set ITQANAK_STORAGE_S3_ACCESS_KEY_ID_SECRET_FILE to a protected secret-file path}
+  storage_s3_secret_access_key:
+    file: ${ITQANAK_STORAGE_S3_SECRET_ACCESS_KEY_SECRET_FILE:?Set ITQANAK_STORAGE_S3_SECRET_ACCESS_KEY_SECRET_FILE to a protected secret-file path}
+  storage_s3_root_access_key_id:
+    file: ${ITQANAK_STORAGE_S3_ROOT_ACCESS_KEY_ID_SECRET_FILE:?Set ITQANAK_STORAGE_S3_ROOT_ACCESS_KEY_ID_SECRET_FILE to a protected secret-file path}
+  storage_s3_root_secret_access_key:
+    file: ${ITQANAK_STORAGE_S3_ROOT_SECRET_ACCESS_KEY_SECRET_FILE:?Set ITQANAK_STORAGE_S3_ROOT_SECRET_ACCESS_KEY_SECRET_FILE to a protected secret-file path}

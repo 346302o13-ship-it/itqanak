@@ -1,0 +1,48 @@
+export const requestErrorCodes = [
+  "REQUEST_NOT_FOUND",
+  "REQUEST_FORBIDDEN",
+  "INVALID_REQUEST",
+  "INVALID_TRANSITION",
+  "VERSION_CONFLICT",
+  "SERVICE_INACTIVE",
+  "INVALID_DEADLINE",
+  "INVALID_BUDGET",
+  "INVALID_SUBMISSION_KEY",
+  "IDEMPOTENCY_KEY_REUSED",
+  "REQUEST_ALREADY_SUBMITTED",
+  "ACADEMIC_INTEGRITY_REQUIRED",
+  "ACADEMIC_INTEGRITY_VERSION_MISMATCH",
+  "FILE_TOO_LARGE",
+  "FILE_TYPE_NOT_ALLOWED",
+  "FILE_MIME_MISMATCH",
+  "UPLOAD_TIMEOUT",
+  "MAX_FILES_EXCEEDED",
+  "TOTAL_FILE_SIZE_EXCEEDED",
+  "ATTACHMENT_NOT_FOUND",
+  "ATTACHMENT_NOT_READY",
+  "ATTACHMENT_STATE_INVALID",
+  "STORAGE_UNAVAILABLE",
+  "SCAN_REQUIRED",
+  "SCANNER_UNAVAILABLE",
+  "ADMIN_ASSIGNEE_INVALID",
+  "CONVERSATION_NOT_FOUND",
+  "INVALID_MESSAGE",
+  "MESSAGE_ATTACHMENT_REQUIRED",
+  "INVALID_MESSAGE_ATTACHMENT",
+  "QUOTE_NOT_FOUND",
+  "INVALID_QUOTE",
+  "QUOTE_VERSION_CONFLICT",
+  "QUOTE_NOT_PENDING",
+  "QUOTE_EXPIRED",
+  "NOTIFICATION_NOT_FOUND",
+] as const;
+
+export type RequestErrorCode = (typeof requestErrorCodes)[number];
+
+/** A value-free domain failure safe to classify at the HTTP boundary. */
+export class RequestDomainError extends Error {
+  public constructor(public readonly code: RequestErrorCode) {
+    super(code);
+    this.name = "RequestDomainError";
+  }
+}

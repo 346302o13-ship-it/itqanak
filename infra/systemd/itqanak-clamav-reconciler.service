@@ -1,0 +1,39 @@
+[Unit]
+Description=Reconcile ITQANAK ClamAV desired state
+Wants=docker.service
+After=docker.service
+
+[Service]
+Type=oneshot
+User=root
+Group=root
+# Compose receives an absolute file path from the root-owned environment file.
+# Keeping the working directory neutral lets the same unit work for an artifact
+# under /srv or this host's /root/itqanak checkout.
+WorkingDirectory=/
+EnvironmentFile=-/etc/itqanak/clamav-reconciler.env
+RuntimeDirectory=itqanak-clamav-reconciler
+RuntimeDirectoryMode=0700
+ExecStart=/usr/bin/flock --nonblock /run/itqanak-clamav-reconciler/reconcile.lock /usr/local/libexec/itqanak-reconcile-clamav
+UMask=0077
+NoNewPrivileges=true
+PrivateDevices=true
+PrivateTmp=true
+ProtectClock=true
+ProtectControlGroups=true
+# The current production checkout and compose env live below /root. Expose them
+# read-only; the reconciler never writes application files or secrets.
+ProtectHome=read-only
+ProtectKernelLogs=true
+ProtectKernelModules=true
+ProtectKernelTunables=true
+ProtectSystem=strict
+RestrictAddressFamilies=AF_UNIX AF_INET AF_INET6
+RestrictNamespaces=true
+RestrictRealtime=true
+RestrictSUIDSGID=true
+LockPersonality=true
+MemoryDenyWriteExecute=true
+CapabilityBoundingSet=
+SystemCallArchitectures=native
+TimeoutStartSec=10min

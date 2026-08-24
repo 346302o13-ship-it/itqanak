@@ -21,7 +21,7 @@ export default async function RegisterPage({ searchParams }: RegisterPageProps) 
   const status = typeof query.status === "string" ? query.status : undefined;
   return (
     <AuthShell
-      description="أنشئ حساب طالب. لا تُمنح صلاحيات الحساب حتى تأكيد البريد الإلكتروني."
+      description="أنشئ حسابك بالاسم والبريد ورقم الجوال. يبقى تفعيل الحساب بيد المدير بعد مطابقة رقم واتساب المسجل."
       title="إنشاء حساب جديد"
     >
       {status === "csrf" ? (
@@ -35,6 +35,7 @@ export default async function RegisterPage({ searchParams }: RegisterPageProps) 
       ) : null}
       <form action="/api/auth/register" className="grid gap-5" method="post">
         <CsrfInput token={token} />
+        <input name="locale" type="hidden" value="ar" />
         <input name="termsVersion" type="hidden" value={termsVersion} />
         <input name="privacyVersion" type="hidden" value={privacyVersion} />
         <div>
@@ -58,11 +59,52 @@ export default async function RegisterPage({ searchParams }: RegisterPageProps) 
           <input
             autoComplete="email"
             className={fieldClassName()}
+            dir="ltr"
             id="email"
+            inputMode="email"
+            maxLength={320}
             name="email"
+            placeholder="name@example.com"
             required
             type="email"
           />
+          <p className="mt-2 text-xs leading-5 text-[var(--itq-color-muted)]">
+            يُحفظ للتواصل وتسجيل الدخول، ولا يغيّر آلية التفعيل عبر موافقة المدير على رقم الجوال.
+          </p>
+        </div>
+        <div>
+          <label className="text-sm font-bold" htmlFor="countryCode">
+            الدولة
+          </label>
+          <select
+            className={fieldClassName()}
+            defaultValue="SA"
+            id="countryCode"
+            name="countryCode"
+          >
+            <option value="SA">السعودية (+966)</option>
+            <option value="AE">الإمارات (+971)</option>
+            <option value="KW">الكويت (+965)</option>
+          </select>
+        </div>
+        <div>
+          <label className="text-sm font-bold" htmlFor="phone">
+            رقم الجوال
+          </label>
+          <input
+            autoComplete="tel"
+            className={fieldClassName()}
+            id="phone"
+            inputMode="tel"
+            maxLength={24}
+            name="phone"
+            placeholder="05xxxxxxxx"
+            required
+            type="tel"
+          />
+          <p className="mt-2 text-xs leading-5 text-[var(--itq-color-muted)]">
+            يجب أن يكون الرقم نفسه المستخدم عند مراسلة الدعم على واتساب.
+          </p>
         </div>
         <div>
           <label className="text-sm font-bold" htmlFor="password">
@@ -100,11 +142,33 @@ export default async function RegisterPage({ searchParams }: RegisterPageProps) 
         </div>
         <label className="flex items-start gap-3 rounded-xl border border-[var(--itq-color-border)] p-4 text-sm leading-6">
           <input className="mt-1 size-4" name="acceptedTerms" required type="checkbox" />
-          <span>أوافق على شروط الاستخدام، إصدار {termsVersion}.</span>
+          <span>
+            أوافق على{" "}
+            <Link
+              className="font-black text-[var(--itq-color-brand-700)] underline underline-offset-4"
+              href="/ar/terms"
+              rel="noopener"
+              target="_blank"
+            >
+              شروط الاستخدام
+            </Link>
+            ، إصدار <bdi dir="ltr">{termsVersion}</bdi>.
+          </span>
         </label>
         <label className="flex items-start gap-3 rounded-xl border border-[var(--itq-color-border)] p-4 text-sm leading-6">
           <input className="mt-1 size-4" name="acceptedPrivacy" required type="checkbox" />
-          <span>أوافق على سياسة الخصوصية، إصدار {privacyVersion}.</span>
+          <span>
+            أوافق على{" "}
+            <Link
+              className="font-black text-[var(--itq-color-brand-700)] underline underline-offset-4"
+              href="/ar/privacy"
+              rel="noopener"
+              target="_blank"
+            >
+              سياسة الخصوصية
+            </Link>
+            ، إصدار <bdi dir="ltr">{privacyVersion}</bdi>.
+          </span>
         </label>
         <SubmitButton className="w-full" pendingLabel="جارٍ إنشاء الحساب…">
           إنشاء الحساب
@@ -117,6 +181,11 @@ export default async function RegisterPage({ searchParams }: RegisterPageProps) 
           href="/ar/auth/login"
         >
           سجّل الدخول
+        </Link>
+      </p>
+      <p className="mt-3 text-center text-sm">
+        <Link className="font-bold underline" href="/en/auth/register">
+          English
         </Link>
       </p>
     </AuthShell>

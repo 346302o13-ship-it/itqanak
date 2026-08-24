@@ -6,6 +6,8 @@ import Redis from "ioredis";
 import {
   assertCsrfToken,
   assertExpectedFormContentType,
+  assertExpectedFormContentLength,
+  assertExpectedRawUploadContentType,
   assertTrustedHost,
   assertTrustedOrigin,
   AuthService,
@@ -13,22 +15,26 @@ import {
   RedisRateLimiter,
   summarizeUserAgent,
   type AuthenticatedPrincipal,
+  type RateLimiter,
   type RequestAuditContext,
 } from "@itqanak/auth";
 import { loadConfig, type AppConfig } from "@itqanak/config";
 import { closeDatabase, createDatabase, type DatabaseClient } from "@itqanak/db";
 
+import { parseUploadContentLength } from "./upload-http";
+
 export interface AuthRuntime {
   readonly config: AppConfig;
   readonly database: DatabaseClient;
   readonly auth: AuthService;
+  readonly rateLimiter?: RateLimiter;
   close(): Promise<void>;
 }
 
 export function loadWebConfig(): AppConfig {
   return loadConfig({
     serviceName: "web",
-    requirements: { database: true, redis: true },
+    requirements: { database: true, redis: true, storage: true, fileScanning: true },
     loadDotenv: process.env.NODE_ENV !== "production",
   });
 }
@@ -80,15 +86,17 @@ export async function createAuthRuntime(requireRateLimiting = false): Promise<Au
       redis = redisForAuth(config);
       await redis.connect();
     }
+    const rateLimiter = redis === undefined ? undefined : new RedisRateLimiter(redis, true);
     const auth = new AuthService({
       database,
       config,
-      ...(redis === undefined ? {} : { rateLimiter: new RedisRateLimiter(redis, true) }),
+      ...(rateLimiter === undefined ? {} : { rateLimiter }),
     });
     return {
       config,
       database,
       auth,
+      ...(rateLimiter === undefined ? {} : { rateLimiter }),
       async close() {
         redis?.disconnect(false);
         await closeDatabase(database);
@@ -148,6 +156,7 @@ export async function assertProtectedForm(request: NextRequest): Promise<{
 }> {
   const config = loadWebConfig();
   assertExpectedFormContentType(request.headers.get("content-type"));
+  assertExpectedFormContentLength(request.headers.get("content-length"));
   const development = config.nodeEnv === "development";
   assertTrustedHost({
     host: request.headers.get("host"),
@@ -168,6 +177,37 @@ export async function assertProtectedForm(request: NextRequest): Promise<{
     typeof supplied === "string" ? supplied : null,
   );
   return { formData, context: await requestAuditContext(request), config };
+}
+
+export async function assertProtectedUpload(
+  request: NextRequest,
+  maxBytes: number,
+): Promise<{
+  readonly contentLength: number;
+  readonly context: RequestAuditContext;
+  readonly config: AppConfig;
+}> {
+  const config = loadWebConfig();
+  assertExpectedRawUploadContentType(request.headers.get("content-type"));
+  const development = config.nodeEnv === "development";
+  assertTrustedHost({
+    host: request.headers.get("host"),
+    publicAppUrl: config.publicAppUrl,
+    adminAppUrl: config.adminAppUrl,
+    development,
+  });
+  assertTrustedOrigin({
+    origin: request.headers.get("origin"),
+    publicAppUrl: config.publicAppUrl,
+    adminAppUrl: config.adminAppUrl,
+    development,
+  });
+  assertCsrfToken(
+    request.cookies.get(csrfCookieName(config))?.value,
+    request.headers.get("x-itqanak-csrf-token"),
+  );
+  const contentLength = parseUploadContentLength(request.headers.get("content-length"), maxBytes);
+  return { contentLength, context: await requestAuditContext(request), config };
 }
 
 export async function pageRequestContext(): Promise<RequestAuditContext> {

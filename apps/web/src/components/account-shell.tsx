@@ -1,53 +1,84 @@
 import Link from "next/link";
 import type { ReactNode } from "react";
 
-import { BrandMark, Surface } from "@itqanak/ui";
+import { BrandMark } from "@itqanak/ui";
 
+import { AccountNavigation } from "./account-navigation";
 import { CsrfInput } from "./auth-shell";
+import { LogOutIcon, ShieldCheckIcon } from "./icons";
 import { SubmitButton } from "./submit-button";
 
 interface AccountShellProps {
   readonly displayName: string;
   readonly csrfToken: string | undefined;
   readonly children: ReactNode;
+  readonly locale?: "ar" | "en";
 }
 
-const navigation = [
-  { href: "/ar/account", label: "الحساب" },
-  { href: "/ar/account/security", label: "الأمان" },
-  { href: "/ar/account/sessions", label: "الجلسات" },
-] as const;
-
-export function AccountShell({ displayName, csrfToken, children }: AccountShellProps) {
+export function AccountShell({
+  displayName,
+  csrfToken,
+  children,
+  locale = "ar",
+}: AccountShellProps) {
+  const english = locale === "en";
+  const prefix = `/${locale}`;
+  const initial = displayName.trim().slice(0, 1) || (english ? "S" : "ط");
   return (
-    <main className="mx-auto min-h-screen max-w-5xl px-5 py-8 sm:px-8 sm:py-12">
-      <div className="mb-7 flex flex-wrap items-center justify-between gap-4">
-        <Link className="inline-flex items-center gap-3 text-lg font-black" href="/ar">
-          <BrandMark />
-          إتقانك
-        </Link>
-        <form action="/api/auth/logout" method="post">
-          <CsrfInput token={csrfToken} />
-          <SubmitButton pendingLabel="جارٍ الخروج…">تسجيل الخروج</SubmitButton>
-        </form>
-      </div>
-      <div className="grid gap-6 lg:grid-cols-[14rem_1fr]">
-        <Surface className="h-fit p-4 sm:p-5">
-          <p className="px-3 pb-3 text-sm font-black">مرحباً، {displayName}</p>
-          <nav aria-label="إدارة الحساب" className="grid gap-1">
-            {navigation.map((item) => (
-              <Link
-                className="rounded-xl px-3 py-3 text-sm font-bold text-[var(--itq-color-brand-800)] hover:bg-[var(--itq-color-brand-50)]"
-                href={item.href}
-                key={item.href}
+    <div
+      className="min-h-screen bg-[var(--itq-color-canvas)]"
+      dir={english ? "ltr" : "rtl"}
+      lang={locale}
+    >
+      <header className="border-b border-[var(--itq-color-border)] bg-white/90 backdrop-blur-xl">
+        <div className="mx-auto flex h-[4.75rem] max-w-7xl items-center justify-between gap-4 px-4 sm:px-7">
+          <Link
+            className="inline-flex items-center gap-3 text-lg font-black"
+            href={`${prefix}/student`}
+          >
+            <BrandMark className="size-11" />
+            {english ? "ITQANAK" : "إتقانك"}
+          </Link>
+          <div className="flex items-center gap-2">
+            <span className="hidden items-center gap-2 rounded-2xl border border-[var(--itq-color-border)] px-3 py-2 sm:flex">
+              <span className="grid size-8 place-items-center rounded-xl bg-[var(--itq-color-brand-700)] text-sm font-black text-white">
+                {initial}
+              </span>
+              <span className="max-w-36 truncate text-xs font-black">{displayName}</span>
+            </span>
+            <form action="/api/auth/logout" method="post">
+              <CsrfInput token={csrfToken} />
+              <input name="locale" type="hidden" value={locale} />
+              <SubmitButton
+                aria-label={english ? "Sign out" : "تسجيل الخروج"}
+                className="size-11 rounded-2xl border border-[var(--itq-color-border)] bg-white p-0 text-[var(--itq-color-muted)] shadow-none hover:bg-red-50 hover:text-red-700"
+                pendingLabel="…"
               >
-                {item.label}
-              </Link>
-            ))}
-          </nav>
-        </Surface>
-        <Surface>{children}</Surface>
-      </div>
-    </main>
+                <LogOutIcon className="size-5" />
+              </SubmitButton>
+            </form>
+          </div>
+        </div>
+      </header>
+      <main className="mx-auto grid max-w-7xl gap-7 px-4 py-7 sm:px-7 lg:grid-cols-[17rem_minmax(0,1fr)] lg:py-10">
+        <aside className="self-start rounded-[1.75rem] border border-[var(--itq-color-border)] bg-white p-3 shadow-[var(--itq-shadow-sm)] lg:sticky lg:top-6">
+          <div className="mb-3 rounded-2xl bg-[var(--itq-color-surface-soft)] p-4">
+            <span className="flex items-center gap-2 text-xs font-black text-emerald-800">
+              <ShieldCheckIcon className="size-4" />{" "}
+              {english ? "Account settings" : "إعدادات حسابك"}
+            </span>
+            <p className="mt-2 text-[11px] leading-5 text-[var(--itq-color-muted)]">
+              {english
+                ? "Review your profile, security controls and signed-in devices."
+                : "راجع بياناتك وحماية حسابك والأجهزة المسجّلة."}
+            </p>
+          </div>
+          <AccountNavigation locale={locale} />
+        </aside>
+        <section className="min-w-0 rounded-[1.75rem] border border-[var(--itq-color-border)] bg-white p-5 shadow-[var(--itq-shadow-sm)] sm:p-8 lg:p-9">
+          {children}
+        </section>
+      </main>
+    </div>
   );
 }

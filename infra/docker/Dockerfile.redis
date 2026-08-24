@@ -1,0 +1,7 @@
+FROM redis:7.4.10-alpine
+
+COPY --chmod=0555 infra/redis/production-entrypoint.sh /usr/local/bin/itqanak-redis-entrypoint
+COPY --chmod=0555 infra/redis/production-healthcheck.sh /usr/local/bin/itqanak-redis-healthcheck
+
+USER redis
+ENTRYPOINT ["/usr/local/bin/itqanak-redis-entrypoint"]

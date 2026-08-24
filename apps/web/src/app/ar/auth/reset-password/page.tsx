@@ -41,6 +41,7 @@ export default async function ResetPasswordPage({ searchParams }: ResetPageProps
         pendingLabel="جارٍ التعيين…"
         submitLabel="حفظ كلمة المرور الجديدة"
       >
+        <input name="locale" type="hidden" value="ar" />
         <div>
           <label className="text-sm font-bold" htmlFor="password">
             كلمة المرور الجديدة

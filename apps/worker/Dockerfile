@@ -1,4 +1,4 @@
-FROM node:22.14.0-alpine AS base
+FROM node:22.23.1-alpine AS base
 
 ENV PNPM_HOME=/pnpm
 ENV PATH=$PNPM_HOME:$PATH
@@ -21,7 +21,7 @@ RUN --mount=type=cache,id=itqanak-pnpm-store,target=/pnpm/store \
 RUN pnpm turbo run build --filter=@itqanak/worker...
 RUN pnpm --filter @itqanak/worker deploy --prod /opt/worker
 
-FROM node:22.14.0-alpine AS runner
+FROM node:22.23.1-alpine AS runner
 
 ENV NODE_ENV=production
 WORKDIR /app

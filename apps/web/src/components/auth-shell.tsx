@@ -7,26 +7,32 @@ interface AuthShellProps {
   readonly title: string;
   readonly description: string;
   readonly children: ReactNode;
+  readonly locale?: "ar" | "en";
 }
 
-export function AuthShell({ title, description, children }: AuthShellProps) {
+export function AuthShell({ title, description, children, locale = "ar" }: AuthShellProps) {
+  const english = locale === "en";
   return (
-    <main className="mx-auto flex min-h-screen max-w-xl items-center px-5 py-10 sm:px-8">
+    <main
+      className="mx-auto flex min-h-screen max-w-xl items-center px-5 py-10 sm:px-8"
+      dir={english ? "ltr" : "rtl"}
+      lang={locale}
+    >
       <Surface className="w-full">
         <div className="mb-8 flex items-center justify-between gap-4">
           <Link
-            aria-label="العودة إلى الصفحة الرئيسية"
+            aria-label={english ? "Back to home" : "العودة إلى الصفحة الرئيسية"}
             className="inline-flex items-center gap-3 rounded-xl text-lg font-black text-[var(--itq-color-ink)]"
-            href="/ar"
+            href={english ? "/en" : "/ar"}
           >
             <BrandMark />
-            إتقانك
+            {english ? "ITQANAK" : "إتقانك"}
           </Link>
           <Link
             className="text-sm font-bold text-[var(--itq-color-brand-700)] underline"
-            href="/ar/auth/login"
+            href={`/${locale}/auth/login`}
           >
-            تسجيل الدخول
+            {english ? "Sign in" : "تسجيل الدخول"}
           </Link>
         </div>
         <h1 className="text-3xl font-black tracking-tight">{title}</h1>

@@ -1,0 +1,12 @@
+[Unit]
+Description=Reconcile ITQANAK ClamAV state every 15 seconds
+
+[Timer]
+OnBootSec=20s
+OnUnitInactiveSec=15s
+AccuracySec=1s
+RandomizedDelaySec=2s
+Unit=itqanak-clamav-reconciler.service
+
+[Install]
+WantedBy=timers.target

@@ -28,7 +28,7 @@ export default async function AccountPage({ searchParams }: AccountPageProps) {
     <AccountShell csrfToken={csrfToken} displayName={account.displayName}>
       <h1 className="text-3xl font-black">حسابي</h1>
       <p className="mt-3 leading-7 text-[var(--itq-color-muted)]">
-        يمكنك تحديث الاسم وإدارة وسائل الأمان. تغيير البريد مؤجل حتى يتوفر تدفق تحقق مستقل.
+        يمكنك تحديث الاسم وإدارة وسائل الأمان. تغيير وسيلة الاتصال يحتاج تدفق تحقق مستقل.
       </p>
       {status === "profile_saved" ? <FormAlert tone="success">تم حفظ الاسم.</FormAlert> : null}
       {status === "rate_limited" ? (
@@ -39,14 +39,18 @@ export default async function AccountPage({ searchParams }: AccountPageProps) {
       ) : null}
       <dl className="mt-7 grid gap-4 rounded-2xl bg-[var(--itq-color-brand-50)] p-5 text-sm sm:grid-cols-2">
         <div>
-          <dt className="font-bold text-[var(--itq-color-muted)]">البريد الإلكتروني</dt>
+          <dt className="font-bold text-[var(--itq-color-muted)]">
+            {account.phoneE164 === undefined ? "البريد الإلكتروني" : "رقم الجوال"}
+          </dt>
           <dd className="mt-1 font-semibold" dir="ltr">
-            {account.email}
+            {account.phoneE164 ?? account.email ?? "—"}
           </dd>
         </div>
         <div>
-          <dt className="font-bold text-[var(--itq-color-muted)]">حالة البريد</dt>
-          <dd className="mt-1 font-semibold">مؤكّد</dd>
+          <dt className="font-bold text-[var(--itq-color-muted)]">حالة التحقق</dt>
+          <dd className="mt-1 font-semibold">
+            {account.phoneVerificationStatus === "VERIFIED" ? "الجوال مؤكّد" : "البريد مؤكّد"}
+          </dd>
         </div>
         <div>
           <dt className="font-bold text-[var(--itq-color-muted)]">تاريخ إنشاء الحساب</dt>

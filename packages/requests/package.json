@@ -1,0 +1,43 @@
+{
+  "name": "@itqanak/requests",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js",
+      "default": "./dist/index.js"
+    }
+  },
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "files": [
+    "dist"
+  ],
+  "bin": {
+    "itqanak-requests": "./dist/cli.js"
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "lint": "eslint src --max-warnings=0",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "test": "vitest run",
+    "requests:cleanup-drafts": "tsx src/cli.ts cleanup-drafts",
+    "storage:verify": "tsx src/cli.ts storage-verify",
+    "storage:cleanup-orphans": "tsx src/cli.ts storage-cleanup-orphans",
+    "files:scan-pending": "tsx src/cli.ts scan-pending"
+  },
+  "dependencies": {
+    "@itqanak/auth": "workspace:*",
+    "@itqanak/config": "workspace:*",
+    "@itqanak/core": "workspace:*",
+    "@itqanak/db": "workspace:*",
+    "@itqanak/observability": "workspace:*",
+    "@itqanak/storage": "workspace:*"
+  },
+  "devDependencies": {
+    "@itqanak/catalog": "workspace:*",
+    "tsx": "4.19.3"
+  }
+}

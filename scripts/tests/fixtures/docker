@@ -1,0 +1,41 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+printf '%s\n' "$*" >>"${FAKE_DOCKER_LOG:?}"
+
+if [[ "${1:-}" == "inspect" ]]; then
+  printf '%s\n' "${FAKE_DOCKER_HEALTH:-healthy}"
+  exit 0
+fi
+
+[[ "${1:-}" == "compose" ]] || exit 2
+shift
+command_name=""
+for argument in "$@"; do
+  case "$argument" in
+    exec | ps | stop | up)
+      command_name="$argument"
+      break
+      ;;
+  esac
+done
+
+case "$command_name" in
+  exec)
+    if [[ "$*" == *"SELECT CASE WHEN file_scan_queue_paused"* ]]; then
+      printf '%s\n' "${FAKE_DOCKER_DESIRED:?}"
+    fi
+    ;;
+  ps)
+    if [[ "$(<"${FAKE_DOCKER_RUNNING_FILE:?}")" == "yes" ]]; then
+      printf '%064d\n' 0 | tr '0' 'a'
+    fi
+    ;;
+  stop)
+    printf '%s\n' "no" >"${FAKE_DOCKER_RUNNING_FILE:?}"
+    ;;
+  up)
+    printf '%s\n' "yes" >"${FAKE_DOCKER_RUNNING_FILE:?}"
+    ;;
+  *) exit 2 ;;
+esac

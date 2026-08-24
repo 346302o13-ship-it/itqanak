@@ -92,3 +92,41 @@ export function assertExpectedFormContentType(contentType: string | null): void 
     throw new CsrfError();
   }
 }
+
+export const maximumProtectedFormBytes = 64 * 1_024;
+
+export function assertExpectedFormContentLength(
+  contentLength: string | null,
+  maximumBytes = maximumProtectedFormBytes,
+): void {
+  if (
+    !Number.isSafeInteger(maximumBytes) ||
+    maximumBytes < 1 ||
+    contentLength === null ||
+    !/^\d{1,10}$/u.test(contentLength)
+  ) {
+    throw new CsrfError();
+  }
+  const bytes = Number(contentLength);
+  if (!Number.isSafeInteger(bytes) || bytes < 1 || bytes > maximumBytes) {
+    throw new CsrfError();
+  }
+}
+
+/**
+ * Upload endpoints accept one raw file body so it can be streamed without a
+ * multipart parser buffering the complete object. MIME policy remains the
+ * storage domain's responsibility; this guard only enforces the documented
+ * state-changing upload protocol.
+ */
+export function assertExpectedRawUploadContentType(contentType: string | null): void {
+  const mediaType = contentType?.split(";", 1)[0]?.trim().toLowerCase();
+  if (
+    mediaType === undefined ||
+    !/^[a-z0-9][a-z0-9!#$&^_.+-]*\/[a-z0-9][a-z0-9!#$&^_.+-]*$/u.test(mediaType) ||
+    mediaType === "application/x-www-form-urlencoded" ||
+    mediaType.startsWith("multipart/")
+  ) {
+    throw new CsrfError();
+  }
+}

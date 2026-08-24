@@ -1,25 +1,24 @@
 "use client";
 
 import { useFormStatus } from "react-dom";
+import type { ComponentPropsWithoutRef, ReactNode } from "react";
 
 import { Button } from "@itqanak/ui";
 
-interface SubmitButtonProps {
-  readonly children: string;
+interface SubmitButtonProps extends Omit<ComponentPropsWithoutRef<typeof Button>, "type"> {
+  readonly children: ReactNode;
   readonly pendingLabel?: string;
-  readonly className?: string;
-  readonly disabled?: boolean;
 }
 
 export function SubmitButton({
   children,
   pendingLabel = "جارٍ الإرسال…",
-  className,
   disabled = false,
+  ...props
 }: SubmitButtonProps) {
   const { pending } = useFormStatus();
   return (
-    <Button className={className} disabled={disabled || pending} type="submit">
+    <Button {...props} disabled={disabled || pending} type="submit">
       {pending ? pendingLabel : children}
     </Button>
   );

@@ -11,7 +11,7 @@ export function Surface({ children, className, ...props }: SurfaceProps): JSX.El
     <section
       {...props}
       className={classNames(
-        "rounded-3xl border border-[color:var(--itq-color-border)] bg-white p-6 shadow-[var(--itq-shadow-card)] sm:p-8",
+        "rounded-3xl border border-[color:var(--itq-color-border)] bg-[var(--itq-color-surface)] p-6 shadow-[var(--itq-shadow-card)] sm:p-8",
         className,
       )}
     >

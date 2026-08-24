@@ -1,6 +1,6 @@
 import type { Role } from "./roles.js";
 
-export const orderStates = [
+export const requestStatuses = [
   "DRAFT",
   "SUBMITTED",
   "UNDER_REVIEW",
@@ -15,31 +15,28 @@ export const orderStates = [
   "REJECTED",
 ] as const;
 
-export type OrderState = (typeof orderStates)[number];
-/** Service requests are the current product name for orders. */
-export type RequestStatus = OrderState;
-export const requestStatuses = orderStates;
+export type RequestStatus = (typeof requestStatuses)[number];
 
-export interface OrderTransition {
-  readonly from: OrderState;
-  readonly to: OrderState;
+export interface RequestTransition {
+  readonly from: RequestStatus;
+  readonly to: RequestStatus;
   readonly actorRoles: readonly Role[];
 }
 
-export interface OrderTransitionInput {
-  readonly from: OrderState;
-  readonly to: OrderState;
+export interface RequestTransitionInput {
+  readonly from: RequestStatus;
+  readonly to: RequestStatus;
   readonly actorRole: Role;
 }
 
-export class OrderTransitionError extends Error {
-  public readonly transition: OrderTransitionInput;
+export class RequestTransitionError extends Error {
+  public readonly transition: RequestTransitionInput;
 
-  public constructor(transition: OrderTransitionInput) {
+  public constructor(transition: RequestTransitionInput) {
     super(
-      `The ${transition.actorRole} role cannot transition an order from ${transition.from} to ${transition.to}.`,
+      `The ${transition.actorRole} role cannot transition a request from ${transition.from} to ${transition.to}.`,
     );
-    this.name = "OrderTransitionError";
+    this.name = "RequestTransitionError";
     this.transition = transition;
   }
 }
@@ -48,11 +45,11 @@ const staff = ["ADMIN", "SYSTEM"] as const satisfies readonly Role[];
 const studentOrStaff = ["STUDENT", "ADMIN", "SYSTEM"] as const satisfies readonly Role[];
 
 /**
- * The sole transition policy for service requests. UI routes, workers, and
- * future APIs must call canTransitionOrder/assertOrderTransition rather than
- * embedding their own state checks.
+ * The sole workflow policy for service requests. Permissions and ownership are
+ * separate authorization checks; satisfying this matrix alone never grants
+ * access to a request.
  */
-export const orderTransitions: readonly OrderTransition[] = [
+export const requestTransitions: readonly RequestTransition[] = [
   { from: "DRAFT", to: "SUBMITTED", actorRoles: studentOrStaff },
   { from: "DRAFT", to: "CANCELLED", actorRoles: studentOrStaff },
   { from: "SUBMITTED", to: "UNDER_REVIEW", actorRoles: staff },
@@ -60,6 +57,7 @@ export const orderTransitions: readonly OrderTransition[] = [
   { from: "SUBMITTED", to: "REJECTED", actorRoles: staff },
   { from: "UNDER_REVIEW", to: "WAITING_FOR_STUDENT", actorRoles: staff },
   { from: "UNDER_REVIEW", to: "QUOTED", actorRoles: staff },
+  { from: "UNDER_REVIEW", to: "IN_PROGRESS", actorRoles: staff },
   { from: "UNDER_REVIEW", to: "REJECTED", actorRoles: staff },
   { from: "UNDER_REVIEW", to: "CANCELLED", actorRoles: staff },
   { from: "WAITING_FOR_STUDENT", to: "SUBMITTED", actorRoles: studentOrStaff },
@@ -67,6 +65,9 @@ export const orderTransitions: readonly OrderTransition[] = [
   { from: "WAITING_FOR_STUDENT", to: "CANCELLED", actorRoles: studentOrStaff },
   { from: "WAITING_FOR_STUDENT", to: "REJECTED", actorRoles: staff },
   { from: "QUOTED", to: "ACCEPTED", actorRoles: studentOrStaff },
+  // Rejecting a commercial quote reopens review/negotiation; it is not a
+  // rejection of the student's service request.
+  { from: "QUOTED", to: "UNDER_REVIEW", actorRoles: studentOrStaff },
   { from: "QUOTED", to: "CANCELLED", actorRoles: studentOrStaff },
   { from: "QUOTED", to: "REJECTED", actorRoles: staff },
   { from: "ACCEPTED", to: "IN_PROGRESS", actorRoles: staff },
@@ -80,29 +81,40 @@ export const orderTransitions: readonly OrderTransition[] = [
   { from: "REVISION_REQUESTED", to: "DELIVERED", actorRoles: staff },
 ] as const;
 
-export function isOrderState(value: string): value is OrderState {
-  return (orderStates as readonly string[]).includes(value);
+export function isRequestStatus(value: string): value is RequestStatus {
+  return (requestStatuses as readonly string[]).includes(value);
 }
 
-export function allowedOrderTransitions(from: OrderState, actorRole: Role): readonly OrderState[] {
-  return orderTransitions
+export function getAllowedRequestTransitions(
+  from: RequestStatus,
+  actorRole: Role,
+): readonly RequestStatus[] {
+  return requestTransitions
     .filter((transition) => transition.from === from && transition.actorRoles.includes(actorRole))
     .map((transition) => transition.to);
 }
 
-export function canTransitionOrder(input: OrderTransitionInput): boolean;
-export function canTransitionOrder(from: OrderState, to: OrderState, actorRole: Role): boolean;
-export function canTransitionOrder(
-  inputOrFrom: OrderTransitionInput | OrderState,
-  maybeTo?: OrderState,
+export function canTransitionRequest(input: RequestTransitionInput): boolean;
+export function canTransitionRequest(
+  from: RequestStatus,
+  to: RequestStatus,
+  actorRole: Role,
+): boolean;
+export function canTransitionRequest(
+  inputOrFrom: RequestTransitionInput | RequestStatus,
+  maybeTo?: RequestStatus,
   maybeActorRole?: Role,
 ): boolean {
-  const input: OrderTransitionInput =
+  const input: RequestTransitionInput =
     typeof inputOrFrom === "string"
-      ? { from: inputOrFrom, to: maybeTo as OrderState, actorRole: maybeActorRole as Role }
+      ? {
+          from: inputOrFrom,
+          to: maybeTo as RequestStatus,
+          actorRole: maybeActorRole as Role,
+        }
       : inputOrFrom;
 
-  return orderTransitions.some(
+  return requestTransitions.some(
     (transition) =>
       transition.from === input.from &&
       transition.to === input.to &&
@@ -110,22 +122,70 @@ export function canTransitionOrder(
   );
 }
 
-export function assertOrderTransition(input: OrderTransitionInput): void;
-export function assertOrderTransition(from: OrderState, to: OrderState, actorRole: Role): void;
-export function assertOrderTransition(
-  inputOrFrom: OrderTransitionInput | OrderState,
-  maybeTo?: OrderState,
+export function assertRequestTransition(input: RequestTransitionInput): void;
+export function assertRequestTransition(
+  from: RequestStatus,
+  to: RequestStatus,
+  actorRole: Role,
+): void;
+export function assertRequestTransition(
+  inputOrFrom: RequestTransitionInput | RequestStatus,
+  maybeTo?: RequestStatus,
   maybeActorRole?: Role,
 ): void {
-  const input: OrderTransitionInput =
+  const input: RequestTransitionInput =
     typeof inputOrFrom === "string"
-      ? { from: inputOrFrom, to: maybeTo as OrderState, actorRole: maybeActorRole as Role }
+      ? {
+          from: inputOrFrom,
+          to: maybeTo as RequestStatus,
+          actorRole: maybeActorRole as Role,
+        }
       : inputOrFrom;
 
-  if (!canTransitionOrder(input)) {
-    throw new OrderTransitionError(input);
+  if (!canTransitionRequest(input)) {
+    throw new RequestTransitionError(input);
   }
 }
 
-export const canTransitionRequest = canTransitionOrder;
-export const assertRequestTransition = assertOrderTransition;
+/**
+ * Applies the pure workflow decision and returns the next status. Persisting it
+ * with an optimistic version predicate remains the caller's responsibility.
+ */
+export function transitionRequest(input: RequestTransitionInput): RequestStatus;
+export function transitionRequest(
+  from: RequestStatus,
+  to: RequestStatus,
+  actorRole: Role,
+): RequestStatus;
+export function transitionRequest(
+  inputOrFrom: RequestTransitionInput | RequestStatus,
+  maybeTo?: RequestStatus,
+  maybeActorRole?: Role,
+): RequestStatus {
+  const input: RequestTransitionInput =
+    typeof inputOrFrom === "string"
+      ? {
+          from: inputOrFrom,
+          to: maybeTo as RequestStatus,
+          actorRole: maybeActorRole as Role,
+        }
+      : inputOrFrom;
+
+  assertRequestTransition(input);
+  return input.to;
+}
+
+// Phase 1 used "order" terminology. These aliases keep existing consumers
+// source-compatible while Request remains the canonical Phase 3 vocabulary.
+export const orderStates = requestStatuses;
+export type OrderState = RequestStatus;
+export type OrderTransition = RequestTransition;
+export type OrderTransitionInput = RequestTransitionInput;
+export { RequestTransitionError as OrderTransitionError };
+export const orderTransitions = requestTransitions;
+export const isOrderState = isRequestStatus;
+export const allowedOrderTransitions = getAllowedRequestTransitions;
+export const getAllowedTransitions = getAllowedRequestTransitions;
+export const canTransitionOrder = canTransitionRequest;
+export const assertOrderTransition = assertRequestTransition;
+export const transitionOrder = transitionRequest;

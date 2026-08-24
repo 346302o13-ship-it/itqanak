@@ -21,6 +21,12 @@ export interface AuthEmailSender {
   deliver(message: AuthEmailMessage): Promise<void>;
 }
 
+export const authEmailTransportTimeouts = {
+  connectionTimeout: 10_000,
+  greetingTimeout: 10_000,
+  socketTimeout: 30_000,
+} as const;
+
 export class TestAuthEmailSender implements AuthEmailSender {
   public readonly messages: AuthEmailMessage[] = [];
 
@@ -39,6 +45,7 @@ class SmtpAuthEmailSender implements AuthEmailSender {
       port: config.port,
       secure: config.secure,
       requireTLS: requireTls,
+      ...authEmailTransportTimeouts,
       ...(requireTls ? { tls: { minVersion: "TLSv1.2" } } : {}),
       auth: { user: config.fromAddress, pass: config.password },
     });

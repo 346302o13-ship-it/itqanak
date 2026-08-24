@@ -29,12 +29,14 @@ export async function recordAuditEvent(
   await database`
     INSERT INTO security_audit_events (
       event_type, actor_user_id, target_user_id, session_id, request_id,
-      correlation_id, outcome, ip_hash, user_agent_summary, metadata
+      correlation_id, outcome, ip_hash, user_agent_summary, resource_type,
+      resource_id, metadata
     ) VALUES (
       ${input.eventType}, ${input.actorUserId ?? null}, ${input.targetUserId ?? null},
       ${input.sessionId ?? null}, ${input.requestId ?? null}, ${input.correlationId ?? null},
       ${input.outcome}, ${input.ipHash ?? null}, ${input.userAgentSummary ?? null},
-      ${serializeAuditMetadata(input.metadata)}::jsonb
+      ${input.resourceType ?? null}, ${input.resourceId ?? null},
+      ${database.json(redact(input.metadata ?? {}))}
     )
   `;
 }

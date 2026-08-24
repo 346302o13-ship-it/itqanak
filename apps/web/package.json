@@ -12,12 +12,22 @@
     "test": "vitest run"
   },
   "dependencies": {
-    "@itqanak/config": "workspace:*",
+    "@ibm/plex-sans": "1.1.0",
+    "@ibm/plex-sans-arabic": "1.1.0",
     "@itqanak/auth": "workspace:*",
+    "@itqanak/catalog": "workspace:*",
+    "@itqanak/config": "workspace:*",
+    "@itqanak/content": "workspace:*",
+    "@itqanak/core": "workspace:*",
     "@itqanak/db": "workspace:*",
+    "@itqanak/finance": "workspace:*",
     "@itqanak/observability": "workspace:*",
+    "@itqanak/operations": "workspace:*",
+    "@itqanak/requests": "workspace:*",
+    "@itqanak/storage": "workspace:*",
     "@itqanak/ui": "workspace:*",
     "ioredis": "6.0.0",
+    "jose": "6.2.8",
     "next": "16.3.0",
     "react": "19.2.8",
     "react-dom": "19.2.8"

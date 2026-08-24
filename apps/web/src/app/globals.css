@@ -1,3 +1,5 @@
+@import "@ibm/plex-sans-arabic/css/ibm-plex-sans-arabic-all.css";
+@import "@ibm/plex-sans/css/ibm-plex-sans-all.css";
 @import "@itqanak/ui/styles.css";
 
 @tailwind base;
@@ -11,18 +13,81 @@
 html {
   background: var(--itq-color-canvas);
   color: var(--itq-color-ink);
+  scroll-behavior: smooth;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
 }
 
 body {
   min-height: 100vh;
   margin: 0;
   background:
-    radial-gradient(circle at 88% 0%, rgb(213 238 238 / 72%), transparent 31rem),
+    radial-gradient(circle at 92% -8%, rgb(213 238 232 / 62%), transparent 34rem),
+    radial-gradient(circle at 0% 38%, rgb(255 248 233 / 72%), transparent 30rem),
     var(--itq-color-canvas);
-  font-family: Arial, Tahoma, sans-serif;
+  font-family: "IBM Plex Sans Arabic", "IBM Plex Sans", "Segoe UI", Tahoma, Arial, sans-serif;
+  line-height: 1.5;
+}
+
+html[lang="en"] body {
+  font-family: "IBM Plex Sans", "IBM Plex Sans Arabic", "Segoe UI", Arial, sans-serif;
+}
+
+h1,
+h2,
+h3 {
+  text-wrap: balance;
+}
+
+p {
+  text-wrap: pretty;
+}
+
+button,
+input,
+select,
+textarea {
+  font: inherit;
+}
+
+button,
+a,
+input,
+select,
+textarea {
+  -webkit-tap-highlight-color: transparent;
+}
+
+a {
+  color: inherit;
+  text-decoration-thickness: 0.08em;
+  text-underline-offset: 0.22em;
+}
+
+img,
+svg {
+  display: block;
+}
+
+::selection {
+  background: var(--itq-color-brand-200);
+  color: var(--itq-color-brand-900);
 }
 
 :focus-visible {
   outline: 3px solid var(--itq-color-brand-600);
   outline-offset: 3px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+
+  *,
+  *::before,
+  *::after {
+    scroll-behavior: auto !important;
+    transition-duration: 0.01ms !important;
+  }
 }

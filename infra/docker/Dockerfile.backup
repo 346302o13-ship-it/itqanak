@@ -1,12 +1,16 @@
-FROM postgres:17.4-alpine
+FROM postgres:17.10-alpine
+
+RUN apk add --no-cache bash
 
 RUN addgroup -S -g 10001 itqanak && adduser -S -G itqanak -u 10001 itqanak
 
+COPY scripts/libpq-service.sh /usr/local/bin/libpq-service.sh
 COPY scripts/backup-postgres.sh /usr/local/bin/backup-postgres.sh
 COPY scripts/restore-postgres.sh /usr/local/bin/restore-postgres.sh
 COPY scripts/verify-backup.sh /usr/local/bin/verify-backup.sh
 
-RUN chmod 0555 /usr/local/bin/backup-postgres.sh \
+RUN chmod 0444 /usr/local/bin/libpq-service.sh \
+    && chmod 0555 /usr/local/bin/backup-postgres.sh \
     /usr/local/bin/restore-postgres.sh \
     /usr/local/bin/verify-backup.sh
 

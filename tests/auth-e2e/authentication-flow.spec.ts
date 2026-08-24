@@ -1,149 +1,176 @@
 import { expect, test, type Page } from "@playwright/test";
 
-const mailpitUrl = process.env.MAILPIT_URL ?? "http://127.0.0.1:8025";
+import {
+  assertIsolatedPhoneE2eEnvironment,
+  bootstrapPhoneAdmin,
+  phoneVerificationRecord,
+  uniquePhone,
+  type SupportedPhoneCountry,
+} from "../e2e-support/isolated-phone-fixture";
 
-interface MailpitMessage {
-  readonly ID?: string;
-  readonly id?: string;
-  readonly To?: readonly { readonly Address?: string }[];
-  readonly to?: readonly { readonly address?: string }[];
+const baseUrl = process.env.AUTH_E2E_BASE_URL ?? "http://127.0.0.1:8080";
+
+interface RegistrationInput {
+  readonly country: SupportedPhoneCountry;
+  readonly displayName: string;
+  readonly email: string;
+  readonly localPhone: string;
+  readonly password: string;
 }
 
-interface MailpitList {
-  readonly messages?: readonly MailpitMessage[];
-}
-
-async function actionLink(
-  recipient: string,
-  action: "verify-email" | "reset-password",
-): Promise<string> {
-  const deadline = Date.now() + 30_000;
-  while (Date.now() < deadline) {
-    const response = await fetch(`${mailpitUrl}/api/v1/messages`);
-    if (response.ok) {
-      const body = (await response.json()) as MailpitList;
-      const matchingMessages = (body.messages ?? []).filter((message) => {
-        const recipients = message.To ?? message.to ?? [];
-        return recipients.some(
-          (entry) => (entry.Address ?? entry.address)?.toLocaleLowerCase("en-US") === recipient,
-        );
-      });
-      for (const message of matchingMessages) {
-        const id = message.ID ?? message.id;
-        if (id === undefined) {
-          continue;
-        }
-        const messageResponse = await fetch(
-          `${mailpitUrl}/api/v1/message/${encodeURIComponent(id)}`,
-        );
-        if (!messageResponse.ok) {
-          continue;
-        }
-        const messageBody = (await messageResponse.json()) as {
-          readonly Text?: string;
-          readonly text?: string;
-        };
-        const content = messageBody.Text ?? messageBody.text ?? "";
-        const match = content.match(
-          new RegExp(`https?:\\/\\/[^\\s]+\\/ar\\/auth\\/${action}#token=[^\\s]+`, "u"),
-        );
-        if (match?.[0] !== undefined) {
-          return match[0];
-        }
-      }
-    }
-    await new Promise((resolve) => setTimeout(resolve, 500));
-  }
-  throw new Error("Timed out waiting for the requested local Mailpit action link.");
-}
-
-async function openActionLink(
-  page: Page,
-  recipient: string,
-  action: "verify-email" | "reset-password",
-): Promise<void> {
-  const url = new URL(await actionLink(recipient, action));
-  const fragment = url.hash;
-  const pathname = url.pathname;
-  url.hash = "";
-  await page.addInitScript(
-    ({ actionPath, actionFragment }) => {
-      if (globalThis.location.pathname === actionPath) {
-        globalThis.history.replaceState(
-          null,
-          "",
-          `${globalThis.location.pathname}${globalThis.location.search}${actionFragment}`,
-        );
-      }
-    },
-    { actionPath: pathname, actionFragment: fragment },
+async function registerArabic(page: Page, input: RegistrationInput): Promise<void> {
+  await page.goto("/ar/auth/register");
+  await page.getByLabel("الاسم").fill(input.displayName);
+  await page.getByLabel("البريد الإلكتروني").fill(input.email);
+  await page.getByLabel("الدولة").selectOption(input.country);
+  await page.getByLabel("رقم الجوال").fill(input.localPhone);
+  await page.getByLabel("كلمة المرور", { exact: true }).fill(input.password);
+  await page.getByLabel("تأكيد كلمة المرور").fill(input.password);
+  await page.getByLabel(/أوافق على شروط الاستخدام/u).check();
+  await page.getByLabel(/أوافق على سياسة الخصوصية/u).check();
+  await page.getByRole("button", { name: "إنشاء الحساب" }).click();
+  await expect(page).toHaveURL(/\/ar\/auth\/pending-phone-verification\?status=account_created/u);
+  await expect(page.getByRole("heading", { name: "بقي تأكيد رقم الجوال" })).toBeVisible();
+  await expect(page.getByRole("link", { name: "مراسلة الدعم عبر واتساب" })).toHaveAttribute(
+    "href",
+    /wa\.me\/966564202263/u,
   );
-  await page.goto(url.toString());
-  await page.waitForFunction(() => {
-    const tokenInput = globalThis.document.querySelector<HTMLInputElement>('input[name="token"]');
-    return globalThis.location.hash.length === 0 && (tokenInput?.value.length ?? 0) > 0;
-  });
 }
 
-test("student registration, verification, login, recovery, and session revocation", async ({
+async function loginArabic(
+  page: Page,
+  identity: string,
+  password: string,
+  next?: string,
+): Promise<void> {
+  const suffix = next === undefined ? "" : `?next=${encodeURIComponent(next)}`;
+  await page.goto(`/ar/auth/login${suffix}`);
+  await page.getByLabel("رقم الجوال بصيغة دولية أو البريد الإلكتروني").fill(identity);
+  await page.getByLabel("كلمة المرور").fill(password);
+  await page.getByRole("button", { name: "تسجيل الدخول" }).click();
+}
+
+test.describe.configure({ mode: "serial" });
+
+test.beforeAll(async () => {
+  await assertIsolatedPhoneE2eEnvironment(baseUrl);
+});
+
+test("phone-first registration requires audited WhatsApp verification by an administrator", async ({
+  browser,
   page,
 }) => {
   const suffix = `${Date.now()}-${Math.random().toString(36).slice(2, 10)}`;
-  const email = `auth-e2e-${suffix}@example.test`;
-  const firstPassword = `Long test passphrase ${suffix}!`;
-  const secondPassword = `Replaced test passphrase ${suffix}!`;
+  const adminPhone = uniquePhone("SA");
+  const studentPhone = uniquePhone("AE");
+  const adminPassword = `Admin browser passphrase ${suffix}!`;
+  const studentPassword = `Student browser passphrase ${suffix}!`;
+  const studentName = `طالب تحقق ${suffix}`;
 
   await page.goto("/ar/admin");
   await expect(page).toHaveURL(/\/ar\/auth\/login\?next=%2Far%2Fadmin/u);
 
-  await page.goto("/ar/auth/register");
-  await page.getByLabel("الاسم").fill("اختبار المتصفح");
-  await page.getByLabel("البريد الإلكتروني").fill(email);
-  await page.getByLabel("كلمة المرور", { exact: true }).fill(firstPassword);
-  await page.getByLabel("تأكيد كلمة المرور").fill(firstPassword);
-  await page.getByLabel(/أوافق على شروط الاستخدام/).check();
-  await page.getByLabel(/أوافق على سياسة الخصوصية/).check();
-  await page.getByRole("button", { name: "إنشاء الحساب" }).click();
-  await expect(page).toHaveURL(/\/ar\/auth\/login\?status=account_created/u);
+  await registerArabic(page, {
+    country: adminPhone.country,
+    displayName: "مدير اختبار المتصفح",
+    email: `admin-${suffix}@example.test`,
+    localPhone: adminPhone.local,
+    password: adminPassword,
+  });
 
-  await openActionLink(page, email, "verify-email");
-  await page.getByRole("button", { name: "تأكيد البريد الإلكتروني" }).click();
-  await expect(page).toHaveURL(/\/ar\/auth\/login\?status=verified/u);
+  await loginArabic(page, adminPhone.e164, adminPassword);
+  await expect(page).toHaveURL(/\/ar\/auth\/login\?.*status=pending_verification/u);
+  await expect(page.getByRole("status")).toContainText("بانتظار تأكيد رقم الجوال");
 
-  await page.getByLabel("البريد الإلكتروني").fill(email);
-  await page.getByLabel("كلمة المرور").fill(firstPassword);
-  await page.getByRole("button", { name: "تسجيل الدخول" }).click();
-  await expect(page).toHaveURL(/\/ar\/account/u);
-  await expect(page.getByRole("heading", { name: "حسابي" })).toBeVisible();
+  // This is the only direct bootstrap. It is guarded by the dedicated E2E
+  // Compose project check; all subsequent student verification uses the UI.
+  await bootstrapPhoneAdmin(adminPhone.e164);
+  await loginArabic(page, adminPhone.e164, adminPassword, "/ar/admin/verifications");
+  await expect(page).toHaveURL(/\/ar\/admin\/verifications$/u);
+  await expect(page.getByRole("heading", { name: "توثيق أرقام واتساب" })).toBeVisible();
 
-  const forbiddenResponse = await page.goto("/ar/admin");
-  expect(forbiddenResponse?.status()).toBe(403);
-  await expect(page.getByRole("heading", { name: /403 — الوصول غير مسموح/u })).toBeVisible();
-  await page.goto("/ar/account");
-  await page.getByRole("button", { name: "تسجيل الخروج" }).click();
-  await expect(page).toHaveURL(/\/ar\/auth\/login\?status=logged_out/u);
+  const studentContext = await browser.newContext();
+  try {
+    const studentPage = await studentContext.newPage();
+    await registerArabic(studentPage, {
+      country: studentPhone.country,
+      displayName: studentName,
+      email: `student-${suffix}@example.test`,
+      localPhone: studentPhone.local,
+      password: studentPassword,
+    });
 
-  await page.getByLabel("البريد الإلكتروني").fill(email);
-  await page.getByLabel("كلمة المرور").fill(firstPassword);
-  await page.getByRole("button", { name: "تسجيل الدخول" }).click();
-  await expect(page).toHaveURL(/\/ar\/account/u);
+    await page.reload();
+    const verificationCard = page.locator("article").filter({ hasText: studentName });
+    await expect(verificationCard).toContainText(studentPhone.e164);
+    await verificationCard.getByLabel("مرجع محادثة واتساب *").fill(`WA-E2E-${suffix}`);
+    await verificationCard
+      .getByLabel("ملاحظة المراجعة")
+      .fill("وصلت رسالة اختبار من الرقم نفسه داخل بيئة E2E المعزولة.");
+    await verificationCard.getByLabel(/أقر أن الرسالة وصلت من الرقم المعروض نفسه/u).check();
+    await verificationCard.getByRole("button", { name: "تأكيد الرقم وتفعيل الحساب" }).click();
+    await expect(page).toHaveURL(/\/ar\/admin\/verifications\?notice=verified/u);
+    await expect(page.getByRole("status")).toHaveText(
+      "تم توثيق الرقم وتفعيل الحساب مع حفظ سجل التدقيق.",
+    );
 
-  await page.goto("/ar/auth/forgot-password");
-  await page.getByLabel("البريد الإلكتروني").fill(email);
-  await page.getByRole("button", { name: "إرسال تعليمات الاستعادة" }).click();
-  await expect(page).toHaveURL(/status=sent/u);
+    await expect
+      .poll(() => phoneVerificationRecord(studentPhone.e164))
+      .toMatchObject({
+        status: "VERIFIED",
+        accountStatus: "ACTIVE",
+        reference: `WA-E2E-${suffix}`,
+        confirmationAuditCount: 1,
+      });
 
-  await openActionLink(page, email, "reset-password");
-  await page.getByLabel("كلمة المرور الجديدة", { exact: true }).fill(secondPassword);
-  await page.getByLabel("تأكيد كلمة المرور الجديدة").fill(secondPassword);
-  await page.getByRole("button", { name: "حفظ كلمة المرور الجديدة" }).click();
-  await expect(page).toHaveURL(/\/ar\/auth\/login\?status=password_reset/u);
+    await loginArabic(studentPage, studentPhone.e164, studentPassword);
+    await expect(studentPage).toHaveURL(/\/ar\/account$/u);
+    await expect(studentPage.getByRole("heading", { name: "حسابي" })).toBeVisible();
+    await expect(studentPage.getByText("الجوال مؤكّد", { exact: true })).toBeVisible();
 
-  await page.getByLabel("البريد الإلكتروني").fill(email);
-  await page.getByLabel("كلمة المرور").fill(secondPassword);
-  await page.getByRole("button", { name: "تسجيل الدخول" }).click();
-  await expect(page).toHaveURL(/\/ar\/account/u);
-  await page.goto("/ar/account/sessions");
-  await page.getByRole("button", { name: "تسجيل الخروج من جميع الأجهزة" }).click();
-  await expect(page).toHaveURL(/\/ar\/auth\/login\?status=logged_out/u);
+    const forbiddenResponse = await studentPage.goto("/ar/admin");
+    expect(forbiddenResponse?.status()).toBe(403);
+    await expect(
+      studentPage.getByRole("heading", { name: /403 — الوصول غير مسموح/u }),
+    ).toBeVisible();
+
+    await studentPage.goto("/ar/account/sessions");
+    await studentPage.getByRole("button", { name: "تسجيل الخروج من جميع الأجهزة" }).click();
+    await expect(studentPage).toHaveURL(/\/ar\/auth\/login\?status=logged_out/u);
+  } finally {
+    await studentContext.close();
+  }
+});
+
+test("English registration accepts a Kuwait mobile and exposes all supported countries", async ({
+  page,
+}) => {
+  const phone = uniquePhone("KW");
+  const password = `Kuwait browser passphrase ${Date.now()}!`;
+
+  await page.goto("/en/auth/register");
+  await expect(page.locator("main")).toHaveAttribute("lang", "en");
+  await expect(page.locator("main")).toHaveAttribute("dir", "ltr");
+  await expect(page.getByLabel("Country").locator("option")).toHaveText([
+    "Saudi Arabia (+966)",
+    "United Arab Emirates (+971)",
+    "Kuwait (+965)",
+  ]);
+  await page.getByLabel("Name").fill("Kuwait browser student");
+  await page.getByLabel("Email address").fill(`kuwait-${Date.now()}@example.test`);
+  await page.getByLabel("Country").selectOption(phone.country);
+  await page.getByLabel("Mobile number").fill(phone.local);
+  await page.getByLabel("Password", { exact: true }).fill(password);
+  await page.getByLabel("Confirm password").fill(password);
+  await page.getByLabel(/I accept the Terms of Use/u).check();
+  await page.getByLabel(/I accept the Privacy Policy/u).check();
+  await page.getByRole("button", { name: "Create account" }).click();
+
+  await expect(page).toHaveURL(/\/en\/auth\/pending-phone-verification\?status=account_created/u);
+  await expect(page.getByRole("heading", { name: "Verify your mobile number" })).toBeVisible();
+  await expect(page.getByText("+966564202263", { exact: true })).toBeVisible();
+  await expect(page.getByRole("link", { name: "Contact support on WhatsApp" })).toHaveAttribute(
+    "href",
+    /wa\.me\/966564202263/u,
+  );
 });

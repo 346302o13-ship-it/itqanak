@@ -1,9 +1,13 @@
 import Link from "next/link";
+import { headers } from "next/headers";
 
 import { AuthShell, CsrfInput, FormAlert } from "@/components/auth-shell";
+import { InstallAppButton } from "@/components/install-app-button";
 import { SubmitButton } from "@/components/submit-button";
 import { csrfTokenForPage } from "@/lib/auth-runtime";
 import { safeNext } from "@/lib/auth-responses";
+import { adminLoginHref } from "@/lib/admin-access";
+import { supportWhatsAppHref } from "@/lib/support-contact";
 
 interface LoginPageProps {
   readonly searchParams: Promise<{
@@ -19,17 +23,31 @@ export const metadata = { title: "تسجيل الدخول" };
 export const dynamic = "force-dynamic";
 
 export default async function LoginPage({ searchParams }: LoginPageProps) {
-  const [token, query] = await Promise.all([csrfTokenForPage(), searchParams]);
+  const [token, query, requestHeaders] = await Promise.all([
+    csrfTokenForPage(),
+    searchParams,
+    headers(),
+  ]);
   const status = typeof query.status === "string" ? query.status : undefined;
-  const next = safeNext(typeof query.next === "string" ? query.next : undefined);
+  const requestedNext = safeNext(typeof query.next === "string" ? query.next : undefined);
+  const host = requestHeaders.get("x-forwarded-host") ?? requestHeaders.get("host") ?? "";
+  const admin =
+    host.split(":")[0]?.toLowerCase().startsWith("admin.") === true ||
+    requestedNext.startsWith("/ar/admin");
+  const next = admin ? "/ar/admin" : requestedNext;
   return (
     <AuthShell
-      description="استخدم بيانات حسابك الموثّق. لا نحفظ الجلسة في المتصفح إلا داخل Cookie آمنة."
-      title="تسجيل الدخول"
+      description={
+        admin
+          ? "دخول مخصص للمدير المخوّل لإدارة الطلبات والمحادثات والمحتوى."
+          : "استخدم بيانات حسابك الموثّق. لا نحفظ الجلسة في المتصفح إلا داخل Cookie آمنة."
+      }
+      title={admin ? "دخول مركز الإدارة" : "تسجيل الدخول"}
     >
+      {admin ? <InstallAppButton className="mb-5 w-full" locale="ar" surface="admin" /> : null}
       {status === "account_created" ? (
         <FormAlert tone="success">
-          إذا كان البريد جديداً، أرسلنا رابط التأكيد. افتح بريدك ثم سجّل الدخول.
+          تم استلام طلب إنشاء الحساب. أكمل تأكيد رقم الجوال عبر واتساب قبل تسجيل الدخول.
         </FormAlert>
       ) : null}
       {status === "verified" ? (
@@ -51,6 +69,15 @@ export default async function LoginPage({ searchParams }: LoginPageProps) {
           </Link>
         </FormAlert>
       ) : null}
+      {status === "pending_verification" ? (
+        <FormAlert>
+          حسابك بانتظار تأكيد رقم الجوال.{" "}
+          <a className="underline" href={supportWhatsAppHref("ar", "تأكيد الحساب")}>
+            تواصل مع الدعم من الرقم المسجل
+          </a>
+          .
+        </FormAlert>
+      ) : null}
       {status === "rate_limited" ? (
         <FormAlert>تجاوزت الحد المؤقت للمحاولات. حاول لاحقاً.</FormAlert>
       ) : null}
@@ -58,22 +85,25 @@ export default async function LoginPage({ searchParams }: LoginPageProps) {
         <FormAlert>انتهت صلاحية نموذج الأمان. حدّث الصفحة ثم أعد المحاولة.</FormAlert>
       ) : null}
       {status === "failed" || status === "invalid" ? (
-        <FormAlert>البريد الإلكتروني أو كلمة المرور غير صحيحة.</FormAlert>
+        <FormAlert>رقم الجوال/البريد الإلكتروني أو كلمة المرور غير صحيحة.</FormAlert>
       ) : null}
       <form action="/api/auth/login" className="grid gap-5" method="post">
         <CsrfInput token={token} />
         <input name="next" type="hidden" value={next} />
+        <input name="locale" type="hidden" value="ar" />
         <div>
-          <label className="text-sm font-bold" htmlFor="email">
-            البريد الإلكتروني
+          <label className="text-sm font-bold" htmlFor="identity">
+            رقم الجوال بصيغة دولية أو البريد الإلكتروني
           </label>
           <input
-            autoComplete="email"
+            autoComplete="username"
             className={fieldClassName}
-            id="email"
-            name="email"
+            dir="ltr"
+            id="identity"
+            name="identity"
+            placeholder="+9665xxxxxxxx أو name@example.com"
             required
-            type="email"
+            type="text"
           />
         </div>
         <div>
@@ -85,7 +115,7 @@ export default async function LoginPage({ searchParams }: LoginPageProps) {
               className="text-xs font-bold text-[var(--itq-color-brand-700)] underline"
               href="/ar/auth/forgot-password"
             >
-              نسيت كلمة المرور؟
+              مشكلة في الدخول؟
             </Link>
           </div>
           <input
@@ -101,13 +131,29 @@ export default async function LoginPage({ searchParams }: LoginPageProps) {
           تسجيل الدخول
         </SubmitButton>
       </form>
-      <p className="mt-6 text-center text-sm text-[var(--itq-color-muted)]">
-        ليس لديك حساب؟{" "}
-        <Link
+      {!admin ? (
+        <p className="mt-6 text-center text-sm text-[var(--itq-color-muted)]">
+          ليس لديك حساب؟{" "}
+          <Link
+            className="font-bold text-[var(--itq-color-brand-700)] underline"
+            href="/ar/auth/register"
+          >
+            أنشئ حساباً
+          </Link>
+        </p>
+      ) : null}
+      <p className="mt-3 text-center text-sm">
+        أنت مدير؟{" "}
+        <a
           className="font-bold text-[var(--itq-color-brand-700)] underline"
-          href="/ar/auth/register"
+          href={adminLoginHref("ar")}
         >
-          أنشئ حساباً
+          ادخل إلى مركز الإدارة
+        </a>
+      </p>
+      <p className="mt-3 text-center text-sm">
+        <Link className="font-bold underline" href="/en/auth/login">
+          English
         </Link>
       </p>
     </AuthShell>

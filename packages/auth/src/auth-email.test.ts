@@ -2,7 +2,12 @@ import { describe, expect, it } from "vitest";
 
 import type { AppConfig } from "@itqanak/config";
 
-import { createAuthEmailSender, renderAuthEmail, TestAuthEmailSender } from "./auth-email.js";
+import {
+  authEmailTransportTimeouts,
+  createAuthEmailSender,
+  renderAuthEmail,
+  TestAuthEmailSender,
+} from "./auth-email.js";
 
 const config: AppConfig = {
   nodeEnv: "test",
@@ -11,10 +16,26 @@ const config: AppConfig = {
   defaultLocale: "ar",
   publicAppUrl: "https://app.itqanak.test",
   adminAppUrl: "https://admin.itqanak.test/ar/admin",
+  academicIntegrityVersion: "2026-08",
   migrationsDirectory: "migrations",
   logLevel: "info",
-  whatsapp: { mode: "disabled" },
-  storage: { driver: "local", maxUploadBytes: 26_214_400 },
+  whatsapp: { mode: "disabled", graphApiVersion: "v25.0", maxAttempts: 8 },
+  storage: {
+    driver: "local",
+    localPath: "/tmp/itqanak-test-uploads",
+    maxFileBytes: 20_971_520,
+    maxFilesPerRequest: 10,
+    maxTotalBytesPerRequest: 104_857_600,
+  },
+  fileScanning: {
+    mode: "disabled",
+    clamavHost: "clamav",
+    clamavPort: 3310,
+    connectTimeoutMs: 3_000,
+    scanTimeoutMs: 30_000,
+    maxAttempts: 5,
+  },
+  operationalControls: { maintenanceCacheTtlMs: 2_000 },
   auth: {
     studentSessionAbsoluteTtlSeconds: 2_592_000,
     studentSessionIdleTtlSeconds: 604_800,
@@ -30,6 +51,14 @@ const config: AppConfig = {
 };
 
 describe("authentication-email rendering", () => {
+  it("bounds SMTP connection, greeting, and socket waits", () => {
+    expect(authEmailTransportTimeouts).toEqual({
+      connectionTimeout: 10_000,
+      greetingTimeout: 10_000,
+      socketTimeout: 30_000,
+    });
+  });
+
   it("builds verification links from the configured public application URL", () => {
     const message = renderAuthEmail(
       {

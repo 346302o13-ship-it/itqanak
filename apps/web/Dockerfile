@@ -1,4 +1,4 @@
-FROM node:22.14.0-alpine AS base
+FROM node:22.23.1-alpine AS base
 
 ENV PNPM_HOME=/pnpm
 ENV PATH=$PNPM_HOME:$PATH
@@ -22,7 +22,7 @@ RUN --mount=type=cache,id=itqanak-pnpm-store,target=/pnpm/store \
     pnpm install --frozen-lockfile
 RUN pnpm turbo run build --filter=@itqanak/web...
 
-FROM node:22.14.0-alpine AS runner
+FROM node:22.23.1-alpine AS runner
 
 ENV NODE_ENV=production
 ENV PORT=3000

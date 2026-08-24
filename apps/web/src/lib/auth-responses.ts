@@ -21,16 +21,26 @@ export type AuthStatus =
   | "unverified"
   | "verified";
 
-export function appUrl(config: AppConfig, path: string, status?: AuthStatus): URL {
-  const url = new URL(path, config.publicAppUrl);
+export function appUrl(
+  config: AppConfig,
+  path: string,
+  status?: AuthStatus,
+  application: "public" | "admin" = "public",
+): URL {
+  const url = new URL(path, application === "admin" ? config.adminAppUrl : config.publicAppUrl);
   if (status !== undefined) {
     url.searchParams.set("status", status);
   }
   return url;
 }
 
-export function redirectTo(config: AppConfig, path: string, status?: AuthStatus): NextResponse {
-  return NextResponse.redirect(appUrl(config, path, status), 303);
+export function redirectTo(
+  config: AppConfig,
+  path: string,
+  status?: AuthStatus,
+  application: "public" | "admin" = "public",
+): NextResponse {
+  return NextResponse.redirect(appUrl(config, path, status, application), 303);
 }
 
 export function safeNext(value: string | null | undefined, fallback = "/ar/account"): string {
@@ -73,6 +83,9 @@ export function statusForAuthError(error: unknown): AuthStatus {
     return "failed";
   }
   if (error instanceof AuthenticationError) {
+    if (error.code === "PHONE_NOT_VERIFIED") {
+      return "pending_verification";
+    }
     if (error.code === "EMAIL_NOT_VERIFIED") {
       return "unverified";
     }

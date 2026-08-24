@@ -1,0 +1,7 @@
+FROM clamav/clamav:1.5.3
+
+COPY --chmod=0555 infra/clamav/production-entrypoint.sh /usr/local/bin/itqanak-clamav-entrypoint
+COPY --chmod=0555 infra/clamav/mark-update-ready.sh /usr/local/bin/itqanak-clamav-mark-update
+
+USER clamav
+ENTRYPOINT ["/usr/local/bin/itqanak-clamav-entrypoint"]

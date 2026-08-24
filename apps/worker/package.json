@@ -17,6 +17,9 @@
     "@itqanak/core": "workspace:*",
     "@itqanak/db": "workspace:*",
     "@itqanak/observability": "workspace:*",
+    "@itqanak/operations": "workspace:*",
+    "@itqanak/requests": "workspace:*",
+    "@itqanak/storage": "workspace:*",
     "ioredis": "6.0.0"
   },
   "devDependencies": {
