@@ -1,11 +1,14 @@
 import { AdminShell } from "@/components/admin-shell";
-import { AdminStudentOperations } from "@/components/admin-student-operations";
+import {
+  AdminStudentOperations,
+  readAdminStudentDraft,
+} from "@/components/admin-student-operations";
 import { requireAdminPagePrincipal } from "@/lib/admin-page";
 import { csrfTokenForPage } from "@/lib/auth-runtime";
 import { createStudentRequestRuntime } from "@/lib/request-runtime";
 
 interface PageProps {
-  readonly searchParams: Promise<{ readonly notice?: string | string[] }>;
+  readonly searchParams: Promise<Record<string, string | string[] | undefined>>;
 }
 
 export const metadata = { title: "إدارة الطلاب" };
@@ -34,6 +37,7 @@ export default async function AdminStudentsPage({ searchParams }: PageProps) {
       label: `${category.nameAr} — ${service.nameAr}`,
     })),
   );
+  const studentDraft = readAdminStudentDraft(query);
   return (
     <AdminShell csrfToken={csrfToken} displayName={principal.displayName}>
       <div className="mb-7">
@@ -43,6 +47,7 @@ export default async function AdminStudentsPage({ searchParams }: PageProps) {
       <AdminStudentOperations
         csrfToken={csrfToken}
         {...(typeof query.notice === "string" ? { notice: query.notice } : {})}
+        {...(studentDraft === undefined ? {} : { studentDraft })}
         services={services}
         students={students.items}
       />

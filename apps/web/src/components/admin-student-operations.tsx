@@ -2,6 +2,7 @@ import { generateSubmissionKey } from "@itqanak/core";
 import type { AdminStudentSummary } from "@itqanak/auth";
 
 import { CsrfInput, FormAlert } from "./auth-shell";
+import { FormErrorSummary } from "./form-error-summary";
 import { RequestFields } from "./request-fields";
 import { SubmitButton } from "./submit-button";
 
@@ -10,12 +11,44 @@ interface ServiceOption {
   readonly label: string;
 }
 
+export interface AdminStudentDraft {
+  readonly displayName?: string;
+  readonly phone?: string;
+  readonly countryCode?: string;
+  readonly whatsappReference?: string;
+  readonly note?: string;
+}
+
 interface AdminStudentOperationsProps {
   readonly csrfToken: string | undefined;
   readonly locale?: "ar" | "en";
   readonly notice?: string;
   readonly services: readonly ServiceOption[];
   readonly students: readonly AdminStudentSummary[];
+  readonly studentDraft?: AdminStudentDraft;
+}
+
+const errorNotices = new Set(["invalid", "failed", "csrf", "conflict", "forbidden", "unavailable"]);
+
+type Query = Record<string, string | string[] | undefined>;
+const q = (value: string | string[] | undefined): string | undefined =>
+  typeof value === "string" && value.length > 0 ? value : undefined;
+
+/** Rebuild the create-student draft the POST handler echoed back on failure. */
+export function readAdminStudentDraft(query: Query): AdminStudentDraft | undefined {
+  const displayName = q(query.sn);
+  const phone = q(query.sp);
+  const countryCode = q(query.sc);
+  const whatsappReference = q(query.sr);
+  const note = q(query.snote);
+  const draft: AdminStudentDraft = {
+    ...(displayName === undefined ? {} : { displayName }),
+    ...(phone === undefined ? {} : { phone }),
+    ...(countryCode === undefined ? {} : { countryCode }),
+    ...(whatsappReference === undefined ? {} : { whatsappReference }),
+    ...(note === undefined ? {} : { note }),
+  };
+  return Object.keys(draft).length === 0 ? undefined : draft;
 }
 
 const inputClassName =
@@ -27,20 +60,25 @@ export function AdminStudentOperations({
   notice,
   services,
   students,
+  studentDraft,
 }: AdminStudentOperationsProps) {
   const english = locale === "en";
+  const isError = notice !== undefined && errorNotices.has(notice);
+  const draftInvalid = isError && studentDraft !== undefined;
+  const message =
+    notice === "invalid"
+      ? english
+        ? "Review the submitted fields. The phone may already belong to an account."
+        : "راجع البيانات. قد يكون رقم الجوال مرتبطًا بحساب موجود."
+      : english
+        ? "The operation could not be completed. Try again."
+        : "تعذر إكمال العملية. حاول مجددًا.";
   return (
     <div>
-      {notice === undefined ? null : (
-        <FormAlert>
-          {notice === "invalid"
-            ? english
-              ? "Review the submitted fields. The phone may already belong to an account."
-              : "راجع البيانات. قد يكون رقم الجوال مرتبطًا بحساب موجود."
-            : english
-              ? "The operation could not be completed. Try again."
-              : "تعذر إكمال العملية. حاول مجددًا."}
-        </FormAlert>
+      {notice === undefined ? null : isError ? (
+        <FormErrorSummary>{message}</FormErrorSummary>
+      ) : (
+        <FormAlert>{message}</FormAlert>
       )}
       <div className="grid gap-6 xl:grid-cols-2">
         <section className="rounded-[1.5rem] border border-[var(--itq-color-border)] bg-white p-5 shadow-sm sm:p-6">
@@ -62,7 +100,9 @@ export function AdminStudentOperations({
               {english ? "Student name" : "اسم الطالب"}
               <input
                 autoComplete="off"
+                autoFocus={draftInvalid}
                 className={inputClassName}
+                defaultValue={studentDraft?.displayName}
                 maxLength={120}
                 minLength={2}
                 name="displayName"
@@ -72,7 +112,11 @@ export function AdminStudentOperations({
             <div className="grid gap-4 sm:grid-cols-[9rem_1fr]">
               <label className="text-sm font-bold">
                 {english ? "Country" : "الدولة"}
-                <select className={inputClassName} defaultValue="SA" name="countryCode">
+                <select
+                  className={inputClassName}
+                  defaultValue={studentDraft?.countryCode ?? "SA"}
+                  name="countryCode"
+                >
                   <option value="SA">{english ? "Saudi Arabia" : "السعودية"}</option>
                   <option value="AE">{english ? "UAE" : "الإمارات"}</option>
                   <option value="KW">{english ? "Kuwait" : "الكويت"}</option>
@@ -81,8 +125,10 @@ export function AdminStudentOperations({
               <label className="text-sm font-bold">
                 {english ? "Mobile number" : "رقم الجوال"}
                 <input
+                  aria-invalid={draftInvalid || undefined}
                   autoComplete="off"
                   className={inputClassName}
+                  defaultValue={studentDraft?.phone}
                   dir="ltr"
                   maxLength={20}
                   name="phone"
@@ -95,8 +141,10 @@ export function AdminStudentOperations({
             <label className="text-sm font-bold">
               {english ? "WhatsApp conversation reference" : "مرجع محادثة واتساب"}
               <input
+                aria-invalid={draftInvalid || undefined}
                 autoComplete="off"
                 className={inputClassName}
+                defaultValue={studentDraft?.whatsappReference}
                 dir="ltr"
                 maxLength={160}
                 minLength={3}
@@ -108,7 +156,13 @@ export function AdminStudentOperations({
               {english
                 ? "Internal verification note (optional)"
                 : "ملاحظة التحقق الداخلية (اختيارية)"}
-              <textarea className={inputClassName} maxLength={1000} name="note" rows={3} />
+              <textarea
+                className={inputClassName}
+                defaultValue={studentDraft?.note}
+                maxLength={1000}
+                name="note"
+                rows={3}
+              />
             </label>
             <label className="flex items-start gap-3 rounded-xl bg-amber-50 p-4 text-sm font-bold text-amber-950">
               <input
