@@ -1,3 +1,5 @@
+import { hasAdminAccess } from "@itqanak/auth";
+
 import { AccountShell } from "@/components/account-shell";
 import { CsrfInput, FormAlert } from "@/components/auth-shell";
 import { SubmitButton } from "@/components/submit-button";
@@ -20,7 +22,12 @@ export default async function EnglishSecurityPage({ searchParams }: SecurityPage
   const status = typeof query.status === "string" ? query.status : undefined;
 
   return (
-    <AccountShell csrfToken={csrfToken} displayName={principal.displayName} locale="en">
+    <AccountShell
+      surface={hasAdminAccess(principal) ? "admin" : "student"}
+      csrfToken={csrfToken}
+      displayName={principal.displayName}
+      locale="en"
+    >
       <h1 className="text-3xl font-black">Password & security</h1>
       <p className="mt-3 leading-7 text-[var(--itq-color-muted)]">
         When you change your password, previous sessions are revoked and a new session is created

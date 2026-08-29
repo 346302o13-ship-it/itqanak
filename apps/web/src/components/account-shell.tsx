@@ -13,6 +13,7 @@ interface AccountShellProps {
   readonly csrfToken: string | undefined;
   readonly children: ReactNode;
   readonly locale?: "ar" | "en";
+  readonly surface?: "student" | "admin";
 }
 
 export function AccountShell({
@@ -20,10 +21,12 @@ export function AccountShell({
   csrfToken,
   children,
   locale = "ar",
+  surface = "student",
 }: AccountShellProps) {
   const english = locale === "en";
   const prefix = `/${locale}`;
   const initial = displayName.trim().slice(0, 1) || (english ? "S" : "ط");
+  const homeHref = surface === "admin" ? `${prefix}/admin` : `${prefix}/student`;
   return (
     <div
       className="min-h-screen bg-[var(--itq-color-canvas)]"
@@ -32,10 +35,7 @@ export function AccountShell({
     >
       <header className="border-b border-[var(--itq-color-border)] bg-white/90 backdrop-blur-xl">
         <div className="mx-auto flex h-[4.75rem] max-w-7xl items-center justify-between gap-4 px-4 sm:px-7">
-          <Link
-            className="inline-flex items-center gap-3 text-lg font-black"
-            href={`${prefix}/student`}
-          >
+          <Link className="inline-flex items-center gap-3 text-lg font-black" href={homeHref}>
             <BrandMark className="size-11" />
             {english ? "ITQANAK" : "إتقانك"}
           </Link>
@@ -73,7 +73,7 @@ export function AccountShell({
                 : "راجع بياناتك وحماية حسابك والأجهزة المسجّلة."}
             </p>
           </div>
-          <AccountNavigation locale={locale} />
+          <AccountNavigation locale={locale} surface={surface} />
         </aside>
         <section className="min-w-0 rounded-[1.75rem] border border-[var(--itq-color-border)] bg-white p-5 shadow-[var(--itq-shadow-sm)] sm:p-8 lg:p-9">
           {children}

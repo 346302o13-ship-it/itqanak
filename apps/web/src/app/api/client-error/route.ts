@@ -20,8 +20,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
       readonly pathname?: unknown;
       readonly digest?: unknown;
     };
-    const pathname =
-      typeof body.pathname === "string" ? body.pathname.slice(0, 512) : "unknown";
+    const pathname = typeof body.pathname === "string" ? body.pathname.slice(0, 512) : "unknown";
     const digest = typeof body.digest === "string" ? body.digest.slice(0, 64) : undefined;
     createLogger({ service: "web", environment: process.env.NODE_ENV || "production" }).warn(
       "client_render_error",

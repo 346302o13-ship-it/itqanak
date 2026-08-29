@@ -1,3 +1,5 @@
+import { hasAdminAccess } from "@itqanak/auth";
+
 import { AccountShell } from "@/components/account-shell";
 import { CsrfInput, FormAlert } from "@/components/auth-shell";
 import { SubmitButton } from "@/components/submit-button";
@@ -25,7 +27,11 @@ export default async function AccountPage({ searchParams }: AccountPageProps) {
   }
   const status = typeof query.status === "string" ? query.status : undefined;
   return (
-    <AccountShell csrfToken={csrfToken} displayName={account.displayName}>
+    <AccountShell
+      surface={hasAdminAccess(principal) ? "admin" : "student"}
+      csrfToken={csrfToken}
+      displayName={account.displayName}
+    >
       <h1 className="text-3xl font-black">حسابي</h1>
       <p className="mt-3 leading-7 text-[var(--itq-color-muted)]">
         يمكنك تحديث الاسم وإدارة وسائل الأمان. تغيير وسيلة الاتصال يحتاج تدفق تحقق مستقل.

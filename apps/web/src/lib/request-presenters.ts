@@ -14,7 +14,7 @@ export const requestStatusLabels = {
 } as const;
 
 export type PresentableRequestStatus = keyof typeof requestStatusLabels;
-export type RequestStatusTone = "info" | "success" | "warning";
+export type RequestStatusTone = "info" | "success" | "warning" | "danger" | "neutral";
 
 export const englishRequestStatusLabels: Readonly<Record<PresentableRequestStatus, string>> = {
   DRAFT: "Draft",
@@ -45,14 +45,15 @@ export function requestStatusTone(status: string): RequestStatusTone {
   if (status === "COMPLETED" || status === "DELIVERED") {
     return "success";
   }
-  if (
-    status === "WAITING_FOR_STUDENT" ||
-    status === "QUOTED" ||
-    status === "REVISION_REQUESTED" ||
-    status === "CANCELLED" ||
-    status === "REJECTED"
-  ) {
+  // A dead request must not look like one that needs the student's attention.
+  if (status === "CANCELLED" || status === "REJECTED") {
+    return "danger";
+  }
+  if (status === "WAITING_FOR_STUDENT" || status === "QUOTED" || status === "REVISION_REQUESTED") {
     return "warning";
+  }
+  if (status === "DRAFT") {
+    return "neutral";
   }
   return "info";
 }

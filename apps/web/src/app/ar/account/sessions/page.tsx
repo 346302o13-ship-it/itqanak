@@ -1,5 +1,8 @@
+import { hasAdminAccess } from "@itqanak/auth";
+
 import { AccountShell } from "@/components/account-shell";
 import { CsrfInput, FormAlert } from "@/components/auth-shell";
+import { ConfirmSubmitButton } from "@/components/confirm-submit-button";
 import { SubmitButton } from "@/components/submit-button";
 import { createAuthRuntime, csrfTokenForPage } from "@/lib/auth-runtime";
 import { formatArabicDate, requirePagePrincipal } from "@/lib/account-page";
@@ -23,7 +26,11 @@ export default async function SessionsPage({ searchParams }: SessionsPageProps) 
   }
   const status = typeof query.status === "string" ? query.status : undefined;
   return (
-    <AccountShell csrfToken={csrfToken} displayName={principal.displayName}>
+    <AccountShell
+      surface={hasAdminAccess(principal) ? "admin" : "student"}
+      csrfToken={csrfToken}
+      displayName={principal.displayName}
+    >
       <h1 className="text-3xl font-black">الجلسات والأجهزة</h1>
       <p className="mt-3 leading-7 text-[var(--itq-color-muted)]">
         لا نعرض رموز الجلسات أو عناوين IP الكاملة. يمكنك إبطال أي جلسة لا تعرفها.
@@ -71,7 +78,14 @@ export default async function SessionsPage({ searchParams }: SessionsPageProps) 
         method="post"
       >
         <CsrfInput token={csrfToken} />
-        <SubmitButton pendingLabel="جارٍ الإنهاء…">تسجيل الخروج من جميع الأجهزة</SubmitButton>
+        <ConfirmSubmitButton
+          body="سيتم إنهاء جميع الجلسات على كل الأجهزة، بما فيها هذا الجهاز، وستحتاج لتسجيل الدخول من جديد."
+          cancelLabel="تراجع"
+          confirmLabel="إنهاء كل الجلسات"
+          title="تسجيل الخروج من جميع الأجهزة؟"
+        >
+          تسجيل الخروج من جميع الأجهزة
+        </ConfirmSubmitButton>
       </form>
     </AccountShell>
   );

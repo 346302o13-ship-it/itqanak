@@ -2,7 +2,7 @@ import type { ComponentPropsWithoutRef, JSX } from "react";
 
 import { classNames } from "./class-names.js";
 
-type ButtonVariant = "primary" | "secondary" | "quiet";
+type ButtonVariant = "primary" | "secondary" | "quiet" | "danger" | "ghost-danger";
 
 export interface ButtonProps extends ComponentPropsWithoutRef<"button"> {
   readonly variant?: ButtonVariant;
@@ -15,6 +15,10 @@ const variantClasses: Readonly<Record<ButtonVariant, string>> = {
     "border border-[var(--itq-color-border-strong)] bg-white text-[var(--itq-color-brand-800)] shadow-sm hover:border-[var(--itq-color-brand-200)] hover:bg-[var(--itq-color-brand-50)] focus-visible:outline-[var(--itq-color-brand-600)]",
   quiet:
     "text-[var(--itq-color-brand-800)] hover:bg-[var(--itq-color-brand-50)] focus-visible:outline-[var(--itq-color-brand-600)]",
+  danger:
+    "bg-[var(--itq-color-danger-700)] text-white shadow-[var(--itq-shadow-sm)] hover:bg-[var(--itq-color-danger-800)] focus-visible:outline-[var(--itq-color-danger-600)]",
+  "ghost-danger":
+    "border border-[var(--itq-color-danger-100)] bg-white text-[var(--itq-color-danger-700)] hover:bg-[var(--itq-color-danger-50)] focus-visible:outline-[var(--itq-color-danger-600)]",
 };
 
 export function Button({

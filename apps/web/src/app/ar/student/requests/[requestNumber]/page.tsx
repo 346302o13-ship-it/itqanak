@@ -5,6 +5,7 @@ import { RequestDomainError, type RequestAttachmentSummary } from "@itqanak/requ
 
 import { AttachmentUpload } from "@/components/attachment-upload";
 import { CsrfInput } from "@/components/auth-shell";
+import { ConfirmSubmitButton } from "@/components/confirm-submit-button";
 import { LocalDateTime } from "@/components/local-date-time";
 import { RequestFields } from "@/components/request-fields";
 import { RequestFlash } from "@/components/request-flash";
@@ -290,7 +291,15 @@ export default async function RequestDetailPage({ params, searchParams }: Reques
                       >
                         <CsrfInput token={csrfToken} />
                         <input name="version" type="hidden" value={detail.version} />
-                        <SubmitButton pendingLabel="جارٍ الإزالة…">إزالة</SubmitButton>
+                        <ConfirmSubmitButton
+                          body="سيُزال هذا الملف من الطلب. يمكنك رفعه مجدداً لاحقاً."
+                          cancelLabel="تراجع"
+                          confirmLabel="إزالة الملف"
+                          title="إزالة الملف؟"
+                          tone="ghost-danger"
+                        >
+                          إزالة
+                        </ConfirmSubmitButton>
                       </form>
                     ) : null}
                   </span>
@@ -356,7 +365,14 @@ export default async function RequestDetailPage({ params, searchParams }: Reques
           >
             <CsrfInput token={csrfToken} />
             <input name="version" type="hidden" value={detail.version} />
-            <SubmitButton pendingLabel="جارٍ الإلغاء…">إلغاء الطلب</SubmitButton>
+            <ConfirmSubmitButton
+              body="الإلغاء نهائي ولا يمكن التراجع عنه، ويُرفض تلقائياً إذا بدأ تنفيذ الطلب أو تغيّرت حالته."
+              cancelLabel="تراجع"
+              confirmLabel="نعم، ألغِ الطلب"
+              title="إلغاء الطلب؟"
+            >
+              إلغاء الطلب
+            </ConfirmSubmitButton>
           </form>
           <p className="mt-2 text-xs text-[var(--itq-color-muted)]">
             الإلغاء نهائي، ويُرفض تلقائياً إذا بدأ تنفيذ الطلب أو تغيّرت حالته.

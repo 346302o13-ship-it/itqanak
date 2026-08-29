@@ -5,6 +5,7 @@ import { RequestDomainError, type RequestAttachmentSummary } from "@itqanak/requ
 
 import { AttachmentUpload } from "@/components/attachment-upload";
 import { CsrfInput } from "@/components/auth-shell";
+import { ConfirmSubmitButton } from "@/components/confirm-submit-button";
 import { LocalDateTime } from "@/components/local-date-time";
 import { RequestFields } from "@/components/request-fields";
 import { RequestFlash } from "@/components/request-flash";
@@ -290,7 +291,16 @@ export default async function EnglishRequestDetailPage({
                         <CsrfInput token={csrfToken} />
                         <input name="locale" type="hidden" value="en" />
                         <input name="version" type="hidden" value={detail.version} />
-                        <SubmitButton pendingLabel="Removing…">Remove</SubmitButton>
+                        <ConfirmSubmitButton
+                          body="This file will be removed from the request. You can upload it again later."
+                          cancelLabel="Keep"
+                          confirmLabel="Remove file"
+                          locale="en"
+                          title="Remove this file?"
+                          tone="ghost-danger"
+                        >
+                          Remove
+                        </ConfirmSubmitButton>
                       </form>
                     ) : null}
                   </span>
@@ -358,7 +368,15 @@ export default async function EnglishRequestDetailPage({
             <CsrfInput token={csrfToken} />
             <input name="locale" type="hidden" value="en" />
             <input name="version" type="hidden" value={detail.version} />
-            <SubmitButton pendingLabel="Cancelling…">Cancel request</SubmitButton>
+            <ConfirmSubmitButton
+              body="Cancellation is permanent and cannot be undone; it is rejected automatically if work has started or the status changed."
+              cancelLabel="Keep request"
+              confirmLabel="Yes, cancel request"
+              locale="en"
+              title="Cancel this request?"
+            >
+              Cancel request
+            </ConfirmSubmitButton>
           </form>
           <p className="mt-2 text-xs text-[var(--itq-color-muted)]">
             Cancellation is final and is automatically rejected if work has started or the status

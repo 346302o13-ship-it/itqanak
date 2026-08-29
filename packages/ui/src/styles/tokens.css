@@ -29,7 +29,12 @@
   --itq-color-warning-50: #fff8e7;
   --itq-color-warning-800: #9a5c00;
   --itq-color-danger-50: #fff1f1;
+  --itq-color-danger-100: #ffe0e1;
+  --itq-color-danger-600: #cc2b34;
   --itq-color-danger-700: #b4232b;
+  --itq-color-danger-800: #8f1a22;
+  --itq-color-neutral-50: #f1f4f3;
+  --itq-color-neutral-700: #45534e;
   --itq-shadow-sm: 0 1px 2px rgb(13 41 49 / 5%), 0 7px 24px rgb(13 41 49 / 5%);
   --itq-shadow-md: 0 2px 4px rgb(13 41 49 / 6%), 0 14px 44px rgb(13 41 49 / 8%);
   --itq-shadow-lg: 0 10px 24px rgb(13 41 49 / 8%), 0 32px 80px rgb(13 41 49 / 12%);

@@ -109,7 +109,12 @@ export default async function NewRequestPage({ searchParams }: NewRequestPagePro
             </span>
           </label>
           <div className="flex flex-wrap gap-3">
-            <SubmitButton name="intent" pendingLabel="جارٍ الإرسال…" value="submit" variant="primary">
+            <SubmitButton
+              name="intent"
+              pendingLabel="جارٍ الإرسال…"
+              value="submit"
+              variant="primary"
+            >
               احفظ وأرسل الآن
             </SubmitButton>
             <SubmitButton

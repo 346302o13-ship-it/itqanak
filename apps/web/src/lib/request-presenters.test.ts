@@ -12,7 +12,10 @@ describe("request presentation", () => {
 
   it("assigns accessible status tones", () => {
     expect(requestStatusTone("COMPLETED")).toBe("success");
-    expect(requestStatusTone("CANCELLED")).toBe("warning");
+    expect(requestStatusTone("CANCELLED")).toBe("danger");
+    expect(requestStatusTone("REJECTED")).toBe("danger");
+    expect(requestStatusTone("WAITING_FOR_STUDENT")).toBe("warning");
+    expect(requestStatusTone("DRAFT")).toBe("neutral");
     expect(requestStatusTone("SUBMITTED")).toBe("info");
   });
 

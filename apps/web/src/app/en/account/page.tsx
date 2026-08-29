@@ -1,3 +1,5 @@
+import { hasAdminAccess } from "@itqanak/auth";
+
 import { AccountShell } from "@/components/account-shell";
 import { CsrfInput, FormAlert } from "@/components/auth-shell";
 import { SubmitButton } from "@/components/submit-button";
@@ -27,7 +29,12 @@ export default async function EnglishAccountPage({ searchParams }: AccountPagePr
   const status = typeof query.status === "string" ? query.status : undefined;
 
   return (
-    <AccountShell csrfToken={csrfToken} displayName={account.displayName} locale="en">
+    <AccountShell
+      surface={hasAdminAccess(principal) ? "admin" : "student"}
+      csrfToken={csrfToken}
+      displayName={account.displayName}
+      locale="en"
+    >
       <h1 className="text-3xl font-black">My account</h1>
       <p className="mt-3 leading-7 text-[var(--itq-color-muted)]">
         Update your name and review your account details. Changing your contact number requires a

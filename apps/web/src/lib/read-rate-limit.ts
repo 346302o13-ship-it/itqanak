@@ -26,10 +26,7 @@ return current
  * AuthenticationError("RATE_LIMITED") on exceed, which route handlers already
  * map to 429.
  */
-export async function enforceReadRateLimit(
-  rule: RateLimitRule,
-  userId: string,
-): Promise<void> {
+export async function enforceReadRateLimit(rule: RateLimitRule, userId: string): Promise<void> {
   const config = loadWebConfig();
   if (!config.auth.rateLimitEnabled) return;
   try {

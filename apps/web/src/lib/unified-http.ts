@@ -64,7 +64,9 @@ export function conversationUpdatesInput(searchParams: URLSearchParams): Convers
   return {
     limit: positiveInteger(searchParams.get("pageSize"), 30, 100),
     ...(search === undefined || search.length === 0 ? {} : { search }),
-    ...(updatedAfter !== undefined && !Number.isNaN(updatedAfter.getTime()) ? { updatedAfter } : {}),
+    ...(updatedAfter !== undefined && !Number.isNaN(updatedAfter.getTime())
+      ? { updatedAfter }
+      : {}),
   };
 }
 

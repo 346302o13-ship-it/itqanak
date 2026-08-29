@@ -755,7 +755,9 @@ export function UnifiedChatWorkspace({
     setOutbox((current) => {
       if (current.length === 0) return current;
       const known = new Set(
-        messages.map((message) => message.clientMessageId).filter((id): id is string => id !== undefined),
+        messages
+          .map((message) => message.clientMessageId)
+          .filter((id): id is string => id !== undefined),
       );
       const next = current.filter((entry) => !known.has(entry.clientMessageId));
       return next.length === current.length ? current : next;

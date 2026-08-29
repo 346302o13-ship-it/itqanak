@@ -5,24 +5,37 @@ import { usePathname } from "next/navigation";
 import { NavLink } from "./nav-link";
 import { RequestsIcon, ShieldCheckIcon, UserIcon, VerifiedIcon } from "./icons";
 
-const navigationByLocale = {
+const portalLinkByLocale = {
+  ar: {
+    student: { href: "/ar/student", label: "بوابة الطالب" },
+    admin: { href: "/ar/admin", label: "مركز الإدارة" },
+  },
+  en: {
+    student: { href: "/en/student", label: "Student portal" },
+    admin: { href: "/en/admin", label: "Admin center" },
+  },
+} as const;
+
+const settingsLinksByLocale = {
   ar: [
-    { href: "/ar/student", label: "بوابة الطالب", icon: RequestsIcon },
     { href: "/ar/account", label: "الملف الشخصي", exact: true, icon: UserIcon },
     { href: "/ar/account/security", label: "كلمة المرور والأمان", icon: ShieldCheckIcon },
     { href: "/ar/account/sessions", label: "الأجهزة والجلسات", icon: VerifiedIcon },
   ],
   en: [
-    { href: "/en/student", label: "Student portal", icon: RequestsIcon },
     { href: "/en/account", label: "Profile", exact: true, icon: UserIcon },
     { href: "/en/account/security", label: "Password & security", icon: ShieldCheckIcon },
     { href: "/en/account/sessions", label: "Devices & sessions", icon: VerifiedIcon },
   ],
 } as const;
 
-export function AccountNavigation({ locale = "ar" }: Readonly<{ locale?: "ar" | "en" }>) {
+export function AccountNavigation({
+  locale = "ar",
+  surface = "student",
+}: Readonly<{ locale?: "ar" | "en"; surface?: "student" | "admin" }>) {
   const pathname = usePathname();
-  const navigation = navigationByLocale[locale];
+  const portal = portalLinkByLocale[locale][surface];
+  const navigation = [{ ...portal, icon: RequestsIcon }, ...settingsLinksByLocale[locale]];
   return (
     <nav
       aria-label={locale === "en" ? "Account management" : "إدارة الحساب"}

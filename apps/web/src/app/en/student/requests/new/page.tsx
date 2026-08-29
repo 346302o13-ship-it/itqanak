@@ -108,9 +108,9 @@ export default async function EnglishNewRequestPage({ searchParams }: NewRequest
               value="true"
             />
             <span>
-              I confirm this request follows the current academic-integrity policy ({integrityVersion}
-              ) and that the service is for learning and review, not plagiarism or exam-taking.
-              (Required only for sending directly.)
+              I confirm this request follows the current academic-integrity policy (
+              {integrityVersion}) and that the service is for learning and review, not plagiarism or
+              exam-taking. (Required only for sending directly.)
             </span>
           </label>
           <div className="flex flex-wrap gap-3">

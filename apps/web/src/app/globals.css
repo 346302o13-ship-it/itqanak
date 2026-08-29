@@ -98,7 +98,9 @@ svg {
 
 .itq-linkhint[data-pending="true"] {
   visibility: visible;
-  animation: itq-linkhint-in 200ms ease 120ms forwards, itq-linkhint-pulse 1s ease-in-out 120ms infinite;
+  animation:
+    itq-linkhint-in 200ms ease 120ms forwards,
+    itq-linkhint-pulse 1s ease-in-out 120ms infinite;
 }
 
 @keyframes itq-linkhint-in {

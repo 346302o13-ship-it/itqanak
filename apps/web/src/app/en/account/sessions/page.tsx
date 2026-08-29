@@ -1,5 +1,8 @@
+import { hasAdminAccess } from "@itqanak/auth";
+
 import { AccountShell } from "@/components/account-shell";
 import { CsrfInput, FormAlert } from "@/components/auth-shell";
+import { ConfirmSubmitButton } from "@/components/confirm-submit-button";
 import { SubmitButton } from "@/components/submit-button";
 import { createAuthRuntime, csrfTokenForPage } from "@/lib/auth-runtime";
 import { formatEnglishDate, requirePagePrincipal } from "@/lib/account-page";
@@ -24,7 +27,12 @@ export default async function EnglishSessionsPage({ searchParams }: SessionsPage
   const status = typeof query.status === "string" ? query.status : undefined;
 
   return (
-    <AccountShell csrfToken={csrfToken} displayName={principal.displayName} locale="en">
+    <AccountShell
+      surface={hasAdminAccess(principal) ? "admin" : "student"}
+      csrfToken={csrfToken}
+      displayName={principal.displayName}
+      locale="en"
+    >
       <h1 className="text-3xl font-black">Devices & sessions</h1>
       <p className="mt-3 leading-7 text-[var(--itq-color-muted)]">
         Session tokens and full IP addresses are never displayed. Revoke any session you do not
@@ -77,7 +85,15 @@ export default async function EnglishSessionsPage({ searchParams }: SessionsPage
       >
         <CsrfInput token={csrfToken} />
         <input name="locale" type="hidden" value="en" />
-        <SubmitButton pendingLabel="Signing out…">Sign out of all devices</SubmitButton>
+        <ConfirmSubmitButton
+          body="Every session on every device — including this one — will be ended and you will need to sign in again."
+          cancelLabel="Keep sessions"
+          confirmLabel="End all sessions"
+          locale="en"
+          title="Sign out of all devices?"
+        >
+          Sign out of all devices
+        </ConfirmSubmitButton>
       </form>
     </AccountShell>
   );
