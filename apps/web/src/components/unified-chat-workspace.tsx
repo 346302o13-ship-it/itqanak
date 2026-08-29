@@ -64,6 +64,14 @@ interface MessageListWire {
   readonly incremental?: boolean;
 }
 
+/** A text message the client has accepted but the server has not yet confirmed. */
+interface OutboxEntry {
+  readonly clientMessageId: string;
+  readonly body: string;
+  readonly requestId?: string;
+  readonly status: "sending" | "failed";
+}
+
 interface ConversationListWire {
   readonly items?: readonly WireUnifiedConversationSummary[];
 }
@@ -627,6 +635,7 @@ export function UnifiedChatWorkspace({
   const [linkedRequestId, setLinkedRequestId] = useState(selectedRequestId);
   const [body, setBody] = useState("");
   const [pending, setPending] = useState(false);
+  const [outbox, setOutbox] = useState<readonly OutboxEntry[]>([]);
   const [loadingOlder, setLoadingOlder] = useState(false);
   const [recording, setRecording] = useState(false);
   const [recordingStarting, setRecordingStarting] = useState(false);
@@ -660,6 +669,7 @@ export function UnifiedChatWorkspace({
 
   useEffect(() => {
     setMessages([...initialMessagePage.items]);
+    setOutbox([]);
     setLoadedPage(initialMessagePage.page);
     setPageCount(initialMessagePage.pageCount ?? 1);
     setRequests([...(conversation?.requests ?? [])]);
@@ -738,6 +748,19 @@ export function UnifiedChatWorkspace({
   useEffect(() => {
     endRef.current?.scrollIntoView({ block: "nearest" });
   }, [conversation?.id]);
+
+  // Drop optimistic entries once the real message (matched by clientMessageId)
+  // has arrived, whether from our own POST response or a later poll.
+  useEffect(() => {
+    setOutbox((current) => {
+      if (current.length === 0) return current;
+      const known = new Set(
+        messages.map((message) => message.clientMessageId).filter((id): id is string => id !== undefined),
+      );
+      const next = current.filter((entry) => !known.has(entry.clientMessageId));
+      return next.length === current.length ? current : next;
+    });
+  }, [messages]);
 
   const latestMessageId = messages.at(-1)?.id;
   useEffect(() => {
@@ -1043,21 +1066,81 @@ export function UnifiedChatWorkspace({
     return true;
   }
 
-  async function submitText() {
-    const normalized = body.trim();
-    if (normalized.length === 0 || interactionLocked) return;
-    setPending(true);
-    setNotice(undefined);
-    try {
-      const sent = await sendMessage({
-        contentType: "TEXT",
-        body: normalized,
-        ...(linkedRequestId === undefined ? {} : { requestId: linkedRequestId }),
-      });
-      if (sent) setBody("");
-    } finally {
-      setPending(false);
+  async function deliverText(entry: OutboxEntry): Promise<void> {
+    if (apiBase === undefined || csrfToken === undefined) {
+      setNotice(
+        english
+          ? "This page expired. Refresh it and try again."
+          : "انتهت صلاحية الصفحة. حدّثها ثم أعد المحاولة.",
+      );
+      return;
     }
+    setOutbox((current) =>
+      current.map((item) =>
+        item.clientMessageId === entry.clientMessageId ? { ...item, status: "sending" } : item,
+      ),
+    );
+    const markFailed = () =>
+      setOutbox((current) =>
+        current.map((item) =>
+          item.clientMessageId === entry.clientMessageId ? { ...item, status: "failed" } : item,
+        ),
+      );
+    const form = new URLSearchParams({
+      csrfToken,
+      clientMessageId: entry.clientMessageId,
+      contentType: "TEXT",
+      body: entry.body,
+      ...(entry.requestId === undefined ? {} : { requestId: entry.requestId }),
+    });
+    try {
+      const response = await fetch(`${apiBase}/messages`, {
+        method: "POST",
+        body: form,
+        credentials: "same-origin",
+        headers: { "Content-Type": "application/x-www-form-urlencoded" },
+      });
+      const result = (await response.json().catch(() => ({}))) as MessageMutationWire;
+      if (!response.ok || result.message === undefined || typeof result.message === "string") {
+        if (response.status === 429) {
+          setNotice(
+            english
+              ? "Too many messages were sent. Wait a moment and try again."
+              : "تم إرسال رسائل كثيرة. انتظر قليلًا ثم حاول مجددًا.",
+          );
+        }
+        markFailed();
+        return;
+      }
+      // Retrying a send that actually committed replays the same durable message
+      // here (matched server-side by clientMessageId), so no duplicate is created.
+      const confirmed = result.message;
+      setMessages((current) => mergeUnifiedMessages(current, [confirmed]));
+      setOutbox((current) =>
+        current.filter((item) => item.clientMessageId !== entry.clientMessageId),
+      );
+    } catch {
+      markFailed();
+    }
+  }
+
+  function submitText() {
+    const normalized = body.trim();
+    if (normalized.length === 0) return;
+    const entry: OutboxEntry = {
+      clientMessageId: crypto.randomUUID(),
+      body: normalized,
+      ...(linkedRequestId === undefined ? {} : { requestId: linkedRequestId }),
+      status: "sending",
+    };
+    setOutbox((current) => [...current, entry]);
+    setBody("");
+    setNotice(undefined);
+    nearBottom.current = true;
+    window.requestAnimationFrame(() =>
+      endRef.current?.scrollIntoView({ behavior: "smooth", block: "nearest" }),
+    );
+    void deliverText(entry);
   }
 
   async function waitForAttachment(attachment: UnifiedConversationAttachment) {
@@ -2169,6 +2252,53 @@ export function UnifiedChatWorkspace({
               })}
             </ol>
           )}
+          {outbox.length > 0 ? (
+            <ul className="mx-auto mt-2.5 grid max-w-4xl gap-2.5">
+              {outbox.map((entry) => (
+                <li className="flex justify-end" key={entry.clientMessageId}>
+                  <article className="max-w-[85%] rounded-2xl rounded-ee-sm bg-[var(--itq-color-brand-700)]/80 px-3.5 py-2 text-white shadow-sm sm:max-w-[70%]">
+                    <p className="whitespace-pre-wrap break-words text-sm leading-7">
+                      <bdi dir="auto">{entry.body}</bdi>
+                    </p>
+                    <footer className="mt-1.5 flex items-center justify-end gap-2 text-[9px] font-semibold text-white/80">
+                      {entry.status === "failed" ? (
+                        <>
+                          <span className="text-amber-200">
+                            {english ? "Not sent" : "لم تُرسل"}
+                          </span>
+                          <button
+                            className="rounded-full bg-white/20 px-2 py-0.5 font-black transition hover:bg-white/30"
+                            onClick={() => void deliverText(entry)}
+                            type="button"
+                          >
+                            {english ? "Retry" : "إعادة المحاولة"}
+                          </button>
+                          <button
+                            className="rounded-full px-1.5 py-0.5 font-black text-white/60 transition hover:text-white"
+                            onClick={() =>
+                              setOutbox((current) =>
+                                current.filter(
+                                  (item) => item.clientMessageId !== entry.clientMessageId,
+                                ),
+                              )
+                            }
+                            type="button"
+                          >
+                            {english ? "Discard" : "تجاهل"}
+                          </button>
+                        </>
+                      ) : (
+                        <span className="inline-flex items-center gap-1">
+                          <span className="size-1.5 animate-pulse rounded-full bg-white/80" />
+                          {english ? "Sending…" : "جارٍ الإرسال…"}
+                        </span>
+                      )}
+                    </footer>
+                  </article>
+                </li>
+              ))}
+            </ul>
+          ) : null}
           {newMessagesAvailable ? (
             <button
               className="sticky bottom-2 mx-auto mt-4 block rounded-full bg-[#123640] px-4 py-2 text-xs font-black text-white shadow-xl"
