@@ -477,7 +477,69 @@ export interface UnifiedMessageReply {
   readonly deleted?: boolean;
 }
 
-export const messageReactionEmojis = ["👍", "❤️", "😂", "😮", "😢", "🙏"] as const;
+/**
+ * Allowed reaction emoji. The first six are the quick-tap bar (kept stable for
+ * existing chips); the rest back a fuller picker. Each is a single scalar or a
+ * short variation sequence so it stays inside the reactions table length check.
+ */
+export const messageReactionEmojis = [
+  "👍",
+  "❤️",
+  "😂",
+  "😮",
+  "😢",
+  "🙏",
+  "👎",
+  "🔥",
+  "🎉",
+  "👏",
+  "💯",
+  "✅",
+  "❌",
+  "🤝",
+  "🙌",
+  "💪",
+  "🫡",
+  "🤔",
+  "😅",
+  "😊",
+  "😍",
+  "🥰",
+  "😎",
+  "🤩",
+  "😴",
+  "😭",
+  "😡",
+  "🤯",
+  "😱",
+  "🥺",
+  "😐",
+  "😉",
+  "😌",
+  "🙄",
+  "😳",
+  "🤗",
+  "🤦",
+  "🤷",
+  "💔",
+  "💚",
+  "💙",
+  "💛",
+  "🧡",
+  "💜",
+  "⭐",
+  "🌟",
+  "✨",
+  "⚡",
+  "💥",
+  "📌",
+  "📎",
+  "📚",
+  "✍️",
+  "⏰",
+  "☑️",
+  "🆗",
+] as const;
 export type MessageReactionEmoji = (typeof messageReactionEmojis)[number];
 
 export interface UnifiedMessageReaction {

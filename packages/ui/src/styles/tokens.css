@@ -37,6 +37,15 @@
      the ramp above stays dark for solid button / hero backgrounds. */
   --itq-color-brand-strong: #086a63;
 
+  /* Conversation surface: a WhatsApp-style warm canvas with green outgoing
+     bubbles and neutral incoming bubbles. */
+  --itq-color-chat-bg: #ece5dd;
+  --itq-color-bubble-out: #d9fdd3;
+  --itq-color-bubble-out-ink: #0f1f17;
+  --itq-color-bubble-in: #ffffff;
+  --itq-color-bubble-in-ink: #0d2931;
+  --itq-color-bubble-meta: #5b7268;
+
   --itq-color-accent-50: #fff8e9;
   --itq-color-accent-200: #f2d69c;
   --itq-color-accent-300: #e9c27a;
@@ -141,6 +150,13 @@
     --itq-color-brand-950: #063733;
     --itq-color-brand-strong: #3fbdad;
 
+    --itq-color-chat-bg: #0b141a;
+    --itq-color-bubble-out: #005c4b;
+    --itq-color-bubble-out-ink: #e9edef;
+    --itq-color-bubble-in: #202c33;
+    --itq-color-bubble-in-ink: #e9edef;
+    --itq-color-bubble-meta: #8aa39b;
+
     --itq-color-accent-50: #2a2213;
     --itq-color-accent-200: #f2d69c;
     --itq-color-accent-300: #e9c27a;
@@ -230,6 +246,13 @@
   --itq-color-brand-900: #0a4b46;
   --itq-color-brand-950: #063733;
   --itq-color-brand-strong: #3fbdad;
+
+  --itq-color-chat-bg: #0b141a;
+  --itq-color-bubble-out: #005c4b;
+  --itq-color-bubble-out-ink: #e9edef;
+  --itq-color-bubble-in: #202c33;
+  --itq-color-bubble-in-ink: #e9edef;
+  --itq-color-bubble-meta: #8aa39b;
 
   --itq-color-accent-50: #2a2213;
   --itq-color-accent-200: #f2d69c;

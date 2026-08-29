@@ -111,6 +111,68 @@ interface StudentTransitionWire {
 }
 
 const acceptedExtensions = ".pdf,.docx,.pptx,.xlsx,.txt,.png,.jpg,.jpeg,.webm,.ogg,.mp3,.wav";
+
+// Reaction + composer emoji. Mirrors `messageReactionEmojis` in
+// @itqanak/requests (the server allowlist); kept inline so this client bundle
+// never pulls the server package. First six are the quick-tap bar.
+const chatEmoji = [
+  "👍",
+  "❤️",
+  "😂",
+  "😮",
+  "😢",
+  "🙏",
+  "👎",
+  "🔥",
+  "🎉",
+  "👏",
+  "💯",
+  "✅",
+  "❌",
+  "🤝",
+  "🙌",
+  "💪",
+  "🫡",
+  "🤔",
+  "😅",
+  "😊",
+  "😍",
+  "🥰",
+  "😎",
+  "🤩",
+  "😴",
+  "😭",
+  "😡",
+  "🤯",
+  "😱",
+  "🥺",
+  "😐",
+  "😉",
+  "😌",
+  "🙄",
+  "😳",
+  "🤗",
+  "🤦",
+  "🤷",
+  "💔",
+  "💚",
+  "💙",
+  "💛",
+  "🧡",
+  "💜",
+  "⭐",
+  "🌟",
+  "✨",
+  "⚡",
+  "💥",
+  "📌",
+  "📎",
+  "📚",
+  "✍️",
+  "⏰",
+  "☑️",
+  "🆗",
+] as const;
 const quoteEligibleRequestStatuses = new Set<RequestStatus>([
   "SUBMITTED",
   "WAITING_FOR_STUDENT",
@@ -631,7 +693,9 @@ export function UnifiedChatWorkspace({
     { readonly id: string; readonly body: string; readonly senderType: string } | undefined
   >(undefined);
   const [reactionPickerFor, setReactionPickerFor] = useState<string>();
-  const reactionChoices = ["👍", "❤️", "😂", "😮", "😢", "🙏"];
+  const [reactionPickerFull, setReactionPickerFull] = useState(false);
+  const [emojiPanelOpen, setEmojiPanelOpen] = useState(false);
+  const reactionChoices = chatEmoji.slice(0, 6);
   const [editingId, setEditingId] = useState<string>();
   const [editingText, setEditingText] = useState("");
   const [deleteConfirmFor, setDeleteConfirmFor] = useState<string>();
@@ -2322,7 +2386,7 @@ export function UnifiedChatWorkspace({
           aria-label={english ? "Conversation messages" : "رسائل المحادثة"}
           aria-live="polite"
           aria-relevant="additions"
-          className="itq-scroll relative min-h-0 flex-1 overflow-y-auto overscroll-contain px-3 py-4 sm:px-6"
+          className="itq-chat-bg itq-scroll relative min-h-0 flex-1 overflow-y-auto overscroll-contain px-3 py-4 sm:px-6"
           onScroll={(event) => {
             const element = event.currentTarget;
             nearBottom.current =
@@ -2452,10 +2516,10 @@ export function UnifiedChatWorkspace({
                         data-mid={message.id}
                       >
                         <article
-                          className={`max-w-[88%] rounded-2xl px-3.5 py-2.5 shadow-sm transition sm:max-w-[72%] sm:px-4 ${
+                          className={`max-w-[85%] rounded-xl px-2.5 py-1.5 shadow-sm transition sm:max-w-[75%] ${
                             mine
-                              ? "rounded-ee-sm bg-[var(--itq-color-brand-700)] text-white"
-                              : "rounded-es-sm border border-[var(--itq-color-border)] bg-[var(--itq-color-surface)] text-[var(--itq-color-ink)]"
+                              ? "rounded-ee-sm bg-[var(--itq-color-bubble-out)] text-[var(--itq-color-bubble-out-ink)]"
+                              : "rounded-es-sm bg-[var(--itq-color-bubble-in)] text-[var(--itq-color-bubble-in-ink)]"
                           } ${
                             highlightId === message.id
                               ? "ring-2 ring-[var(--itq-color-warning-500)] ring-offset-2 ring-offset-[var(--itq-color-surface-soft)]"
@@ -2478,7 +2542,7 @@ export function UnifiedChatWorkspace({
                             <button
                               className={`mb-2 flex max-w-full items-center gap-1.5 rounded-full px-2.5 py-1 text-[9px] font-black ${
                                 mine
-                                  ? "bg-white/10 text-white"
+                                  ? "bg-black/5 text-[var(--itq-color-bubble-meta)]"
                                   : "bg-[var(--itq-color-brand-50)] text-[var(--itq-color-brand-strong)]"
                               }`}
                               onClick={() => setLinkedRequestId(message.request?.id)}
@@ -2494,7 +2558,7 @@ export function UnifiedChatWorkspace({
                             <button
                               className={`mb-1.5 block w-full max-w-full rounded-lg border-s-2 px-2 py-1 text-start text-[11px] leading-5 ${
                                 mine
-                                  ? "border-white/40 bg-white/10 text-white/85"
+                                  ? "border-[var(--itq-color-brand-400)] bg-black/[0.04] text-[var(--itq-color-bubble-meta)]"
                                   : "border-[var(--itq-color-brand-400)] bg-[var(--itq-color-surface-soft)] text-[var(--itq-color-muted)]"
                               }`}
                               onClick={() => {
@@ -2527,9 +2591,7 @@ export function UnifiedChatWorkspace({
                           )}
                           {message.deletedAt !== undefined ? (
                             <p
-                              className={`flex items-center gap-1.5 text-sm italic leading-7 ${
-                                mine ? "text-white/75" : "text-[var(--itq-color-muted)]"
-                              }`}
+                              className={`flex items-center gap-1.5 text-sm italic leading-7 ${"text-[var(--itq-color-bubble-meta)]"}`}
                             >
                               <CloseIcon className="size-3.5 shrink-0" />
                               {english ? "This message was deleted" : "تم حذف هذه الرسالة"}
@@ -2539,7 +2601,7 @@ export function UnifiedChatWorkspace({
                               <textarea
                                 aria-label={english ? "Edit message" : "تعديل الرسالة"}
                                 autoFocus
-                                className="min-h-16 w-full resize-none rounded-lg border border-white/40 bg-[var(--itq-color-surface)] px-2.5 py-1.5 text-sm leading-6 text-[var(--itq-color-ink)] outline-none"
+                                className="min-h-16 w-full resize-none rounded-lg border border-[var(--itq-color-border)] bg-[var(--itq-color-surface)] px-2.5 py-1.5 text-sm leading-6 text-[var(--itq-color-ink)] outline-none"
                                 dir="auto"
                                 maxLength={10_000}
                                 onChange={(event) => setEditingText(event.currentTarget.value)}
@@ -2554,11 +2616,7 @@ export function UnifiedChatWorkspace({
                               />
                               <div className="flex justify-end gap-1.5 text-[10px] font-black">
                                 <button
-                                  className={`rounded px-2 py-0.5 ${
-                                    mine
-                                      ? "text-white/80 hover:bg-white/15"
-                                      : "hover:bg-[var(--itq-color-brand-50)]"
-                                  }`}
+                                  className={`rounded px-2 py-0.5 ${"hover:bg-black/5"}`}
                                   onClick={() => setEditingId(undefined)}
                                   type="button"
                                 >
@@ -2586,10 +2644,8 @@ export function UnifiedChatWorkspace({
                                 <button
                                   className={`inline-flex items-center gap-1 rounded-full px-1.5 py-0.5 text-[11px] font-bold tabular-nums ${
                                     reaction.mine
-                                      ? "bg-[var(--itq-color-brand-100)] text-[var(--itq-color-brand-strong)]"
-                                      : mine
-                                        ? "bg-white/15 text-white"
-                                        : "bg-[var(--itq-color-surface-soft)] text-[var(--itq-color-muted)]"
+                                      ? "border border-[var(--itq-color-brand-200)] bg-[var(--itq-color-brand-100)] text-[var(--itq-color-brand-strong)]"
+                                      : "border border-black/5 bg-[var(--itq-color-surface)] text-[var(--itq-color-bubble-meta)]"
                                   }`}
                                   key={reaction.emoji}
                                   onClick={() => void toggleReaction(message.id, reaction.emoji)}
@@ -2602,20 +2658,14 @@ export function UnifiedChatWorkspace({
                             </div>
                           ) : null}
                           <footer
-                            className={`mt-1.5 flex flex-wrap items-center justify-end gap-1.5 text-[10px] font-semibold ${
-                              mine ? "text-white/70" : "text-[var(--itq-color-muted)]"
-                            }`}
+                            className={`mt-1.5 flex flex-wrap items-center justify-end gap-1.5 text-[10px] font-semibold ${"text-[var(--itq-color-bubble-meta)]"}`}
                           >
                             <span className="me-auto flex items-center gap-1">
                               {message.deletedAt !== undefined ||
                               editingId === message.id ? null : (
                                 <>
                                   <button
-                                    className={`rounded-md px-2 py-1 font-black ${
-                                      mine
-                                        ? "hover:bg-white/15"
-                                        : "hover:bg-[var(--itq-color-brand-50)]"
-                                    }`}
+                                    className={`rounded-md px-2 py-1 font-black ${"hover:bg-black/5"}`}
                                     onClick={() =>
                                       setReplyingTo({
                                         id: message.id,
@@ -2635,35 +2685,49 @@ export function UnifiedChatWorkspace({
                                   <span className="relative">
                                     <button
                                       aria-label={english ? "Add a reaction" : "أضف تفاعلًا"}
-                                      className={`rounded-md px-2 py-1 font-black ${
-                                        mine
-                                          ? "hover:bg-white/15"
-                                          : "hover:bg-[var(--itq-color-brand-50)]"
-                                      }`}
-                                      onClick={() =>
+                                      className={`rounded-md px-2 py-1 font-black ${"hover:bg-black/5"}`}
+                                      onClick={() => {
+                                        setReactionPickerFull(false);
                                         setReactionPickerFor((value) =>
                                           value === message.id ? undefined : message.id,
-                                        )
-                                      }
+                                        );
+                                      }}
                                       type="button"
                                     >
                                       {english ? "React" : "تفاعل"}
                                     </button>
                                     {reactionPickerFor === message.id ? (
-                                      <span className="absolute bottom-full z-20 mb-1 flex gap-0.5 rounded-full border border-[var(--itq-color-border)] bg-[var(--itq-color-surface)] p-1 shadow-lg">
-                                        {reactionChoices.map((emoji) => (
+                                      <span
+                                        className={`absolute bottom-full z-20 mb-1 rounded-2xl border border-[var(--itq-color-border)] bg-[var(--itq-color-surface)] p-1.5 shadow-xl ${
+                                          mine ? "end-0" : "start-0"
+                                        } ${reactionPickerFull ? "grid w-[16rem] max-h-52 grid-cols-8 gap-0.5 overflow-y-auto" : "flex items-center gap-0.5"}`}
+                                      >
+                                        {(reactionPickerFull ? chatEmoji : reactionChoices).map(
+                                          (emoji) => (
+                                            <button
+                                              className="grid size-8 place-items-center rounded-full text-xl hover:bg-[var(--itq-color-surface-soft)] active:scale-90"
+                                              key={emoji}
+                                              onClick={() => {
+                                                void toggleReaction(message.id, emoji);
+                                                setReactionPickerFor(undefined);
+                                                setReactionPickerFull(false);
+                                              }}
+                                              type="button"
+                                            >
+                                              {emoji}
+                                            </button>
+                                          ),
+                                        )}
+                                        {reactionPickerFull ? null : (
                                           <button
-                                            className="grid size-7 place-items-center rounded-full text-base hover:bg-[var(--itq-color-surface-soft)]"
-                                            key={emoji}
-                                            onClick={() => {
-                                              void toggleReaction(message.id, emoji);
-                                              setReactionPickerFor(undefined);
-                                            }}
+                                            aria-label={english ? "More emoji" : "المزيد"}
+                                            className="grid size-8 place-items-center rounded-full text-lg font-black text-[var(--itq-color-muted)] hover:bg-[var(--itq-color-surface-soft)]"
+                                            onClick={() => setReactionPickerFull(true)}
                                             type="button"
                                           >
-                                            {emoji}
+                                            +
                                           </button>
-                                        ))}
+                                        )}
                                       </span>
                                     ) : null}
                                   </span>
@@ -2674,18 +2738,14 @@ export function UnifiedChatWorkspace({
                                           {english ? "Delete?" : "حذف؟"}
                                         </span>
                                         <button
-                                          className="rounded-md px-2 py-1 font-black text-[var(--itq-color-danger-200)] hover:bg-white/15"
+                                          className="rounded-md px-2 py-1 font-black text-[var(--itq-color-danger-700)] hover:bg-black/5"
                                           onClick={() => void deleteMessage(message.id)}
                                           type="button"
                                         >
                                           {english ? "Yes" : "نعم"}
                                         </button>
                                         <button
-                                          className={`rounded-md px-2 py-1 font-black ${
-                                            mine
-                                              ? "hover:bg-white/15"
-                                              : "hover:bg-[var(--itq-color-brand-50)]"
-                                          }`}
+                                          className={`rounded-md px-2 py-1 font-black ${"hover:bg-black/5"}`}
                                           onClick={() => setDeleteConfirmFor(undefined)}
                                           type="button"
                                         >
@@ -2696,11 +2756,7 @@ export function UnifiedChatWorkspace({
                                       <>
                                         {Date.now() - message.sentAt.getTime() < 15 * 60_000 ? (
                                           <button
-                                            className={`rounded-md px-2 py-1 font-black ${
-                                              mine
-                                                ? "hover:bg-white/15"
-                                                : "hover:bg-[var(--itq-color-brand-50)]"
-                                            }`}
+                                            className={`rounded-md px-2 py-1 font-black ${"hover:bg-black/5"}`}
                                             onClick={() => {
                                               setEditingId(message.id);
                                               setEditingText(message.body);
@@ -2712,11 +2768,7 @@ export function UnifiedChatWorkspace({
                                           </button>
                                         ) : null}
                                         <button
-                                          className={`rounded-md px-2 py-1 font-black ${
-                                            mine
-                                              ? "hover:bg-white/15"
-                                              : "hover:bg-[var(--itq-color-brand-50)]"
-                                          }`}
+                                          className={`rounded-md px-2 py-1 font-black ${"hover:bg-black/5"}`}
                                           onClick={() => setDeleteConfirmFor(message.id)}
                                           type="button"
                                         >
@@ -2748,25 +2800,25 @@ export function UnifiedChatWorkspace({
             <ul className="mx-auto mt-2.5 grid max-w-4xl gap-2.5">
               {outbox.map((entry) => (
                 <li className="flex justify-end" key={entry.clientMessageId}>
-                  <article className="max-w-[85%] rounded-2xl rounded-ee-sm bg-[var(--itq-color-brand-700)]/80 px-3.5 py-2 text-white shadow-sm sm:max-w-[70%]">
+                  <article className="max-w-[85%] rounded-xl rounded-ee-sm bg-[var(--itq-color-bubble-out)]/80 px-2.5 py-1.5 text-[var(--itq-color-bubble-out-ink)] shadow-sm sm:max-w-[75%]">
                     <p className="whitespace-pre-wrap break-words text-sm leading-7">
                       <bdi dir="auto">{entry.body}</bdi>
                     </p>
-                    <footer className="mt-1.5 flex items-center justify-end gap-2 text-[9px] font-semibold text-white/80">
+                    <footer className="mt-1.5 flex items-center justify-end gap-2 text-[9px] font-semibold text-[var(--itq-color-bubble-meta)]">
                       {entry.status === "failed" ? (
                         <>
                           <span className="text-[var(--itq-color-warning-500)]">
                             {english ? "Not sent" : "لم تُرسل"}
                           </span>
                           <button
-                            className="rounded-full bg-white/20 px-2 py-0.5 font-black transition hover:bg-white/30"
+                            className="rounded-full bg-black/10 px-2 py-0.5 font-black transition hover:bg-black/20"
                             onClick={() => void deliverText(entry)}
                             type="button"
                           >
                             {english ? "Retry" : "إعادة المحاولة"}
                           </button>
                           <button
-                            className="rounded-full px-1.5 py-0.5 font-black text-white/60 transition hover:text-white"
+                            className="rounded-full px-1.5 py-0.5 font-black text-[var(--itq-color-bubble-meta)] transition hover:opacity-70"
                             onClick={() =>
                               setOutbox((current) =>
                                 current.filter(
@@ -2781,7 +2833,7 @@ export function UnifiedChatWorkspace({
                         </>
                       ) : (
                         <span className="inline-flex items-center gap-1">
-                          <span className="size-1.5 animate-pulse rounded-full bg-white/80" />
+                          <span className="size-1.5 animate-pulse rounded-full bg-[var(--itq-color-bubble-meta)]" />
                           {english ? "Sending…" : "جارٍ الإرسال…"}
                         </span>
                       )}
@@ -2870,7 +2922,24 @@ export function UnifiedChatWorkspace({
               </button>
             </div>
           ) : null}
-          <div className="flex items-end gap-1.5 sm:gap-2">
+          {emojiPanelOpen ? (
+            <div className="mb-2 grid max-h-44 grid-cols-8 gap-0.5 overflow-y-auto rounded-2xl border border-[var(--itq-color-border)] bg-[var(--itq-color-surface)] p-2 shadow-sm sm:grid-cols-12">
+              {chatEmoji.map((emoji) => (
+                <button
+                  className="grid size-9 place-items-center rounded-lg text-xl hover:bg-[var(--itq-color-surface-soft)] active:scale-90"
+                  key={emoji}
+                  onClick={() => {
+                    setBody((value) => `${value}${emoji}`);
+                    composerRef.current?.focus();
+                  }}
+                  type="button"
+                >
+                  {emoji}
+                </button>
+              ))}
+            </div>
+          ) : null}
+          <div className="flex items-end gap-1 sm:gap-1.5">
             <input
               accept={acceptedExtensions}
               className="sr-only"
@@ -2883,6 +2952,20 @@ export function UnifiedChatWorkspace({
               type="file"
             />
             <button
+              aria-label={english ? "Emoji" : "الرموز"}
+              aria-pressed={emojiPanelOpen}
+              className={`grid size-11 shrink-0 place-items-center rounded-xl transition disabled:opacity-50 ${
+                emojiPanelOpen
+                  ? "bg-[var(--itq-color-brand-50)] text-[var(--itq-color-brand-strong)]"
+                  : "text-[var(--itq-color-muted)] hover:bg-[var(--itq-color-brand-50)]"
+              }`}
+              disabled={interactionLocked}
+              onClick={() => setEmojiPanelOpen((value) => !value)}
+              type="button"
+            >
+              <span className="text-xl leading-none">🙂</span>
+            </button>
+            <button
               aria-label={english ? "Attach an image or file" : "إرفاق صورة أو ملف"}
               className="grid size-11 shrink-0 place-items-center rounded-xl text-[var(--itq-color-muted)] transition hover:bg-[var(--itq-color-brand-50)] disabled:opacity-50"
               disabled={interactionLocked}
@@ -2890,27 +2973,6 @@ export function UnifiedChatWorkspace({
               type="button"
             >
               <PaperclipIcon className="size-5" />
-            </button>
-            <button
-              aria-label={
-                recording
-                  ? english
-                    ? "Stop and send voice message"
-                    : "إيقاف الرسالة الصوتية وإرسالها"
-                  : english
-                    ? "Record a voice message"
-                    : "تسجيل رسالة صوتية"
-              }
-              className={`grid size-11 shrink-0 place-items-center rounded-xl transition disabled:opacity-50 ${
-                recording
-                  ? "bg-[var(--itq-color-danger-600)] text-white"
-                  : "text-[var(--itq-color-muted)] hover:bg-[var(--itq-color-danger-50)] hover:text-[var(--itq-color-danger-700)]"
-              }`}
-              disabled={recordingStarting || (pending && !recording)}
-              onClick={() => void toggleRecording()}
-              type="button"
-            >
-              <MicIcon className="size-5" />
             </button>
             <textarea
               aria-label={english ? "Message" : "الرسالة"}
@@ -2930,15 +2992,39 @@ export function UnifiedChatWorkspace({
               rows={1}
               value={body}
             />
-            <button
-              aria-label={english ? "Send message" : "إرسال الرسالة"}
-              className="grid size-11 shrink-0 place-items-center rounded-xl bg-[var(--itq-color-brand-700)] text-white shadow-sm transition hover:bg-[var(--itq-color-brand-800)] disabled:cursor-not-allowed disabled:opacity-50"
-              disabled={interactionLocked || body.trim().length === 0}
-              onClick={() => void submitText()}
-              type="button"
-            >
-              <SendIcon className={`size-5 ${english ? "" : "-scale-x-100"}`} />
-            </button>
+            {body.trim().length > 0 && !recording ? (
+              <button
+                aria-label={english ? "Send message" : "إرسال الرسالة"}
+                className="grid size-11 shrink-0 place-items-center rounded-full bg-[var(--itq-color-brand-700)] text-white shadow-sm transition hover:bg-[var(--itq-color-brand-800)] disabled:cursor-not-allowed disabled:opacity-50"
+                disabled={interactionLocked}
+                onClick={() => void submitText()}
+                type="button"
+              >
+                <SendIcon className={`size-5 ${english ? "" : "-scale-x-100"}`} />
+              </button>
+            ) : (
+              <button
+                aria-label={
+                  recording
+                    ? english
+                      ? "Stop and send voice message"
+                      : "إيقاف الرسالة الصوتية وإرسالها"
+                    : english
+                      ? "Record a voice message"
+                      : "تسجيل رسالة صوتية"
+                }
+                className={`grid size-11 shrink-0 place-items-center rounded-full shadow-sm transition disabled:opacity-50 ${
+                  recording
+                    ? "bg-[var(--itq-color-danger-600)] text-white"
+                    : "bg-[var(--itq-color-brand-700)] text-white hover:bg-[var(--itq-color-brand-800)]"
+                }`}
+                disabled={recordingStarting || (pending && !recording)}
+                onClick={() => void toggleRecording()}
+                type="button"
+              >
+                <MicIcon className="size-5" />
+              </button>
+            )}
           </div>
           <p className="mt-1.5 px-2 text-[10px] font-semibold text-[var(--itq-color-muted)]">
             {selectedRequest === undefined
