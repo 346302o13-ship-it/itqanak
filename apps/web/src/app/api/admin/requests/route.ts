@@ -3,7 +3,11 @@ import { NextResponse } from "next/server";
 
 import { assertProtectedForm, formValue, loadWebConfig } from "@/lib/auth-runtime";
 import { createDraftInput } from "@/lib/request-form";
-import { adminFormErrorResponse, requestFormUnauthorizedResponse } from "@/lib/request-http";
+import {
+  acceptsHtml,
+  adminFormErrorResponse,
+  requestFormUnauthorizedResponse,
+} from "@/lib/request-http";
 import { getRequestId } from "@/lib/request-id";
 import { createStudentRequestRuntime } from "@/lib/request-runtime";
 import { principalForRequest } from "@/lib/route-principal";
@@ -31,14 +35,20 @@ export async function POST(request: NextRequest) {
         },
         { ...protectedForm.context, requestId },
       );
+      const notice = result.idempotentReplay ? "draft_exists" : "draft_created";
+      if (!acceptsHtml(request)) {
+        // The admin "on behalf" form posts with fetch so a validation failure
+        // keeps its fields; hand it the request number to navigate to.
+        return NextResponse.json(
+          { requestNumber: result.request.requestNumber, notice },
+          { status: 201, headers: { "Cache-Control": "no-store", "X-Request-ID": requestId } },
+        );
+      }
       const destination = new URL(
         `/${locale}/admin/requests/${encodeURIComponent(result.request.requestNumber)}`,
         protectedForm.config.adminAppUrl,
       );
-      destination.searchParams.set(
-        "notice",
-        result.idempotentReplay ? "draft_exists" : "draft_created",
-      );
+      destination.searchParams.set("notice", notice);
       return NextResponse.redirect(destination, 303);
     } finally {
       await runtime.close();

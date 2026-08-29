@@ -1,6 +1,6 @@
-import { generateSubmissionKey } from "@itqanak/core";
 import type { AdminStudentSummary } from "@itqanak/auth";
 
+import { AdminOnBehalfRequestForm } from "./admin-on-behalf-request-form";
 import { CsrfInput, FormAlert } from "./auth-shell";
 import { FormErrorSummary } from "./form-error-summary";
 import { RequestFields } from "./request-fields";
@@ -201,10 +201,7 @@ export function AdminStudentOperations({
                 : "يلزم وجود طالب نشط وخدمة نشطة."}
             </FormAlert>
           ) : (
-            <form action="/api/admin/requests" className="mt-6 grid gap-5" method="post">
-              <CsrfInput token={csrfToken} />
-              <input name="locale" type="hidden" value={locale} />
-              <input name="submissionKey" type="hidden" value={generateSubmissionKey()} />
+            <AdminOnBehalfRequestForm csrfToken={csrfToken} locale={locale}>
               <label className="text-sm font-bold">
                 {english ? "Student" : "الطالب"}
                 <select className={inputClassName} name="studentUserId" required>
@@ -238,10 +235,7 @@ export function AdminStudentOperations({
                   ? "The student confirmed these details through WhatsApp. Submit this as an active request now."
                   : "أكد الطالب هذه التفاصيل عبر واتساب. أرسل الطلب الآن كطلب فعّال."}
               </label>
-              <SubmitButton pendingLabel={english ? "Saving draft…" : "جارٍ حفظ المسودة…"}>
-                {english ? "Create student request" : "إنشاء طلب للطالب"}
-              </SubmitButton>
-            </form>
+            </AdminOnBehalfRequestForm>
           )}
         </section>
       </div>

@@ -77,7 +77,7 @@ export function requestUnauthorizedResponse(requestId: string): NextResponse {
   );
 }
 
-function acceptsHtml(request: NextRequest): boolean {
+export function acceptsHtml(request: NextRequest): boolean {
   return (
     request.headers
       .get("accept")
