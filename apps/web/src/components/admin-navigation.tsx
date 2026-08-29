@@ -43,12 +43,6 @@ const itemsByLocale = {
       Icon: VerifiedIcon,
     },
     {
-      href: "/ar/admin/content",
-      label: "محتوى الصفحات",
-      mobileLabel: "المحتوى",
-      Icon: ServicesIcon,
-    },
-    {
       href: "/ar/admin/password-resets",
       label: "استعادة كلمات المرور",
       mobileLabel: "الاستعادة",
@@ -61,16 +55,25 @@ const itemsByLocale = {
       Icon: FinanceIcon,
     },
     {
+      href: "/ar/admin/content",
+      label: "محتوى الصفحات",
+      mobileLabel: "المحتوى",
+      Icon: ServicesIcon,
+      system: true,
+    },
+    {
       href: "/ar/admin/operations",
       label: "التشغيل والصيانة",
       mobileLabel: "التشغيل",
       Icon: OperationsIcon,
+      system: true,
     },
     {
       href: "/ar/admin/monitoring",
       label: "المراقبة والتقارير",
       mobileLabel: "المراقبة",
       Icon: DashboardIcon,
+      system: true,
     },
     {
       href: "/ar/account",
@@ -106,12 +109,6 @@ const itemsByLocale = {
       Icon: VerifiedIcon,
     },
     {
-      href: "/en/admin/content",
-      label: "Page content",
-      mobileLabel: "Content",
-      Icon: ServicesIcon,
-    },
-    {
       href: "/en/admin/password-resets",
       label: "Password recovery",
       mobileLabel: "Recovery",
@@ -124,16 +121,25 @@ const itemsByLocale = {
       Icon: FinanceIcon,
     },
     {
+      href: "/en/admin/content",
+      label: "Page content",
+      mobileLabel: "Content",
+      Icon: ServicesIcon,
+      system: true,
+    },
+    {
       href: "/en/admin/operations",
       label: "Operations & maintenance",
       mobileLabel: "Operations",
       Icon: OperationsIcon,
+      system: true,
     },
     {
       href: "/en/admin/monitoring",
       label: "Monitoring & reports",
       mobileLabel: "Monitoring",
       Icon: DashboardIcon,
+      system: true,
     },
     {
       href: "/en/account",
@@ -147,6 +153,7 @@ const itemsByLocale = {
 export function AdminNavigation({ locale = "ar" }: Readonly<{ locale?: "ar" | "en" }>) {
   const pathname = usePathname();
   const items = itemsByLocale[locale];
+  const firstSystemHref = items.find((item) => "system" in item && item.system)?.href;
   return (
     <nav
       aria-label={locale === "en" ? "Admin navigation" : "التنقل الإداري"}
@@ -158,18 +165,24 @@ export function AdminNavigation({ locale = "ar" }: Readonly<{ locale?: "ar" | "e
             ? pathname === href
             : pathname.startsWith(href);
         return (
-          <NavLink
-            aria-current={active ? "page" : undefined}
-            className={`relative flex min-h-12 items-center gap-3 rounded-2xl px-4 text-sm font-black transition ${
-              active
-                ? "bg-[var(--itq-color-brand-700)] text-white shadow-sm"
-                : "text-[var(--itq-color-muted)] hover:bg-[var(--itq-color-brand-50)] hover:text-[var(--itq-color-brand-800)]"
-            }`}
-            href={href}
-            key={href}
-          >
-            <Icon className="size-5" /> {label}
-          </NavLink>
+          <div className="contents" key={href}>
+            {href === firstSystemHref ? (
+              <p className="mt-3 px-4 pb-1 text-[11px] font-black uppercase tracking-wide text-[var(--itq-color-muted)]">
+                {locale === "en" ? "System" : "النظام"}
+              </p>
+            ) : null}
+            <NavLink
+              aria-current={active ? "page" : undefined}
+              className={`relative flex min-h-12 items-center gap-3 rounded-2xl px-4 text-sm font-black transition ${
+                active
+                  ? "bg-[var(--itq-color-brand-700)] text-white shadow-sm"
+                  : "text-[var(--itq-color-muted)] hover:bg-[var(--itq-color-brand-50)] hover:text-[var(--itq-color-brand-800)]"
+              }`}
+              href={href}
+            >
+              <Icon className="size-5" /> {label}
+            </NavLink>
+          </div>
         );
       })}
     </nav>
