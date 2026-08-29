@@ -50,8 +50,12 @@ export async function POST(request: NextRequest) {
             },
             { ...protectedForm.context, requestId },
           );
-          destination.searchParams.set("status", "submitted");
-          return NextResponse.redirect(destination, 303);
+          // The one-tap flow gathers the rest of the details in the chat, so
+          // land the student in the conversation for the new request rather
+          // than on a form-heavy detail page.
+          const chat = new URL(`/${locale}/student/support`, protectedForm.config.publicAppUrl);
+          chat.searchParams.set("request", result.request.id);
+          return NextResponse.redirect(chat, 303);
         } catch (submitError: unknown) {
           return requestFormErrorResponse(
             request,

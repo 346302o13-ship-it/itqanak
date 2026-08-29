@@ -1,12 +1,9 @@
 import Link from "next/link";
 
-import { generateSubmissionKey } from "@itqanak/core";
-
-import { CsrfInput, FormAlert } from "@/components/auth-shell";
-import { RequestFields } from "@/components/request-fields";
+import { FormAlert } from "@/components/auth-shell";
+import { QuickRequestForm, type QuickRequestService } from "@/components/quick-request-form";
 import { RequestFlash } from "@/components/request-flash";
 import { StudentShell } from "@/components/student-shell";
-import { SubmitButton } from "@/components/submit-button";
 import { csrfTokenForPage } from "@/lib/auth-runtime";
 import { createStudentRequestRuntime } from "@/lib/request-runtime";
 import { requireStudentPagePrincipal } from "@/lib/student-page";
@@ -18,9 +15,6 @@ interface NewRequestPageProps {
   }>;
 }
 
-const inputClassName =
-  "mt-2 w-full rounded-xl border border-[var(--itq-color-border)] bg-[var(--itq-color-surface)] px-3 py-3 text-base shadow-sm";
-
 export const metadata = { title: "طلب جديد" };
 export const dynamic = "force-dynamic";
 
@@ -31,111 +25,49 @@ export default async function NewRequestPage({ searchParams }: NewRequestPagePro
     searchParams,
   ]);
   const runtime = await createStudentRequestRuntime();
-  let catalog;
-  let integrityVersion: string;
-  let profileDefaults: { academicLevel?: string; institutionName?: string } = {};
+  let services: QuickRequestService[] = [];
+  let integrityVersion = "";
   try {
-    catalog = await runtime.catalog.listPublicCatalog();
+    const catalog = await runtime.catalog.listPublicCatalog();
     integrityVersion = runtime.config.academicIntegrityVersion;
-    const account = await runtime.auth.getAccount(principal);
-    profileDefaults = {
-      ...(account.academicLevel === undefined ? {} : { academicLevel: account.academicLevel }),
-      ...(account.institutionName === undefined
-        ? {}
-        : { institutionName: account.institutionName }),
-    };
+    services = catalog.flatMap((category) =>
+      category.services.map((service) => ({
+        id: service.id,
+        name: service.nameAr,
+        categoryName: category.nameAr,
+      })),
+    );
   } finally {
     await runtime.close();
   }
-  const selectedService = typeof query.service === "string" ? query.service : "";
-  const allServices = catalog.flatMap((category) =>
-    category.services.map((service) => ({ ...service, categoryName: category.nameAr })),
-  );
-  const selectedServiceId =
-    allServices.find(
-      (service) => service.id === selectedService || service.slug === selectedService,
-    )?.id ?? "";
 
   return (
     <StudentShell csrfToken={csrfToken} displayName={principal.displayName}>
       <RequestFlash {...(typeof query.notice === "string" ? { status: query.notice } : {})} />
-      <div className="flex flex-wrap items-start justify-between gap-4">
-        <div>
-          <h1 className="text-3xl font-black">إنشاء طلب جديد</h1>
-          <p className="mt-3 max-w-2xl leading-7 text-[var(--itq-color-muted)]">
-            اختر الخدمة واكتب عنوانًا ووصفًا، ثم أرسله مباشرة. إن كنت تريد إرفاق ملفات أولًا، احفظه
-            كمسودة وأكمِله لاحقًا.
-          </p>
-        </div>
+      <h1 className="text-2xl font-black sm:text-3xl">اطلب في نقرة واحدة</h1>
+      <p className="mt-2 leading-7 text-[var(--itq-color-muted)]">
+        اختر الخدمة، ثم أكمل التفاصيل معنا في المحادثة مباشرة.
+      </p>
+      <div className="mt-6">
+        {services.length === 0 ? (
+          <FormAlert>لا توجد خدمات نشطة حالياً. حاول مجدداً لاحقاً.</FormAlert>
+        ) : (
+          <QuickRequestForm
+            csrfToken={csrfToken}
+            integrityVersion={integrityVersion}
+            locale="ar"
+            services={services}
+          />
+        )}
+      </div>
+      <p className="mt-6 text-center text-sm">
         <Link
-          className="text-sm font-bold text-[var(--itq-color-brand-strong)] underline"
+          className="font-bold text-[var(--itq-color-brand-strong)] underline"
           href="/ar/services"
         >
-          مقارنة الخدمات
+          استعراض كل الخدمات
         </Link>
-      </div>
-
-      {allServices.length === 0 ? (
-        <FormAlert>لا توجد خدمات نشطة حالياً. حاول مجدداً لاحقاً.</FormAlert>
-      ) : (
-        <form action="/api/student/requests" className="mt-8 grid gap-7" method="post">
-          <CsrfInput token={csrfToken} />
-          <input name="submissionKey" type="hidden" value={generateSubmissionKey()} />
-          <div>
-            <label className="text-sm font-bold" htmlFor="serviceId">
-              الخدمة
-            </label>
-            <select
-              className={inputClassName}
-              defaultValue={selectedServiceId}
-              id="serviceId"
-              name="serviceId"
-              required
-            >
-              <option disabled value="">
-                اختر الخدمة
-              </option>
-              {allServices.map((service) => (
-                <option key={service.id} value={service.id}>
-                  {service.categoryName} — {service.nameAr}
-                </option>
-              ))}
-            </select>
-          </div>
-          <RequestFields defaults={profileDefaults} />
-          <input name="academicIntegrityVersion" type="hidden" value={integrityVersion} />
-          <label className="flex items-start gap-3 rounded-xl border border-[var(--itq-color-border)] bg-[var(--itq-color-surface)] p-4 text-sm font-semibold leading-7">
-            <input
-              className="mt-1 size-4"
-              name="acceptedAcademicIntegrity"
-              type="checkbox"
-              value="true"
-            />
-            <span>
-              أقر بأن الطلب ملتزم بسياسة النزاهة الأكاديمية الحالية ({integrityVersion})، وأن الخدمة
-              للتعلّم والمراجعة لا للانتحال أو أداء الاختبارات. (مطلوب للإرسال المباشر فقط)
-            </span>
-          </label>
-          <div className="flex flex-wrap gap-3">
-            <SubmitButton
-              name="intent"
-              pendingLabel="جارٍ الإرسال…"
-              value="submit"
-              variant="primary"
-            >
-              احفظ وأرسل الآن
-            </SubmitButton>
-            <SubmitButton
-              name="intent"
-              pendingLabel="جارٍ حفظ المسودة…"
-              value="draft"
-              variant="secondary"
-            >
-              حفظ كمسودة
-            </SubmitButton>
-          </div>
-        </form>
-      )}
+      </p>
     </StudentShell>
   );
 }

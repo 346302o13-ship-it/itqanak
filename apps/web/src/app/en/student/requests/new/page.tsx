@@ -1,12 +1,9 @@
 import Link from "next/link";
 
-import { generateSubmissionKey } from "@itqanak/core";
-
-import { CsrfInput, FormAlert } from "@/components/auth-shell";
-import { RequestFields } from "@/components/request-fields";
+import { FormAlert } from "@/components/auth-shell";
+import { QuickRequestForm, type QuickRequestService } from "@/components/quick-request-form";
 import { RequestFlash } from "@/components/request-flash";
 import { StudentShell } from "@/components/student-shell";
-import { SubmitButton } from "@/components/submit-button";
 import { csrfTokenForPage } from "@/lib/auth-runtime";
 import { createStudentRequestRuntime } from "@/lib/request-runtime";
 import { requireStudentPagePrincipal } from "@/lib/student-page";
@@ -18,9 +15,6 @@ interface NewRequestPageProps {
   }>;
 }
 
-const inputClassName =
-  "mt-2 w-full rounded-xl border border-[var(--itq-color-border)] bg-[var(--itq-color-surface)] px-3 py-3 text-base shadow-sm";
-
 export const metadata = { title: "New request" };
 export const dynamic = "force-dynamic";
 
@@ -31,30 +25,21 @@ export default async function EnglishNewRequestPage({ searchParams }: NewRequest
     searchParams,
   ]);
   const runtime = await createStudentRequestRuntime();
-  let catalog;
-  let integrityVersion: string;
-  let profileDefaults: { academicLevel?: string; institutionName?: string } = {};
+  let services: QuickRequestService[] = [];
+  let integrityVersion = "";
   try {
-    catalog = await runtime.catalog.listPublicCatalog();
+    const catalog = await runtime.catalog.listPublicCatalog();
     integrityVersion = runtime.config.academicIntegrityVersion;
-    const account = await runtime.auth.getAccount(principal);
-    profileDefaults = {
-      ...(account.academicLevel === undefined ? {} : { academicLevel: account.academicLevel }),
-      ...(account.institutionName === undefined
-        ? {}
-        : { institutionName: account.institutionName }),
-    };
+    services = catalog.flatMap((category) =>
+      category.services.map((service) => ({
+        id: service.id,
+        name: service.nameEn,
+        categoryName: category.nameEn,
+      })),
+    );
   } finally {
     await runtime.close();
   }
-  const selectedService = typeof query.service === "string" ? query.service : "";
-  const allServices = catalog.flatMap((category) =>
-    category.services.map((service) => ({ ...service, categoryName: category.nameEn })),
-  );
-  const selectedServiceId =
-    allServices.find(
-      (service) => service.id === selectedService || service.slug === selectedService,
-    )?.id ?? "";
 
   return (
     <StudentShell csrfToken={csrfToken} displayName={principal.displayName} locale="en">
@@ -62,80 +47,30 @@ export default async function EnglishNewRequestPage({ searchParams }: NewRequest
         locale="en"
         {...(typeof query.notice === "string" ? { status: query.notice } : {})}
       />
-      <div className="flex flex-wrap items-start justify-between gap-4">
-        <div>
-          <h1 className="text-3xl font-black">Create a new request</h1>
-          <p className="mt-3 max-w-2xl leading-7 text-[var(--itq-color-muted)]">
-            Pick a service, add a title and description, then send it straight away. If you need to
-            attach files first, save it as a draft and finish later.
-          </p>
-        </div>
+      <h1 className="text-2xl font-black sm:text-3xl">Request in one tap</h1>
+      <p className="mt-2 leading-7 text-[var(--itq-color-muted)]">
+        Pick a service, then work out the details with us right in the chat.
+      </p>
+      <div className="mt-6">
+        {services.length === 0 ? (
+          <FormAlert>No active services right now. Try again later.</FormAlert>
+        ) : (
+          <QuickRequestForm
+            csrfToken={csrfToken}
+            integrityVersion={integrityVersion}
+            locale="en"
+            services={services}
+          />
+        )}
+      </div>
+      <p className="mt-6 text-center text-sm">
         <Link
-          className="text-sm font-bold text-[var(--itq-color-brand-strong)] underline"
+          className="font-bold text-[var(--itq-color-brand-strong)] underline"
           href="/en/services"
         >
-          Compare services
+          Browse all services
         </Link>
-      </div>
-
-      {allServices.length === 0 ? (
-        <FormAlert>No services are currently available. Please try again later.</FormAlert>
-      ) : (
-        <form action="/api/student/requests" className="mt-8 grid gap-7" method="post">
-          <CsrfInput token={csrfToken} />
-          <input name="locale" type="hidden" value="en" />
-          <input name="submissionKey" type="hidden" value={generateSubmissionKey()} />
-          <div>
-            <label className="text-sm font-bold" htmlFor="serviceId">
-              Service
-            </label>
-            <select
-              className={inputClassName}
-              defaultValue={selectedServiceId}
-              id="serviceId"
-              name="serviceId"
-              required
-            >
-              <option disabled value="">
-                Choose a service
-              </option>
-              {allServices.map((service) => (
-                <option key={service.id} value={service.id}>
-                  {service.categoryName} — {service.nameEn}
-                </option>
-              ))}
-            </select>
-          </div>
-          <RequestFields defaults={profileDefaults} locale="en" />
-          <input name="academicIntegrityVersion" type="hidden" value={integrityVersion} />
-          <label className="flex items-start gap-3 rounded-xl border border-[var(--itq-color-border)] bg-[var(--itq-color-surface)] p-4 text-sm font-semibold leading-7">
-            <input
-              className="mt-1 size-4"
-              name="acceptedAcademicIntegrity"
-              type="checkbox"
-              value="true"
-            />
-            <span>
-              I confirm this request follows the current academic-integrity policy (
-              {integrityVersion}) and that the service is for learning and review, not plagiarism or
-              exam-taking. (Required only for sending directly.)
-            </span>
-          </label>
-          <div className="flex flex-wrap gap-3">
-            <SubmitButton name="intent" pendingLabel="Sending…" value="submit" variant="primary">
-              Save &amp; send now
-            </SubmitButton>
-            <SubmitButton
-              name="intent"
-              pendingLabel="Saving draft…"
-              value="draft"
-              variant="secondary"
-            >
-              Save as draft
-            </SubmitButton>
-          </div>
-        </form>
-      )}
+      </p>
     </StudentShell>
   );
 }

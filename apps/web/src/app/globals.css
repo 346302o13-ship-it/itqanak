@@ -78,6 +78,16 @@ label:has(> input[type="radio"]) {
   }
 }
 
+/* iOS Safari zooms the page when focusing a control smaller than 16px. Keep
+   form controls at 16px on phones so focusing an input never jumps the view. */
+@media (max-width: 640px) {
+  input:not([type="checkbox"]):not([type="radio"]),
+  textarea,
+  select {
+    font-size: 16px;
+  }
+}
+
 html[lang="en"] body {
   font-family: "IBM Plex Sans", "IBM Plex Sans Arabic", "Segoe UI", Arial, sans-serif;
 }
