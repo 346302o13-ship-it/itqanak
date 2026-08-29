@@ -479,6 +479,12 @@ export interface SendUnifiedMessageResult {
 export interface UnifiedMessageListInput {
   readonly page?: number;
   readonly pageSize?: number;
+  /**
+   * Incremental read: return only messages chronologically after this message
+   * id. The total count and page metadata are skipped. Used by the poller so a
+   * steady-state poll returns ~0 rows instead of a full page plus a COUNT(*).
+   */
+  readonly afterId?: string;
 }
 
 export interface UnifiedMessageListResult {
@@ -486,8 +492,12 @@ export interface UnifiedMessageListResult {
   readonly items: readonly UnifiedMessage[];
   readonly page: number;
   readonly pageSize: number;
-  readonly total: number;
-  readonly pageCount: number;
+  /** Present only on a full/paged read; omitted on an incremental (afterId) read. */
+  readonly total?: number;
+  /** Present only on a full/paged read; omitted on an incremental (afterId) read. */
+  readonly pageCount?: number;
+  /** True when this response is an incremental delta rather than a full page. */
+  readonly incremental: boolean;
 }
 
 export interface UnifiedConversationSummary {

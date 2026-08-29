@@ -38,6 +38,7 @@ export default async function EnglishAdminSupportPage({ searchParams }: PageProp
     pageSize: 100,
     total: 0,
     pageCount: 1,
+    incremental: false,
   };
   let maximumBytes;
   try {

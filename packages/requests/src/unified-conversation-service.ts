@@ -573,6 +573,44 @@ export class UnifiedConversationService {
     input: UnifiedMessageListInput = {},
   ): Promise<UnifiedMessageListResult> {
     const access = await this.resolveConversation(this.database, principal, conversationId, "read");
+
+    if (input.afterId !== undefined && isUuid(input.afterId)) {
+      // Incremental delta: the caller already holds everything up to and
+      // including `afterId`. No COUNT(*), no OFFSET -- a quiet conversation
+      // costs one index probe and returns zero rows.
+      const anchor = await this.database<{ readonly sent_at: Date; readonly id: string }[]>`
+        SELECT sent_at, id FROM support_messages
+        WHERE id = ${input.afterId} AND conversation_id = ${access.row.id}
+      `;
+      if (anchor[0] !== undefined) {
+        const deltaLimit = 200;
+        const deltaRows = await this.database.unsafe<MessageRow[]>(
+          `SELECT ${messageSelect}
+           FROM support_messages AS messages
+           LEFT JOIN users AS senders ON senders.id = messages.sender_user_id
+           LEFT JOIN service_requests AS requests ON requests.id = messages.request_id
+           LEFT JOIN unified_conversation_attachments AS conversation_attachments
+             ON conversation_attachments.id = messages.attachment_id
+           LEFT JOIN service_request_attachments AS legacy_attachments
+             ON legacy_attachments.id = messages.legacy_request_attachment_id
+           LEFT JOIN service_quotes AS quotes ON quotes.id = messages.quote_id
+           WHERE messages.conversation_id = $1
+             AND (messages.sent_at, messages.id) > ($2, $3)
+           ORDER BY messages.sent_at ASC, messages.id ASC
+           LIMIT $4`,
+          [access.row.id, anchor[0].sent_at, anchor[0].id, deltaLimit],
+        );
+        return {
+          items: deltaRows.map(toMessage),
+          page: 1,
+          pageSize: deltaLimit,
+          incremental: true,
+        };
+      }
+      // The anchor no longer resolves (conversation switch, pruned client
+      // state): fall through to a normal recent-page read so the client heals.
+    }
+
     const { page, pageSize, offset } = normalizeBoundedPage(input.page, input.pageSize, 100);
     const [counts, rows] = await Promise.all([
       this.database<CountRow[]>`
@@ -602,6 +640,7 @@ export class UnifiedConversationService {
       pageSize,
       total,
       pageCount: Math.max(1, Math.ceil(total / pageSize)),
+      incremental: false,
     };
   }
 

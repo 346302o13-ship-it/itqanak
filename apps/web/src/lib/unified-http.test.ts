@@ -27,6 +27,20 @@ describe("unified conversation HTTP mapping", () => {
     });
   });
 
+  it("accepts a valid afterId cursor for incremental message polling and rejects a bad one", () => {
+    expect(
+      messageListInput(new URLSearchParams("afterId=5448f705-91a9-4ab6-84ca-fd21abf96891")),
+    ).toEqual({
+      page: 1,
+      pageSize: 50,
+      afterId: "5448f705-91a9-4ab6-84ca-fd21abf96891",
+    });
+    expect(messageListInput(new URLSearchParams("afterId=not-a-uuid"))).toEqual({
+      page: 1,
+      pageSize: 50,
+    });
+  });
+
   it("supports unread-only notification polling", () => {
     expect(notificationListInput(new URLSearchParams("unreadOnly=true"))).toEqual({
       page: 1,

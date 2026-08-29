@@ -61,6 +61,7 @@ interface MessageListWire {
   readonly items?: readonly WireUnifiedMessage[];
   readonly page?: number;
   readonly pageCount?: number;
+  readonly incremental?: boolean;
 }
 
 interface ConversationListWire {
@@ -607,6 +608,9 @@ export function UnifiedChatWorkspace({
   const detailsPanelId = useId();
   const nearBottom = useRef(true);
   const previousLastMessageId = useRef<string | undefined>(initialMessagePage.items.at(-1)?.id);
+  // Newest message id the client already holds; the poller sends it as `afterId`
+  // so a steady-state poll fetches only the delta.
+  const latestMessageIdRef = useRef<string | undefined>(initialMessagePage.items.at(-1)?.id);
   const mediaRecorder = useRef<MediaRecorder | undefined>(undefined);
   const mediaStream = useRef<MediaStream | undefined>(undefined);
   const recordedChunks = useRef<Blob[]>([]);
@@ -619,7 +623,7 @@ export function UnifiedChatWorkspace({
     ...(conversation?.requests ?? []),
   ]);
   const [loadedPage, setLoadedPage] = useState(initialMessagePage.page);
-  const [pageCount, setPageCount] = useState(initialMessagePage.pageCount);
+  const [pageCount, setPageCount] = useState(initialMessagePage.pageCount ?? 1);
   const [linkedRequestId, setLinkedRequestId] = useState(selectedRequestId);
   const [body, setBody] = useState("");
   const [pending, setPending] = useState(false);
@@ -657,12 +661,13 @@ export function UnifiedChatWorkspace({
   useEffect(() => {
     setMessages([...initialMessagePage.items]);
     setLoadedPage(initialMessagePage.page);
-    setPageCount(initialMessagePage.pageCount);
+    setPageCount(initialMessagePage.pageCount ?? 1);
     setRequests([...(conversation?.requests ?? [])]);
     setLinkedRequestId(selectedRequestId);
     setContactsOpen(conversation === undefined);
     setDetailsOpen(false);
     previousLastMessageId.current = initialMessagePage.items.at(-1)?.id;
+    latestMessageIdRef.current = initialMessagePage.items.at(-1)?.id;
   }, [conversation, initialMessagePage, selectedRequestId]);
 
   useEffect(() => {
@@ -736,6 +741,7 @@ export function UnifiedChatWorkspace({
 
   const latestMessageId = messages.at(-1)?.id;
   useEffect(() => {
+    latestMessageIdRef.current = latestMessageId;
     if (latestMessageId === undefined) return;
     const previous = previousLastMessageId.current;
     previousLastMessageId.current = latestMessageId;
@@ -879,8 +885,15 @@ export function UnifiedChatWorkspace({
       inFlight = true;
       controller = new AbortController();
       try {
-        const messageQuery = new URLSearchParams({ page: "1", pageSize: "100" });
+        const messageQuery = new URLSearchParams();
         if (conversation !== undefined) messageQuery.set("conversationId", conversation.id);
+        const afterId = latestMessageIdRef.current;
+        if (afterId === undefined) {
+          messageQuery.set("page", "1");
+          messageQuery.set("pageSize", "100");
+        } else {
+          messageQuery.set("afterId", afterId);
+        }
         const response = await fetch(`${apiBase}/messages?${messageQuery.toString()}`, {
           cache: "no-store",
           credentials: "same-origin",
@@ -890,8 +903,12 @@ export function UnifiedChatWorkspace({
         if (!response.ok) throw new Error("poll_failed");
         const result = (await response.json()) as MessageListWire;
         if (!cancelled && Array.isArray(result.items)) {
-          setMessages((current) => mergeUnifiedMessages(current, result.items ?? []));
-          if (typeof result.pageCount === "number") setPageCount(result.pageCount);
+          if (result.items.length > 0) {
+            setMessages((current) => mergeUnifiedMessages(current, result.items ?? []));
+          }
+          if (result.incremental !== true && typeof result.pageCount === "number") {
+            setPageCount(result.pageCount);
+          }
         }
         failedAttempts = 0;
       } catch {

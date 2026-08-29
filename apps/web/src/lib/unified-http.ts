@@ -28,10 +28,14 @@ function positiveInteger(value: string | null, fallback: number, maximum: number
   return Number.isSafeInteger(parsed) && parsed >= 1 ? Math.min(parsed, maximum) : fallback;
 }
 
+const uuidPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/iu;
+
 export function messageListInput(searchParams: URLSearchParams): UnifiedMessageListInput {
+  const afterId = searchParams.get("afterId")?.trim();
   return {
     page: positiveInteger(searchParams.get("page"), 1, 1_000),
     pageSize: positiveInteger(searchParams.get("pageSize"), 50, 100),
+    ...(afterId !== undefined && uuidPattern.test(afterId) ? { afterId } : {}),
   };
 }
 
