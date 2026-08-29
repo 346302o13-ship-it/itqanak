@@ -1,6 +1,7 @@
 import Link from "next/link";
 
 import { AuthShell, CsrfInput, FormAlert } from "@/components/auth-shell";
+import { FormErrorSummary } from "@/components/form-error-summary";
 import { SubmitButton } from "@/components/submit-button";
 import { csrfTokenForPage } from "@/lib/auth-runtime";
 import { supportWhatsAppHref } from "@/lib/support-contact";
@@ -9,6 +10,8 @@ interface ForgotPageProps {
   readonly searchParams: Promise<{
     readonly reference?: string | string[];
     readonly status?: string | string[];
+    readonly c?: string | string[];
+    readonly p?: string | string[];
   }>;
 }
 
@@ -24,6 +27,9 @@ export default async function ForgotPasswordPage({ searchParams }: ForgotPagePro
   const status = typeof query.status === "string" ? query.status : undefined;
   const candidate = typeof query.reference === "string" ? query.reference : "";
   const reference = referencePattern.test(candidate) ? candidate : undefined;
+  const badInput = status === "invalid" || status === "failed";
+  const country = typeof query.c === "string" ? query.c : "SA";
+  const phone = typeof query.p === "string" ? query.p : undefined;
   return (
     <AuthShell
       description="اطلب الاستعادة برقمك المسجل، ثم تواصل مع الدعم من رقم واتساب نفسه. لن نطلب منك كلمة المرور أبداً."
@@ -60,8 +66,8 @@ export default async function ForgotPasswordPage({ searchParams }: ForgotPagePro
       {status === "csrf" ? (
         <FormAlert>انتهت صلاحية نموذج الأمان. حدّث الصفحة ثم أعد المحاولة.</FormAlert>
       ) : null}
-      {status === "invalid" || status === "failed" ? (
-        <FormAlert>تحقق من الدولة ورقم الجوال ثم أعد المحاولة.</FormAlert>
+      {badInput ? (
+        <FormErrorSummary>تحقق من الدولة ورقم الجوال ثم أعد المحاولة.</FormErrorSummary>
       ) : null}
       <form action="/api/auth/forgot-password" className="grid gap-5" method="post">
         <CsrfInput token={token} />
@@ -70,7 +76,13 @@ export default async function ForgotPasswordPage({ searchParams }: ForgotPagePro
           <label className="text-sm font-bold" htmlFor="countryCode">
             الدولة
           </label>
-          <select className={inputClassName} defaultValue="SA" id="countryCode" name="countryCode">
+          <select
+            aria-invalid={badInput || undefined}
+            className={inputClassName}
+            defaultValue={country}
+            id="countryCode"
+            name="countryCode"
+          >
             <option value="SA">السعودية (+966)</option>
             <option value="AE">الإمارات (+971)</option>
             <option value="KW">الكويت (+965)</option>
@@ -81,8 +93,11 @@ export default async function ForgotPasswordPage({ searchParams }: ForgotPagePro
             رقم الجوال المسجل
           </label>
           <input
+            aria-invalid={badInput || undefined}
             autoComplete="tel"
+            autoFocus={badInput}
             className={inputClassName}
+            defaultValue={phone}
             dir="ltr"
             id="phone"
             inputMode="tel"

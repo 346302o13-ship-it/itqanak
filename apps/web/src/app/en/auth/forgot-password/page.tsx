@@ -1,6 +1,7 @@
 import Link from "next/link";
 
 import { AuthShell, CsrfInput, FormAlert } from "@/components/auth-shell";
+import { FormErrorSummary } from "@/components/form-error-summary";
 import { SubmitButton } from "@/components/submit-button";
 import { csrfTokenForPage } from "@/lib/auth-runtime";
 import { supportWhatsAppHref } from "@/lib/support-contact";
@@ -9,6 +10,8 @@ interface ForgotPageProps {
   readonly searchParams: Promise<{
     readonly reference?: string | string[];
     readonly status?: string | string[];
+    readonly c?: string | string[];
+    readonly p?: string | string[];
   }>;
 }
 
@@ -24,6 +27,9 @@ export default async function EnglishForgotPasswordPage({ searchParams }: Forgot
   const status = typeof query.status === "string" ? query.status : undefined;
   const candidate = typeof query.reference === "string" ? query.reference : "";
   const reference = referencePattern.test(candidate) ? candidate : undefined;
+  const badInput = status === "invalid" || status === "failed";
+  const country = typeof query.c === "string" ? query.c : "SA";
+  const phone = typeof query.p === "string" ? query.p : undefined;
   return (
     <AuthShell
       description="Request recovery with your registered mobile, then contact support from that same WhatsApp number. We never ask for your password."
@@ -63,8 +69,8 @@ export default async function EnglishForgotPasswordPage({ searchParams }: Forgot
       {status === "csrf" ? (
         <FormAlert>The security form expired. Refresh and retry.</FormAlert>
       ) : null}
-      {status === "invalid" || status === "failed" ? (
-        <FormAlert>Check the country and mobile number, then try again.</FormAlert>
+      {badInput ? (
+        <FormErrorSummary>Check the country and mobile number, then try again.</FormErrorSummary>
       ) : null}
       <form action="/api/auth/forgot-password" className="grid gap-5" method="post">
         <CsrfInput token={token} />
@@ -73,7 +79,13 @@ export default async function EnglishForgotPasswordPage({ searchParams }: Forgot
           <label className="text-sm font-bold" htmlFor="countryCode">
             Country
           </label>
-          <select className={inputClassName} defaultValue="SA" id="countryCode" name="countryCode">
+          <select
+            aria-invalid={badInput || undefined}
+            className={inputClassName}
+            defaultValue={country}
+            id="countryCode"
+            name="countryCode"
+          >
             <option value="SA">Saudi Arabia (+966)</option>
             <option value="AE">United Arab Emirates (+971)</option>
             <option value="KW">Kuwait (+965)</option>
@@ -84,8 +96,11 @@ export default async function EnglishForgotPasswordPage({ searchParams }: Forgot
             Registered mobile number
           </label>
           <input
+            aria-invalid={badInput || undefined}
             autoComplete="tel"
+            autoFocus={badInput}
             className={inputClassName}
+            defaultValue={phone}
             dir="ltr"
             id="phone"
             inputMode="tel"
