@@ -17,10 +17,15 @@ type WireQuote = Omit<ServiceQuote, "createdAt" | "expiresAt" | "respondedAt" | 
   readonly updatedAt: Date | string;
 };
 
-export type WireUnifiedMessage = Omit<UnifiedMessage, "quote" | "request" | "sentAt"> & {
+export type WireUnifiedMessage = Omit<
+  UnifiedMessage,
+  "quote" | "request" | "sentAt" | "editedAt" | "deletedAt"
+> & {
   readonly quote?: WireQuote;
   readonly request?: WireRequest;
   readonly sentAt: Date | string;
+  readonly editedAt?: Date | string;
+  readonly deletedAt?: Date | string;
 };
 
 export type WireUnifiedConversationSummary = Omit<
@@ -68,11 +73,13 @@ function hydrateQuote(quote: WireQuote): ServiceQuote {
 }
 
 export function hydrateUnifiedMessage(message: WireUnifiedMessage): UnifiedMessage {
-  const { quote, request, ...messageWithoutRelations } = message;
+  const { quote, request, editedAt, deletedAt, ...messageWithoutRelations } = message;
   return {
     ...messageWithoutRelations,
     ...(request === undefined ? {} : { request: hydrateRequest(request) }),
     ...(quote === undefined ? {} : { quote: hydrateQuote(quote) }),
+    ...(editedAt === undefined ? {} : { editedAt: validDate(editedAt) }),
+    ...(deletedAt === undefined ? {} : { deletedAt: validDate(deletedAt) }),
     sentAt: validDate(message.sentAt),
   };
 }

@@ -63,6 +63,7 @@ interface MessageListWire {
   readonly page?: number;
   readonly pageCount?: number;
   readonly incremental?: boolean;
+  readonly revisionCursor?: string;
 }
 
 /** A text message the client has accepted but the server has not yet confirmed. */
@@ -621,6 +622,10 @@ export function UnifiedChatWorkspace({
   // Newest message id the client already holds; the poller sends it as `afterId`
   // so a steady-state poll fetches only the delta.
   const latestMessageIdRef = useRef<string | undefined>(initialMessagePage.items.at(-1)?.id);
+  // Companion cursor: everything edited/deleted at or before this instant is
+  // already reflected locally. Sent as `revisedAfter` so revisions to older
+  // messages are not missed by an `afterId`-only poll.
+  const revisionCursorRef = useRef<string | undefined>(initialMessagePage.revisionCursor);
   // Set by the poll effects; the SSE stream calls these to fetch a delta at once.
   const messagePokeRef = useRef<() => void>(() => undefined);
   const contactPokeRef = useRef<() => void>(() => undefined);
@@ -659,6 +664,9 @@ export function UnifiedChatWorkspace({
   >(undefined);
   const [reactionPickerFor, setReactionPickerFor] = useState<string>();
   const reactionChoices = ["👍", "❤️", "😂", "😮", "😢", "🙏"];
+  const [editingId, setEditingId] = useState<string>();
+  const [editingText, setEditingText] = useState("");
+  const [deleteConfirmFor, setDeleteConfirmFor] = useState<string>();
 
   const closeContacts = useCallback((restoreFocus = true): void => {
     setContactsOpen(false);
@@ -692,8 +700,11 @@ export function UnifiedChatWorkspace({
     setLinkedRequestId(selectedRequestId);
     setContactsOpen(conversation === undefined);
     setDetailsOpen(false);
+    setEditingId(undefined);
+    setDeleteConfirmFor(undefined);
     previousLastMessageId.current = initialMessagePage.items.at(-1)?.id;
     latestMessageIdRef.current = initialMessagePage.items.at(-1)?.id;
+    revisionCursorRef.current = initialMessagePage.revisionCursor;
   }, [conversation, initialMessagePage, selectedRequestId]);
 
   useEffect(() => {
@@ -1017,6 +1028,9 @@ export function UnifiedChatWorkspace({
           messageQuery.set("pageSize", "100");
         } else {
           messageQuery.set("afterId", afterId);
+          if (revisionCursorRef.current !== undefined) {
+            messageQuery.set("revisedAfter", revisionCursorRef.current);
+          }
         }
         const response = await fetch(`${apiBase}/messages?${messageQuery.toString()}`, {
           cache: "no-store",
@@ -1029,6 +1043,9 @@ export function UnifiedChatWorkspace({
         if (!cancelled && Array.isArray(result.items)) {
           if (result.items.length > 0) {
             setMessages((current) => mergeUnifiedMessages(current, result.items ?? []));
+          }
+          if (typeof result.revisionCursor === "string") {
+            revisionCursorRef.current = result.revisionCursor;
           }
           if (result.incremental !== true && typeof result.pageCount === "number") {
             setPageCount(result.pageCount);
@@ -1312,6 +1329,58 @@ export function UnifiedChatWorkspace({
       });
     } catch {
       // The next poll / stream delta restores the true state.
+    }
+  }
+
+  async function submitEdit(messageId: string): Promise<void> {
+    if (apiBase === undefined || csrfToken === undefined) return;
+    const trimmed = editingText.trim();
+    if (trimmed.length === 0) return;
+    const original = messages.find((message) => message.id === messageId);
+    if (original !== undefined && original.body === trimmed) {
+      setEditingId(undefined);
+      return;
+    }
+    try {
+      const response = await fetch(`${apiBase}/messages/${encodeURIComponent(messageId)}`, {
+        method: "PATCH",
+        credentials: "same-origin",
+        headers: { "Content-Type": "application/x-www-form-urlencoded" },
+        body: new URLSearchParams({ csrfToken, body: trimmed }),
+      });
+      const result = (await response.json().catch(() => ({}))) as MessageMutationWire;
+      if (!response.ok || result.message === undefined || typeof result.message === "string") {
+        setNotice(english ? "The message could not be edited." : "تعذر تعديل الرسالة.");
+        return;
+      }
+      const edited = result.message;
+      setMessages((current) => mergeUnifiedMessages(current, [edited]));
+      setEditingId(undefined);
+      setEditingText("");
+    } catch {
+      setNotice(english ? "The message could not be edited." : "تعذر تعديل الرسالة.");
+    }
+  }
+
+  async function deleteMessage(messageId: string): Promise<void> {
+    if (apiBase === undefined || csrfToken === undefined) return;
+    setDeleteConfirmFor(undefined);
+    try {
+      const response = await fetch(`${apiBase}/messages/${encodeURIComponent(messageId)}`, {
+        method: "DELETE",
+        credentials: "same-origin",
+        headers: { "Content-Type": "application/x-www-form-urlencoded" },
+        body: new URLSearchParams({ csrfToken }),
+      });
+      const result = (await response.json().catch(() => ({}))) as MessageMutationWire;
+      if (!response.ok || result.message === undefined || typeof result.message === "string") {
+        setNotice(english ? "The message could not be deleted." : "تعذر حذف الرسالة.");
+        return;
+      }
+      const removed = result.message;
+      setMessages((current) => mergeUnifiedMessages(current, [removed]));
+    } catch {
+      setNotice(english ? "The message could not be deleted." : "تعذر حذف الرسالة.");
     }
   }
 
@@ -2479,11 +2548,15 @@ export function UnifiedChatWorkspace({
                               type="button"
                             >
                               <span className="block truncate" dir="auto">
-                                {message.replyTo.contentType === "TEXT"
-                                  ? message.replyTo.body
-                                  : english
-                                    ? "Attachment"
-                                    : "مرفق"}
+                                {message.replyTo.deleted
+                                  ? english
+                                    ? "Deleted message"
+                                    : "رسالة محذوفة"
+                                  : message.replyTo.contentType === "TEXT"
+                                    ? message.replyTo.body
+                                    : english
+                                      ? "Attachment"
+                                      : "مرفق"}
                               </span>
                             </button>
                           )}
@@ -2496,12 +2569,62 @@ export function UnifiedChatWorkspace({
                               messageId={message.id}
                             />
                           )}
-                          {message.contentType === "TEXT" ? (
+                          {message.deletedAt !== undefined ? (
+                            <p
+                              className={`flex items-center gap-1.5 text-sm italic leading-7 ${
+                                mine ? "text-white/75" : "text-[var(--itq-color-muted)]"
+                              }`}
+                            >
+                              <CloseIcon className="size-3.5 shrink-0" />
+                              {english ? "This message was deleted" : "تم حذف هذه الرسالة"}
+                            </p>
+                          ) : editingId === message.id ? (
+                            <div className="grid gap-1.5">
+                              <textarea
+                                aria-label={english ? "Edit message" : "تعديل الرسالة"}
+                                autoFocus
+                                className="min-h-16 w-full resize-none rounded-lg border border-white/40 bg-white/95 px-2.5 py-1.5 text-sm leading-6 text-[var(--itq-color-ink)] outline-none"
+                                dir="auto"
+                                maxLength={10_000}
+                                onChange={(event) => setEditingText(event.currentTarget.value)}
+                                onKeyDown={(event) => {
+                                  if (event.key === "Enter" && !event.shiftKey) {
+                                    event.preventDefault();
+                                    void submitEdit(message.id);
+                                  }
+                                  if (event.key === "Escape") setEditingId(undefined);
+                                }}
+                                value={editingText}
+                              />
+                              <div className="flex justify-end gap-1.5 text-[10px] font-black">
+                                <button
+                                  className={`rounded px-2 py-0.5 ${
+                                    mine
+                                      ? "text-white/80 hover:bg-white/15"
+                                      : "hover:bg-[var(--itq-color-brand-50)]"
+                                  }`}
+                                  onClick={() => setEditingId(undefined)}
+                                  type="button"
+                                >
+                                  {english ? "Cancel" : "إلغاء"}
+                                </button>
+                                <button
+                                  className="rounded bg-white px-2 py-0.5 text-[var(--itq-color-brand-800)] disabled:opacity-50"
+                                  disabled={editingText.trim().length === 0}
+                                  onClick={() => void submitEdit(message.id)}
+                                  type="button"
+                                >
+                                  {english ? "Save" : "حفظ"}
+                                </button>
+                              </div>
+                            </div>
+                          ) : message.contentType === "TEXT" ? (
                             <p className="whitespace-pre-wrap break-words text-sm leading-7">
                               <bdi dir="auto">{message.body}</bdi>
                             </p>
                           ) : null}
-                          {(message.reactions?.length ?? 0) > 0 ? (
+                          {(message.reactions?.length ?? 0) > 0 &&
+                          message.deletedAt === undefined ? (
                             <div className="mt-1.5 flex flex-wrap gap-1">
                               {message.reactions?.map((reaction) => (
                                 <button
@@ -2528,64 +2651,130 @@ export function UnifiedChatWorkspace({
                             }`}
                           >
                             <span className="me-auto flex items-center gap-1">
-                              <button
-                                className={`rounded px-1.5 py-0.5 font-black ${
-                                  mine
-                                    ? "hover:bg-white/15"
-                                    : "hover:bg-[var(--itq-color-brand-50)]"
-                                }`}
-                                onClick={() =>
-                                  setReplyingTo({
-                                    id: message.id,
-                                    body:
-                                      message.contentType === "TEXT"
-                                        ? message.body
-                                        : english
-                                          ? "Attachment"
-                                          : "مرفق",
-                                    senderType: message.senderType,
-                                  })
-                                }
-                                type="button"
-                              >
-                                {english ? "Reply" : "رد"}
-                              </button>
-                              <span className="relative">
-                                <button
-                                  aria-label={english ? "Add a reaction" : "أضف تفاعلًا"}
-                                  className={`rounded px-1.5 py-0.5 font-black ${
-                                    mine
-                                      ? "hover:bg-white/15"
-                                      : "hover:bg-[var(--itq-color-brand-50)]"
-                                  }`}
-                                  onClick={() =>
-                                    setReactionPickerFor((value) =>
-                                      value === message.id ? undefined : message.id,
-                                    )
-                                  }
-                                  type="button"
-                                >
-                                  {english ? "React" : "تفاعل"}
-                                </button>
-                                {reactionPickerFor === message.id ? (
-                                  <span className="absolute bottom-full z-20 mb-1 flex gap-0.5 rounded-full border border-[var(--itq-color-border)] bg-white p-1 shadow-lg">
-                                    {reactionChoices.map((emoji) => (
-                                      <button
-                                        className="grid size-7 place-items-center rounded-full text-base hover:bg-[var(--itq-color-surface-soft)]"
-                                        key={emoji}
-                                        onClick={() => {
-                                          void toggleReaction(message.id, emoji);
-                                          setReactionPickerFor(undefined);
-                                        }}
-                                        type="button"
-                                      >
-                                        {emoji}
-                                      </button>
-                                    ))}
+                              {message.deletedAt !== undefined ||
+                              editingId === message.id ? null : (
+                                <>
+                                  <button
+                                    className={`rounded px-1.5 py-0.5 font-black ${
+                                      mine
+                                        ? "hover:bg-white/15"
+                                        : "hover:bg-[var(--itq-color-brand-50)]"
+                                    }`}
+                                    onClick={() =>
+                                      setReplyingTo({
+                                        id: message.id,
+                                        body:
+                                          message.contentType === "TEXT"
+                                            ? message.body
+                                            : english
+                                              ? "Attachment"
+                                              : "مرفق",
+                                        senderType: message.senderType,
+                                      })
+                                    }
+                                    type="button"
+                                  >
+                                    {english ? "Reply" : "رد"}
+                                  </button>
+                                  <span className="relative">
+                                    <button
+                                      aria-label={english ? "Add a reaction" : "أضف تفاعلًا"}
+                                      className={`rounded px-1.5 py-0.5 font-black ${
+                                        mine
+                                          ? "hover:bg-white/15"
+                                          : "hover:bg-[var(--itq-color-brand-50)]"
+                                      }`}
+                                      onClick={() =>
+                                        setReactionPickerFor((value) =>
+                                          value === message.id ? undefined : message.id,
+                                        )
+                                      }
+                                      type="button"
+                                    >
+                                      {english ? "React" : "تفاعل"}
+                                    </button>
+                                    {reactionPickerFor === message.id ? (
+                                      <span className="absolute bottom-full z-20 mb-1 flex gap-0.5 rounded-full border border-[var(--itq-color-border)] bg-white p-1 shadow-lg">
+                                        {reactionChoices.map((emoji) => (
+                                          <button
+                                            className="grid size-7 place-items-center rounded-full text-base hover:bg-[var(--itq-color-surface-soft)]"
+                                            key={emoji}
+                                            onClick={() => {
+                                              void toggleReaction(message.id, emoji);
+                                              setReactionPickerFor(undefined);
+                                            }}
+                                            type="button"
+                                          >
+                                            {emoji}
+                                          </button>
+                                        ))}
+                                      </span>
+                                    ) : null}
                                   </span>
-                                ) : null}
-                              </span>
+                                  {mine && message.contentType === "TEXT" ? (
+                                    deleteConfirmFor === message.id ? (
+                                      <>
+                                        <span className="font-black">
+                                          {english ? "Delete?" : "حذف؟"}
+                                        </span>
+                                        <button
+                                          className="rounded px-1.5 py-0.5 font-black text-red-200 hover:bg-white/15"
+                                          onClick={() => void deleteMessage(message.id)}
+                                          type="button"
+                                        >
+                                          {english ? "Yes" : "نعم"}
+                                        </button>
+                                        <button
+                                          className={`rounded px-1.5 py-0.5 font-black ${
+                                            mine
+                                              ? "hover:bg-white/15"
+                                              : "hover:bg-[var(--itq-color-brand-50)]"
+                                          }`}
+                                          onClick={() => setDeleteConfirmFor(undefined)}
+                                          type="button"
+                                        >
+                                          {english ? "No" : "لا"}
+                                        </button>
+                                      </>
+                                    ) : (
+                                      <>
+                                        {Date.now() - message.sentAt.getTime() < 15 * 60_000 ? (
+                                          <button
+                                            className={`rounded px-1.5 py-0.5 font-black ${
+                                              mine
+                                                ? "hover:bg-white/15"
+                                                : "hover:bg-[var(--itq-color-brand-50)]"
+                                            }`}
+                                            onClick={() => {
+                                              setEditingId(message.id);
+                                              setEditingText(message.body);
+                                              setDeleteConfirmFor(undefined);
+                                            }}
+                                            type="button"
+                                          >
+                                            {english ? "Edit" : "تعديل"}
+                                          </button>
+                                        ) : null}
+                                        <button
+                                          className={`rounded px-1.5 py-0.5 font-black ${
+                                            mine
+                                              ? "hover:bg-white/15"
+                                              : "hover:bg-[var(--itq-color-brand-50)]"
+                                          }`}
+                                          onClick={() => setDeleteConfirmFor(message.id)}
+                                          type="button"
+                                        >
+                                          {english ? "Delete" : "حذف"}
+                                        </button>
+                                      </>
+                                    )
+                                  ) : null}
+                                </>
+                              )}
                             </span>
+                            {message.editedAt !== undefined && message.deletedAt === undefined ? (
+                              <span className="italic">{english ? "edited" : "معدّلة"}</span>
+                            ) : null}
                             <time dateTime={message.sentAt.toISOString()}>
                               {formatMessageTime(message.sentAt, locale)}
                             </time>

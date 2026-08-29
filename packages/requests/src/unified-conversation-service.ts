@@ -37,7 +37,7 @@ import type {
   UnifiedMessageListResult,
   UnifiedRequestSummary,
 } from "./types.js";
-import { normalizeUnifiedMessageInput } from "./unified-validation.js";
+import { normalizeUnifiedEditBody, normalizeUnifiedMessageInput } from "./unified-validation.js";
 
 interface ConversationRow {
   readonly id: string;
@@ -88,6 +88,11 @@ interface MessageRow {
   readonly reply_body: string | null;
   readonly reply_sender_type: string | null;
   readonly reply_content_type: string | null;
+  readonly reply_revision_action: string | null;
+  readonly reply_revision_body: string | null;
+  readonly revision_action: string | null;
+  readonly revision_body: string | null;
+  readonly revision_at: Date | string | null;
   readonly request_id: string | null;
   readonly request_number: string | null;
   readonly request_title: string | null;
@@ -157,6 +162,9 @@ const messageSelect = `
   messages.sent_at, messages.reply_to_message_id,
   reply_target.body AS reply_body, reply_target.sender_type AS reply_sender_type,
   reply_target.content_type AS reply_content_type,
+  reply_revision.action AS reply_revision_action, reply_revision.new_body AS reply_revision_body,
+  latest_revision.action AS revision_action, latest_revision.new_body AS revision_body,
+  latest_revision.created_at AS revision_at,
   CASE
     WHEN EXISTS (
       SELECT 1 FROM support_message_receipts AS receipts
@@ -208,6 +216,12 @@ function toDate(value: Date | string): Date {
 
 function optionalDate(value: Date | string | null): Date | undefined {
   return value === null ? undefined : toDate(value);
+}
+
+function parseRevisionCursor(value: string | undefined): Date | undefined {
+  if (value === undefined) return undefined;
+  const parsed = new Date(value);
+  return Number.isNaN(parsed.getTime()) ? undefined : parsed;
 }
 
 function toSafeInteger(value: number | string, field: string): number {
@@ -419,6 +433,16 @@ function toMessage(row: MessageRow): UnifiedMessage {
     });
   }
   const quote = toQuote(row);
+  const deleted = row.revision_action === "DELETE";
+  const edited = row.revision_action === "EDIT";
+  const revisionAt = row.revision_at === null ? undefined : toDate(row.revision_at);
+  const effectiveBody = deleted ? "" : edited ? (row.revision_body ?? row.body) : row.body;
+  const replyDeleted = row.reply_revision_action === "DELETE";
+  const replyBody = replyDeleted
+    ? ""
+    : row.reply_revision_action === "EDIT"
+      ? (row.reply_revision_body ?? row.reply_body)
+      : row.reply_body;
   return {
     id: row.id,
     conversationId: row.conversation_id,
@@ -426,8 +450,10 @@ function toMessage(row: MessageRow): UnifiedMessage {
     ...(row.sender_user_id === null ? {} : { senderUserId: row.sender_user_id }),
     ...(row.sender_display_name === null ? {} : { senderDisplayName: row.sender_display_name }),
     contentType: toContentType(row.content_type),
-    body: row.body,
-    ...(request === undefined ? {} : { request }),
+    body: effectiveBody,
+    ...(edited && revisionAt !== undefined ? { editedAt: revisionAt } : {}),
+    ...(deleted && revisionAt !== undefined ? { deletedAt: revisionAt } : {}),
+    ...(request === undefined || deleted ? {} : { request }),
     ...(row.attachment_id === null ||
     row.attachment_source === null ||
     row.attachment_filename === null ||
@@ -454,9 +480,10 @@ function toMessage(row: MessageRow): UnifiedMessage {
       : {
           replyTo: {
             id: row.reply_to_message_id,
-            body: row.reply_body,
+            body: replyBody ?? "",
             senderType: toSenderType(row.reply_sender_type),
             contentType: toContentType(row.reply_content_type),
+            ...(replyDeleted ? { deleted: true } : {}),
           },
         }),
     ...(row.client_message_id === null ? {} : { clientMessageId: row.client_message_id }),
@@ -647,17 +674,62 @@ export class UnifiedConversationService {
              ON legacy_attachments.id = messages.legacy_request_attachment_id
            LEFT JOIN service_quotes AS quotes ON quotes.id = messages.quote_id
            LEFT JOIN support_messages AS reply_target ON reply_target.id = messages.reply_to_message_id
+           LEFT JOIN LATERAL (
+             SELECT action, new_body, created_at
+             FROM support_message_revisions
+             WHERE support_message_revisions.message_id = messages.id
+             ORDER BY created_at DESC, id DESC LIMIT 1
+           ) AS latest_revision ON TRUE
+           LEFT JOIN LATERAL (
+             SELECT action, new_body
+             FROM support_message_revisions
+             WHERE support_message_revisions.message_id = messages.reply_to_message_id
+             ORDER BY created_at DESC, id DESC LIMIT 1
+           ) AS reply_revision ON TRUE
            WHERE messages.conversation_id = $1
              AND (messages.sent_at, messages.id) > ($2, $3)
            ORDER BY messages.sent_at ASC, messages.id ASC
            LIMIT $4`,
           [access.row.id, anchor[0].sent_at, anchor[0].id, deltaLimit],
         );
+
+        // Edits and deletes land on messages the client already holds, so they
+        // never appear in the `afterId` window above. A tiny indexed cursor
+        // scan picks up anything revised since the client's last poll (usually
+        // nothing) and re-sends just those messages, folded.
+        const revisedAfter = parseRevisionCursor(input.revisedAfter);
+        let revisionCursor = input.revisedAfter;
+        const revisionMessages: UnifiedMessage[] = [];
+        if (revisedAfter !== undefined) {
+          const changed = await this.database<
+            { readonly message_id: string; readonly last_revised_at: Date }[]
+          >`
+            SELECT message_id, max(created_at) AS last_revised_at
+            FROM support_message_revisions
+            WHERE conversation_id = ${access.row.id} AND created_at > ${revisedAfter}
+            GROUP BY message_id
+            ORDER BY max(created_at) ASC
+            LIMIT 200
+          `;
+          if (changed.length > 0) {
+            for (const row of changed) {
+              if (deltaRows.some((delta) => delta.id === row.message_id)) continue;
+              revisionMessages.push(await this.readMessage(this.database, row.message_id));
+            }
+            revisionCursor = toDate(changed[changed.length - 1]!.last_revised_at).toISOString();
+          }
+        }
+
+        const combined = [...deltaRows.map(toMessage), ...revisionMessages].sort(
+          (left, right) =>
+            left.sentAt.getTime() - right.sentAt.getTime() || left.id.localeCompare(right.id),
+        );
         return {
-          items: await this.withReactions(deltaRows.map(toMessage), principal.userId),
+          items: await this.withReactions(combined, principal.userId),
           page: 1,
           pageSize: deltaLimit,
           incremental: true,
+          ...(revisionCursor === undefined ? {} : { revisionCursor }),
         };
       }
       // The anchor no longer resolves (conversation switch, pruned client
@@ -665,9 +737,13 @@ export class UnifiedConversationService {
     }
 
     const { page, pageSize, offset } = normalizeBoundedPage(input.page, input.pageSize, 100);
-    const [counts, rows] = await Promise.all([
+    const [counts, revisionMax, rows] = await Promise.all([
       this.database<CountRow[]>`
         SELECT count(*)::text AS count FROM support_messages
+        WHERE conversation_id = ${access.row.id}
+      `,
+      this.database<{ readonly max: Date | null }[]>`
+        SELECT max(created_at) AS max FROM support_message_revisions
         WHERE conversation_id = ${access.row.id}
       `,
       this.database.unsafe<MessageRow[]>(
@@ -681,6 +757,18 @@ export class UnifiedConversationService {
            ON legacy_attachments.id = messages.legacy_request_attachment_id
          LEFT JOIN service_quotes AS quotes ON quotes.id = messages.quote_id
            LEFT JOIN support_messages AS reply_target ON reply_target.id = messages.reply_to_message_id
+           LEFT JOIN LATERAL (
+             SELECT action, new_body, created_at
+             FROM support_message_revisions
+             WHERE support_message_revisions.message_id = messages.id
+             ORDER BY created_at DESC, id DESC LIMIT 1
+           ) AS latest_revision ON TRUE
+           LEFT JOIN LATERAL (
+             SELECT action, new_body
+             FROM support_message_revisions
+             WHERE support_message_revisions.message_id = messages.reply_to_message_id
+             ORDER BY created_at DESC, id DESC LIMIT 1
+           ) AS reply_revision ON TRUE
          WHERE messages.conversation_id = $1
          ORDER BY messages.sent_at DESC, messages.id DESC
          LIMIT $2 OFFSET $3`,
@@ -688,6 +776,7 @@ export class UnifiedConversationService {
       ),
     ]);
     const total = toSafeInteger(counts[0]?.count ?? "0", "message count");
+    const revisionMaxAt = revisionMax[0]?.max ?? null;
     return {
       items: await this.withReactions(rows.map(toMessage).reverse(), principal.userId),
       page,
@@ -695,6 +784,8 @@ export class UnifiedConversationService {
       total,
       pageCount: Math.max(1, Math.ceil(total / pageSize)),
       incremental: false,
+      revisionCursor:
+        revisionMaxAt === null ? new Date(0).toISOString() : toDate(revisionMaxAt).toISOString(),
     };
   }
 
@@ -703,7 +794,11 @@ export class UnifiedConversationService {
     viewerUserId: string,
   ): Promise<UnifiedMessage[]> {
     if (messages.length === 0) return [];
-    const ids = messages.map((message) => message.id);
+    // A deleted message shows no reaction chips.
+    const ids = messages
+      .filter((message) => message.deletedAt === undefined)
+      .map((message) => message.id);
+    if (ids.length === 0) return [...messages];
     const rows = await this.database<
       {
         readonly message_id: string;
@@ -772,6 +867,152 @@ export class UnifiedConversationService {
       `;
       return { reacted: false };
     });
+  }
+
+  /** How long after sending the author may still edit their text. */
+  private static readonly editWindowMs = 15 * 60_000;
+
+  /**
+   * Replace the text of the caller's own message. Sender-only, TEXT-only, and
+   * only within `editWindowMs` of sending. Recorded as an append-only revision
+   * row (support_messages itself stays immutable); the returned message carries
+   * the folded body and `editedAt`.
+   */
+  public async editMessage(
+    principal: AuthenticatedPrincipal,
+    conversationId: string,
+    messageId: string,
+    rawBody: string,
+    context: RequestAuditContext = {},
+  ): Promise<SendUnifiedMessageResult> {
+    if (!isUuid(messageId)) throw new RequestDomainError("MESSAGE_NOT_FOUND");
+    const nextBody = normalizeUnifiedEditBody(rawBody);
+    const message = await this.database.begin(async (transaction) => {
+      const tx = transaction as DatabaseClient;
+      const access = await this.resolveConversation(tx, principal, conversationId, "send");
+      const target = await tx<
+        {
+          readonly sender_user_id: string | null;
+          readonly content_type: string;
+          readonly body: string;
+          readonly sent_at: Date;
+        }[]
+      >`
+        SELECT sender_user_id, content_type, body, sent_at
+        FROM support_messages
+        WHERE id = ${messageId} AND conversation_id = ${access.row.id}
+        LIMIT 1
+      `;
+      const row = target[0];
+      if (row === undefined) throw new RequestDomainError("MESSAGE_NOT_FOUND");
+      if (row.sender_user_id === null || row.sender_user_id !== principal.userId) {
+        throw new RequestDomainError("MESSAGE_EDIT_FORBIDDEN");
+      }
+      if (row.content_type !== "TEXT") throw new RequestDomainError("MESSAGE_NOT_EDITABLE");
+      if (Date.now() - toDate(row.sent_at).getTime() > UnifiedConversationService.editWindowMs) {
+        throw new RequestDomainError("MESSAGE_NOT_EDITABLE");
+      }
+      const latest = await tx<{ readonly action: string; readonly new_body: string | null }[]>`
+        SELECT action, new_body FROM support_message_revisions
+        WHERE message_id = ${messageId}
+        ORDER BY created_at DESC, id DESC LIMIT 1
+      `;
+      if (latest[0]?.action === "DELETE") throw new RequestDomainError("MESSAGE_NOT_EDITABLE");
+      const effectiveBody = latest[0]?.new_body ?? row.body;
+      if (nextBody === effectiveBody) throw new RequestDomainError("INVALID_MESSAGE");
+      await tx`
+        INSERT INTO support_message_revisions (
+          message_id, conversation_id, actor_user_id, action, previous_body, new_body
+        ) VALUES (
+          ${messageId}, ${access.row.id}, ${principal.userId}, 'EDIT', ${effectiveBody}, ${nextBody}
+        )
+      `;
+      await recordAuditEvent(tx, {
+        ...context,
+        eventType: "unified_conversation.message_edited",
+        outcome: "SUCCESS",
+        actorUserId: principal.userId,
+        targetUserId: access.row.student_user_id,
+        sessionId: principal.sessionId,
+        resourceType: "support_message",
+        resourceId: messageId,
+        metadata: { senderType: access.mode },
+      });
+      return this.readMessage(tx, messageId);
+    });
+    this.logger?.info("unified_conversation_message_edited", {
+      conversationId: message.conversationId,
+      messageId: message.id,
+    });
+    return { message, idempotentReplay: false };
+  }
+
+  /**
+   * Tombstone the caller's own message. Sender-only, TEXT-only, no time limit
+   * (an unsend). Recorded as an append-only revision row; the returned message
+   * has a blanked body and `deletedAt`. Deleting an already-deleted message is
+   * a no-op that returns the current state.
+   */
+  public async deleteMessage(
+    principal: AuthenticatedPrincipal,
+    conversationId: string,
+    messageId: string,
+    context: RequestAuditContext = {},
+  ): Promise<SendUnifiedMessageResult> {
+    if (!isUuid(messageId)) throw new RequestDomainError("MESSAGE_NOT_FOUND");
+    const message = await this.database.begin(async (transaction) => {
+      const tx = transaction as DatabaseClient;
+      const access = await this.resolveConversation(tx, principal, conversationId, "send");
+      const target = await tx<
+        {
+          readonly sender_user_id: string | null;
+          readonly content_type: string;
+          readonly body: string;
+        }[]
+      >`
+        SELECT sender_user_id, content_type, body
+        FROM support_messages
+        WHERE id = ${messageId} AND conversation_id = ${access.row.id}
+        LIMIT 1
+      `;
+      const row = target[0];
+      if (row === undefined) throw new RequestDomainError("MESSAGE_NOT_FOUND");
+      if (row.sender_user_id === null || row.sender_user_id !== principal.userId) {
+        throw new RequestDomainError("MESSAGE_EDIT_FORBIDDEN");
+      }
+      if (row.content_type !== "TEXT") throw new RequestDomainError("MESSAGE_NOT_EDITABLE");
+      const latest = await tx<{ readonly action: string; readonly new_body: string | null }[]>`
+        SELECT action, new_body FROM support_message_revisions
+        WHERE message_id = ${messageId}
+        ORDER BY created_at DESC, id DESC LIMIT 1
+      `;
+      if (latest[0]?.action === "DELETE") return this.readMessage(tx, messageId);
+      const effectiveBody = latest[0]?.new_body ?? row.body;
+      await tx`
+        INSERT INTO support_message_revisions (
+          message_id, conversation_id, actor_user_id, action, previous_body, new_body
+        ) VALUES (
+          ${messageId}, ${access.row.id}, ${principal.userId}, 'DELETE', ${effectiveBody}, NULL
+        )
+      `;
+      await recordAuditEvent(tx, {
+        ...context,
+        eventType: "unified_conversation.message_deleted",
+        outcome: "SUCCESS",
+        actorUserId: principal.userId,
+        targetUserId: access.row.student_user_id,
+        sessionId: principal.sessionId,
+        resourceType: "support_message",
+        resourceId: messageId,
+        metadata: { senderType: access.mode },
+      });
+      return this.readMessage(tx, messageId);
+    });
+    this.logger?.info("unified_conversation_message_deleted", {
+      conversationId: message.conversationId,
+      messageId: message.id,
+    });
+    return { message, idempotentReplay: false };
   }
 
   public async sendMessage(
@@ -954,6 +1195,18 @@ export class UnifiedConversationService {
          ON legacy_attachments.id = messages.legacy_request_attachment_id
        LEFT JOIN service_quotes AS quotes ON quotes.id = messages.quote_id
            LEFT JOIN support_messages AS reply_target ON reply_target.id = messages.reply_to_message_id
+           LEFT JOIN LATERAL (
+             SELECT action, new_body, created_at
+             FROM support_message_revisions
+             WHERE support_message_revisions.message_id = messages.id
+             ORDER BY created_at DESC, id DESC LIMIT 1
+           ) AS latest_revision ON TRUE
+           LEFT JOIN LATERAL (
+             SELECT action, new_body
+             FROM support_message_revisions
+             WHERE support_message_revisions.message_id = messages.reply_to_message_id
+             ORDER BY created_at DESC, id DESC LIMIT 1
+           ) AS reply_revision ON TRUE
        WHERE messages.id = $1 LIMIT 1`,
       [messageId],
     );
@@ -1092,8 +1345,20 @@ export class UnifiedConversationService {
     FROM support_conversations AS conversations
     INNER JOIN users AS students ON students.id = conversations.student_user_id
     LEFT JOIN LATERAL (
-      SELECT messages.body, messages.sent_at
+      SELECT
+        CASE
+          WHEN last_message_revision.action = 'DELETE' THEN NULL
+          WHEN last_message_revision.action = 'EDIT' THEN last_message_revision.new_body
+          ELSE messages.body
+        END AS body,
+        messages.sent_at
       FROM support_messages AS messages
+      LEFT JOIN LATERAL (
+        SELECT action, new_body
+        FROM support_message_revisions
+        WHERE support_message_revisions.message_id = messages.id
+        ORDER BY created_at DESC, id DESC LIMIT 1
+      ) AS last_message_revision ON TRUE
       WHERE messages.conversation_id = conversations.id
       ORDER BY messages.sent_at DESC, messages.id DESC LIMIT 1
     ) AS last_message ON TRUE

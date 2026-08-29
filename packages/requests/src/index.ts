@@ -22,6 +22,7 @@ export {
 export {
   normalizeQuoteResponseInput,
   normalizeServiceQuoteInput,
+  normalizeUnifiedEditBody,
   normalizeUnifiedMessageInput,
   type NormalizedQuoteResponseInput,
   type NormalizedServiceQuoteInput,

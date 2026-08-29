@@ -6,6 +6,7 @@ import {
   normalizeQuoteResponseInput,
   normalizeQuoteWithdrawalInput,
   normalizeServiceQuoteInput,
+  normalizeUnifiedEditBody,
   normalizeUnifiedMessageInput,
 } from "./unified-validation.js";
 
@@ -32,6 +33,14 @@ describe("unified conversation validation", () => {
     expect(() => normalizeUnifiedMessageInput({ contentType: "FILE" }, randomUUID())).toThrowError(
       "MESSAGE_ATTACHMENT_REQUIRED",
     );
+  });
+
+  it("normalizes a message edit body and rejects empty or oversized text", () => {
+    expect(normalizeUnifiedEditBody("  مرحباً\r\nمجددًا  ")).toBe("مرحباً\nمجددًا");
+    expect(() => normalizeUnifiedEditBody("   ")).toThrowError("INVALID_MESSAGE");
+    expect(() => normalizeUnifiedEditBody(undefined)).toThrowError("INVALID_MESSAGE");
+    expect(() => normalizeUnifiedEditBody("x".repeat(10_001))).toThrowError("INVALID_MESSAGE");
+    expect(() => normalizeUnifiedEditBody("bad\0null")).toThrowError("INVALID_MESSAGE");
   });
 
   it("normalizes currency minor units and bounded quote expiry", () => {

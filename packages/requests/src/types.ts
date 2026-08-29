@@ -462,6 +462,10 @@ export interface UnifiedMessage {
   readonly metadata: JsonObject;
   readonly status: MessageReceiptStatus;
   readonly sentAt: Date;
+  /** Set when the sender has edited the message; `body` is the current text. */
+  readonly editedAt?: Date;
+  /** Set when the sender has deleted the message; `body` is blanked. */
+  readonly deletedAt?: Date;
 }
 
 export interface UnifiedMessageReply {
@@ -469,6 +473,8 @@ export interface UnifiedMessageReply {
   readonly body: string;
   readonly senderType: ChatSenderType;
   readonly contentType: ChatContentType;
+  /** True when the quoted message has since been deleted by its sender. */
+  readonly deleted?: boolean;
 }
 
 export const messageReactionEmojis = ["👍", "❤️", "😂", "😮", "😢", "🙏"] as const;
@@ -506,6 +512,13 @@ export interface UnifiedMessageListInput {
    * steady-state poll returns ~0 rows instead of a full page plus a COUNT(*).
    */
   readonly afterId?: string;
+  /**
+   * Incremental read companion to `afterId`: an ISO timestamp cursor. The delta
+   * additionally carries any message whose latest edit/delete happened after
+   * this instant, so revisions to older messages are not missed by a poll that
+   * only advances the `afterId` (newest-message) cursor.
+   */
+  readonly revisedAfter?: string;
 }
 
 export interface UnifiedMessageListResult {
@@ -519,6 +532,12 @@ export interface UnifiedMessageListResult {
   readonly pageCount?: number;
   /** True when this response is an incremental delta rather than a full page. */
   readonly incremental: boolean;
+  /**
+   * ISO timestamp the caller should send back as `revisedAfter` on its next
+   * incremental poll. Everything edited or deleted at or before this instant is
+   * already reflected in `items`.
+   */
+  readonly revisionCursor?: string;
 }
 
 export interface UnifiedConversationSummary {

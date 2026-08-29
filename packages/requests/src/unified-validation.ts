@@ -62,6 +62,18 @@ function normalizedBody(value: string | null | undefined, required: boolean): st
   return body;
 }
 
+/**
+ * Normalize the replacement text for an in-place message edit. Same shape rules
+ * as a sent text body: CRLF folded, trimmed, non-empty, bounded, NUL-free.
+ */
+export function normalizeUnifiedEditBody(value: string | null | undefined): string {
+  const body = value?.replace(/\r\n?/gu, "\n").trim();
+  if (body === undefined || body.length === 0 || body.length > 10_000 || body.includes("\0")) {
+    throw new RequestDomainError("INVALID_MESSAGE");
+  }
+  return body;
+}
+
 function fingerprint(parts: Readonly<Record<string, string | number | null>>): string {
   return createHash("sha256").update(JSON.stringify(parts), "utf8").digest("hex");
 }
