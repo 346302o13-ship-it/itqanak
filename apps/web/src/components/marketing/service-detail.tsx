@@ -76,7 +76,7 @@ export function ServiceDetailView({
         </Link>
       </nav>
 
-      <section className="relative overflow-hidden rounded-[var(--it-radius-hero)] border border-[var(--itq-color-border)] bg-[var(--itq-color-brand-900)] p-6 text-white shadow-[var(--itq-shadow-card)] sm:p-10 lg:p-12">
+      <section className="relative overflow-hidden rounded-[var(--itq-radius-hero)] border border-[var(--itq-color-border)] bg-[var(--itq-color-brand-900)] p-6 text-white shadow-[var(--itq-shadow-card)] sm:p-10 lg:p-12">
         <div
           aria-hidden="true"
           className="absolute -end-20 -top-24 size-80 rounded-full border-[3rem] border-white/[0.04]"

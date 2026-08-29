@@ -157,7 +157,7 @@ export default async function EnglishAdminPage() {
           </div>
         </section>
         <div className="grid gap-6">
-          <section className="rounded-[1.5rem] border border-[var(--itq-color-border)] bg-[#112c38] p-5 text-white shadow-[var(--itq-shadow-sm)]">
+          <section className="rounded-[1.5rem] border border-[var(--itq-color-border)] bg-[var(--itq-color-ink-deep)] p-5 text-white shadow-[var(--itq-shadow-sm)]">
             <h2 className="text-xl font-black">Account verification</h2>
             <p className="mt-2 text-sm leading-7 text-white/70">
               Confirm an account only after receiving a message from the student's registered
@@ -168,7 +168,7 @@ export default async function EnglishAdminPage() {
             </strong>
             <p className="mt-2 text-sm font-bold">accounts waiting for review</p>
             <Link
-              className="mt-7 inline-flex min-h-11 items-center rounded-xl bg-white px-5 text-sm font-black text-[#112c38]"
+              className="mt-7 inline-flex min-h-11 items-center rounded-xl bg-white px-5 text-sm font-black text-[var(--itq-color-ink-deep)]"
               href="/en/admin/verifications"
             >
               Open verification queue

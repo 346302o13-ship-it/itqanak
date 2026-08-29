@@ -149,7 +149,7 @@ export function OperationsAdmin({
   return (
     <AdminShell csrfToken={csrfToken} displayName={displayName} locale={locale}>
       <div className="grid gap-6">
-        <section className="overflow-hidden rounded-[2rem] bg-[#112c38] p-7 text-white shadow-xl sm:p-9">
+        <section className="overflow-hidden rounded-[2rem] bg-[var(--itq-color-ink-deep)] p-7 text-white shadow-xl sm:p-9">
           <p className="text-xs font-black uppercase tracking-[0.16em] text-emerald-200">
             {copy.eyebrow}
           </p>

@@ -62,7 +62,7 @@ export function ServicesCatalogView({
   const prefix = `/${locale}`;
   return (
     <>
-      <section className="relative overflow-hidden rounded-[var(--it-radius-hero)] border border-[var(--itq-color-border)] bg-[var(--itq-color-brand-900)] px-6 py-10 text-white shadow-[var(--itq-shadow-card)] sm:px-10 sm:py-14 lg:px-14">
+      <section className="relative overflow-hidden rounded-[var(--itq-radius-hero)] border border-[var(--itq-color-border)] bg-[var(--itq-color-brand-900)] px-6 py-10 text-white shadow-[var(--itq-shadow-card)] sm:px-10 sm:py-14 lg:px-14">
         <div
           aria-hidden="true"
           className="absolute -end-24 -top-24 size-80 rounded-full border-[3rem] border-white/[0.035]"

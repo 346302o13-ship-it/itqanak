@@ -68,7 +68,7 @@ export default async function VerificationsPage({ searchParams }: VerificationsP
                 className="grid gap-6 rounded-3xl border border-[var(--itq-color-border)] p-5 lg:grid-cols-[minmax(15rem,.7fr)_minmax(0,1.3fr)]"
                 key={item.userId}
               >
-                <div className="rounded-2xl bg-[#112c38] p-5 text-white">
+                <div className="rounded-2xl bg-[var(--itq-color-ink-deep)] p-5 text-white">
                   <span className="grid size-12 place-items-center rounded-2xl bg-white/10 text-xl font-black">
                     {item.displayName.slice(0, 1)}
                   </span>

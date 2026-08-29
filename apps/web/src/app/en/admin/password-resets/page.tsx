@@ -81,7 +81,7 @@ export default async function EnglishPasswordResetRequestsPage({ searchParams }:
                 className="grid gap-6 rounded-3xl border border-[var(--itq-color-border)] p-5 xl:grid-cols-[18rem_minmax(0,1fr)]"
                 key={item.id}
               >
-                <div className="rounded-2xl bg-[#112c38] p-5 text-white">
+                <div className="rounded-2xl bg-[var(--itq-color-ink-deep)] p-5 text-white">
                   <span className="grid size-12 place-items-center rounded-2xl bg-white/10 text-xl font-black">
                     {item.displayName.slice(0, 1)}
                   </span>

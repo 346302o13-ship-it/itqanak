@@ -76,7 +76,7 @@ export default async function AdminRequestsPage({ searchParams }: RequestsPagePr
                 href={`/ar/admin/requests/${encodeURIComponent(item.requestNumber)}`}
                 key={item.id}
               >
-                <span className="relative grid size-12 place-items-center rounded-2xl bg-[#112c38] font-black text-white">
+                <span className="relative grid size-12 place-items-center rounded-2xl bg-[var(--itq-color-ink-deep)] font-black text-white">
                   {item.studentDisplayName.trim().slice(0, 1) || "ط"}
                   {item.unreadCount > 0 ? (
                     <span className="absolute -end-1 -top-1 grid size-6 place-items-center rounded-full bg-red-500 text-[10px] ring-2 ring-white">

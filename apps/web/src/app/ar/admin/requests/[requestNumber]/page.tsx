@@ -167,7 +167,7 @@ export default async function AdminRequestPage({ params, searchParams }: AdminRe
         <aside className="border-t border-[var(--itq-color-border)] p-5 xl:border-s xl:border-t-0">
           <section>
             <div className="flex items-center gap-3">
-              <span className="grid size-12 place-items-center rounded-2xl bg-[#112c38] font-black text-white">
+              <span className="grid size-12 place-items-center rounded-2xl bg-[var(--itq-color-ink-deep)] font-black text-white">
                 {detail.studentDisplayName.slice(0, 1)}
               </span>
               <div>

@@ -234,7 +234,7 @@ export function AdminMonitoring({
   return (
     <AdminShell csrfToken={csrfToken} displayName={displayName} locale={locale}>
       <div className="grid gap-6">
-        <section className="overflow-hidden rounded-[2rem] bg-[#102f3b] p-7 text-white shadow-xl sm:p-9">
+        <section className="overflow-hidden rounded-[2rem] bg-[var(--itq-color-ink-deep)] p-7 text-white shadow-xl sm:p-9">
           <div className="flex flex-wrap items-start justify-between gap-5">
             <div className="max-w-3xl">
               <p className="text-xs font-black uppercase tracking-[0.16em] text-emerald-200">
@@ -244,7 +244,7 @@ export function AdminMonitoring({
               <p className="mt-4 leading-8 text-white/75">{t.description}</p>
             </div>
             <Link
-              className="inline-flex min-h-11 items-center gap-2 rounded-xl bg-white px-4 text-sm font-black text-[#102f3b]"
+              className="inline-flex min-h-11 items-center gap-2 rounded-xl bg-white px-4 text-sm font-black text-[var(--itq-color-ink-deep)]"
               href={path}
             >
               <ClockIcon className="size-5" /> {t.refresh}

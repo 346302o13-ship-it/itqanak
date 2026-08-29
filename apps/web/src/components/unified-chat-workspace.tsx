@@ -546,7 +546,7 @@ function ConversationList({
                 key={item.id}
                 role="listitem"
               >
-                <span className="grid size-12 shrink-0 place-items-center rounded-full bg-[#123640] text-sm font-black text-white">
+                <span className="grid size-12 shrink-0 place-items-center rounded-full bg-[var(--itq-color-ink-deep)] text-sm font-black text-white">
                   {initials(item.studentDisplayName)}
                 </span>
                 <span className="min-w-0 flex-1">
@@ -1912,7 +1912,7 @@ export function UnifiedChatWorkspace({
                           ))}
                         </select>
                         <button
-                          className="min-h-10 rounded-xl bg-[#123640] px-3 text-xs font-black text-white disabled:opacity-50"
+                          className="min-h-10 rounded-xl bg-[var(--itq-color-ink-deep)] px-3 text-xs font-black text-white disabled:opacity-50"
                           disabled={interactionLocked}
                           type="submit"
                         >
@@ -2144,7 +2144,7 @@ export function UnifiedChatWorkspace({
                 <ArrowIcon className={`size-5 ${english ? "rotate-180" : ""}`} />
               </Link>
             )}
-            <span className="grid size-11 shrink-0 place-items-center rounded-full bg-[#123640] text-sm font-black text-white">
+            <span className="grid size-11 shrink-0 place-items-center rounded-full bg-[var(--itq-color-ink-deep)] text-sm font-black text-white">
               {mode === "admin"
                 ? initials(conversation?.studentDisplayName ?? "")
                 : english
@@ -2648,7 +2648,7 @@ export function UnifiedChatWorkspace({
           ) : null}
           {newMessagesAvailable ? (
             <button
-              className="sticky bottom-2 mx-auto mt-4 block rounded-full bg-[#123640] px-4 py-2 text-xs font-black text-white shadow-xl"
+              className="sticky bottom-2 mx-auto mt-4 block rounded-full bg-[var(--itq-color-ink-deep)] px-4 py-2 text-xs font-black text-white shadow-xl"
               onClick={() => {
                 nearBottom.current = true;
                 setNewMessagesAvailable(false);

@@ -35,12 +35,16 @@
   --itq-color-danger-800: #8f1a22;
   --itq-color-neutral-50: #f1f4f3;
   --itq-color-neutral-700: #45534e;
+  /* One dark navy for chat/admin surfaces; replaces the drifting #112c38 /
+     #102f3b / #123640 literals. */
+  --itq-color-ink-deep: #112c38;
   --itq-shadow-sm: 0 1px 2px rgb(13 41 49 / 5%), 0 7px 24px rgb(13 41 49 / 5%);
   --itq-shadow-md: 0 2px 4px rgb(13 41 49 / 6%), 0 14px 44px rgb(13 41 49 / 8%);
   --itq-shadow-lg: 0 10px 24px rgb(13 41 49 / 8%), 0 32px 80px rgb(13 41 49 / 12%);
   --itq-shadow-card: 0 24px 72px rgb(13 41 49 / 9%);
   --itq-shadow-float: 0 28px 80px rgb(7 84 79 / 20%);
-  --it-radius-control: 0.875rem;
-  --it-radius-card: 1.5rem;
-  --it-radius-hero: 2rem;
+  --itq-radius-control: 0.875rem;
+  --itq-radius-card: 1.5rem;
+  --itq-radius-panel: 1.75rem;
+  --itq-radius-hero: 2rem;
 }

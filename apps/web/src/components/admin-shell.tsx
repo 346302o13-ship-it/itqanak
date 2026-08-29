@@ -34,7 +34,7 @@ export function AdminShell({
       dir={english ? "ltr" : "rtl"}
       lang={locale}
     >
-      <header className="sticky top-0 z-30 border-b border-[var(--itq-color-border)] bg-[#112c38]/95 text-white backdrop-blur-xl">
+      <header className="sticky top-0 z-30 border-b border-[var(--itq-color-border)] bg-[var(--itq-color-ink-deep)]/95 text-white backdrop-blur-xl">
         <div className="mx-auto flex h-[4.75rem] max-w-[96rem] items-center justify-between gap-4 px-4 sm:px-7 lg:px-10">
           <Link className="inline-flex items-center gap-3 font-black" href={`${prefix}/admin`}>
             <BrandMark className="size-11 bg-white text-[var(--itq-color-brand-800)]" />

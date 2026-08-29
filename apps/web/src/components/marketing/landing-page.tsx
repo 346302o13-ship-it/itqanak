@@ -103,7 +103,7 @@ export function LandingPage({
   const prefix = `/${locale}`;
   return (
     <>
-      <section className="relative isolate overflow-hidden rounded-[var(--it-radius-hero)] border border-[var(--itq-color-border)] bg-[var(--itq-color-canvas-warm)] shadow-[var(--itq-shadow-card)] lg:min-h-[39rem]">
+      <section className="relative isolate overflow-hidden rounded-[var(--itq-radius-hero)] border border-[var(--itq-color-border)] bg-[var(--itq-color-canvas-warm)] shadow-[var(--itq-shadow-card)] lg:min-h-[39rem]">
         <Image
           alt=""
           aria-hidden="true"
@@ -252,7 +252,7 @@ export function LandingPage({
 
       <section
         aria-labelledby="process-title"
-        className="scroll-mt-28 rounded-[var(--it-radius-hero)] bg-[var(--itq-color-surface-soft)] px-5 py-14 ring-1 ring-[var(--itq-color-border)] sm:px-10 sm:py-16"
+        className="scroll-mt-28 rounded-[var(--itq-radius-hero)] bg-[var(--itq-color-surface-soft)] px-5 py-14 ring-1 ring-[var(--itq-color-border)] sm:px-10 sm:py-16"
         id="how-it-works"
       >
         <SectionIntro
@@ -326,7 +326,7 @@ export function LandingPage({
       </section>
 
       <section className="py-20 sm:py-24">
-        <div className="relative overflow-hidden rounded-[var(--it-radius-hero)] bg-[var(--itq-color-brand-900)] p-7 text-white shadow-[var(--itq-shadow-card)] sm:p-12">
+        <div className="relative overflow-hidden rounded-[var(--itq-radius-hero)] bg-[var(--itq-color-brand-900)] p-7 text-white shadow-[var(--itq-shadow-card)] sm:p-12">
           <div
             aria-hidden="true"
             className="absolute -end-20 -top-28 size-80 rounded-full border-[3rem] border-white/[0.04]"
@@ -375,7 +375,7 @@ export function LandingPage({
         </div>
       </section>
 
-      <section className="mb-6 overflow-hidden rounded-[var(--it-radius-hero)] bg-[var(--itq-color-canvas-warm)] p-7 ring-1 ring-[var(--itq-color-accent-200)]/70 sm:p-12">
+      <section className="mb-6 overflow-hidden rounded-[var(--itq-radius-hero)] bg-[var(--itq-color-canvas-warm)] p-7 ring-1 ring-[var(--itq-color-accent-200)]/70 sm:p-12">
         <div className="flex flex-col items-start justify-between gap-8 lg:flex-row lg:items-center">
           <div className="max-w-2xl">
             <p className="text-sm font-black text-[var(--itq-color-accent-700)]">
