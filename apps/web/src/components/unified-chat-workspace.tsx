@@ -519,7 +519,7 @@ function ConversationList({
           />
         </form>
       </div>
-      <div className="min-h-0 flex-1 overflow-y-auto p-2" role="list">
+      <div className="itq-scroll min-h-0 flex-1 overflow-y-auto overscroll-contain p-2" role="list">
         {conversations.length === 0 ? (
           <div className="grid min-h-64 place-items-center px-6 text-center text-sm text-[var(--itq-color-muted)]">
             <div>
@@ -1885,7 +1885,7 @@ export function UnifiedChatWorkspace({
             <CloseIcon className="size-5" />
           </button>
         </header>
-        <div className="min-h-0 flex-1 overflow-y-auto p-3">
+        <div className="itq-scroll min-h-0 flex-1 overflow-y-auto overscroll-contain p-3">
           {requests.length === 0 ? (
             <div className="rounded-2xl bg-[var(--itq-color-surface-soft)] p-5 text-center">
               <RequestsIcon className="mx-auto size-8 text-[var(--itq-color-muted)]" />
@@ -2368,7 +2368,7 @@ export function UnifiedChatWorkspace({
           aria-label={english ? "Conversation messages" : "رسائل المحادثة"}
           aria-live="polite"
           aria-relevant="additions"
-          className="relative min-h-0 flex-1 overflow-y-auto px-3 py-5 sm:px-6"
+          className="itq-scroll relative min-h-0 flex-1 overflow-y-auto overscroll-contain px-3 py-4 sm:px-6"
           onScroll={(event) => {
             const element = event.currentTarget;
             nearBottom.current =
@@ -2648,7 +2648,7 @@ export function UnifiedChatWorkspace({
                             </div>
                           ) : null}
                           <footer
-                            className={`mt-1.5 flex items-center justify-end gap-1 text-[9px] font-semibold ${
+                            className={`mt-1.5 flex flex-wrap items-center justify-end gap-1.5 text-[10px] font-semibold ${
                               mine ? "text-white/70" : "text-[var(--itq-color-muted)]"
                             }`}
                           >
@@ -2657,7 +2657,7 @@ export function UnifiedChatWorkspace({
                               editingId === message.id ? null : (
                                 <>
                                   <button
-                                    className={`rounded px-1.5 py-0.5 font-black ${
+                                    className={`rounded-md px-2 py-1 font-black ${
                                       mine
                                         ? "hover:bg-white/15"
                                         : "hover:bg-[var(--itq-color-brand-50)]"
@@ -2681,7 +2681,7 @@ export function UnifiedChatWorkspace({
                                   <span className="relative">
                                     <button
                                       aria-label={english ? "Add a reaction" : "أضف تفاعلًا"}
-                                      className={`rounded px-1.5 py-0.5 font-black ${
+                                      className={`rounded-md px-2 py-1 font-black ${
                                         mine
                                           ? "hover:bg-white/15"
                                           : "hover:bg-[var(--itq-color-brand-50)]"
@@ -2720,14 +2720,14 @@ export function UnifiedChatWorkspace({
                                           {english ? "Delete?" : "حذف؟"}
                                         </span>
                                         <button
-                                          className="rounded px-1.5 py-0.5 font-black text-[var(--itq-color-danger-200)] hover:bg-white/15"
+                                          className="rounded-md px-2 py-1 font-black text-[var(--itq-color-danger-200)] hover:bg-white/15"
                                           onClick={() => void deleteMessage(message.id)}
                                           type="button"
                                         >
                                           {english ? "Yes" : "نعم"}
                                         </button>
                                         <button
-                                          className={`rounded px-1.5 py-0.5 font-black ${
+                                          className={`rounded-md px-2 py-1 font-black ${
                                             mine
                                               ? "hover:bg-white/15"
                                               : "hover:bg-[var(--itq-color-brand-50)]"
@@ -2742,7 +2742,7 @@ export function UnifiedChatWorkspace({
                                       <>
                                         {Date.now() - message.sentAt.getTime() < 15 * 60_000 ? (
                                           <button
-                                            className={`rounded px-1.5 py-0.5 font-black ${
+                                            className={`rounded-md px-2 py-1 font-black ${
                                               mine
                                                 ? "hover:bg-white/15"
                                                 : "hover:bg-[var(--itq-color-brand-50)]"
@@ -2758,7 +2758,7 @@ export function UnifiedChatWorkspace({
                                           </button>
                                         ) : null}
                                         <button
-                                          className={`rounded px-1.5 py-0.5 font-black ${
+                                          className={`rounded-md px-2 py-1 font-black ${
                                             mine
                                               ? "hover:bg-white/15"
                                               : "hover:bg-[var(--itq-color-brand-50)]"
@@ -2853,7 +2853,7 @@ export function UnifiedChatWorkspace({
           <div ref={endRef} />
         </div>
 
-        <footer className="shrink-0 border-t border-[var(--itq-color-border)] bg-[var(--itq-color-surface)] px-2.5 py-2.5 sm:px-4">
+        <footer className="itq-safe-b shrink-0 border-t border-[var(--itq-color-border)] bg-[var(--itq-color-surface)] px-2.5 py-2.5 sm:px-4">
           {notice === undefined ? null : (
             <p
               className="mb-2 rounded-xl bg-[var(--itq-color-surface-soft)] px-3 py-2 text-xs font-bold"
@@ -2986,7 +2986,7 @@ export function UnifiedChatWorkspace({
               <SendIcon className={`size-5 ${english ? "" : "-scale-x-100"}`} />
             </button>
           </div>
-          <p className="mt-1.5 px-2 text-[9px] font-semibold text-[var(--itq-color-muted)]">
+          <p className="mt-1.5 px-2 text-[10px] font-semibold text-[var(--itq-color-muted)]">
             {selectedRequest === undefined
               ? english
                 ? "General message · Enter to send, Shift+Enter for a new line"
