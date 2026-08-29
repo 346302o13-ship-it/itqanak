@@ -44,7 +44,7 @@ export default async function ForgotPasswordPage({ searchParams }: ForgotPagePro
             <li>سيصلك رابط أحادي الاستخدام؛ افتحه واختر كلمة المرور بنفسك.</li>
           </ol>
           <a
-            className="mt-5 inline-flex min-h-12 w-full items-center justify-center rounded-xl bg-[#159447] px-5 font-black text-white"
+            className="mt-5 inline-flex min-h-12 w-full items-center justify-center rounded-xl bg-[var(--itq-color-whatsapp-600)] px-5 font-black text-white"
             href={supportWhatsAppHref("ar", `استعادة كلمة المرور — المرجع ${reference}`)}
             rel="noreferrer noopener"
             target="_blank"

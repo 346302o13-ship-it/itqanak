@@ -85,7 +85,7 @@ export default async function EnglishVerificationsPage({ searchParams }: Verific
                     <LocalDateTime locale="en" value={item.requestedAt.toISOString()} />
                   </p>
                   <a
-                    className="mt-5 inline-flex min-h-11 items-center gap-2 rounded-xl bg-[#1ca75b] px-4 text-sm font-black"
+                    className="mt-5 inline-flex min-h-11 items-center gap-2 rounded-xl bg-[var(--itq-color-whatsapp-600)] px-4 text-sm font-black"
                     href={`https://wa.me/${item.phoneE164.replace("+", "")}`}
                     rel="noreferrer"
                     target="_blank"

@@ -171,7 +171,7 @@ export function EducationalGuide({
                           : "لا توجد لدي إجابة محفوظة ودقيقة بما يكفي لهذا السؤال. يستطيع الدعم مساعدتك دون إرسال سؤالك المكتوب تلقائياً."}
                       </p>
                       <a
-                        className="mt-3 inline-flex min-h-11 items-center justify-center gap-2 rounded-xl bg-[#168b4b] px-4 py-2 text-xs font-black text-white transition hover:bg-[#10753e]"
+                        className="mt-3 inline-flex min-h-11 items-center justify-center gap-2 rounded-xl bg-[var(--itq-color-whatsapp-600)] px-4 py-2 text-xs font-black text-white transition hover:bg-[var(--itq-color-whatsapp-700)]"
                         href={supportHref}
                         rel="noreferrer"
                         target="_blank"

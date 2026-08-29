@@ -226,14 +226,18 @@ export default async function StudentDashboardPage({ searchParams }: StudentDash
           </span>
         </Link>
         <a
-          className="group rounded-[1.35rem] border border-[#bde8ce] bg-[#f0fcf5] p-5 transition hover:bg-[#e4f9ec]"
+          className="group rounded-[1.35rem] border border-[var(--itq-color-whatsapp-200)] bg-[var(--itq-color-whatsapp-50)] p-5 transition hover:bg-[var(--itq-color-whatsapp-100)]"
           href={supportWhatsAppHref("ar", "متابعة طلب طالب")}
           rel="noreferrer"
           target="_blank"
         >
-          <WhatsAppIcon className="size-6 text-[#16834a]" />
-          <span className="mt-4 block font-black text-[#145c39]">دعم واتساب</span>
-          <span className="mt-1 block text-xs leading-5 text-[#48745d]">تواصل معنا عند الحاجة</span>
+          <WhatsAppIcon className="size-6 text-[var(--itq-color-whatsapp-600)]" />
+          <span className="mt-4 block font-black text-[var(--itq-color-whatsapp-800)]">
+            دعم واتساب
+          </span>
+          <span className="mt-1 block text-xs leading-5 text-[var(--itq-color-whatsapp-muted)]">
+            تواصل معنا عند الحاجة
+          </span>
         </a>
       </div>
     </StudentShell>

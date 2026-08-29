@@ -79,7 +79,7 @@ export function AdminShell({
         {workspace ? null : (
           <aside className="hidden self-start lg:sticky lg:top-[6.75rem] lg:block">
             <div className="rounded-[1.75rem] border border-[var(--itq-color-border)] bg-white p-3 shadow-[var(--itq-shadow-sm)]">
-              <div className="mb-3 rounded-2xl bg-[#eef8f5] p-4">
+              <div className="mb-3 rounded-2xl bg-[var(--itq-color-brand-50)] p-4">
                 <div className="flex items-center gap-2 text-xs font-black text-emerald-800">
                   <ShieldCheckIcon className="size-4" />{" "}
                   {english ? "Trusted admin session" : "جلسة إدارية موثوقة"}

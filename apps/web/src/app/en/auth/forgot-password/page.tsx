@@ -45,7 +45,7 @@ export default async function EnglishForgotPasswordPage({ searchParams }: Forgot
             <li>You will receive a one-time link where you choose the new password yourself.</li>
           </ol>
           <a
-            className="mt-5 inline-flex min-h-12 w-full items-center justify-center rounded-xl bg-[#159447] px-5 font-black text-white"
+            className="mt-5 inline-flex min-h-12 w-full items-center justify-center rounded-xl bg-[var(--itq-color-whatsapp-600)] px-5 font-black text-white"
             href={supportWhatsAppHref("en", `Password recovery — reference ${reference}`)}
             rel="noreferrer noopener"
             target="_blank"

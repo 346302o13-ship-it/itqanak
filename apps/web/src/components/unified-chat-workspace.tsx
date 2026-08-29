@@ -2116,14 +2116,14 @@ export function UnifiedChatWorkspace({
         aria-label={english ? "Unified conversation center" : "مركز المحادثات الموحد"}
         className="relative grid h-full overflow-hidden bg-white lg:grid-cols-[22rem_minmax(0,1fr)]"
       >
-        <aside className="flex min-h-0 flex-col border-e border-[var(--itq-color-border)] bg-[#f5faf8]">
+        <aside className="flex min-h-0 flex-col border-e border-[var(--itq-color-border)] bg-[var(--itq-color-surface-soft)]">
           <ConversationList
             conversations={contactItems}
             locale={locale}
             {...(search === undefined ? {} : { search })}
           />
         </aside>
-        <main className="hidden place-items-center bg-[#edf5f2] p-8 text-center lg:grid">
+        <main className="hidden place-items-center bg-[var(--itq-color-surface-soft)] p-8 text-center lg:grid">
           <div className="max-w-sm">
             <span className="mx-auto grid size-20 place-items-center rounded-full bg-white text-[var(--itq-color-brand-700)] shadow-sm">
               <MessageIcon className="size-9" />
@@ -2162,7 +2162,7 @@ export function UnifiedChatWorkspace({
           <aside
             aria-label={english ? "Student conversations" : "محادثات الطلاب"}
             aria-modal={contactsOpen ? true : undefined}
-            className={`fixed inset-y-0 start-0 z-50 flex w-[min(88vw,22rem)] min-h-0 flex-col border-e border-[var(--itq-color-border)] bg-[#f5faf8] shadow-2xl transition-[transform,visibility] lg:static lg:z-auto lg:w-auto lg:visible lg:translate-x-0 lg:shadow-none ${
+            className={`fixed inset-y-0 start-0 z-50 flex w-[min(88vw,22rem)] min-h-0 flex-col border-e border-[var(--itq-color-border)] bg-[var(--itq-color-surface-soft)] shadow-2xl transition-[transform,visibility] lg:static lg:z-auto lg:w-auto lg:visible lg:translate-x-0 lg:shadow-none ${
               contactsOpen
                 ? "visible translate-x-0"
                 : english
@@ -2185,7 +2185,7 @@ export function UnifiedChatWorkspace({
         </>
       ) : null}
 
-      <main className="flex min-h-0 min-w-0 flex-col bg-[#edf5f2]">
+      <main className="flex min-h-0 min-w-0 flex-col bg-[var(--itq-color-surface-soft)]">
         <header className="flex h-[4.65rem] shrink-0 items-center justify-between gap-3 border-b border-[var(--itq-color-border)] bg-white px-3 sm:px-5">
           <div className="flex min-w-0 items-center gap-3">
             {mode === "admin" ? (
@@ -2502,7 +2502,7 @@ export function UnifiedChatWorkspace({
                               : "rounded-es-sm border border-[var(--itq-color-border)] bg-white text-[var(--itq-color-ink)]"
                           } ${
                             highlightId === message.id
-                              ? "ring-2 ring-amber-400 ring-offset-2 ring-offset-[#f4f8f7]"
+                              ? "ring-2 ring-amber-400 ring-offset-2 ring-offset-[var(--itq-color-surface-soft)]"
                               : ""
                           }`}
                         >

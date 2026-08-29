@@ -1,8 +1,7 @@
 #!/usr/bin/env bash
-# Guards a handful of design-token regressions that have already been cleaned up,
-# so they do not creep back in. It is intentionally narrow: the broader sweep of
-# raw hex / ad-hoc palette utilities is tracked separately and only reported
-# here, not enforced.
+# Guards design-token regressions that have already been cleaned up so they do
+# not creep back in: the old radius prefix, the drifting navy literals, and any
+# raw-hex Tailwind colour utility (all of these now have semantic tokens).
 set -euo pipefail
 
 roots=(apps/web/src packages/ui/src)
@@ -20,8 +19,10 @@ if grep -rniE -- '\[#(112c38|102f3b|123640)\]' "${roots[@]}" 2>/dev/null; then
   fail=1
 fi
 
-# 3. Informational only: remaining raw-hex Tailwind utilities.
-remaining="$(grep -rhoE -- '\b(bg|text|border|ring|from|to|via|fill|stroke)-\[#[0-9a-fA-F]{3,8}\]' "${roots[@]}" 2>/dev/null | wc -l | tr -d ' ')"
-echo "note: ${remaining} raw-hex utilities remain (tracked; not enforced)."
+# 3. No raw-hex colour utilities: every palette value has a semantic token.
+if grep -rnE -- '\b(bg|text|border|ring|ring-offset|outline|from|to|via|fill|stroke|decoration|caret|accent|shadow)-\[#[0-9a-fA-F]{3,8}\]' "${roots[@]}" 2>/dev/null; then
+  echo "error: use a var(--itq-color-*) token instead of a raw-hex utility." >&2
+  fail=1
+fi
 
 exit "$fail"

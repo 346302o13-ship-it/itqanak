@@ -221,7 +221,7 @@ export function InstallAppButton({
         <div
           aria-labelledby={titleId}
           aria-modal="true"
-          className="fixed inset-0 z-[120] grid place-items-center bg-[#061f22]/55 p-4 backdrop-blur-sm"
+          className="fixed inset-0 z-[120] grid place-items-center bg-[var(--itq-color-ink)]/55 p-4 backdrop-blur-sm"
           id={dialogId}
           onKeyDown={handleDialogKeyDown}
           onMouseDown={(event) => {

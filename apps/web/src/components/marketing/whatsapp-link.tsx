@@ -52,7 +52,7 @@ export function WhatsAppLink({
       className={classNames(
         "inline-flex min-h-12 items-center justify-center gap-2.5 rounded-xl px-5 py-3 text-sm font-black transition hover:-translate-y-0.5 focus-visible:outline-2 focus-visible:outline-offset-2",
         appearance === "brand" &&
-          "bg-[#167d59] text-white shadow-[var(--itq-shadow-sm)] hover:bg-[#116c4c] focus-visible:outline-[#167d59]",
+          "bg-[var(--itq-color-whatsapp-600)] text-white shadow-[var(--itq-shadow-sm)] hover:bg-[var(--itq-color-whatsapp-700)] focus-visible:outline-[var(--itq-color-whatsapp-600)]",
         appearance === "light" &&
           "border border-[var(--itq-color-border-strong)] bg-white text-[var(--itq-color-brand-800)] shadow-[var(--itq-shadow-sm)] hover:bg-[var(--itq-color-brand-50)] focus-visible:outline-white",
         appearance === "glass" &&

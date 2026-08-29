@@ -99,7 +99,7 @@ export default async function PasswordResetRequestsPage({ searchParams }: PagePr
                     ينتهي في <LocalDateTime value={item.expiresAt.toISOString()} />
                   </p>
                   <a
-                    className="mt-5 inline-flex min-h-11 items-center rounded-xl bg-[#159447] px-4 text-sm font-black"
+                    className="mt-5 inline-flex min-h-11 items-center rounded-xl bg-[var(--itq-color-whatsapp-600)] px-4 text-sm font-black"
                     href={`https://wa.me/${item.phoneE164.replace("+", "")}`}
                     rel="noreferrer noopener"
                     target="_blank"

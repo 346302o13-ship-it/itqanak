@@ -122,7 +122,7 @@ export function IssuedPasswordResetLink({
                   : "نسخ الرابط الآمن"}
             </button>
             <a
-              className="inline-flex min-h-12 items-center justify-center rounded-xl bg-[#159447] px-5 font-black text-white"
+              className="inline-flex min-h-12 items-center justify-center rounded-xl bg-[var(--itq-color-whatsapp-600)] px-5 font-black text-white"
               href={`https://wa.me/${phoneE164.replace("+", "")}`}
               rel="noreferrer noopener"
               target="_blank"

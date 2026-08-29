@@ -99,7 +99,7 @@ export function StudentShell({
               <StudentNavigation locale={locale} />
               <div className="mx-2 my-4 h-px bg-[var(--itq-color-border)]" />
               <a
-                className="group flex items-start gap-3 rounded-2xl bg-[#ecfdf4] p-3.5 text-[#12643c] transition hover:bg-[#dcfce9]"
+                className="group flex items-start gap-3 rounded-2xl bg-[var(--itq-color-whatsapp-50)] p-3.5 text-[var(--itq-color-whatsapp-800)] transition hover:bg-[var(--itq-color-whatsapp-100)]"
                 href={supportWhatsAppHref(
                   locale,
                   english ? "Student portal support" : "مساعدة داخل بوابة الطالب",
@@ -107,14 +107,14 @@ export function StudentShell({
                 rel="noreferrer"
                 target="_blank"
               >
-                <span className="grid size-9 shrink-0 place-items-center rounded-xl bg-[#1ca75b] text-white">
+                <span className="grid size-9 shrink-0 place-items-center rounded-xl bg-[var(--itq-color-whatsapp-600)] text-white">
                   <WhatsAppIcon className="size-5" />
                 </span>
                 <span>
                   <span className="block text-sm font-black">
                     {english ? "Need help?" : "تحتاج مساعدة؟"}
                   </span>
-                  <span className="mt-1 block text-[11px] font-semibold leading-5 text-[#3f7258]">
+                  <span className="mt-1 block text-[11px] font-semibold leading-5 text-[var(--itq-color-whatsapp-muted)]">
                     {english ? "Chat with support on WhatsApp" : "تحدث مع الدعم عبر واتساب"}
                   </span>
                 </span>
