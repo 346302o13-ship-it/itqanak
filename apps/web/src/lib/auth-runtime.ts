@@ -19,7 +19,7 @@ import {
   type RequestAuditContext,
 } from "@itqanak/auth";
 import { loadConfig, type AppConfig } from "@itqanak/config";
-import { closeDatabase, createDatabase, type DatabaseClient } from "@itqanak/db";
+import { createDatabase, type DatabaseClient } from "@itqanak/db";
 
 import { parseUploadContentLength } from "./upload-http";
 
@@ -29,6 +29,30 @@ export interface AuthRuntime {
   readonly auth: AuthService;
   readonly rateLimiter?: RateLimiter;
   close(): Promise<void>;
+}
+
+const webProcess = globalThis as typeof globalThis & {
+  __itqanakWebDatabase?: DatabaseClient;
+};
+
+function webDatabasePoolMax(): number {
+  const raw = Number(process.env.ITQANAK_WEB_DB_POOL_MAX);
+  return Number.isInteger(raw) && raw >= 2 && raw <= 50 ? raw : 15;
+}
+
+/**
+ * One postgres pool for the whole web process. Building a pool — and paying its
+ * connect + SCRAM handshake + teardown — per request, every 3–5s poll included,
+ * is a sustained connect/auth/disconnect load that a traffic spike or a runaway
+ * retry loop turns into max_connections exhaustion for everyone. The pool's own
+ * `idle_timeout` reclaims unused connections; it is never ended by request code
+ * (a `finally` that ended it could also cut an in-flight streamed response).
+ */
+export function sharedWebDatabase(databaseUrl: string): DatabaseClient {
+  webProcess.__itqanakWebDatabase ??= createDatabase(databaseUrl, {
+    maxConnections: webDatabasePoolMax(),
+  });
+  return webProcess.__itqanakWebDatabase;
 }
 
 export function loadWebConfig(): AppConfig {
@@ -79,7 +103,7 @@ function redisForAuth(config: AppConfig): Redis {
 
 export async function createAuthRuntime(requireRateLimiting = false): Promise<AuthRuntime> {
   const config = loadWebConfig();
-  const database = createDatabase(config.databaseUrl ?? "");
+  const database = sharedWebDatabase(config.databaseUrl ?? "");
   let redis: Redis | undefined;
   try {
     if (requireRateLimiting && config.auth.rateLimitEnabled) {
@@ -98,13 +122,13 @@ export async function createAuthRuntime(requireRateLimiting = false): Promise<Au
       auth,
       ...(rateLimiter === undefined ? {} : { rateLimiter }),
       async close() {
+        // The postgres pool is process-shared (see sharedWebDatabase); only the
+        // per-request Redis connection is torn down here.
         redis?.disconnect(false);
-        await closeDatabase(database);
       },
     };
   } catch (error: unknown) {
     redis?.disconnect(false);
-    await closeDatabase(database);
     throw error;
   }
 }

@@ -1,7 +1,6 @@
 import { CatalogService } from "@itqanak/catalog";
-import { closeDatabase, createDatabase } from "@itqanak/db";
 
-import { loadWebConfig } from "./auth-runtime";
+import { loadWebConfig, sharedWebDatabase } from "./auth-runtime";
 
 export interface CatalogRuntime {
   readonly catalog: CatalogService;
@@ -10,11 +9,11 @@ export interface CatalogRuntime {
 
 export function createCatalogRuntime(): CatalogRuntime {
   const config = loadWebConfig();
-  const database = createDatabase(config.databaseUrl ?? "");
+  const database = sharedWebDatabase(config.databaseUrl ?? "");
   return {
     catalog: new CatalogService({ database }),
     async close() {
-      await closeDatabase(database);
+      // Pool is process-shared; nothing to tear down per call.
     },
   };
 }
