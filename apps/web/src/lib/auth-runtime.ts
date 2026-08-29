@@ -33,6 +33,7 @@ export interface AuthRuntime {
 
 const webProcess = globalThis as typeof globalThis & {
   __itqanakWebDatabase?: DatabaseClient;
+  __itqanakWebRedis?: Redis;
 };
 
 function webDatabasePoolMax(): number {
@@ -99,6 +100,28 @@ function redisForAuth(config: AppConfig): Redis {
     maxRetriesPerRequest: 1,
     retryStrategy: () => null,
   });
+}
+
+/**
+ * One Redis connection for the whole web process, used only by the fail-open
+ * read/poll throttle (see read-rate-limit.ts). Deliberately separate from the
+ * per-request `redisForAuth` connections that gate credential flows: those stay
+ * fail-closed and self-heal by reconnecting each request, whereas this shared
+ * client reconnects with bounded backoff so a Redis blip cannot wedge it.
+ */
+export function sharedWebRedis(redisUrl: string): Redis {
+  if (webProcess.__itqanakWebRedis === undefined) {
+    const client = new Redis(redisUrl, {
+      connectTimeout: 3_000,
+      enableOfflineQueue: false,
+      lazyConnect: true,
+      maxRetriesPerRequest: 1,
+      retryStrategy: (attempt) => Math.min(attempt * 200, 2_000),
+    });
+    client.on("error", () => undefined);
+    webProcess.__itqanakWebRedis = client;
+  }
+  return webProcess.__itqanakWebRedis;
 }
 
 export async function createAuthRuntime(requireRateLimiting = false): Promise<AuthRuntime> {

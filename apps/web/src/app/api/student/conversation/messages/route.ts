@@ -3,6 +3,7 @@ import { NextResponse } from "next/server";
 
 import { assertProtectedForm } from "@/lib/auth-runtime";
 import { enforceMessageSendRateLimit } from "@/lib/message-rate-limit";
+import { enforceReadRateLimit, readRateLimitRules } from "@/lib/read-rate-limit";
 import { requestErrorResponse, requestUnauthorizedResponse } from "@/lib/request-http";
 import { getRequestId } from "@/lib/request-id";
 import { createStudentRequestRuntime } from "@/lib/request-runtime";
@@ -16,6 +17,7 @@ export async function GET(request: NextRequest) {
     try {
       const principal = await principalForRequest(runtime, request);
       if (principal === undefined) return requestUnauthorizedResponse(requestId);
+      await enforceReadRateLimit(readRateLimitRules.conversationPoll, principal.userId);
       const requestedConversationId = request.nextUrl.searchParams.get("conversationId")?.trim();
       const conversationId =
         requestedConversationId === undefined || requestedConversationId.length === 0

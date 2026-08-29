@@ -89,4 +89,10 @@ export const authRateLimitRules = {
   sessionCreateByUser: { scope: "session-create-user", limit: 10, windowSeconds: 3_600 },
   accountSensitiveByUser: { scope: "account-sensitive", limit: 10, windowSeconds: 900 },
   messageSendByUser: { scope: "message-send-user", limit: 30, windowSeconds: 60 },
+  // Poll / read scopes. Enforced fail-open (a Redis blip must not break the
+  // chat); nginx limit_req is the hard backstop. Sized well above a real
+  // client's cadence so only a runaway loop or scripted abuse is caught.
+  conversationPollByUser: { scope: "conversation-poll-user", limit: 40, windowSeconds: 60 },
+  notificationPollByUser: { scope: "notification-poll-user", limit: 40, windowSeconds: 60 },
+  readReceiptByUser: { scope: "read-receipt-user", limit: 90, windowSeconds: 60 },
 } as const satisfies Readonly<Record<string, RateLimitRule>>;

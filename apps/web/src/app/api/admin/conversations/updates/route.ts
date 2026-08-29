@@ -5,6 +5,7 @@ import { requestErrorResponse, requestUnauthorizedResponse } from "@/lib/request
 import { getRequestId } from "@/lib/request-id";
 import { createStudentRequestRuntime } from "@/lib/request-runtime";
 import { principalForRequest } from "@/lib/route-principal";
+import { enforceReadRateLimit, readRateLimitRules } from "@/lib/read-rate-limit";
 import { conversationUpdatesInput, jsonReady } from "@/lib/unified-http";
 
 /**
@@ -19,6 +20,7 @@ export async function GET(request: NextRequest) {
     try {
       const principal = await principalForRequest(runtime, request);
       if (principal === undefined) return requestUnauthorizedResponse(requestId);
+      await enforceReadRateLimit(readRateLimitRules.conversationPoll, principal.userId);
       const result = await runtime.unifiedConversations.listConversationUpdates(
         principal,
         conversationUpdatesInput(request.nextUrl.searchParams),

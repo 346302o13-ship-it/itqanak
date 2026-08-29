@@ -2,6 +2,7 @@ import type { NextRequest } from "next/server";
 import { NextResponse } from "next/server";
 
 import { assertProtectedForm } from "@/lib/auth-runtime";
+import { enforceReadRateLimit, readRateLimitRules } from "@/lib/read-rate-limit";
 import { requestErrorResponse, requestUnauthorizedResponse } from "@/lib/request-http";
 import { getRequestId } from "@/lib/request-id";
 import { createStudentRequestRuntime } from "@/lib/request-runtime";
@@ -15,6 +16,7 @@ export async function POST(request: NextRequest) {
     try {
       const principal = await principalForRequest(runtime, request);
       if (principal === undefined) return requestUnauthorizedResponse(requestId);
+      await enforceReadRateLimit(readRateLimitRules.readReceipt, principal.userId);
       const requestedConversationId = protectedForm.formData.get("conversationId");
       const conversationId =
         typeof requestedConversationId === "string" && requestedConversationId.trim().length > 0

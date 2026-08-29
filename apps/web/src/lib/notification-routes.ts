@@ -2,6 +2,7 @@ import type { NextRequest } from "next/server";
 import { NextResponse } from "next/server";
 
 import { assertProtectedForm } from "./auth-runtime";
+import { enforceReadRateLimit, readRateLimitRules } from "./read-rate-limit";
 import { requestErrorResponse, requestUnauthorizedResponse } from "./request-http";
 import { getRequestId } from "./request-id";
 import { createStudentRequestRuntime } from "./request-runtime";
@@ -15,6 +16,7 @@ export async function notificationListRoute(request: NextRequest) {
     try {
       const principal = await principalForRequest(runtime, request);
       if (principal === undefined) return requestUnauthorizedResponse(requestId);
+      await enforceReadRateLimit(readRateLimitRules.notificationPoll, principal.userId);
       const result = await runtime.notifications.listNotifications(
         principal,
         notificationListInput(request.nextUrl.searchParams),
@@ -37,6 +39,7 @@ export async function notificationUnreadRoute(request: NextRequest) {
     try {
       const principal = await principalForRequest(runtime, request);
       if (principal === undefined) return requestUnauthorizedResponse(requestId);
+      await enforceReadRateLimit(readRateLimitRules.notificationPoll, principal.userId);
       const unreadCount = await runtime.notifications.getUnreadCount(principal);
       return NextResponse.json(
         { unreadCount },
