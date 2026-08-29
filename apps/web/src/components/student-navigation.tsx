@@ -4,6 +4,8 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import type { ComponentType, SVGProps } from "react";
 
+import { NavLink } from "./nav-link";
+
 import {
   FinanceIcon,
   HomeIcon,
@@ -107,9 +109,9 @@ export function StudentNavigation({ locale = "ar" }: Readonly<{ locale?: "ar" | 
         const active = isActive(pathname, item);
         const ItemIcon = item.icon;
         return (
-          <Link
+          <NavLink
             aria-current={active ? "page" : undefined}
-            className={`group flex min-h-12 items-center gap-3 rounded-2xl px-3.5 text-sm font-extrabold transition ${
+            className={`group relative flex min-h-12 items-center gap-3 rounded-2xl px-3.5 text-sm font-extrabold transition ${
               active
                 ? "bg-[var(--itq-color-brand-50)] text-[var(--itq-color-brand-800)]"
                 : "text-[var(--itq-color-muted)] hover:bg-[var(--itq-color-surface-soft)] hover:text-[var(--itq-color-ink)]"
@@ -127,7 +129,7 @@ export function StudentNavigation({ locale = "ar" }: Readonly<{ locale?: "ar" | 
               <ItemIcon className="size-5" />
             </span>
             {item.label}
-          </Link>
+          </NavLink>
         );
       })}
     </nav>

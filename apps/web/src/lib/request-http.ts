@@ -223,7 +223,7 @@ export function parseRequestListQuery(
   const rawSearch = single(query.q)?.trim().slice(0, 100);
   const rawService = single(query.service);
   return {
-    page: boundedInteger(single(query.page), 1, 100_000),
+    page: boundedInteger(single(query.page), 1, 1_000),
     pageSize: 20,
     ...(rawSearch === undefined || rawSearch.length === 0 ? {} : { search: rawSearch }),
     ...(rawStatus === undefined || !isRequestStatus(rawStatus) ? {} : { status: rawStatus }),

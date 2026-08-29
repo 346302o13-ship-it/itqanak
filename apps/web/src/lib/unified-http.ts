@@ -30,7 +30,7 @@ function positiveInteger(value: string | null, fallback: number, maximum: number
 
 export function messageListInput(searchParams: URLSearchParams): UnifiedMessageListInput {
   return {
-    page: positiveInteger(searchParams.get("page"), 1, 100_000),
+    page: positiveInteger(searchParams.get("page"), 1, 1_000),
     pageSize: positiveInteger(searchParams.get("pageSize"), 50, 100),
   };
 }
@@ -38,7 +38,7 @@ export function messageListInput(searchParams: URLSearchParams): UnifiedMessageL
 export function conversationListInput(searchParams: URLSearchParams): UnifiedConversationListInput {
   const search = searchParams.get("q")?.trim().slice(0, 100);
   return {
-    page: positiveInteger(searchParams.get("page"), 1, 100_000),
+    page: positiveInteger(searchParams.get("page"), 1, 1_000),
     pageSize: positiveInteger(searchParams.get("pageSize"), 30, 100),
     ...(search === undefined || search.length === 0 ? {} : { search }),
   };
@@ -46,7 +46,7 @@ export function conversationListInput(searchParams: URLSearchParams): UnifiedCon
 
 export function notificationListInput(searchParams: URLSearchParams): NotificationListInput {
   return {
-    page: positiveInteger(searchParams.get("page"), 1, 100_000),
+    page: positiveInteger(searchParams.get("page"), 1, 1_000),
     pageSize: positiveInteger(searchParams.get("pageSize"), 20, 100),
     unreadOnly: searchParams.get("unreadOnly") === "true",
   };

@@ -205,6 +205,13 @@ export function NotificationCenter({ csrfToken, locale = "ar", surface }: Notifi
 
     const poll = async () => {
       if (!active) return;
+      // A hidden tab does not fetch at all; `resume` (visibilitychange / online)
+      // brings it back immediately. Background delivery moves to the SSE stream
+      // + web push in the realtime phase.
+      if (document.visibilityState !== "visible") {
+        schedule();
+        return;
+      }
       const requestController = new AbortController();
       controller?.abort();
       controller = requestController;

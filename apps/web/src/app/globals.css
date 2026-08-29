@@ -79,6 +79,40 @@ svg {
   outline-offset: 3px;
 }
 
+/* "Navigation in progress" hint for nav links (see NavLink). Absolutely
+   positioned against the link (which must be `position: relative`) so it never
+   shifts layout; only appears if the transition actually takes time. */
+.itq-linkhint {
+  position: absolute;
+  inset-inline-end: 0.7rem;
+  top: 50%;
+  translate: 0 -50%;
+  inline-size: 0.5rem;
+  block-size: 0.5rem;
+  border-radius: 9999px;
+  background: currentColor;
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+}
+
+.itq-linkhint[data-pending="true"] {
+  visibility: visible;
+  animation: itq-linkhint-in 200ms ease 120ms forwards, itq-linkhint-pulse 1s ease-in-out 120ms infinite;
+}
+
+@keyframes itq-linkhint-in {
+  to {
+    opacity: 0.9;
+  }
+}
+
+@keyframes itq-linkhint-pulse {
+  50% {
+    opacity: 0.3;
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   html {
     scroll-behavior: auto;
@@ -89,5 +123,10 @@ svg {
   *::after {
     scroll-behavior: auto !important;
     transition-duration: 0.01ms !important;
+  }
+
+  .itq-linkhint[data-pending="true"] {
+    animation: none;
+    opacity: 0.9;
   }
 }

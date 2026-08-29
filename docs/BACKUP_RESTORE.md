@@ -38,13 +38,13 @@ has succeeded.
 ## Production Compose operation
 
 The production backup container runs as UID/GID `10001` and does not receive a
-writeable application filesystem. Before enabling its systemd timer, create a
-dedicated host directory owned by that service account and point
-`ITQANAK_BACKUP_DIR` at it:
+writeable application filesystem. It writes only into the host directory named by
+`ITQANAK_BACKUP_DIR` in `.env.production`. Create it once, owned by that service
+account, mode `0700`:
 
 ```bash
-install -d -m 0700 -o 10001 -g 10001 /srv/itqanak-backups
-export ITQANAK_BACKUP_DIR=/srv/itqanak-backups
+install -d -m 0700 -o 10001 -g 10001 /root/itqanak/backups
+# ITQANAK_BACKUP_DIR=/root/itqanak/backups is already set in .env.production
 ```
 
 The hardened verification container reuses only the protected operator
@@ -134,9 +134,45 @@ scripts/tests/libpq-service.test.sh --integration
 
 ## Scheduling
 
-`infra/systemd/itqanak-backup.timer` provides the daily local trigger. Keep weekly
-and monthly retained copies outside the server according to the organization’s
-retention policy. Exercise the restore procedure at least weekly with a freshly
-created `itqanak_restore_*` target and the full host/object-storage/DNS runbook
-periodically. The timer backs up only; it never creates, drops, or reuses a
-restore database automatically.
+`infra/systemd/itqanak-backup.timer` provides the daily local trigger and
+`itqanak-backup.service` invokes the `operations` profile against the production
+Compose stack. Both read absolute paths from a root-owned environment file, the
+same convention as `itqanak-clamav-reconciler`. Install and enable on the host:
+
+```bash
+# 1. Environment file (edit the paths if the release artifact is not /root/itqanak)
+install -D -m 0600 infra/systemd/itqanak-backup.env.example /etc/itqanak/backup.env
+
+# 2. Units
+install -m 0644 infra/systemd/itqanak-backup.service /etc/systemd/system/
+install -m 0644 infra/systemd/itqanak-backup.timer   /etc/systemd/system/
+systemctl daemon-reload
+
+# 3. One manual run to confirm it produces a valid dump before trusting the timer
+systemctl start itqanak-backup.service
+journalctl -u itqanak-backup.service -n 40 --no-pager
+ls -l "$(grep -oP 'ITQANAK_BACKUP_DIR=\K.*' /root/itqanak/.env.production)"
+
+# 4. Enable the daily schedule
+systemctl enable --now itqanak-backup.timer
+systemctl list-timers itqanak-backup.timer
+```
+
+`ITQANAK_BACKUP_DIR` in `.env.production` selects the on-host output directory
+(currently `/root/itqanak/backups`). Keep weekly and monthly retained copies
+outside the server according to the organization’s retention policy. The timer
+backs up only; it never creates, drops, or reuses a restore database
+automatically.
+
+### Off-host copy (required for production durability)
+
+Local-only backups do not survive host loss. Set `BACKUP_S3_URI` in
+`/etc/itqanak/backup.env` to a prefix on a **distinct** account/provider (not the
+in-host MinIO) and rebuild `Dockerfile.backup` with the matching client
+(`aws-cli`, `rclone`, or `mc`) so `scripts/backup-postgres.sh` replicates each
+dump and its metadata after the local write succeeds. A PostgreSQL dump never
+contains attachment bytes: replicate the private object store independently
+(provider versioning + cross-account replication, or a second `mc mirror`
+timer). A restore is not proven until `scripts/verify-backup.sh` has restored a
+dump into a throwaway `itqanak_restore_*` database and checked
+`schema_migrations` completeness.

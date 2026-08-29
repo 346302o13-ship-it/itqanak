@@ -93,9 +93,11 @@ export function mergeUnifiedMessages(
 }
 
 export function pollingDelay(failedAttempts: number, visible: boolean): number {
-  if (!visible) return 15_000;
+  // A hidden tab barely needs to poll; a healthy visible tab sits at 5s and backs
+  // off exponentially to a full minute while the server or network is unhappy.
+  if (!visible) return 20_000;
   const boundedFailures = Math.max(0, Math.min(4, Math.floor(failedAttempts)));
-  return Math.min(30_000, 3_500 * 2 ** boundedFailures);
+  return Math.min(60_000, 5_000 * 2 ** boundedFailures);
 }
 
 export function currencyMinorUnit(currency: ServiceQuoteCurrency): 2 | 3 {

@@ -787,7 +787,10 @@ export function UnifiedChatWorkspace({
     let timeout: number | undefined;
     let inFlight = false;
     let controller: AbortController | undefined;
-    const query = new URLSearchParams({ page: "1", pageSize: "100" });
+    // Use the server's default conversation-list page size (30). Pulling 100 rows
+    // every poll re-runs the platform's most expensive read for pages the admin
+    // never scrolls to.
+    const query = new URLSearchParams({ page: "1" });
     if (search !== undefined && search.trim().length > 0) query.set("q", search.trim());
 
     const schedule = (delay?: number) => {

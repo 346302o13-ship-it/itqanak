@@ -1,8 +1,8 @@
 "use client";
 
-import Link from "next/link";
 import { usePathname } from "next/navigation";
 
+import { NavLink } from "./nav-link";
 import { RequestsIcon, ShieldCheckIcon, UserIcon, VerifiedIcon } from "./icons";
 
 const navigationByLocale = {
@@ -35,9 +35,9 @@ export function AccountNavigation({ locale = "ar" }: Readonly<{ locale?: "ar" | 
             : pathname.startsWith(item.href);
         const ItemIcon = item.icon;
         return (
-          <Link
+          <NavLink
             aria-current={active ? "page" : undefined}
-            className={`flex min-h-12 items-center gap-3 rounded-2xl px-3.5 text-sm font-extrabold transition ${
+            className={`relative flex min-h-12 items-center gap-3 rounded-2xl px-3.5 text-sm font-extrabold transition ${
               active
                 ? "bg-[var(--itq-color-brand-50)] text-[var(--itq-color-brand-800)]"
                 : "text-[var(--itq-color-muted)] hover:bg-[var(--itq-color-surface-soft)] hover:text-[var(--itq-color-ink)]"
@@ -47,7 +47,7 @@ export function AccountNavigation({ locale = "ar" }: Readonly<{ locale?: "ar" | 
           >
             <ItemIcon className="size-5" />
             {item.label}
-          </Link>
+          </NavLink>
         );
       })}
     </nav>

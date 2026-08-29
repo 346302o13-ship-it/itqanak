@@ -53,9 +53,9 @@ describe("unified chat client helpers", () => {
   });
 
   it("backs off failed polling and reduces background polling", () => {
-    expect(pollingDelay(0, true)).toBe(3_500);
-    expect(pollingDelay(4, true)).toBe(30_000);
-    expect(pollingDelay(0, false)).toBe(15_000);
+    expect(pollingDelay(0, true)).toBe(5_000);
+    expect(pollingDelay(4, true)).toBe(60_000);
+    expect(pollingDelay(0, false)).toBe(20_000);
   });
 
   it("hydrates conversation list dates received from JSON polling", () => {

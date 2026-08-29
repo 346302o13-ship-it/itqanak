@@ -2,7 +2,7 @@ import Redis from "ioredis";
 
 import { loadConfig, type AppConfig } from "@itqanak/config";
 import { checkDatabaseHealth, closeDatabase, createDatabase, getSchemaStatus } from "@itqanak/db";
-import { createLogger } from "@itqanak/observability";
+import { createLogger, type Logger } from "@itqanak/observability";
 import { PlatformOperationsService, type PlatformOperationalState } from "@itqanak/operations";
 import {
   createObjectStorage,
@@ -43,7 +43,10 @@ export function plannedFileScannerReadiness(
  * A bounded storage-specific probe verifies the configured root or bucket,
  * endpoint, and application credentials without exposing or writing objects.
  */
-export async function checkObjectStorageReadiness(config: ObjectStorageConfig): Promise<boolean> {
+export async function checkObjectStorageReadiness(
+  config: ObjectStorageConfig,
+  logger?: Logger,
+): Promise<boolean> {
   try {
     const storage = createObjectStorage(config);
     if (storage.checkReadiness !== undefined) {
@@ -52,7 +55,14 @@ export async function checkObjectStorageReadiness(config: ObjectStorageConfig): 
       await storage.exists("readiness/health-probe");
     }
     return true;
-  } catch {
+  } catch (error: unknown) {
+    // Surface *why* readiness fails without leaking the endpoint, bucket, keys or
+    // object paths that an S3 error message/stack carries: only the error class
+    // name goes through the redacting structured logger.
+    logger?.warn("readiness_failed", {
+      check: "object_storage",
+      errorName: error instanceof Error ? error.name : "unknown",
+    });
     return false;
   }
 }
@@ -129,10 +139,7 @@ export async function checkReadiness(requestId: string): Promise<ReadinessResult
     redis.disconnect(false);
   }
 
-  checks.objectStorage = await checkObjectStorageReadiness(config.storage);
-  if (!checks.objectStorage) {
-    logger.warn("readiness_failed", { check: "object_storage" });
-  }
+  checks.objectStorage = await checkObjectStorageReadiness(config.storage, logger);
 
   checks.fileScanner =
     plannedFileScannerReadiness(config.fileScanning.mode, operationalState) ??

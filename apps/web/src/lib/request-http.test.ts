@@ -43,7 +43,7 @@ describe("request HTTP boundary", () => {
         service: "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
       }),
     ).toMatchObject({
-      page: 100_000,
+      page: 1_000,
       pageSize: 20,
       status: "SUBMITTED",
       sort: "oldest",

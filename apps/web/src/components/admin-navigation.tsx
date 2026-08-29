@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 
+import { NavLink } from "./nav-link";
 import {
   DashboardIcon,
   FinanceIcon,
@@ -157,9 +158,9 @@ export function AdminNavigation({ locale = "ar" }: Readonly<{ locale?: "ar" | "e
             ? pathname === href
             : pathname.startsWith(href);
         return (
-          <Link
+          <NavLink
             aria-current={active ? "page" : undefined}
-            className={`flex min-h-12 items-center gap-3 rounded-2xl px-4 text-sm font-black transition ${
+            className={`relative flex min-h-12 items-center gap-3 rounded-2xl px-4 text-sm font-black transition ${
               active
                 ? "bg-[var(--itq-color-brand-700)] text-white shadow-sm"
                 : "text-[var(--itq-color-muted)] hover:bg-[var(--itq-color-brand-50)] hover:text-[var(--itq-color-brand-800)]"
@@ -168,7 +169,7 @@ export function AdminNavigation({ locale = "ar" }: Readonly<{ locale?: "ar" | "e
             key={href}
           >
             <Icon className="size-5" /> {label}
-          </Link>
+          </NavLink>
         );
       })}
     </nav>

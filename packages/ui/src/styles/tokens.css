@@ -11,12 +11,17 @@
   --itq-color-brand-50: #edf8f5;
   --itq-color-brand-100: #d5eee8;
   --itq-color-brand-200: #addfd5;
+  --itq-color-brand-300: #7fcdbf;
+  --itq-color-brand-400: #3fa99b;
+  --itq-color-brand-500: #1a9184;
   --itq-color-brand-600: #128276;
   --itq-color-brand-700: #086a63;
   --itq-color-brand-800: #07544f;
   --itq-color-brand-900: #073f3c;
+  --itq-color-brand-950: #052e2b;
   --itq-color-accent-50: #fff8e9;
   --itq-color-accent-200: #f2d69c;
+  --itq-color-accent-300: #e9c27a;
   --itq-color-accent-500: #c58b2b;
   --itq-color-accent-700: #8d5d13;
   --itq-color-success-50: #ecfdf3;
@@ -26,6 +31,8 @@
   --itq-color-danger-50: #fff1f1;
   --itq-color-danger-700: #b4232b;
   --itq-shadow-sm: 0 1px 2px rgb(13 41 49 / 5%), 0 7px 24px rgb(13 41 49 / 5%);
+  --itq-shadow-md: 0 2px 4px rgb(13 41 49 / 6%), 0 14px 44px rgb(13 41 49 / 8%);
+  --itq-shadow-lg: 0 10px 24px rgb(13 41 49 / 8%), 0 32px 80px rgb(13 41 49 / 12%);
   --itq-shadow-card: 0 24px 72px rgb(13 41 49 / 9%);
   --itq-shadow-float: 0 28px 80px rgb(7 84 79 / 20%);
   --it-radius-control: 0.875rem;
