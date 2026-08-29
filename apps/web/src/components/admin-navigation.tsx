@@ -1,8 +1,8 @@
 "use client";
 
-import Link from "next/link";
 import { usePathname } from "next/navigation";
 
+import { MobileNavBar } from "./mobile-nav-bar";
 import { NavLink } from "./nav-link";
 import {
   DashboardIcon,
@@ -178,27 +178,18 @@ export function AdminNavigation({ locale = "ar" }: Readonly<{ locale?: "ar" | "e
 
 export function AdminMobileNavigation({ locale = "ar" }: Readonly<{ locale?: "ar" | "en" }>) {
   const pathname = usePathname();
-  const items = itemsByLocale[locale];
+  const items = itemsByLocale[locale].map(({ href, mobileLabel, Icon }) => ({
+    href,
+    label: mobileLabel,
+    icon: Icon,
+    active:
+      href === "/ar/admin" || href === "/en/admin" ? pathname === href : pathname.startsWith(href),
+  }));
   return (
-    <nav
-      aria-label={locale === "en" ? "Mobile admin navigation" : "التنقل الإداري للجوال"}
-      className="fixed inset-x-3 bottom-3 z-40 flex overflow-x-auto rounded-2xl border border-[var(--itq-color-border)] bg-white/95 p-1.5 shadow-xl backdrop-blur lg:hidden"
-    >
-      {items.map(({ href, mobileLabel, Icon }) => {
-        const active =
-          href === "/ar/admin" || href === "/en/admin"
-            ? pathname === href
-            : pathname.startsWith(href);
-        return (
-          <Link
-            className={`flex min-h-14 min-w-[4.25rem] flex-1 flex-col items-center justify-center gap-1 rounded-xl px-1 text-center text-[10px] font-black ${active ? "bg-[var(--itq-color-brand-50)] text-[var(--itq-color-brand-800)]" : "text-[var(--itq-color-muted)]"}`}
-            href={href}
-            key={href}
-          >
-            <Icon className="size-5" /> {mobileLabel}
-          </Link>
-        );
-      })}
-    </nav>
+    <MobileNavBar
+      ariaLabel={locale === "en" ? "Mobile admin navigation" : "التنقل الإداري للجوال"}
+      items={items}
+      moreLabel={locale === "en" ? "More" : "المزيد"}
+    />
   );
 }

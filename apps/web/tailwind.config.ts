@@ -5,7 +5,16 @@ export default {
   theme: {
     extend: {
       fontFamily: {
-        sans: ["Arial", "Tahoma", "sans-serif"],
+        // Match the real body stack in globals.css so a `font-sans` utility
+        // never silently drops to Arial/Tahoma.
+        sans: [
+          "IBM Plex Sans Arabic",
+          "IBM Plex Sans",
+          "Segoe UI",
+          "Tahoma",
+          "Arial",
+          "sans-serif",
+        ],
       },
     },
   },

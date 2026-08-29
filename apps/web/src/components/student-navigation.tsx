@@ -1,9 +1,9 @@
 "use client";
 
-import Link from "next/link";
 import { usePathname } from "next/navigation";
 import type { ComponentType, SVGProps } from "react";
 
+import { MobileNavBar } from "./mobile-nav-bar";
 import { NavLink } from "./nav-link";
 
 import {
@@ -138,31 +138,17 @@ export function StudentNavigation({ locale = "ar" }: Readonly<{ locale?: "ar" | 
 
 export function StudentMobileNavigation({ locale = "ar" }: Readonly<{ locale?: "ar" | "en" }>) {
   const pathname = usePathname();
-  const items = itemsByLocale[locale];
+  const items = itemsByLocale[locale].map((item) => ({
+    href: item.href,
+    label: item.shortLabel,
+    icon: item.icon,
+    active: isActive(pathname, item),
+  }));
   return (
-    <nav
-      aria-label={locale === "en" ? "Quick navigation" : "التنقل السريع"}
-      className="fixed inset-x-3 bottom-3 z-40 flex overflow-x-auto rounded-[1.35rem] border border-white/80 bg-white/95 p-1.5 shadow-[0_16px_50px_rgb(16_60_58_/_20%)] backdrop-blur-xl lg:hidden"
-    >
-      {items.map((item) => {
-        const active = isActive(pathname, item);
-        const ItemIcon = item.icon;
-        return (
-          <Link
-            aria-current={active ? "page" : undefined}
-            className={`flex min-h-14 min-w-[4.25rem] flex-1 flex-col items-center justify-center gap-1 rounded-2xl px-1 text-[10px] font-extrabold transition sm:text-xs ${
-              active
-                ? "bg-[var(--itq-color-brand-50)] text-[var(--itq-color-brand-800)]"
-                : "text-[var(--itq-color-muted)]"
-            }`}
-            href={item.href}
-            key={item.href}
-          >
-            <ItemIcon className="size-5" />
-            <span>{item.shortLabel}</span>
-          </Link>
-        );
-      })}
-    </nav>
+    <MobileNavBar
+      ariaLabel={locale === "en" ? "Quick navigation" : "التنقل السريع"}
+      items={items}
+      moreLabel={locale === "en" ? "More" : "المزيد"}
+    />
   );
 }
