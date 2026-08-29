@@ -21,9 +21,11 @@ export async function POST(request: NextRequest) {
   let locale: "ar" | "en" = request.nextUrl.searchParams.get("locale") === "en" ? "en" : "ar";
   let application: "public" | "admin" = "public";
   let cloudflareIdentity: CloudflareAccessIdentity | undefined;
+  let identity = "";
   try {
     const { formData, context } = await assertProtectedForm(request);
     locale = formValue(formData, "locale") === "en" ? "en" : "ar";
+    identity = formValue(formData, "identity") || formValue(formData, "email");
     next = safeNext(formValue(formData, "next"));
     application =
       next === "/ar/admin" ||
@@ -42,7 +44,7 @@ export async function POST(request: NextRequest) {
       );
       const session = await runtime.auth.login({
         ...context,
-        identity: formValue(formData, "identity") || formValue(formData, "email"),
+        identity,
         password: formValue(formData, "password"),
         ...(existing === undefined ? {} : { priorSessionId: existing.sessionId }),
       });
@@ -67,7 +69,11 @@ export async function POST(request: NextRequest) {
         headers: { "Cache-Control": "no-store" },
       });
     }
-    const destination = `/${locale}/auth/login?next=${encodeURIComponent(next)}`;
+    const trimmedIdentity = identity.trim().slice(0, 320);
+    const destination =
+      trimmedIdentity.length === 0
+        ? `/${locale}/auth/login?next=${encodeURIComponent(next)}`
+        : `/${locale}/auth/login?next=${encodeURIComponent(next)}&id=${encodeURIComponent(trimmedIdentity)}`;
     return redirectTo(config, destination, statusForAuthError(error), application);
   }
 }

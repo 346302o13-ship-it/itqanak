@@ -13,6 +13,7 @@ interface LoginPageProps {
   readonly searchParams: Promise<{
     readonly next?: string | string[];
     readonly status?: string | string[];
+    readonly id?: string | string[];
   }>;
 }
 
@@ -29,6 +30,8 @@ export default async function LoginPage({ searchParams }: LoginPageProps) {
     headers(),
   ]);
   const status = typeof query.status === "string" ? query.status : undefined;
+  const identity = typeof query.id === "string" ? query.id : undefined;
+  const badCredentials = status === "failed" || status === "invalid";
   const requestedNext = safeNext(typeof query.next === "string" ? query.next : undefined);
   const host = requestHeaders.get("x-forwarded-host") ?? requestHeaders.get("host") ?? "";
   const admin =
@@ -97,7 +100,9 @@ export default async function LoginPage({ searchParams }: LoginPageProps) {
           </label>
           <input
             autoComplete="username"
+            autoFocus={identity !== undefined && !badCredentials}
             className={fieldClassName}
+            defaultValue={identity}
             dir="ltr"
             id="identity"
             name="identity"
@@ -120,6 +125,7 @@ export default async function LoginPage({ searchParams }: LoginPageProps) {
           </div>
           <input
             autoComplete="current-password"
+            autoFocus={badCredentials}
             className={fieldClassName}
             id="password"
             name="password"
