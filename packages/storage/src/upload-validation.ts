@@ -22,6 +22,7 @@ export const allowedUploadMimeTypes = [
   "audio/ogg",
   "audio/mpeg",
   "audio/wav",
+  "video/mp4",
 ] as const;
 
 export type AllowedUploadMimeType = (typeof allowedUploadMimeTypes)[number];
@@ -39,7 +40,8 @@ export type ValidatedUpload = Readonly<{
     | ".webm"
     | ".ogg"
     | ".mp3"
-    | ".wav";
+    | ".wav"
+    | ".mp4";
   declaredMimeType: AllowedUploadMimeType;
   detectedMimeType: AllowedUploadMimeType;
   size: number;
@@ -462,6 +464,14 @@ const policies: Readonly<Record<string, FilePolicy>> = {
       header[9] === 0x41 &&
       header[10] === 0x56 &&
       header[11] === 0x45,
+  },
+  ".mp4": {
+    normalizedExtension: ".mp4",
+    declaredMimeType: "video/mp4",
+    detectedMimeType: "video/mp4",
+    // ISO base media format: bytes 4..8 are the "ftyp" box type.
+    matchesMagic: (header) =>
+      header[4] === 0x66 && header[5] === 0x74 && header[6] === 0x79 && header[7] === 0x70,
   },
 };
 

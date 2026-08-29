@@ -1,6 +1,7 @@
 import type { AppConfig } from "@itqanak/config";
 import type { DatabaseClient } from "@itqanak/db";
 import type { Logger } from "@itqanak/observability";
+import type { PlatformMessagingService } from "@itqanak/operations";
 
 type SupportedEventType = "ACCOUNT_REGISTRATION_CREATED" | "REQUEST_NEEDS_REVIEW";
 
@@ -18,7 +19,10 @@ export interface WhatsAppSupportNotification {
 }
 
 export interface WhatsAppNotificationSender {
-  send(notification: WhatsAppSupportNotification): Promise<{ readonly messageId?: string }>;
+  send(
+    notification: WhatsAppSupportNotification,
+    recipientE164?: string,
+  ): Promise<{ readonly messageId?: string }>;
 }
 
 export function notificationFenceForConfig(
@@ -63,15 +67,17 @@ export class MetaWhatsAppCloudSender implements WhatsAppNotificationSender {
 
   public async send(
     notification: WhatsAppSupportNotification,
+    recipientE164?: string,
   ): Promise<{ readonly messageId?: string }> {
     const whatsapp = this.config.whatsapp;
     if (whatsapp.mode === "dry-run") return {};
+    const recipient = recipientE164 ?? whatsapp.supportRecipientE164;
     if (
       whatsapp.mode !== "enabled" ||
       whatsapp.phoneNumberId === undefined ||
       whatsapp.templateName === undefined ||
       whatsapp.templateLanguage === undefined ||
-      whatsapp.supportRecipientE164 === undefined ||
+      recipient === undefined ||
       this.config.whatsappAccessToken === undefined
     ) {
       throw new WhatsAppDeliveryError("CONFIGURATION_INVALID", false);
@@ -93,7 +99,7 @@ export class MetaWhatsAppCloudSender implements WhatsAppNotificationSender {
           },
           body: JSON.stringify({
             messaging_product: "whatsapp",
-            to: whatsapp.supportRecipientE164.slice(1),
+            to: recipient.slice(1),
             type: "template",
             template: {
               name: whatsapp.templateName,
@@ -139,6 +145,7 @@ export class MetaWhatsAppCloudSender implements WhatsAppNotificationSender {
 export class WhatsAppSupportOutboxProcessor {
   private readonly leaseMs = 2 * 60_000;
   private readonly notificationsNotBefore: string;
+  private recipientCache: { readonly value: string | undefined; readonly at: number } | undefined;
 
   public constructor(
     private readonly database: DatabaseClient,
@@ -146,10 +153,36 @@ export class WhatsAppSupportOutboxProcessor {
     private readonly sender: WhatsAppNotificationSender,
     private readonly logger: Logger,
     private readonly workerId: string,
+    private readonly messaging?: PlatformMessagingService,
   ) {
     // A dry-run without an explicit fence observes only events created after
     // this worker starts. Enabled production mode requires a configured fence.
     this.notificationsNotBefore = notificationFenceForConfig(config);
+  }
+
+  /**
+   * The administrator can override the notification recipient in
+   * `platform_messaging_settings`; the deployed env value is the fallback.
+   * Cached briefly so a busy batch does not hammer the row.
+   */
+  private async resolveRecipient(): Promise<string | undefined> {
+    const now = Date.now();
+    if (this.recipientCache !== undefined && now - this.recipientCache.at < 60_000) {
+      return this.recipientCache.value;
+    }
+    let value = this.config.whatsapp.supportRecipientE164;
+    if (this.messaging !== undefined) {
+      try {
+        const runtime = await this.messaging.getRuntimeMessaging();
+        if (runtime.whatsappNotifyRecipientE164 !== undefined) {
+          value = runtime.whatsappNotifyRecipientE164;
+        }
+      } catch {
+        // Keep the environment fallback if the settings row is unreadable.
+      }
+    }
+    this.recipientCache = { value, at: now };
+    return value;
   }
 
   public async processBatch(limit: number): Promise<number> {
@@ -234,7 +267,7 @@ export class WhatsAppSupportOutboxProcessor {
       return;
     }
     try {
-      const result = await this.sender.send(notification);
+      const result = await this.sender.send(notification, await this.resolveRecipient());
       await this.finish(job.id, "DELIVERED");
       this.logger.info("whatsapp_support_notification_delivered", {
         outboxId: job.id,

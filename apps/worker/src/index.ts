@@ -7,7 +7,7 @@ import { AuthEmailOutboxProcessor, createAuthEmailSender } from "@itqanak/auth";
 import { loadConfig, type AppConfig } from "@itqanak/config";
 import { checkDatabaseHealth, closeDatabase, createDatabase } from "@itqanak/db";
 import { createLogger, type Logger } from "@itqanak/observability";
-import { PlatformOperationsService } from "@itqanak/operations";
+import { PlatformMessagingService, PlatformOperationsService } from "@itqanak/operations";
 import {
   AttachmentScanProcessor,
   AttachmentStorageReconciler,
@@ -61,6 +61,7 @@ async function startWorker(config: AppConfig, logger: Logger, signal: AbortSigna
           new MetaWhatsAppCloudSender(config),
           logger.child({ workerName }),
           workerName,
+          new PlatformMessagingService({ database }),
         );
   const operations = new PlatformOperationsService({ database });
   const objectStorage = createObjectStorage(config.storage);

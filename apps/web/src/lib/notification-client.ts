@@ -1,12 +1,15 @@
-export const notificationSoundPreferenceKey = "itqanak.notifications.sound.v1";
+import { soundEnabled, soundPreferenceKey } from "./ui-sounds";
+
+export const notificationSoundPreferenceKey = soundPreferenceKey;
 
 export interface NotificationCursor {
   readonly unreadCount: number;
   readonly latestNotificationId?: string;
 }
 
+/** Sound is on by default; only an explicit opt-out ("disabled") mutes it. */
 export function notificationSoundEnabled(value: string | null): boolean {
-  return value === "enabled";
+  return soundEnabled(value);
 }
 
 export function shouldAnnounceNotification(

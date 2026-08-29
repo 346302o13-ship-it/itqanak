@@ -3,6 +3,7 @@ import type { ReactNode } from "react";
 
 import { BrandMark } from "@itqanak/ui";
 
+import { AnnouncementBanner } from "./announcement-banner";
 import { CsrfInput } from "./auth-shell";
 import { LogOutIcon, ShieldCheckIcon } from "./icons";
 import { InstallAppButton } from "./install-app-button";
@@ -69,6 +70,7 @@ export function AdminShell({
           </div>
         </div>
       </header>
+      <AnnouncementBanner locale={locale} />
       <div
         className={
           workspace

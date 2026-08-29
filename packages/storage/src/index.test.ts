@@ -173,6 +173,32 @@ describe("upload validation", () => {
     );
   });
 
+  it("accepts an MP4 video when the ftyp box is present, rejects it otherwise", () => {
+    const header = Buffer.from([
+      0x00, 0x00, 0x00, 0x18, 0x66, 0x74, 0x79, 0x70, 0x69, 0x73, 0x6f, 0x6d,
+    ]);
+    expect(
+      validateUpload({
+        filename: "clip.mp4",
+        declaredMimeType: "video/mp4",
+        size: header.length,
+        maxBytes: 1_024,
+        header,
+      }),
+    ).toMatchObject({ normalizedExtension: ".mp4", detectedMimeType: "video/mp4" });
+    expectStorageValidationCode(
+      () =>
+        validateUpload({
+          filename: "clip.mp4",
+          declaredMimeType: "video/mp4",
+          size: 13,
+          maxBytes: 1_024,
+          header: Buffer.from("not-an-mp4-at"),
+        }),
+      "MIME_MISMATCH",
+    );
+  });
+
   it("rejects executable extensions, MIME spoofing, path names, and oversized files", () => {
     const header = Buffer.from("%PDF-1.7 test");
     const base = {

@@ -68,6 +68,7 @@ export interface UnifiedConversationAttachmentServiceOptions {
 }
 
 const allowedInlineAudio = new Set(["audio/webm", "audio/ogg", "audio/mpeg", "audio/wav"]);
+const allowedInlineMedia = new Set([...allowedInlineAudio, "image/png", "image/jpeg", "video/mp4"]);
 
 function integer(value: number | string, field: string): number {
   const parsed = typeof value === "number" ? value : Number(value);
@@ -415,7 +416,8 @@ export class UnifiedConversationAttachmentService {
     const mimeType = attachment.detected_mime_type ?? attachment.declared_mime_type;
     const skippedAllowed =
       policy.requireClean !== true ||
-      (policy.allowUnscannedAudioPreview === true && allowedInlineAudio.has(mimeType));
+      (policy.allowUnscannedAudioPreview === true && allowedInlineAudio.has(mimeType)) ||
+      (policy.allowUnscannedInlineMedia === true && allowedInlineMedia.has(mimeType));
     const downloadable =
       attachment.storage_status === "STORED" &&
       (attachment.scan_status === "CLEAN" ||

@@ -74,6 +74,13 @@ export interface AttachmentAccessPolicy {
   readonly requireClean?: boolean;
   /** Narrow exception for authenticated playback of strictly validated voice-note formats. */
   readonly allowUnscannedAudioPreview?: boolean;
+  /**
+   * Inline preview of strictly validated chat media (image / audio / short
+   * video) even when the file is `SCAN_SKIPPED_BY_ADMIN` — the administrator
+   * has explicitly turned malware scanning off, so previews behave like a
+   * normal messenger instead of failing to render.
+   */
+  readonly allowUnscannedInlineMedia?: boolean;
 }
 
 const inlineAudioMimeTypes = new Set(["audio/webm", "audio/ogg", "audio/mpeg", "audio/wav"]);

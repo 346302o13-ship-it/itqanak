@@ -28,6 +28,7 @@ import {
   type WireUnifiedMessage,
 } from "@/lib/unified-chat-client";
 import { requestStatusLabel } from "@/lib/request-presenters";
+import { playUiSound } from "@/lib/ui-sounds";
 
 import {
   ArrowIcon,
@@ -110,7 +111,7 @@ interface StudentTransitionWire {
   readonly message?: string;
 }
 
-const acceptedExtensions = ".pdf,.docx,.pptx,.xlsx,.txt,.png,.jpg,.jpeg,.webm,.ogg,.mp3,.wav";
+const acceptedExtensions = ".pdf,.docx,.pptx,.xlsx,.txt,.png,.jpg,.jpeg,.webm,.ogg,.mp3,.wav,.mp4";
 
 // Reaction + composer emoji. Mirrors `messageReactionEmojis` in
 // @itqanak/requests (the server allowlist); kept inline so this client bundle
@@ -193,6 +194,7 @@ const mimeByExtension: Readonly<Record<string, string>> = {
   ogg: "audio/ogg",
   mp3: "audio/mpeg",
   wav: "audio/wav",
+  mp4: "video/mp4",
 };
 
 function declaredMime(file: File): string {
@@ -451,13 +453,29 @@ function AttachmentBody({
   const download = `${apiBase}/messages/${encodeURIComponent(messageId)}/attachment`;
   const preview = `${download}/preview`;
 
+  const isVideo = attachment.mimeType.startsWith("video/");
+
   return (
     <div className="min-w-0">
-      {contentType === "IMAGE" ? (
-        <a className="block overflow-hidden rounded-xl bg-black/5" href={download}>
+      {isVideo ? (
+        <video
+          className="max-h-[22rem] w-full rounded-xl bg-black"
+          controls
+          preload="metadata"
+          src={preview}
+        >
+          <a href={download}>{english ? "Download video" : "تنزيل الفيديو"}</a>
+        </video>
+      ) : contentType === "IMAGE" ? (
+        <a
+          className="block overflow-hidden rounded-xl bg-black/5"
+          href={download}
+          rel="noreferrer"
+          target="_blank"
+        >
           <img
             alt={attachment.originalFilename}
-            className="max-h-80 w-full object-cover"
+            className="max-h-[22rem] w-full object-contain"
             loading="lazy"
             src={preview}
           />
@@ -830,6 +848,8 @@ export function UnifiedChatWorkspace({
     const previous = previousLastMessageId.current;
     previousLastMessageId.current = latestMessageId;
     if (previous === undefined || previous === latestMessageId) return;
+    const mySenderType = mode === "admin" ? "ADMIN" : "STUDENT";
+    if (messages.at(-1)?.senderType !== mySenderType) playUiSound("receive");
     if (nearBottom.current) {
       endRef.current?.scrollIntoView({ behavior: "smooth", block: "nearest" });
       setNewMessagesAvailable(false);
@@ -1240,6 +1260,7 @@ export function UnifiedChatWorkspace({
     }
     const sentMessage = result.message;
     setMessages((current) => mergeUnifiedMessages(current, [sentMessage]));
+    playUiSound("send");
     return true;
   }
 

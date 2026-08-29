@@ -11,6 +11,8 @@ import {
   type NotificationCursor,
 } from "../lib/notification-client";
 
+import { playUiSound } from "../lib/ui-sounds";
+
 import { BellIcon, CheckIcon, CloseIcon } from "./icons";
 
 interface NotificationCenterProps {
@@ -112,32 +114,8 @@ export function localizedNotificationHref(
   return `/${locale}/${surface}`;
 }
 
-function playNotificationTone(contextRef: { current: AudioContext | undefined }): void {
-  try {
-    const context = contextRef.current ?? new AudioContext();
-    contextRef.current = context;
-    void context.resume().then(() => {
-      const now = context.currentTime;
-      for (const [offset, frequency] of [
-        [0, 880],
-        [0.15, 1_080],
-      ] as const) {
-        const oscillator = context.createOscillator();
-        const gain = context.createGain();
-        oscillator.type = "sine";
-        oscillator.frequency.setValueAtTime(frequency, now + offset);
-        gain.gain.setValueAtTime(0.0001, now + offset);
-        gain.gain.exponentialRampToValueAtTime(0.11, now + offset + 0.015);
-        gain.gain.exponentialRampToValueAtTime(0.0001, now + offset + 0.11);
-        oscillator.connect(gain);
-        gain.connect(context.destination);
-        oscillator.start(now + offset);
-        oscillator.stop(now + offset + 0.12);
-      }
-    });
-  } catch {
-    // Audio is progressive enhancement; the visual counter remains authoritative.
-  }
+function playNotificationTone(): void {
+  playUiSound("notify");
 }
 
 export function NotificationCenter({ csrfToken, locale = "ar", surface }: NotificationCenterProps) {
@@ -153,7 +131,6 @@ export function NotificationCenter({ csrfToken, locale = "ar", surface }: Notifi
   const [markingAllRead, setMarkingAllRead] = useState(false);
   const cursorRef = useRef<NotificationCursor | undefined>(undefined);
   const soundEnabledRef = useRef(false);
-  const audioContextRef = useRef<AudioContext | undefined>(undefined);
   const triggerRef = useRef<HTMLButtonElement | null>(null);
   const closeButtonRef = useRef<HTMLButtonElement | null>(null);
 
@@ -205,13 +182,9 @@ export function NotificationCenter({ csrfToken, locale = "ar", surface }: Notifi
 
     const poll = async () => {
       if (!active) return;
-      // A hidden tab does not fetch at all; `resume` (visibilitychange / online)
-      // brings it back immediately. Background delivery moves to the SSE stream
-      // + web push in the realtime phase.
-      if (document.visibilityState !== "visible") {
-        schedule();
-        return;
-      }
+      // A hidden tab keeps polling at the slow cadence so a backgrounded app
+      // still chimes and raises an OS notification; `resume` accelerates it the
+      // moment the tab is focused again.
       const requestController = new AbortController();
       controller?.abort();
       controller = requestController;
@@ -237,7 +210,7 @@ export function NotificationCenter({ csrfToken, locale = "ar", surface }: Notifi
         setUnreadCount(payload.unreadCount);
         setUnavailable(false);
         if (announce && soundEnabledRef.current) {
-          playNotificationTone(audioContextRef);
+          playNotificationTone();
           if (document.visibilityState !== "visible" && "Notification" in window) {
             const localizedLatest = latest === undefined ? undefined : localized(latest, english);
             if (Notification.permission === "granted" && localizedLatest !== undefined) {
@@ -330,7 +303,7 @@ export function NotificationCenter({ csrfToken, locale = "ar", surface }: Notifi
     soundEnabledRef.current = next;
     window.localStorage.setItem(notificationSoundPreferenceKey, next ? "enabled" : "disabled");
     if (next) {
-      playNotificationTone(audioContextRef);
+      playNotificationTone();
       if ("Notification" in window && Notification.permission === "default") {
         try {
           await Notification.requestPermission();

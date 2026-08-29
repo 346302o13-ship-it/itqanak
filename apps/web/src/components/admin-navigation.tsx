@@ -5,6 +5,7 @@ import { usePathname } from "next/navigation";
 import { MobileNavBar } from "./mobile-nav-bar";
 import { NavLink } from "./nav-link";
 import {
+  BellIcon,
   DashboardIcon,
   FinanceIcon,
   MessageIcon,
@@ -53,6 +54,13 @@ const itemsByLocale = {
       label: "التشغيل والصيانة",
       mobileLabel: "التشغيل",
       Icon: OperationsIcon,
+      system: true,
+    },
+    {
+      href: "/ar/admin/messaging",
+      label: "المراسلة والإعلانات",
+      mobileLabel: "المراسلة",
+      Icon: BellIcon,
       system: true,
     },
     {
@@ -107,6 +115,13 @@ const itemsByLocale = {
       label: "Operations & maintenance",
       mobileLabel: "Operations",
       Icon: OperationsIcon,
+      system: true,
+    },
+    {
+      href: "/en/admin/messaging",
+      label: "Messaging & alerts",
+      mobileLabel: "Messaging",
+      Icon: BellIcon,
       system: true,
     },
     {

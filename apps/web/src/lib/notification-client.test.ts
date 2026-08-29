@@ -27,10 +27,11 @@ describe("notification client helpers", () => {
     ).toBe(true);
   });
 
-  it("requires an explicit persisted opt-in and backs off in hidden tabs", () => {
+  it("defaults sound on unless explicitly disabled, and backs off in hidden tabs", () => {
     expect(notificationSoundEnabled("enabled")).toBe(true);
-    expect(notificationSoundEnabled("true")).toBe(false);
-    expect(notificationSoundEnabled(null)).toBe(false);
+    expect(notificationSoundEnabled("true")).toBe(true);
+    expect(notificationSoundEnabled(null)).toBe(true);
+    expect(notificationSoundEnabled("disabled")).toBe(false);
     expect(boundedNotificationPollDelay(true)).toBe(6_000);
     expect(boundedNotificationPollDelay(false)).toBe(30_000);
   });

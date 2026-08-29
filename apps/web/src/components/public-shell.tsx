@@ -329,12 +329,9 @@ export function PublicShell({
         </div>
       </footer>
 
-      <WhatsAppLink
-        className="fixed bottom-4 start-4 z-40 min-h-12 rounded-full px-4 shadow-[var(--itq-shadow-float)] sm:bottom-6 sm:start-6"
-        label={<span className="hidden sm:inline">{copy.whatsappLabel}</span>}
-        locale={locale}
-        message={copy.whatsappMessage}
-      />
+      <div className="fixed bottom-4 start-4 z-40 sm:bottom-6 sm:start-6 print:hidden">
+        <InstallAppButton locale={locale} surface="public" variant="fab" />
+      </div>
       <EducationalGuide audience="public" locale={locale} />
     </div>
   );

@@ -134,12 +134,19 @@ export async function unifiedMessageAttachmentRoute(
         conversation.id,
         messageId,
         { ...(await requestAuditContext(request)), requestId },
-        preview ? { requireClean: true, allowUnscannedAudioPreview: true } : {},
+        preview
+          ? {
+              requireClean: true,
+              allowUnscannedAudioPreview: true,
+              allowUnscannedInlineMedia: true,
+            }
+          : {},
       );
       if (
         preview &&
         !download.mimeType.startsWith("image/") &&
-        !download.mimeType.startsWith("audio/")
+        !download.mimeType.startsWith("audio/") &&
+        !download.mimeType.startsWith("video/")
       ) {
         download.body.destroy();
         return new NextResponse(null, {
@@ -160,9 +167,7 @@ export async function unifiedMessageAttachmentRoute(
       if (download.scanStatus === "SCAN_SKIPPED_BY_ADMIN") {
         headers.set(
           "Warning",
-          preview
-            ? '299 - "Unscanned audio: malware scanning was disabled by an administrator"'
-            : '299 - "Unscanned file: malware scanning was disabled by an administrator"',
+          '299 - "Unscanned file: malware scanning was disabled by an administrator"',
         );
         headers.set("X-Itqanak-Scan-Status", "skipped-by-admin");
       } else if (download.scanStatus === "SCAN_SKIPPED_DEVELOPMENT") {
