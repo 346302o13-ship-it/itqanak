@@ -22,15 +22,25 @@ export const metadata: Metadata = {
 };
 
 export const viewport: Viewport = {
-  themeColor: "#07544f",
-  colorScheme: "light",
+  themeColor: [
+    { media: "(prefers-color-scheme: light)", color: "#07544f" },
+    { media: "(prefers-color-scheme: dark)", color: "#0b1416" },
+  ],
+  colorScheme: "light dark",
 };
+
+// Applies a saved manual theme choice before first paint so switching does not
+// flash. No choice = follow the OS via prefers-color-scheme.
+const themeBootstrap = `try{var t=localStorage.getItem("itq-theme");if(t==="dark"||t==="light")document.documentElement.dataset.theme=t}catch(e){}`;
 
 export default async function RootLayout({ children }: Readonly<{ children: ReactNode }>) {
   const requestHeaders = await headers();
   const locale = requestHeaders.get("x-itqanak-locale") === "en" ? "en" : "ar";
   return (
-    <html dir={locale === "ar" ? "rtl" : "ltr"} lang={locale}>
+    <html dir={locale === "ar" ? "rtl" : "ltr"} lang={locale} suppressHydrationWarning>
+      <head>
+        <script dangerouslySetInnerHTML={{ __html: themeBootstrap }} />
+      </head>
       <body>{children}</body>
     </html>
   );

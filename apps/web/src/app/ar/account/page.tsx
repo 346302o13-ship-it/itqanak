@@ -3,6 +3,7 @@ import { hasAdminAccess } from "@itqanak/auth";
 import { AccountShell } from "@/components/account-shell";
 import { CsrfInput, FormAlert } from "@/components/auth-shell";
 import { SubmitButton } from "@/components/submit-button";
+import { ThemeToggle } from "@/components/theme-toggle";
 import { csrfTokenForPage, createAuthRuntime } from "@/lib/auth-runtime";
 import { formatArabicDate, requirePagePrincipal } from "@/lib/account-page";
 
@@ -136,6 +137,15 @@ export default async function AccountPage({ searchParams }: AccountPageProps) {
         )}
         <SubmitButton pendingLabel="جارٍ الحفظ…">حفظ التغييرات</SubmitButton>
       </form>
+      <section className="mt-10 max-w-lg border-t border-[var(--itq-color-border)] pt-6">
+        <h2 className="text-sm font-black">المظهر</h2>
+        <p className="mt-1 text-xs leading-6 text-[var(--itq-color-muted)]">
+          يتبع النظام تلقائيًّا، أو ثبّت الوضع الفاتح أو الداكن على هذا المتصفح.
+        </p>
+        <div className="mt-3">
+          <ThemeToggle locale="ar" />
+        </div>
+      </section>
     </AccountShell>
   );
 }
