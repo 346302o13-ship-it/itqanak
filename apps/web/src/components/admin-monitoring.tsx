@@ -90,6 +90,9 @@ const copy = {
     quotes: "عروض تنتظر الرد",
     requests: "طلبات نشطة",
     accounts: "حسابات تنتظر الاعتماد",
+    outboxPending: "أحداث outbox معلّقة",
+    outboxDeadLetter: "أحداث outbox متوقفة",
+    outboxOldest: "عمر أقدم حدث معلّق",
     requestDistribution: "توزيع حالات الطلبات",
     noRequests: "لا توجد طلبات حتى الآن.",
     problems: "آخر مشكلات الأتمتة",
@@ -161,6 +164,9 @@ const copy = {
     quotes: "Quotes awaiting response",
     requests: "Active requests",
     accounts: "Accounts awaiting approval",
+    outboxPending: "Pending outbox events",
+    outboxDeadLetter: "Dead-letter outbox events",
+    outboxOldest: "Oldest pending event age",
     requestDistribution: "Request status distribution",
     noRequests: "No requests yet.",
     problems: "Recent automation problems",
@@ -179,6 +185,18 @@ function HealthBadge({ health, label }: Readonly<{ health: MonitoringHealth; lab
       {label}
     </span>
   );
+}
+
+function formatAgeSeconds(seconds: number, locale: "ar" | "en"): string {
+  if (seconds <= 0) return locale === "ar" ? "لا يوجد" : "None";
+  const days = Math.floor(seconds / 86_400);
+  const hours = Math.floor((seconds % 86_400) / 3_600);
+  const minutes = Math.floor((seconds % 3_600) / 60);
+  const unit = (value: number, ar: string, en: string) =>
+    locale === "ar" ? `${value} ${ar}` : `${value}${en}`;
+  if (days > 0) return `${unit(days, "ي", "d")} ${unit(hours, "س", "h")}`.trim();
+  if (hours > 0) return `${unit(hours, "س", "h")} ${unit(minutes, "د", "m")}`.trim();
+  return unit(Math.max(1, minutes), "د", "m");
 }
 
 function Metric({ label, value }: Readonly<{ label: string; value: number | string }>) {
@@ -411,6 +429,18 @@ export function AdminMonitoring({
             <Metric label={t.quotes} value={number.format(snapshot.activity.pendingQuotes)} />
             <Metric label={t.requests} value={number.format(snapshot.activity.activeRequests)} />
             <Metric label={t.accounts} value={number.format(snapshot.activity.pendingAccounts)} />
+            <Metric
+              label={t.outboxPending}
+              value={number.format(snapshot.automation.outboxPending)}
+            />
+            <Metric
+              label={t.outboxDeadLetter}
+              value={number.format(snapshot.automation.outboxDeadLetter)}
+            />
+            <Metric
+              label={t.outboxOldest}
+              value={formatAgeSeconds(snapshot.automation.outboxOldestPendingAgeSeconds, locale)}
+            />
           </div>
         </section>
 

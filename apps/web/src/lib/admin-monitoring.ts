@@ -55,6 +55,11 @@ export interface AdminMonitoringSnapshot {
     readonly activeRequests: number;
     readonly pendingAccounts: number;
   };
+  readonly automation: {
+    readonly outboxPending: number;
+    readonly outboxDeadLetter: number;
+    readonly outboxOldestPendingAgeSeconds: number;
+  };
   readonly requestStatuses: readonly {
     readonly status: string;
     readonly count: number;
@@ -78,6 +83,9 @@ interface MonitoringRow {
   readonly whatsapp_queued: number | string;
   readonly whatsapp_dead_letter: number | string;
   readonly whatsapp_last_delivered_at: Date | string | null;
+  readonly outbox_pending_total: number | string;
+  readonly outbox_dead_letter_total: number | string;
+  readonly outbox_oldest_pending_age_seconds: number | string;
   readonly maintenance_enabled: boolean;
   readonly file_scan_queue_paused: boolean;
   readonly file_scanner_observed_state: string;
@@ -172,6 +180,13 @@ export async function loadAdminMonitoringSnapshot(
           WHERE event_type IN ('ACCOUNT_REGISTRATION_CREATED', 'REQUEST_NEEDS_REVIEW')
             AND created_at >= ${whatsappNotificationFence}
             AND status = 'DELIVERED') AS whatsapp_last_delivered_at,
+        (SELECT count(*)::text FROM outbox_events
+          WHERE status IN ('PENDING', 'PROCESSING', 'RETRY')) AS outbox_pending_total,
+        (SELECT count(*)::text FROM outbox_events
+          WHERE status = 'DEAD_LETTER') AS outbox_dead_letter_total,
+        (SELECT COALESCE(EXTRACT(EPOCH FROM (now() - min(created_at)))::bigint, 0)::text
+          FROM outbox_events
+          WHERE status IN ('PENDING', 'PROCESSING', 'RETRY')) AS outbox_oldest_pending_age_seconds,
         operations.maintenance_enabled,
         operations.file_scan_queue_paused,
         operations.file_scanner_observed_state,
@@ -285,6 +300,14 @@ export async function loadAdminMonitoringSnapshot(
       pendingQuotes: count(row.pending_quotes, "pending quote count"),
       activeRequests: count(row.active_requests, "active request count"),
       pendingAccounts: count(row.pending_accounts, "pending account count"),
+    },
+    automation: {
+      outboxPending: count(row.outbox_pending_total, "outbox pending count"),
+      outboxDeadLetter: count(row.outbox_dead_letter_total, "outbox dead-letter count"),
+      outboxOldestPendingAgeSeconds: count(
+        row.outbox_oldest_pending_age_seconds,
+        "outbox oldest pending age",
+      ),
     },
     requestStatuses: requestStatusRows.map((statusRow) => ({
       status: statusRow.status,

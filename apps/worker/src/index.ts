@@ -18,7 +18,7 @@ import { createMalwareScanner, createObjectStorage } from "@itqanak/storage";
 
 import { nextBackoffDelay, waitFor } from "./backoff.js";
 import { runPeriodicHeartbeat } from "./heartbeat.js";
-import { DeferredOutboxWorkLoop } from "./outbox.js";
+import { OutboxRetentionWorkLoop } from "./outbox.js";
 import { MetaWhatsAppCloudSender, WhatsAppSupportOutboxProcessor } from "./whatsapp.js";
 import { shouldProcessAttachmentScans } from "./scan-queue-control.js";
 
@@ -51,7 +51,7 @@ async function startWorker(config: AppConfig, logger: Logger, signal: AbortSigna
     maxRetriesPerRequest: 1,
     retryStrategy: () => null,
   });
-  const outbox = new DeferredOutboxWorkLoop(logger.child({ workerName }));
+  const outbox = new OutboxRetentionWorkLoop(database, logger.child({ workerName }));
   const whatsappNotifications =
     config.whatsapp.mode === "disabled"
       ? undefined
