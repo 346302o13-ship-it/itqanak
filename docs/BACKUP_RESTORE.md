@@ -166,13 +166,59 @@ automatically.
 
 ### Off-host copy (required for production durability)
 
-Local-only backups do not survive host loss. Set `BACKUP_S3_URI` in
-`/etc/itqanak/backup.env` to a prefix on a **distinct** account/provider (not the
-in-host MinIO) and rebuild `Dockerfile.backup` with the matching client
-(`aws-cli`, `rclone`, or `mc`) so `scripts/backup-postgres.sh` replicates each
-dump and its metadata after the local write succeeds. A PostgreSQL dump never
-contains attachment bytes: replicate the private object store independently
-(provider versioning + cross-account replication, or a second `mc mirror`
-timer). A restore is not proven until `scripts/verify-backup.sh` has restored a
-dump into a throwaway `itqanak_restore_*` database and checked
-`schema_migrations` completeness.
+Local-only backups do not survive host loss. `Dockerfile.backup` now ships
+`rclone`; the remaining step is credentials. In `/etc/itqanak/backup.env`
+(`infra/systemd/itqanak-backup.env.example` documents every key):
+
+1. Define an `OFFHOST` rclone remote via `RCLONE_CONFIG_OFFHOST_*` pointing at a
+   **distinct** account/provider (Backblaze B2, Wasabi, AWS — not the in-host
+   MinIO), scoped to one dedicated bucket.
+2. Set `BACKUP_S3_URI=offhost:<bucket>/postgres`. `scripts/backup-postgres.sh`
+   then `rclone copyto`s each dump + metadata after the local write, and
+   `BACKUP_REQUIRE_OFFSITE=true` makes the job fail rather than silently produce
+   a local-only backup.
+3. For attachment bytes (a PostgreSQL dump never contains them): also define a
+   read-only `MINIO` remote, set `OBJECT_SYNC_SOURCE`/`OBJECT_SYNC_TARGET`, and
+   enable `itqanak-object-sync.timer` — it `rclone sync --immutable`s the
+   private bucket to the off-host target daily.
+
+```bash
+install -m 0644 infra/systemd/itqanak-object-sync.{service,timer} /etc/systemd/system/
+install -m 0644 infra/systemd/itqanak-verify-backup.{service,timer} /etc/systemd/system/
+systemctl daemon-reload
+systemctl enable --now itqanak-object-sync.timer itqanak-verify-backup.timer
+```
+
+### Restore verification (weekly)
+
+`itqanak-verify-backup.timer` restores the newest local dump into a throwaway
+`itqanak_restore_verification` database, asserts `schema_migrations` completeness
+and the expected tables, then drops it. `pg_restore --list` only proves the
+archive is readable; this proves it restores. A non-zero exit fires the Telegram
+alert (`OnFailure=`).
+
+## Alerting
+
+Nothing else watches the operational signals, so worker death, a dead-letter
+pile-up, a stalled outbox or unsendable auth e-mails are invisible until a
+customer complains. Two pieces, both Telegram:
+
+- `itqanak-alert@.service` — `OnFailure=` target on the backup / object-sync /
+  verify units. Sends `unit failed: <name>`.
+- `itqanak-monitor-alert.timer` — every 5 min, `scripts/check-monitoring-alerts.sh`
+  runs the same threshold queries the admin monitoring page uses (worker
+  heartbeat age, outbox pending / oldest / dead-letter, pending-scan backlog,
+  `auth_email_outbox` dead-letter) and sends one consolidated message when a
+  threshold trips. Silent when healthy.
+
+```bash
+# Bot: create with @BotFather, then read the numeric chat id from
+# https://api.telegram.org/bot<token>/getUpdates after messaging it once.
+install -D -m 0600 infra/systemd/itqanak-alert.env.example /etc/itqanak/alert.env
+$EDITOR /etc/itqanak/alert.env   # TELEGRAM_BOT_TOKEN, TELEGRAM_CHAT_ID
+install -m 0644 infra/systemd/itqanak-alert@.service /etc/systemd/system/
+install -m 0644 infra/systemd/itqanak-monitor-alert.{service,timer} /etc/systemd/system/
+systemctl daemon-reload
+systemctl start itqanak-monitor-alert.service   # dry run: should log _ok
+systemctl enable --now itqanak-monitor-alert.timer
+```

@@ -3,6 +3,8 @@ import Redis from "ioredis";
 import { loadConfig, type AppConfig } from "@itqanak/config";
 import { checkDatabaseHealth, closeDatabase, createDatabase, getSchemaStatus } from "@itqanak/db";
 import { createLogger, type Logger } from "@itqanak/observability";
+
+import { sharedWebDatabase, sharedWebRedis } from "./shared-clients";
 import { PlatformOperationsService, type PlatformOperationalState } from "@itqanak/operations";
 import {
   createObjectStorage,
@@ -29,6 +31,48 @@ export async function checkFileScannerReadiness(
   config: FileScanningConfig,
 ): Promise<FileScannerReadiness> {
   return createMalwareScanner(config).checkReadiness();
+}
+
+export interface StartupHealth {
+  readonly healthy: boolean;
+  readonly checks: { readonly database: boolean; readonly redis: boolean };
+}
+
+let cachedStartup: { readonly at: number; readonly value: StartupHealth } | undefined;
+const startupCacheMs = 4_000;
+
+/**
+ * Cheap liveness-plus: the two dependencies whose loss makes every request fail
+ * (Postgres reachable, Redis answering PING), using the process-shared clients
+ * so a probe every few seconds costs almost nothing. Both clients fail fast on
+ * their own connect timeouts. Result is cached briefly so a tight container
+ * healthcheck cannot amplify. Deliberately excludes S3, ClamAV and secret-file
+ * reads -- that is the full `/api/health/ready` probe.
+ */
+export async function checkStartupHealth(): Promise<StartupHealth> {
+  const now = Date.now();
+  if (cachedStartup !== undefined && now - cachedStartup.at < startupCacheMs) {
+    return cachedStartup.value;
+  }
+  const config = loadConfig({
+    serviceName: "web",
+    requirements: { database: true, redis: true, storage: true, fileScanning: true },
+    loadDotenv: process.env.NODE_ENV !== "production",
+  });
+  const checks = { database: false, redis: false };
+  try {
+    checks.database = await checkDatabaseHealth(sharedWebDatabase(config.databaseUrl ?? ""));
+  } catch {
+    checks.database = false;
+  }
+  try {
+    checks.redis = (await sharedWebRedis(config.redisUrl ?? "").ping()) === "PONG";
+  } catch {
+    checks.redis = false;
+  }
+  const value: StartupHealth = { healthy: checks.database && checks.redis, checks };
+  cachedStartup = { at: now, value };
+  return value;
 }
 
 export function plannedFileScannerReadiness(

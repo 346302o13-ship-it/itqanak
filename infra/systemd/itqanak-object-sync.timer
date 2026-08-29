@@ -1,0 +1,11 @@
+[Unit]
+Description=Replicate ITQANAK attachments off-host daily
+
+[Timer]
+OnCalendar=*-*-* 03:15:00 UTC
+Persistent=true
+RandomizedDelaySec=15m
+Unit=itqanak-object-sync.service
+
+[Install]
+WantedBy=timers.target

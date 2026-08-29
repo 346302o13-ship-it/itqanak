@@ -47,6 +47,13 @@ trap 'exit 143' TERM
 backup_dir="${BACKUP_DIR:-$PWD/backups}"
 retention_days="${BACKUP_RETENTION_DAYS:-30}"
 [[ "$retention_days" =~ ^[0-9]+$ ]] || fail "BACKUP_RETENTION_DAYS must be a non-negative integer"
+
+# A local-only backup does not survive host loss. In production the job must
+# refuse to "succeed" without an off-host target unless the operator has
+# explicitly opted out.
+if [[ "${BACKUP_REQUIRE_OFFSITE:-false}" == "true" && -z "${BACKUP_S3_URI:-}" ]]; then
+  fail "BACKUP_REQUIRE_OFFSITE=true but BACKUP_S3_URI is unset; refusing a local-only backup"
+fi
 mkdir -p -m 700 "$backup_dir"
 backup_dir="$(cd "$backup_dir" && pwd -P)"
 [[ "$backup_dir" != "/" ]] || fail "BACKUP_DIR must not be the filesystem root"
@@ -79,10 +86,16 @@ chmod 600 "$backup_path" "$metadata_path"
 find "$backup_dir" -maxdepth 1 -type f -name 'itqanak-postgres-*.dump' -mtime "+${retention_days}" -delete
 find "$backup_dir" -maxdepth 1 -type f -name 'itqanak-postgres-*.dump.metadata.json' -mtime "+${retention_days}" -delete
 
+# Off-host copy. BACKUP_S3_URI is an rclone destination
+# (e.g. "offhost:itqanak-backups/postgres"); the remote is configured out of
+# band via RCLONE_CONFIG_<REMOTE>_* env in /etc/itqanak/backup.env.
 if [[ -n "${BACKUP_S3_URI:-}" ]]; then
-  command -v aws >/dev/null 2>&1 || fail "AWS CLI is required when BACKUP_S3_URI is set"
-  aws s3 cp "$backup_path" "${BACKUP_S3_URI%/}/$backup_name" --only-show-errors
-  aws s3 cp "$metadata_path" "${BACKUP_S3_URI%/}/${backup_name}.metadata.json" --only-show-errors
+  command -v rclone >/dev/null 2>&1 || fail "rclone is required when BACKUP_S3_URI is set"
+  rclone copyto --config /dev/null --cache-dir /tmp "$backup_path" "${BACKUP_S3_URI%/}/$backup_name" \
+    || fail "off-host copy of the dump failed"
+  rclone copyto --config /dev/null --cache-dir /tmp "$metadata_path" "${BACKUP_S3_URI%/}/${backup_name}.metadata.json" \
+    || fail "off-host copy of the metadata failed"
+  log "offsite_copy_completed target=${BACKUP_S3_URI%/}/$backup_name"
 fi
 
 trap - EXIT INT TERM

@@ -1,0 +1,9 @@
+[Unit]
+Description=Send a Telegram alert for a failed ITQANAK unit (%i)
+
+[Service]
+Type=oneshot
+User=root
+Group=root
+EnvironmentFile=/etc/itqanak/alert.env
+ExecStart=/root/itqanak/scripts/notify-telegram.sh "unit failed: %i"

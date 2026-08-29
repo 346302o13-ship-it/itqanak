@@ -19,9 +19,12 @@ import {
   type RequestAuditContext,
 } from "@itqanak/auth";
 import { loadConfig, type AppConfig } from "@itqanak/config";
-import { createDatabase, type DatabaseClient } from "@itqanak/db";
+import { type DatabaseClient } from "@itqanak/db";
 
+import { sharedWebDatabase } from "./shared-clients";
 import { parseUploadContentLength } from "./upload-http";
+
+export { sharedWebDatabase, sharedWebRedis } from "./shared-clients";
 
 export interface AuthRuntime {
   readonly config: AppConfig;
@@ -29,31 +32,6 @@ export interface AuthRuntime {
   readonly auth: AuthService;
   readonly rateLimiter?: RateLimiter;
   close(): Promise<void>;
-}
-
-const webProcess = globalThis as typeof globalThis & {
-  __itqanakWebDatabase?: DatabaseClient;
-  __itqanakWebRedis?: Redis;
-};
-
-function webDatabasePoolMax(): number {
-  const raw = Number(process.env.ITQANAK_WEB_DB_POOL_MAX);
-  return Number.isInteger(raw) && raw >= 2 && raw <= 50 ? raw : 15;
-}
-
-/**
- * One postgres pool for the whole web process. Building a pool — and paying its
- * connect + SCRAM handshake + teardown — per request, every 3–5s poll included,
- * is a sustained connect/auth/disconnect load that a traffic spike or a runaway
- * retry loop turns into max_connections exhaustion for everyone. The pool's own
- * `idle_timeout` reclaims unused connections; it is never ended by request code
- * (a `finally` that ended it could also cut an in-flight streamed response).
- */
-export function sharedWebDatabase(databaseUrl: string): DatabaseClient {
-  webProcess.__itqanakWebDatabase ??= createDatabase(databaseUrl, {
-    maxConnections: webDatabasePoolMax(),
-  });
-  return webProcess.__itqanakWebDatabase;
 }
 
 export function loadWebConfig(): AppConfig {
@@ -100,28 +78,6 @@ function redisForAuth(config: AppConfig): Redis {
     maxRetriesPerRequest: 1,
     retryStrategy: () => null,
   });
-}
-
-/**
- * One Redis connection for the whole web process, used only by the fail-open
- * read/poll throttle (see read-rate-limit.ts). Deliberately separate from the
- * per-request `redisForAuth` connections that gate credential flows: those stay
- * fail-closed and self-heal by reconnecting each request, whereas this shared
- * client reconnects with bounded backoff so a Redis blip cannot wedge it.
- */
-export function sharedWebRedis(redisUrl: string): Redis {
-  if (webProcess.__itqanakWebRedis === undefined) {
-    const client = new Redis(redisUrl, {
-      connectTimeout: 3_000,
-      enableOfflineQueue: false,
-      lazyConnect: true,
-      maxRetriesPerRequest: 1,
-      retryStrategy: (attempt) => Math.min(attempt * 200, 2_000),
-    });
-    client.on("error", () => undefined);
-    webProcess.__itqanakWebRedis = client;
-  }
-  return webProcess.__itqanakWebRedis;
 }
 
 export async function createAuthRuntime(requireRateLimiting = false): Promise<AuthRuntime> {

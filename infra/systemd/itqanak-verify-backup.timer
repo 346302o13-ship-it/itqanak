@@ -1,0 +1,11 @@
+[Unit]
+Description=Verify the newest ITQANAK backup restores cleanly (weekly)
+
+[Timer]
+OnCalendar=Sun *-*-* 04:30:00 UTC
+Persistent=true
+RandomizedDelaySec=20m
+Unit=itqanak-verify-backup.service
+
+[Install]
+WantedBy=timers.target
