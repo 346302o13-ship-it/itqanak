@@ -18,6 +18,7 @@ export interface NormalizedUnifiedMessageInput {
   readonly body?: string;
   readonly requestId?: string;
   readonly attachmentId?: string;
+  readonly replyToMessageId?: string;
   readonly clientMessageId: string;
   readonly fingerprint: string;
 }
@@ -88,6 +89,7 @@ export function normalizeUnifiedMessageInput(
   const contentType = input.contentType;
   const requestId = input.requestId?.trim() || undefined;
   const attachmentId = input.attachmentId?.trim() || undefined;
+  const replyToMessageId = input.replyToMessageId?.trim() || undefined;
   const clientMessageId = input.clientMessageId?.trim() || generatedClientMessageId;
   if (!isUuid(clientMessageId)) throw new RequestDomainError("INVALID_MESSAGE");
   if (requestId !== undefined && !isUuid(requestId)) {
@@ -95,6 +97,9 @@ export function normalizeUnifiedMessageInput(
   }
   if (attachmentId !== undefined && !isUuid(attachmentId)) {
     throw new RequestDomainError("INVALID_MESSAGE_ATTACHMENT");
+  }
+  if (replyToMessageId !== undefined && !isUuid(replyToMessageId)) {
+    throw new RequestDomainError("INVALID_MESSAGE");
   }
   const isText = contentType === "TEXT";
   if ((isText && attachmentId !== undefined) || (!isText && attachmentId === undefined)) {
@@ -106,12 +111,14 @@ export function normalizeUnifiedMessageInput(
     body: body ?? null,
     requestId: requestId ?? null,
     attachmentId: attachmentId ?? null,
+    replyToMessageId: replyToMessageId ?? null,
   });
   return {
     contentType,
     ...(body === undefined ? {} : { body }),
     ...(requestId === undefined ? {} : { requestId }),
     ...(attachmentId === undefined ? {} : { attachmentId }),
+    ...(replyToMessageId === undefined ? {} : { replyToMessageId }),
     clientMessageId,
     fingerprint: resultFingerprint,
   };

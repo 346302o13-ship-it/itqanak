@@ -84,6 +84,7 @@ export function unifiedMessageInput(formData: FormData): SendUnifiedMessageInput
     body: formValue(formData, "body"),
     requestId: formValue(formData, "requestId"),
     attachmentId: formValue(formData, "attachmentId"),
+    replyToMessageId: formValue(formData, "replyToMessageId"),
     clientMessageId: formValue(formData, "clientMessageId"),
   };
 }

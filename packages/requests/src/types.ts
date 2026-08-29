@@ -456,10 +456,18 @@ export interface UnifiedMessage {
   readonly request?: UnifiedRequestSummary;
   readonly attachment?: UnifiedMessageAttachment;
   readonly quote?: ServiceQuote;
+  readonly replyTo?: UnifiedMessageReply;
   readonly clientMessageId?: string;
   readonly metadata: JsonObject;
   readonly status: MessageReceiptStatus;
   readonly sentAt: Date;
+}
+
+export interface UnifiedMessageReply {
+  readonly id: string;
+  readonly body: string;
+  readonly senderType: ChatSenderType;
+  readonly contentType: ChatContentType;
 }
 
 export interface SendUnifiedMessageInput {
@@ -469,6 +477,8 @@ export interface SendUnifiedMessageInput {
   /** ID from unified_conversation_attachments, not a request attachment. */
   readonly attachmentId?: string | null;
   readonly clientMessageId?: string;
+  /** Optional id of an earlier message in the same conversation being replied to. */
+  readonly replyToMessageId?: string | null;
 }
 
 export interface SendUnifiedMessageResult {

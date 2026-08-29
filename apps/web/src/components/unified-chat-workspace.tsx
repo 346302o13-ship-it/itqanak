@@ -70,6 +70,7 @@ interface OutboxEntry {
   readonly clientMessageId: string;
   readonly body: string;
   readonly requestId?: string;
+  readonly replyToMessageId?: string;
   readonly status: "sending" | "failed";
 }
 
@@ -653,6 +654,9 @@ export function UnifiedChatWorkspace({
   const [activeMatch, setActiveMatch] = useState(0);
   const [highlightId, setHighlightId] = useState<string>();
   const searchInputRef = useRef<HTMLInputElement>(null);
+  const [replyingTo, setReplyingTo] = useState<
+    { readonly id: string; readonly body: string; readonly senderType: string } | undefined
+  >(undefined);
 
   const closeContacts = useCallback((restoreFocus = true): void => {
     setContactsOpen(false);
@@ -814,6 +818,17 @@ export function UnifiedChatWorkspace({
       .map((message) => message.id);
   }, [messages, normalizedSearch]);
 
+  const scrollToMessage = useCallback((id: string) => {
+    const node = logRef.current?.querySelector(`[data-mid="${id}"]`);
+    if (node === null || node === undefined) return;
+    node.scrollIntoView({ behavior: "smooth", block: "center" });
+    setHighlightId(id);
+    window.setTimeout(
+      () => setHighlightId((current) => (current === id ? undefined : current)),
+      1_800,
+    );
+  }, []);
+
   const jumpToMatch = useCallback(
     (index: number) => {
       if (searchMatches.length === 0) return;
@@ -821,17 +836,9 @@ export function UnifiedChatWorkspace({
         ((index % searchMatches.length) + searchMatches.length) % searchMatches.length;
       setActiveMatch(bounded);
       const id = searchMatches[bounded];
-      if (id === undefined) return;
-      logRef.current
-        ?.querySelector(`[data-mid="${id}"]`)
-        ?.scrollIntoView({ behavior: "smooth", block: "center" });
-      setHighlightId(id);
-      window.setTimeout(
-        () => setHighlightId((current) => (current === id ? undefined : current)),
-        1_800,
-      );
+      if (id !== undefined) scrollToMessage(id);
     },
-    [searchMatches],
+    [searchMatches, scrollToMessage],
   );
 
   useEffect(() => {
@@ -1211,6 +1218,7 @@ export function UnifiedChatWorkspace({
       contentType: "TEXT",
       body: entry.body,
       ...(entry.requestId === undefined ? {} : { requestId: entry.requestId }),
+      ...(entry.replyToMessageId === undefined ? {} : { replyToMessageId: entry.replyToMessageId }),
     });
     try {
       const response = await fetch(`${apiBase}/messages`, {
@@ -1250,10 +1258,12 @@ export function UnifiedChatWorkspace({
       clientMessageId: crypto.randomUUID(),
       body: normalized,
       ...(linkedRequestId === undefined ? {} : { requestId: linkedRequestId }),
+      ...(replyingTo === undefined ? {} : { replyToMessageId: replyingTo.id }),
       status: "sending",
     };
     setOutbox((current) => [...current, entry]);
     setBody("");
+    setReplyingTo(undefined);
     setNotice(undefined);
     nearBottom.current = true;
     window.requestAnimationFrame(() =>
@@ -2412,6 +2422,28 @@ export function UnifiedChatWorkspace({
                               </bdi>
                             </button>
                           )}
+                          {message.replyTo === undefined ? null : (
+                            <button
+                              className={`mb-1.5 block w-full max-w-full rounded-lg border-s-2 px-2 py-1 text-start text-[11px] leading-5 ${
+                                mine
+                                  ? "border-white/40 bg-white/10 text-white/85"
+                                  : "border-[var(--itq-color-brand-400)] bg-[var(--itq-color-surface-soft)] text-[var(--itq-color-muted)]"
+                              }`}
+                              onClick={() => {
+                                if (message.replyTo !== undefined)
+                                  scrollToMessage(message.replyTo.id);
+                              }}
+                              type="button"
+                            >
+                              <span className="block truncate" dir="auto">
+                                {message.replyTo.contentType === "TEXT"
+                                  ? message.replyTo.body
+                                  : english
+                                    ? "Attachment"
+                                    : "مرفق"}
+                              </span>
+                            </button>
+                          )}
                           {message.attachment === undefined || apiBase === undefined ? null : (
                             <AttachmentBody
                               apiBase={apiBase}
@@ -2431,6 +2463,26 @@ export function UnifiedChatWorkspace({
                               mine ? "text-white/70" : "text-[var(--itq-color-muted)]"
                             }`}
                           >
+                            <button
+                              className={`me-auto rounded px-1.5 py-0.5 font-black ${
+                                mine ? "hover:bg-white/15" : "hover:bg-[var(--itq-color-brand-50)]"
+                              }`}
+                              onClick={() =>
+                                setReplyingTo({
+                                  id: message.id,
+                                  body:
+                                    message.contentType === "TEXT"
+                                      ? message.body
+                                      : english
+                                        ? "Attachment"
+                                        : "مرفق",
+                                  senderType: message.senderType,
+                                })
+                              }
+                              type="button"
+                            >
+                              {english ? "Reply" : "رد"}
+                            </button>
                             <time dateTime={message.sentAt.toISOString()}>
                               {formatMessageTime(message.sentAt, locale)}
                             </time>
@@ -2524,6 +2576,49 @@ export function UnifiedChatWorkspace({
               </span>
               <button className="underline" onClick={() => void toggleRecording()} type="button">
                 {english ? "Stop & send" : "إيقاف وإرسال"}
+              </button>
+            </div>
+          ) : null}
+          {replyingTo !== undefined ? (
+            <div className="mb-2 flex items-start justify-between gap-2 rounded-xl border-s-4 border-[var(--itq-color-brand-500)] bg-[var(--itq-color-surface-soft)] px-3 py-2 text-xs">
+              <button
+                className="min-w-0 flex-1 text-start"
+                onClick={() => scrollToMessage(replyingTo.id)}
+                type="button"
+              >
+                <span className="block font-black text-[var(--itq-color-brand-700)]">
+                  {english ? "Replying to" : "ردًّا على"}{" "}
+                  {replyingTo.senderType === "STUDENT"
+                    ? mode === "admin"
+                      ? english
+                        ? "the student"
+                        : "الطالب"
+                      : english
+                        ? "you"
+                        : "رسالتك"
+                    : replyingTo.senderType === "ADMIN"
+                      ? mode === "admin"
+                        ? english
+                          ? "you"
+                          : "رسالتك"
+                        : english
+                          ? "the team"
+                          : "الإدارة"
+                      : english
+                        ? "a system message"
+                        : "رسالة نظام"}
+                </span>
+                <span className="mt-0.5 block truncate text-[var(--itq-color-muted)]" dir="auto">
+                  {replyingTo.body}
+                </span>
+              </button>
+              <button
+                aria-label={english ? "Cancel reply" : "إلغاء الرد"}
+                className="shrink-0 rounded-lg p-1 text-[var(--itq-color-muted)] hover:bg-white"
+                onClick={() => setReplyingTo(undefined)}
+                type="button"
+              >
+                <CloseIcon className="size-4" />
               </button>
             </div>
           ) : null}

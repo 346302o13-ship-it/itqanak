@@ -145,6 +145,7 @@ export {
   type UnifiedHumanContentType,
   type UnifiedMessage,
   type UnifiedMessageAttachment,
+  type UnifiedMessageReply,
   type UnifiedMessageListInput,
   type UnifiedMessageListResult,
   type UnifiedRequestSummary,

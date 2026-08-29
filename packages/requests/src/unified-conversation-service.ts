@@ -83,6 +83,10 @@ interface MessageRow {
   readonly metadata: unknown;
   readonly message_status: string;
   readonly sent_at: Date | string;
+  readonly reply_to_message_id: string | null;
+  readonly reply_body: string | null;
+  readonly reply_sender_type: string | null;
+  readonly reply_content_type: string | null;
   readonly request_id: string | null;
   readonly request_number: string | null;
   readonly request_title: string | null;
@@ -149,7 +153,9 @@ const messageSelect = `
   messages.id, messages.conversation_id, messages.sender_type, messages.sender_user_id,
   senders.display_name AS sender_display_name, messages.content_type, messages.body,
   messages.client_message_id, messages.client_payload_fingerprint, messages.metadata,
-  messages.sent_at,
+  messages.sent_at, messages.reply_to_message_id,
+  reply_target.body AS reply_body, reply_target.sender_type AS reply_sender_type,
+  reply_target.content_type AS reply_content_type,
   CASE
     WHEN EXISTS (
       SELECT 1 FROM support_message_receipts AS receipts
@@ -439,6 +445,19 @@ function toMessage(row: MessageRow): UnifiedMessage {
           },
         }),
     ...(quote === undefined ? {} : { quote }),
+    ...(row.reply_to_message_id === null ||
+    row.reply_body === null ||
+    row.reply_sender_type === null ||
+    row.reply_content_type === null
+      ? {}
+      : {
+          replyTo: {
+            id: row.reply_to_message_id,
+            body: row.reply_body,
+            senderType: toSenderType(row.reply_sender_type),
+            contentType: toContentType(row.reply_content_type),
+          },
+        }),
     ...(row.client_message_id === null ? {} : { clientMessageId: row.client_message_id }),
     metadata: toJsonObject(row.metadata),
     status: toReceiptStatus(row.message_status),
@@ -626,6 +645,7 @@ export class UnifiedConversationService {
            LEFT JOIN service_request_attachments AS legacy_attachments
              ON legacy_attachments.id = messages.legacy_request_attachment_id
            LEFT JOIN service_quotes AS quotes ON quotes.id = messages.quote_id
+           LEFT JOIN support_messages AS reply_target ON reply_target.id = messages.reply_to_message_id
            WHERE messages.conversation_id = $1
              AND (messages.sent_at, messages.id) > ($2, $3)
            ORDER BY messages.sent_at ASC, messages.id ASC
@@ -659,6 +679,7 @@ export class UnifiedConversationService {
          LEFT JOIN service_request_attachments AS legacy_attachments
            ON legacy_attachments.id = messages.legacy_request_attachment_id
          LEFT JOIN service_quotes AS quotes ON quotes.id = messages.quote_id
+           LEFT JOIN support_messages AS reply_target ON reply_target.id = messages.reply_to_message_id
          WHERE messages.conversation_id = $1
          ORDER BY messages.sent_at DESC, messages.id DESC
          LIMIT $2 OFFSET $3`,
@@ -734,14 +755,24 @@ export class UnifiedConversationService {
       }
       if (messageBody === undefined) throw new RequestDomainError("INVALID_MESSAGE");
 
+      if (normalized.replyToMessageId !== undefined) {
+        const target = await tx<{ readonly id: string }[]>`
+          SELECT id FROM support_messages
+          WHERE id = ${normalized.replyToMessageId} AND conversation_id = ${access.row.id}
+          LIMIT 1
+        `;
+        if (target[0] === undefined) throw new RequestDomainError("INVALID_MESSAGE");
+      }
+
       const inserted = await tx<{ readonly id: string }[]>`
         INSERT INTO support_messages (
           conversation_id, sender_type, sender_user_id, content_type, body,
-          attachment_id, client_message_id, client_payload_fingerprint, request_id
+          attachment_id, client_message_id, client_payload_fingerprint, request_id,
+          reply_to_message_id
         ) VALUES (
           ${access.row.id}, ${access.mode}, ${principal.userId}, ${normalized.contentType},
           ${messageBody}, ${normalized.attachmentId ?? null}, ${normalized.clientMessageId},
-          ${normalized.fingerprint}, ${requestId ?? null}
+          ${normalized.fingerprint}, ${requestId ?? null}, ${normalized.replyToMessageId ?? null}
         )
         ON CONFLICT (conversation_id, sender_user_id, client_message_id)
           WHERE sender_user_id IS NOT NULL AND client_message_id IS NOT NULL
@@ -845,6 +876,7 @@ export class UnifiedConversationService {
        LEFT JOIN service_request_attachments AS legacy_attachments
          ON legacy_attachments.id = messages.legacy_request_attachment_id
        LEFT JOIN service_quotes AS quotes ON quotes.id = messages.quote_id
+           LEFT JOIN support_messages AS reply_target ON reply_target.id = messages.reply_to_message_id
        WHERE messages.id = $1 LIMIT 1`,
       [messageId],
     );
