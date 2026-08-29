@@ -33,6 +33,7 @@ import {
   ArrowIcon,
   CheckCheckIcon,
   CheckIcon,
+  ChevronIcon,
   CloseIcon,
   MessageIcon,
   MicIcon,
@@ -647,6 +648,11 @@ export function UnifiedChatWorkspace({
   const [newMessagesAvailable, setNewMessagesAvailable] = useState(false);
   const [contactsOpen, setContactsOpen] = useState(conversation === undefined);
   const [detailsOpen, setDetailsOpen] = useState(false);
+  const [searchOpen, setSearchOpen] = useState(false);
+  const [searchTerm, setSearchTerm] = useState("");
+  const [activeMatch, setActiveMatch] = useState(0);
+  const [highlightId, setHighlightId] = useState<string>();
+  const searchInputRef = useRef<HTMLInputElement>(null);
 
   const closeContacts = useCallback((restoreFocus = true): void => {
     setContactsOpen(false);
@@ -794,6 +800,53 @@ export function UnifiedChatWorkspace({
         )?.id,
     [messages, mode],
   );
+
+  const normalizedSearch = searchTerm.trim().toLowerCase();
+  const searchMatches = useMemo(() => {
+    if (normalizedSearch.length < 2) return [] as string[];
+    return messages
+      .filter(
+        (message) =>
+          message.contentType === "TEXT" &&
+          typeof message.body === "string" &&
+          message.body.toLowerCase().includes(normalizedSearch),
+      )
+      .map((message) => message.id);
+  }, [messages, normalizedSearch]);
+
+  const jumpToMatch = useCallback(
+    (index: number) => {
+      if (searchMatches.length === 0) return;
+      const bounded =
+        ((index % searchMatches.length) + searchMatches.length) % searchMatches.length;
+      setActiveMatch(bounded);
+      const id = searchMatches[bounded];
+      if (id === undefined) return;
+      logRef.current
+        ?.querySelector(`[data-mid="${id}"]`)
+        ?.scrollIntoView({ behavior: "smooth", block: "center" });
+      setHighlightId(id);
+      window.setTimeout(
+        () => setHighlightId((current) => (current === id ? undefined : current)),
+        1_800,
+      );
+    },
+    [searchMatches],
+  );
+
+  useEffect(() => {
+    if (searchOpen) window.requestAnimationFrame(() => searchInputRef.current?.focus());
+  }, [searchOpen]);
+
+  // Jump to the first hit when the term changes, but never yank the scroll on a
+  // later poll that only changed the match set.
+  const lastSearchRef = useRef(normalizedSearch);
+  useEffect(() => {
+    if (lastSearchRef.current === normalizedSearch) return;
+    lastSearchRef.current = normalizedSearch;
+    if (searchMatches.length > 0) jumpToMatch(0);
+    else setActiveMatch(0);
+  }, [normalizedSearch, searchMatches, jumpToMatch]);
 
   useEffect(() => {
     if (apiBase === undefined || csrfToken === undefined || latestIncomingId === undefined) return;
@@ -2066,6 +2119,20 @@ export function UnifiedChatWorkspace({
               <ShieldCheckIcon className="size-3.5" /> {english ? "Secure" : "آمنة"}
             </span>
             <button
+              aria-expanded={searchOpen}
+              aria-label={english ? "Search this conversation" : "البحث في المحادثة"}
+              className={`grid size-10 place-items-center rounded-xl border border-[var(--itq-color-border)] hover:bg-[var(--itq-color-brand-50)] ${
+                searchOpen ? "bg-[var(--itq-color-brand-50)] text-[var(--itq-color-brand-800)]" : ""
+              }`}
+              onClick={() => {
+                setSearchOpen((value) => !value);
+                if (searchOpen) setSearchTerm("");
+              }}
+              type="button"
+            >
+              <SearchIcon className="size-5" />
+            </button>
+            <button
               aria-controls={detailsPanelId}
               aria-expanded={detailsOpen}
               aria-haspopup="dialog"
@@ -2087,6 +2154,58 @@ export function UnifiedChatWorkspace({
             </button>
           </div>
         </header>
+
+        {searchOpen ? (
+          <div className="flex shrink-0 items-center gap-2 border-b border-[var(--itq-color-border)] bg-white px-3 py-2 sm:px-5">
+            <div className="relative flex-1">
+              <SearchIcon className="pointer-events-none absolute start-3 top-1/2 size-4 -translate-y-1/2 text-[var(--itq-color-muted)]" />
+              <input
+                className="w-full rounded-xl border border-[var(--itq-color-border)] bg-white py-2 pe-3 ps-9 text-sm outline-none focus:border-[var(--itq-color-brand-500)] focus:ring-2 focus:ring-[var(--itq-color-brand-100)]"
+                onChange={(event) => setSearchTerm(event.target.value)}
+                onKeyDown={(event) => {
+                  if (event.key === "Enter") {
+                    event.preventDefault();
+                    jumpToMatch(activeMatch + (event.shiftKey ? -1 : 1));
+                  } else if (event.key === "Escape") {
+                    setSearchOpen(false);
+                    setSearchTerm("");
+                  }
+                }}
+                placeholder={english ? "Search messages…" : "ابحث في الرسائل…"}
+                ref={searchInputRef}
+                type="search"
+                value={searchTerm}
+              />
+            </div>
+            <span className="min-w-14 text-center text-xs font-bold tabular-nums text-[var(--itq-color-muted)]">
+              {normalizedSearch.length < 2
+                ? ""
+                : searchMatches.length === 0
+                  ? english
+                    ? "None"
+                    : "لا شيء"
+                  : `${activeMatch + 1}/${searchMatches.length}`}
+            </span>
+            <button
+              aria-label={english ? "Previous match" : "النتيجة السابقة"}
+              className="grid size-9 place-items-center rounded-lg border border-[var(--itq-color-border)] disabled:opacity-40"
+              disabled={searchMatches.length === 0}
+              onClick={() => jumpToMatch(activeMatch - 1)}
+              type="button"
+            >
+              <ChevronIcon className="size-4 -rotate-90" />
+            </button>
+            <button
+              aria-label={english ? "Next match" : "النتيجة التالية"}
+              className="grid size-9 place-items-center rounded-lg border border-[var(--itq-color-border)] disabled:opacity-40"
+              disabled={searchMatches.length === 0}
+              onClick={() => jumpToMatch(activeMatch + 1)}
+              type="button"
+            >
+              <ChevronIcon className="size-4 rotate-90" />
+            </button>
+          </div>
+        ) : null}
 
         {selectedRequest === undefined ? null : (
           <div className="flex shrink-0 items-center justify-between gap-3 border-b border-[var(--itq-color-border)] bg-white/90 px-4 py-2 text-xs">
@@ -2250,12 +2369,19 @@ export function UnifiedChatWorkspace({
                         </article>
                       </li>
                     ) : (
-                      <li className={`flex ${mine ? "justify-end" : "justify-start"}`}>
+                      <li
+                        className={`flex ${mine ? "justify-end" : "justify-start"}`}
+                        data-mid={message.id}
+                      >
                         <article
-                          className={`max-w-[88%] rounded-2xl px-3.5 py-2.5 shadow-sm sm:max-w-[72%] sm:px-4 ${
+                          className={`max-w-[88%] rounded-2xl px-3.5 py-2.5 shadow-sm transition sm:max-w-[72%] sm:px-4 ${
                             mine
                               ? "rounded-ee-sm bg-[var(--itq-color-brand-700)] text-white"
                               : "rounded-es-sm border border-[var(--itq-color-border)] bg-white text-[var(--itq-color-ink)]"
+                          } ${
+                            highlightId === message.id
+                              ? "ring-2 ring-amber-400 ring-offset-2 ring-offset-[#f4f8f7]"
+                              : ""
                           }`}
                         >
                           {!mine ? (
