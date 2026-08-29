@@ -206,7 +206,7 @@ export default async function RegisterPage({ searchParams }: RegisterPageProps) 
             <span>
               أوافق على{" "}
               <Link
-                className="font-black text-[var(--itq-color-brand-700)] underline underline-offset-4"
+                className="font-black text-[var(--itq-color-brand-strong)] underline underline-offset-4"
                 href="/ar/terms"
                 rel="noopener"
                 target="_blank"
@@ -221,7 +221,7 @@ export default async function RegisterPage({ searchParams }: RegisterPageProps) 
             <span>
               أوافق على{" "}
               <Link
-                className="font-black text-[var(--itq-color-brand-700)] underline underline-offset-4"
+                className="font-black text-[var(--itq-color-brand-strong)] underline underline-offset-4"
                 href="/ar/privacy"
                 rel="noopener"
                 target="_blank"
@@ -239,7 +239,7 @@ export default async function RegisterPage({ searchParams }: RegisterPageProps) 
       <p className="mt-6 text-center text-sm text-[var(--itq-color-muted)]">
         لديك حساب؟{" "}
         <Link
-          className="font-bold text-[var(--itq-color-brand-700)] underline"
+          className="font-bold text-[var(--itq-color-brand-strong)] underline"
           href="/ar/auth/login"
         >
           سجّل الدخول

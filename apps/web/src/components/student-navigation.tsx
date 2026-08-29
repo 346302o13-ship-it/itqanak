@@ -86,7 +86,7 @@ export function StudentNavigation({ locale = "ar" }: Readonly<{ locale?: "ar" | 
             aria-current={active ? "page" : undefined}
             className={`group relative flex min-h-12 items-center gap-3 rounded-2xl px-3.5 text-sm font-extrabold transition ${
               active
-                ? "bg-[var(--itq-color-brand-50)] text-[var(--itq-color-brand-800)]"
+                ? "bg-[var(--itq-color-brand-50)] text-[var(--itq-color-brand-strong)]"
                 : "text-[var(--itq-color-muted)] hover:bg-[var(--itq-color-surface-soft)] hover:text-[var(--itq-color-ink)]"
             }`}
             href={item.href}
@@ -95,8 +95,8 @@ export function StudentNavigation({ locale = "ar" }: Readonly<{ locale?: "ar" | 
             <span
               className={`grid size-9 place-items-center rounded-xl transition ${
                 active
-                  ? "bg-[var(--itq-color-surface)] text-[var(--itq-color-brand-700)] shadow-sm"
-                  : "text-[var(--itq-color-muted)] group-hover:text-[var(--itq-color-brand-700)]"
+                  ? "bg-[var(--itq-color-surface)] text-[var(--itq-color-brand-strong)] shadow-sm"
+                  : "text-[var(--itq-color-muted)] group-hover:text-[var(--itq-color-brand-strong)]"
               }`}
             >
               <ItemIcon className="size-5" />

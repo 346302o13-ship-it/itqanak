@@ -128,7 +128,7 @@ export function LandingPage({
         <div className="relative flex min-h-[35rem] items-center px-6 py-10 sm:px-10 lg:w-[58%] lg:px-14 lg:py-16">
           <div>
             <div className="flex flex-wrap items-center gap-3">
-              <span className="inline-flex items-center gap-2 rounded-full bg-white/80 px-4 py-2 text-sm font-black text-[var(--itq-color-brand-800)] shadow-sm backdrop-blur">
+              <span className="inline-flex items-center gap-2 rounded-full bg-white/80 px-4 py-2 text-sm font-black text-[var(--itq-color-brand-strong)] shadow-sm backdrop-blur">
                 <MarketingIcon className="size-4" name="sparkles" />
                 {copy.hero.eyebrow}
               </span>
@@ -139,7 +139,7 @@ export function LandingPage({
             </div>
             <h1 className="mt-7 max-w-3xl text-4xl font-black leading-[1.25] tracking-tight text-[var(--itq-color-ink)] sm:text-5xl lg:text-[3.5rem]">
               {copy.hero.title}{" "}
-              <span className="text-[var(--itq-color-brand-700)]">
+              <span className="text-[var(--itq-color-brand-strong)]">
                 {copy.hero.highlightedTitle}
               </span>
             </h1>
@@ -164,7 +164,7 @@ export function LandingPage({
               {copy.trustItems.slice(0, 3).map((item) => (
                 <span className="inline-flex items-center gap-2" key={item.title}>
                   <MarketingIcon
-                    className="size-4 text-[var(--itq-color-brand-700)]"
+                    className="size-4 text-[var(--itq-color-brand-strong)]"
                     name="check"
                   />
                   {item.title}
@@ -196,7 +196,7 @@ export function LandingPage({
               )}
               key={item.title}
             >
-              <span className="inline-flex size-11 shrink-0 items-center justify-center rounded-2xl bg-[var(--itq-color-brand-50)] text-[var(--itq-color-brand-700)]">
+              <span className="inline-flex size-11 shrink-0 items-center justify-center rounded-2xl bg-[var(--itq-color-brand-50)] text-[var(--itq-color-brand-strong)]">
                 <MarketingIcon className="size-5" name={item.icon} />
               </span>
               <div>
@@ -221,7 +221,7 @@ export function LandingPage({
             titleId="services-preview-title"
           />
           <Link
-            className="inline-flex min-h-11 w-fit items-center rounded-xl border border-[var(--itq-color-border-strong)] bg-[var(--itq-color-surface)] px-5 py-2 text-sm font-black text-[var(--itq-color-brand-800)] shadow-sm hover:bg-[var(--itq-color-brand-50)]"
+            className="inline-flex min-h-11 w-fit items-center rounded-xl border border-[var(--itq-color-border-strong)] bg-[var(--itq-color-surface)] px-5 py-2 text-sm font-black text-[var(--itq-color-brand-strong)] shadow-sm hover:bg-[var(--itq-color-brand-50)]"
             href={`${prefix}/services`}
           >
             {copy.services.allCta}
@@ -236,7 +236,7 @@ export function LandingPage({
               title={service.title}
             >
               <Link
-                className="mt-5 inline-flex min-h-11 items-center text-sm font-black text-[var(--itq-color-brand-700)] underline decoration-[var(--itq-color-brand-200)] decoration-2 underline-offset-8 hover:text-[var(--itq-color-brand-800)]"
+                className="mt-5 inline-flex min-h-11 items-center text-sm font-black text-[var(--itq-color-brand-strong)] underline decoration-[var(--itq-color-brand-200)] decoration-2 underline-offset-8 hover:text-[var(--itq-color-brand-strong)]"
                 href={
                   service.slug === undefined
                     ? `${prefix}/services`
@@ -284,7 +284,7 @@ export function LandingPage({
           <ul className="mt-7 grid gap-4">
             {copy.portal.points.map((point) => (
               <li className="flex items-start gap-3 font-bold leading-7" key={point}>
-                <span className="mt-0.5 inline-flex size-7 shrink-0 items-center justify-center rounded-full bg-[var(--itq-color-brand-50)] text-[var(--itq-color-brand-700)]">
+                <span className="mt-0.5 inline-flex size-7 shrink-0 items-center justify-center rounded-full bg-[var(--itq-color-brand-50)] text-[var(--itq-color-brand-strong)]">
                   <MarketingIcon className="size-4" name="check" />
                 </span>
                 {point}

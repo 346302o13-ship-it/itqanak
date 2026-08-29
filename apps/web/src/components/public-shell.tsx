@@ -156,7 +156,7 @@ export function PublicShell({
               className={classNames(
                 "rounded-xl px-4 py-3 transition hover:bg-[var(--itq-color-surface)]",
                 active === "services" &&
-                  "bg-[var(--itq-color-surface)] text-[var(--itq-color-brand-700)] shadow-[var(--itq-shadow-sm)]",
+                  "bg-[var(--itq-color-surface)] text-[var(--itq-color-brand-strong)] shadow-[var(--itq-shadow-sm)]",
               )}
               href={`${prefix}/services`}
             >
@@ -186,7 +186,7 @@ export function PublicShell({
             <InstallAppButton compact locale={locale} surface="public" />
             <Link
               aria-label={copy.languageLabel}
-              className="inline-flex size-11 items-center justify-center rounded-xl border border-[var(--itq-color-border)] bg-[var(--itq-color-surface)] text-xs font-black text-[var(--itq-color-brand-800)] shadow-sm transition hover:bg-[var(--itq-color-brand-50)]"
+              className="inline-flex size-11 items-center justify-center rounded-xl border border-[var(--itq-color-border)] bg-[var(--itq-color-surface)] text-xs font-black text-[var(--itq-color-brand-strong)] shadow-sm transition hover:bg-[var(--itq-color-brand-50)]"
               href={oppositeHref}
               hrefLang={oppositeLocale}
               lang={oppositeLocale}
@@ -224,7 +224,7 @@ export function PublicShell({
             <ul className="mt-4 grid gap-3 text-sm font-bold text-[var(--itq-color-muted)]">
               <li>
                 <Link
-                  className="hover:text-[var(--itq-color-brand-700)]"
+                  className="hover:text-[var(--itq-color-brand-strong)]"
                   href={`${prefix}/services`}
                 >
                   {copy.servicesLabel}
@@ -232,14 +232,14 @@ export function PublicShell({
               </li>
               <li>
                 <Link
-                  className="hover:text-[var(--itq-color-brand-700)]"
+                  className="hover:text-[var(--itq-color-brand-strong)]"
                   href={`${prefix}#how-it-works`}
                 >
                   {copy.processLabel}
                 </Link>
               </li>
               <li>
-                <Link className="hover:text-[var(--itq-color-brand-700)]" href={`${prefix}#faq`}>
+                <Link className="hover:text-[var(--itq-color-brand-strong)]" href={`${prefix}#faq`}>
                   {copy.faqLabel}
                 </Link>
               </li>
@@ -250,7 +250,7 @@ export function PublicShell({
             <ul className="mt-4 grid gap-3 text-sm font-bold text-[var(--itq-color-muted)]">
               <li>
                 <Link
-                  className="hover:text-[var(--itq-color-brand-700)]"
+                  className="hover:text-[var(--itq-color-brand-strong)]"
                   href={`${prefix}/auth/login`}
                 >
                   {copy.loginLabel}
@@ -258,7 +258,7 @@ export function PublicShell({
               </li>
               <li>
                 <Link
-                  className="hover:text-[var(--itq-color-brand-700)]"
+                  className="hover:text-[var(--itq-color-brand-strong)]"
                   href={`${prefix}/student`}
                 >
                   {copy.studentPortalLabel}
@@ -266,7 +266,7 @@ export function PublicShell({
               </li>
               <li>
                 <a
-                  className="hover:text-[var(--itq-color-brand-700)]"
+                  className="hover:text-[var(--itq-color-brand-strong)]"
                   href={adminLoginHref(locale)}
                 >
                   {copy.adminPortalLabel}
@@ -274,7 +274,7 @@ export function PublicShell({
               </li>
               <li>
                 <Link
-                  className="hover:text-[var(--itq-color-brand-700)]"
+                  className="hover:text-[var(--itq-color-brand-strong)]"
                   href={`${prefix}/student/requests/new`}
                 >
                   {copy.newRequestLabel}
@@ -308,13 +308,13 @@ export function PublicShell({
             </p>
             <nav aria-label={copy.footerLegalTitle} className="flex flex-wrap items-center gap-4">
               <Link
-                className="underline-offset-4 hover:text-[var(--itq-color-brand-700)] hover:underline"
+                className="underline-offset-4 hover:text-[var(--itq-color-brand-strong)] hover:underline"
                 href={`${prefix}/terms`}
               >
                 {copy.termsLabel}
               </Link>
               <Link
-                className="underline-offset-4 hover:text-[var(--itq-color-brand-700)] hover:underline"
+                className="underline-offset-4 hover:text-[var(--itq-color-brand-strong)] hover:underline"
                 href={`${prefix}/privacy`}
               >
                 {copy.privacyLabel}

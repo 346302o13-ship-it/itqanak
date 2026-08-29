@@ -32,6 +32,10 @@
   --itq-color-brand-800: #07544f;
   --itq-color-brand-900: #073f3c;
   --itq-color-brand-950: #052e2b;
+  /* Foreground brand: standalone accent text and icons, and text on a
+     brand tint. Lifts to a mid-teal in dark so it reads on a dark surface;
+     the ramp above stays dark for solid button / hero backgrounds. */
+  --itq-color-brand-strong: #086a63;
 
   --itq-color-accent-50: #fff8e9;
   --itq-color-accent-200: #f2d69c;
@@ -125,16 +129,17 @@
     --itq-color-ink-deep: #0c1d24;
 
     --itq-color-brand-50: #0f2c28;
-    --itq-color-brand-100: #153a34;
-    --itq-color-brand-200: #1d514a;
-    --itq-color-brand-300: #2f7a70;
-    --itq-color-brand-400: #38948a;
-    --itq-color-brand-500: #22a597;
-    --itq-color-brand-600: #1c9c8d;
-    --itq-color-brand-700: #23a294;
-    --itq-color-brand-800: #2cad9d;
-    --itq-color-brand-900: #56c3b6;
-    --itq-color-brand-950: #7fd3c8;
+    --itq-color-brand-100: #163a34;
+    --itq-color-brand-200: #24544c;
+    --itq-color-brand-300: #327f74;
+    --itq-color-brand-400: #3fa99b;
+    --itq-color-brand-500: #1a9184;
+    --itq-color-brand-600: #128276;
+    --itq-color-brand-700: #0a7269;
+    --itq-color-brand-800: #07544f;
+    --itq-color-brand-900: #0a4b46;
+    --itq-color-brand-950: #063733;
+    --itq-color-brand-strong: #3fbdad;
 
     --itq-color-accent-50: #2a2213;
     --itq-color-accent-200: #f2d69c;
@@ -214,16 +219,17 @@
   --itq-color-ink-deep: #0c1d24;
 
   --itq-color-brand-50: #0f2c28;
-  --itq-color-brand-100: #153a34;
-  --itq-color-brand-200: #1d514a;
-  --itq-color-brand-300: #2f7a70;
-  --itq-color-brand-400: #38948a;
-  --itq-color-brand-500: #22a597;
-  --itq-color-brand-600: #1c9c8d;
-  --itq-color-brand-700: #23a294;
-  --itq-color-brand-800: #2cad9d;
-  --itq-color-brand-900: #56c3b6;
-  --itq-color-brand-950: #7fd3c8;
+  --itq-color-brand-100: #163a34;
+  --itq-color-brand-200: #24544c;
+  --itq-color-brand-300: #327f74;
+  --itq-color-brand-400: #3fa99b;
+  --itq-color-brand-500: #1a9184;
+  --itq-color-brand-600: #128276;
+  --itq-color-brand-700: #0a7269;
+  --itq-color-brand-800: #07544f;
+  --itq-color-brand-900: #0a4b46;
+  --itq-color-brand-950: #063733;
+  --itq-color-brand-strong: #3fbdad;
 
   --itq-color-accent-50: #2a2213;
   --itq-color-accent-200: #f2d69c;

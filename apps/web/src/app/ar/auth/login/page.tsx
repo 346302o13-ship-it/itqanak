@@ -117,7 +117,7 @@ export default async function LoginPage({ searchParams }: LoginPageProps) {
               كلمة المرور
             </label>
             <Link
-              className="text-xs font-bold text-[var(--itq-color-brand-700)] underline"
+              className="text-xs font-bold text-[var(--itq-color-brand-strong)] underline"
               href="/ar/auth/forgot-password"
             >
               مشكلة في الدخول؟
@@ -141,7 +141,7 @@ export default async function LoginPage({ searchParams }: LoginPageProps) {
         <p className="mt-6 text-center text-sm text-[var(--itq-color-muted)]">
           ليس لديك حساب؟{" "}
           <Link
-            className="font-bold text-[var(--itq-color-brand-700)] underline"
+            className="font-bold text-[var(--itq-color-brand-strong)] underline"
             href="/ar/auth/register"
           >
             أنشئ حساباً
@@ -151,7 +151,7 @@ export default async function LoginPage({ searchParams }: LoginPageProps) {
       <p className="mt-3 text-center text-sm">
         أنت مدير؟{" "}
         <a
-          className="font-bold text-[var(--itq-color-brand-700)] underline"
+          className="font-bold text-[var(--itq-color-brand-strong)] underline"
           href={adminLoginHref("ar")}
         >
           ادخل إلى مركز الإدارة

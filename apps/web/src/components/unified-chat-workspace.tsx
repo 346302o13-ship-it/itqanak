@@ -436,7 +436,7 @@ function AttachmentBody({
           className="flex min-h-14 items-center gap-3 rounded-xl border border-current/15 bg-[var(--itq-color-surface)]/70 p-3 font-black text-[var(--itq-color-ink)] no-underline"
           href={download}
         >
-          <span className="grid size-10 shrink-0 place-items-center rounded-xl bg-[var(--itq-color-brand-50)] text-[var(--itq-color-brand-700)]">
+          <span className="grid size-10 shrink-0 place-items-center rounded-xl bg-[var(--itq-color-brand-50)] text-[var(--itq-color-brand-strong)]">
             <PaperclipIcon className="size-5" />
           </span>
           <span className="min-w-0">
@@ -1894,7 +1894,7 @@ export function UnifiedChatWorkspace({
               </p>
               {mode === "student" ? (
                 <Link
-                  className="mt-3 inline-block text-xs font-black text-[var(--itq-color-brand-700)] underline"
+                  className="mt-3 inline-block text-xs font-black text-[var(--itq-color-brand-strong)] underline"
                   href={`/${locale}/student/requests/new`}
                 >
                   {english ? "Create a request" : "إنشاء طلب"}
@@ -2125,7 +2125,7 @@ export function UnifiedChatWorkspace({
         </aside>
         <main className="hidden place-items-center bg-[var(--itq-color-surface-soft)] p-8 text-center lg:grid">
           <div className="max-w-sm">
-            <span className="mx-auto grid size-20 place-items-center rounded-full bg-[var(--itq-color-surface)] text-[var(--itq-color-brand-700)] shadow-sm">
+            <span className="mx-auto grid size-20 place-items-center rounded-full bg-[var(--itq-color-surface)] text-[var(--itq-color-brand-strong)] shadow-sm">
               <MessageIcon className="size-9" />
             </span>
             <h1 className="mt-5 text-2xl font-black">
@@ -2244,7 +2244,9 @@ export function UnifiedChatWorkspace({
               aria-expanded={searchOpen}
               aria-label={english ? "Search this conversation" : "البحث في المحادثة"}
               className={`grid size-10 place-items-center rounded-xl border border-[var(--itq-color-border)] hover:bg-[var(--itq-color-brand-50)] ${
-                searchOpen ? "bg-[var(--itq-color-brand-50)] text-[var(--itq-color-brand-800)]" : ""
+                searchOpen
+                  ? "bg-[var(--itq-color-brand-50)] text-[var(--itq-color-brand-strong)]"
+                  : ""
               }`}
               onClick={() => {
                 setSearchOpen((value) => !value);
@@ -2340,7 +2342,7 @@ export function UnifiedChatWorkspace({
               }}
               type="button"
             >
-              <span className="shrink-0 font-black text-[var(--itq-color-brand-700)]">
+              <span className="shrink-0 font-black text-[var(--itq-color-brand-strong)]">
                 {english ? "Linked:" : "مرتبط:"}
               </span>
               <bdi className="truncate font-bold" dir="auto">
@@ -2401,7 +2403,7 @@ export function UnifiedChatWorkspace({
           {messages.length === 0 ? (
             <div className="grid min-h-full place-items-center py-12 text-center">
               <div className="max-w-sm">
-                <span className="mx-auto grid size-20 place-items-center rounded-full bg-[var(--itq-color-surface)] text-[var(--itq-color-brand-700)] shadow-sm">
+                <span className="mx-auto grid size-20 place-items-center rounded-full bg-[var(--itq-color-surface)] text-[var(--itq-color-brand-strong)] shadow-sm">
                   <MessageIcon className="size-9" />
                 </span>
                 <p className="mt-5 text-xl font-black">
@@ -2441,7 +2443,7 @@ export function UnifiedChatWorkspace({
                       <li className="my-2">
                         {message.request === undefined ? null : (
                           <Link
-                            className="mx-auto mb-2 flex w-fit items-center gap-2 rounded-full bg-[var(--itq-color-surface)]/90 px-3 py-1 text-[10px] font-black text-[var(--itq-color-brand-700)] no-underline shadow-sm"
+                            className="mx-auto mb-2 flex w-fit items-center gap-2 rounded-full bg-[var(--itq-color-surface)]/90 px-3 py-1 text-[10px] font-black text-[var(--itq-color-brand-strong)] no-underline shadow-sm"
                             href={
                               mode === "admin"
                                 ? `/${locale}/admin/requests/${encodeURIComponent(message.request.requestNumber)}`
@@ -2507,7 +2509,7 @@ export function UnifiedChatWorkspace({
                           }`}
                         >
                           {!mine ? (
-                            <p className="mb-1 text-[10px] font-black text-[var(--itq-color-brand-700)]">
+                            <p className="mb-1 text-[10px] font-black text-[var(--itq-color-brand-strong)]">
                               <bdi dir="auto">
                                 {message.senderDisplayName ??
                                   (mode === "admin"
@@ -2523,7 +2525,7 @@ export function UnifiedChatWorkspace({
                               className={`mb-2 flex max-w-full items-center gap-1.5 rounded-full px-2.5 py-1 text-[9px] font-black ${
                                 mine
                                   ? "bg-white/10 text-white"
-                                  : "bg-[var(--itq-color-brand-50)] text-[var(--itq-color-brand-800)]"
+                                  : "bg-[var(--itq-color-brand-50)] text-[var(--itq-color-brand-strong)]"
                               }`}
                               onClick={() => setLinkedRequestId(message.request?.id)}
                               type="button"
@@ -2609,7 +2611,7 @@ export function UnifiedChatWorkspace({
                                   {english ? "Cancel" : "إلغاء"}
                                 </button>
                                 <button
-                                  className="rounded bg-[var(--itq-color-surface)] px-2 py-0.5 text-[var(--itq-color-brand-800)] disabled:opacity-50"
+                                  className="rounded bg-[var(--itq-color-surface)] px-2 py-0.5 text-[var(--itq-color-brand-strong)] disabled:opacity-50"
                                   disabled={editingText.trim().length === 0}
                                   onClick={() => void submitEdit(message.id)}
                                   type="button"
@@ -2630,7 +2632,7 @@ export function UnifiedChatWorkspace({
                                 <button
                                   className={`inline-flex items-center gap-1 rounded-full px-1.5 py-0.5 text-[11px] font-bold tabular-nums ${
                                     reaction.mine
-                                      ? "bg-[var(--itq-color-brand-100)] text-[var(--itq-color-brand-800)]"
+                                      ? "bg-[var(--itq-color-brand-100)] text-[var(--itq-color-brand-strong)]"
                                       : mine
                                         ? "bg-white/15 text-white"
                                         : "bg-[var(--itq-color-surface-soft)] text-[var(--itq-color-muted)]"
@@ -2878,7 +2880,7 @@ export function UnifiedChatWorkspace({
                 onClick={() => scrollToMessage(replyingTo.id)}
                 type="button"
               >
-                <span className="block font-black text-[var(--itq-color-brand-700)]">
+                <span className="block font-black text-[var(--itq-color-brand-strong)]">
                   {english ? "Replying to" : "ردًّا على"}{" "}
                   {replyingTo.senderType === "STUDENT"
                     ? mode === "admin"

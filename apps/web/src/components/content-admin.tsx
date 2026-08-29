@@ -315,14 +315,14 @@ export function ContentAdmin({
   return (
     <AdminShell csrfToken={csrfToken} displayName={displayName} locale={locale}>
       <div>
-        <p className="text-sm font-black text-[var(--itq-color-brand-700)]">{copy.eyebrow}</p>
+        <p className="text-sm font-black text-[var(--itq-color-brand-strong)]">{copy.eyebrow}</p>
         <h1 className="mt-2 text-3xl font-black sm:text-4xl">{copy.title}</h1>
         <p className="mt-3 max-w-3xl leading-7 text-[var(--itq-color-muted)]">{copy.description}</p>
       </div>
 
       {noticeText === undefined ? null : (
         <p
-          className="mt-6 rounded-2xl border border-[var(--itq-color-brand-200)] bg-[var(--itq-color-brand-50)] p-4 text-sm font-black text-[var(--itq-color-brand-900)]"
+          className="mt-6 rounded-2xl border border-[var(--itq-color-brand-200)] bg-[var(--itq-color-brand-50)] p-4 text-sm font-black text-[var(--itq-color-brand-strong)]"
           role="status"
         >
           {noticeText}

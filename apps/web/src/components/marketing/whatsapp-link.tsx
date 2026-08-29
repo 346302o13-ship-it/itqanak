@@ -54,7 +54,7 @@ export function WhatsAppLink({
         appearance === "brand" &&
           "bg-[var(--itq-color-whatsapp-600)] text-white shadow-[var(--itq-shadow-sm)] hover:bg-[var(--itq-color-whatsapp-700)] focus-visible:outline-[var(--itq-color-whatsapp-600)]",
         appearance === "light" &&
-          "border border-[var(--itq-color-border-strong)] bg-[var(--itq-color-surface)] text-[var(--itq-color-brand-800)] shadow-[var(--itq-shadow-sm)] hover:bg-[var(--itq-color-brand-50)] focus-visible:outline-white",
+          "border border-[var(--itq-color-border-strong)] bg-[var(--itq-color-surface)] text-[var(--itq-color-brand-strong)] shadow-[var(--itq-shadow-sm)] hover:bg-[var(--itq-color-brand-50)] focus-visible:outline-white",
         appearance === "glass" &&
           "border border-white/20 bg-white/10 text-white shadow-none hover:bg-white/15 focus-visible:outline-white",
         className,

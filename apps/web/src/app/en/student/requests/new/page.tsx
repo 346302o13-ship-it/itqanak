@@ -71,7 +71,7 @@ export default async function EnglishNewRequestPage({ searchParams }: NewRequest
           </p>
         </div>
         <Link
-          className="text-sm font-bold text-[var(--itq-color-brand-700)] underline"
+          className="text-sm font-bold text-[var(--itq-color-brand-strong)] underline"
           href="/en/services"
         >
           Compare services

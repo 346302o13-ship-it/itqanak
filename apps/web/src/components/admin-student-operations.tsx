@@ -82,7 +82,7 @@ export function AdminStudentOperations({
       )}
       <div className="grid gap-6 xl:grid-cols-2">
         <section className="rounded-[1.5rem] border border-[var(--itq-color-border)] bg-[var(--itq-color-surface)] p-5 shadow-sm sm:p-6">
-          <p className="text-sm font-black text-[var(--itq-color-brand-700)]">
+          <p className="text-sm font-black text-[var(--itq-color-brand-strong)]">
             {english ? "Verified account" : "حساب موثق"}
           </p>
           <h2 className="mt-1 text-2xl font-black">
@@ -183,7 +183,7 @@ export function AdminStudentOperations({
         </section>
 
         <section className="rounded-[1.5rem] border border-[var(--itq-color-border)] bg-[var(--itq-color-surface)] p-5 shadow-sm sm:p-6">
-          <p className="text-sm font-black text-[var(--itq-color-brand-700)]">
+          <p className="text-sm font-black text-[var(--itq-color-brand-strong)]">
             {english ? "On behalf of a student" : "نيابةً عن الطالب"}
           </p>
           <h2 className="mt-1 text-2xl font-black">
@@ -243,14 +243,14 @@ export function AdminStudentOperations({
       <section className="mt-7 rounded-[1.5rem] border border-[var(--itq-color-border)] bg-[var(--itq-color-surface)] p-5 shadow-sm sm:p-6">
         <div className="flex flex-wrap items-end justify-between gap-3">
           <div>
-            <p className="text-sm font-black text-[var(--itq-color-brand-700)]">
+            <p className="text-sm font-black text-[var(--itq-color-brand-strong)]">
               {english ? "Student directory" : "دليل الطلاب"}
             </p>
             <h2 className="mt-1 text-2xl font-black">
               {english ? "Active verified accounts" : "الحسابات النشطة الموثقة"}
             </h2>
           </div>
-          <span className="rounded-full bg-[var(--itq-color-brand-50)] px-3 py-1 text-xs font-black text-[var(--itq-color-brand-800)]">
+          <span className="rounded-full bg-[var(--itq-color-brand-50)] px-3 py-1 text-xs font-black text-[var(--itq-color-brand-strong)]">
             {students.length}
           </span>
         </div>
@@ -269,7 +269,7 @@ export function AdminStudentOperations({
                 <input name="locale" type="hidden" value={locale} />
                 <input name="studentUserId" type="hidden" value={student.id} />
                 <SubmitButton
-                  className="min-h-10 w-full rounded-xl bg-[var(--itq-color-brand-50)] px-3 py-2 text-xs text-[var(--itq-color-brand-800)] shadow-none"
+                  className="min-h-10 w-full rounded-xl bg-[var(--itq-color-brand-50)] px-3 py-2 text-xs text-[var(--itq-color-brand-strong)] shadow-none"
                   pendingLabel="…"
                 >
                   {english ? "Open general support chat" : "فتح محادثة الدعم العام"}

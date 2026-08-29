@@ -76,7 +76,7 @@ export default async function EnglishStudentDashboard({ searchParams }: Dashboar
       />
       <div className="flex flex-wrap items-start justify-between gap-5 border-b border-[var(--itq-color-border)] pb-7">
         <div>
-          <p className="text-xs font-black uppercase tracking-[0.14em] text-[var(--itq-color-brand-700)]">
+          <p className="text-xs font-black uppercase tracking-[0.14em] text-[var(--itq-color-brand-strong)]">
             Workspace
           </p>
           <h1 className="mt-2 text-3xl font-black sm:text-4xl">Welcome, {principal.displayName}</h1>
@@ -147,7 +147,7 @@ export default async function EnglishStudentDashboard({ searchParams }: Dashboar
             </p>
           </div>
           <Link
-            className="inline-flex items-center gap-1.5 text-sm font-black text-[var(--itq-color-brand-700)]"
+            className="inline-flex items-center gap-1.5 text-sm font-black text-[var(--itq-color-brand-strong)]"
             href="/en/student/requests"
           >
             View all <ArrowIcon className="size-4 -scale-x-100" />
@@ -155,7 +155,7 @@ export default async function EnglishStudentDashboard({ searchParams }: Dashboar
         </div>
         {dashboard.recent.length === 0 ? (
           <div className="mt-5 rounded-[1.5rem] border border-dashed border-[var(--itq-color-brand-200)] bg-[var(--itq-color-brand-50)]/50 p-9 text-center">
-            <span className="mx-auto grid size-14 place-items-center rounded-2xl bg-[var(--itq-color-surface)] text-[var(--itq-color-brand-700)] shadow-sm">
+            <span className="mx-auto grid size-14 place-items-center rounded-2xl bg-[var(--itq-color-surface)] text-[var(--itq-color-brand-strong)] shadow-sm">
               <RequestsIcon className="size-7" />
             </span>
             <p className="mt-4 font-black">Your workspace is ready for its first request</p>
@@ -181,7 +181,7 @@ export default async function EnglishStudentDashboard({ searchParams }: Dashboar
                   href={`/en/student/requests/${encodeURIComponent(request.requestNumber)}`}
                 >
                   <span className="flex min-w-0 items-center gap-3">
-                    <span className="grid size-11 shrink-0 place-items-center rounded-2xl bg-[var(--itq-color-brand-50)] text-[var(--itq-color-brand-700)]">
+                    <span className="grid size-11 shrink-0 place-items-center rounded-2xl bg-[var(--itq-color-brand-50)] text-[var(--itq-color-brand-strong)]">
                       <RequestsIcon className="size-5" />
                     </span>
                     <span className="min-w-0">
@@ -200,7 +200,7 @@ export default async function EnglishStudentDashboard({ searchParams }: Dashboar
                       value={request.updatedAt.toISOString()}
                     />
                     <RequestStatusChip locale="en" status={request.status} />
-                    <ArrowIcon className="size-4 -scale-x-100 text-[var(--itq-color-muted)] transition group-hover:translate-x-1 group-hover:text-[var(--itq-color-brand-700)]" />
+                    <ArrowIcon className="size-4 -scale-x-100 text-[var(--itq-color-muted)] transition group-hover:translate-x-1 group-hover:text-[var(--itq-color-brand-strong)]" />
                   </span>
                 </Link>
               </li>
@@ -214,7 +214,7 @@ export default async function EnglishStudentDashboard({ searchParams }: Dashboar
           className="group rounded-[1.35rem] border border-[var(--itq-color-border)] p-5 transition hover:border-[var(--itq-color-brand-200)] hover:bg-[var(--itq-color-brand-50)]"
           href="/en/services"
         >
-          <ServicesIcon className="size-6 text-[var(--itq-color-brand-700)]" />
+          <ServicesIcon className="size-6 text-[var(--itq-color-brand-strong)]" />
           <span className="mt-4 block font-black">Explore services</span>
           <span className="mt-1 block text-xs leading-5 text-[var(--itq-color-muted)]">
             Choose from the available services
@@ -224,7 +224,7 @@ export default async function EnglishStudentDashboard({ searchParams }: Dashboar
           className="group rounded-[1.35rem] border border-[var(--itq-color-border)] p-5 transition hover:border-[var(--itq-color-brand-200)] hover:bg-[var(--itq-color-brand-50)]"
           href="/en/account/security"
         >
-          <ShieldCheckIcon className="size-6 text-[var(--itq-color-brand-700)]" />
+          <ShieldCheckIcon className="size-6 text-[var(--itq-color-brand-strong)]" />
           <span className="mt-4 block font-black">Account & security</span>
           <span className="mt-1 block text-xs leading-5 text-[var(--itq-color-muted)]">
             Review your profile and sessions

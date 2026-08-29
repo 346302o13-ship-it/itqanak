@@ -103,7 +103,7 @@ export default async function EnglishRequestDetailPage({
       <div className="flex flex-wrap items-start justify-between gap-5">
         <div>
           <Link
-            className="text-sm font-bold text-[var(--itq-color-brand-700)] underline"
+            className="text-sm font-bold text-[var(--itq-color-brand-strong)] underline"
             href="/en/student/requests"
           >
             Back to my requests

@@ -75,7 +75,9 @@ export default async function EnglishAdminPage() {
     <AdminShell csrfToken={csrfToken} displayName={principal.displayName} locale="en">
       <div className="flex flex-wrap items-end justify-between gap-4">
         <div>
-          <p className="text-sm font-black text-[var(--itq-color-brand-700)]">Operations center</p>
+          <p className="text-sm font-black text-[var(--itq-color-brand-strong)]">
+            Operations center
+          </p>
           <h1 className="mt-2 text-3xl font-black sm:text-4xl">Welcome, {principal.displayName}</h1>
           <p className="mt-3 text-[var(--itq-color-muted)]">
             Manage requests, conversations and account verification from one workspace.
@@ -117,7 +119,7 @@ export default async function EnglishAdminPage() {
               </p>
             </div>
             <Link
-              className="text-sm font-black text-[var(--itq-color-brand-700)] underline"
+              className="text-sm font-black text-[var(--itq-color-brand-strong)] underline"
               href="/en/admin/support"
             >
               View all
@@ -168,7 +170,7 @@ export default async function EnglishAdminPage() {
             </strong>
             <p className="mt-2 text-sm font-bold">accounts waiting for review</p>
             <Link
-              className="mt-7 inline-flex min-h-11 items-center rounded-xl bg-[var(--itq-color-surface)] px-5 text-sm font-black text-[var(--itq-color-ink-deep)]"
+              className="mt-7 inline-flex min-h-11 items-center rounded-xl bg-[var(--itq-color-brand-600)] px-5 text-sm font-black text-white"
               href="/en/admin/approvals?tab=phone"
             >
               Open verification queue
@@ -204,7 +206,7 @@ export default async function EnglishAdminPage() {
               )}
             </div>
             <Link
-              className="mt-4 inline-flex text-sm font-black text-[var(--itq-color-brand-700)] underline"
+              className="mt-4 inline-flex text-sm font-black text-[var(--itq-color-brand-strong)] underline"
               href="/en/admin/finance"
             >
               Open financial report

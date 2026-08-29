@@ -192,8 +192,8 @@ export function InstallAppButton({
       : "hover:-translate-y-0.5 hover:border-[var(--itq-color-brand-200)] hover:bg-[var(--itq-color-brand-50)]";
   const baseClass =
     variant === "fab"
-      ? "inline-flex min-h-14 items-center justify-center gap-3 rounded-full border border-white/25 bg-[var(--itq-color-surface)] px-4 text-sm font-black text-[var(--itq-color-brand-800)] shadow-[var(--itq-shadow-float)] transition"
-      : "inline-flex min-h-11 items-center justify-center gap-2 rounded-xl border border-[var(--itq-color-border)] bg-[var(--itq-color-surface)] px-3 text-xs font-black text-[var(--itq-color-brand-800)] shadow-sm transition";
+      ? "inline-flex min-h-14 items-center justify-center gap-3 rounded-full border border-white/25 bg-[var(--itq-color-surface)] px-4 text-sm font-black text-[var(--itq-color-brand-strong)] shadow-[var(--itq-shadow-float)] transition"
+      : "inline-flex min-h-11 items-center justify-center gap-2 rounded-xl border border-[var(--itq-color-border)] bg-[var(--itq-color-surface)] px-3 text-xs font-black text-[var(--itq-color-brand-strong)] shadow-sm transition";
   return (
     <>
       <button
@@ -234,7 +234,7 @@ export function InstallAppButton({
             ref={dialogRef}
             tabIndex={-1}
           >
-            <span className="grid size-12 place-items-center rounded-2xl bg-[var(--itq-color-brand-50)] text-[var(--itq-color-brand-700)]">
+            <span className="grid size-12 place-items-center rounded-2xl bg-[var(--itq-color-brand-50)] text-[var(--itq-color-brand-strong)]">
               <InstallIcon className="size-6" />
             </span>
             <h2 className="mt-4 text-xl font-black" id={titleId}>

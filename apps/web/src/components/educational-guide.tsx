@@ -182,7 +182,7 @@ export function EducationalGuide({
                     </div>
                   ) : (
                     <article className="max-w-[94%] rounded-2xl rounded-ss-md border border-[var(--itq-color-border)] bg-[var(--itq-color-surface)] p-4 shadow-sm">
-                      <h3 className="text-sm font-black text-[var(--itq-color-brand-800)]">
+                      <h3 className="text-sm font-black text-[var(--itq-color-brand-strong)]">
                         {message.answer.title}
                       </h3>
                       <p className="mt-2 text-sm font-semibold leading-7 text-[var(--itq-color-ink-soft)]">
@@ -192,7 +192,7 @@ export function EducationalGuide({
                         <ol className="mt-3 grid gap-2 text-xs font-semibold leading-6 text-[var(--itq-color-muted)]">
                           {message.answer.steps.map((step, index) => (
                             <li className="flex gap-2" key={step}>
-                              <span className="grid size-5 shrink-0 place-items-center rounded-full bg-[var(--itq-color-brand-50)] text-[10px] font-black text-[var(--itq-color-brand-700)]">
+                              <span className="grid size-5 shrink-0 place-items-center rounded-full bg-[var(--itq-color-brand-50)] text-[10px] font-black text-[var(--itq-color-brand-strong)]">
                                 {index + 1}
                               </span>
                               <span>{step}</span>
@@ -202,7 +202,7 @@ export function EducationalGuide({
                       )}
                       {message.answer.action === undefined ? null : (
                         <a
-                          className="mt-3 inline-flex min-h-10 items-center justify-center rounded-xl bg-[var(--itq-color-brand-50)] px-4 py-2 text-xs font-black text-[var(--itq-color-brand-800)] transition hover:bg-[var(--itq-color-brand-100)]"
+                          className="mt-3 inline-flex min-h-10 items-center justify-center rounded-xl bg-[var(--itq-color-brand-50)] px-4 py-2 text-xs font-black text-[var(--itq-color-brand-strong)] transition hover:bg-[var(--itq-color-brand-100)]"
                           href={message.answer.action.href}
                           rel={message.answer.action.external === true ? "noreferrer" : undefined}
                           target={message.answer.action.external === true ? "_blank" : undefined}

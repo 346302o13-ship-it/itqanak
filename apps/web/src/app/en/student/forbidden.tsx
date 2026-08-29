@@ -8,7 +8,7 @@ export default function EnglishStudentForbidden() {
       lang="en"
     >
       <div>
-        <p className="text-sm font-black uppercase tracking-[0.14em] text-[var(--itq-color-brand-700)]">
+        <p className="text-sm font-black uppercase tracking-[0.14em] text-[var(--itq-color-brand-strong)]">
           Access denied
         </p>
         <h1 className="mt-3 text-3xl font-black">You cannot access this area</h1>

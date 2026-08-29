@@ -8,7 +8,7 @@ export default function EnglishAdminRequestNotFound() {
       lang="en"
     >
       <div>
-        <p className="text-sm font-black uppercase tracking-[0.14em] text-[var(--itq-color-brand-700)]">
+        <p className="text-sm font-black uppercase tracking-[0.14em] text-[var(--itq-color-brand-strong)]">
           Request unavailable
         </p>
         <h1 className="mt-3 text-3xl font-black">We could not find this request</h1>

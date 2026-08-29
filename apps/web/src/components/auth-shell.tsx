@@ -29,7 +29,7 @@ export function AuthShell({ title, description, children, locale = "ar" }: AuthS
             {english ? "ITQANAK" : "إتقانك"}
           </Link>
           <Link
-            className="text-sm font-bold text-[var(--itq-color-brand-700)] underline"
+            className="text-sm font-bold text-[var(--itq-color-brand-strong)] underline"
             href={`/${locale}/auth/login`}
           >
             {english ? "Sign in" : "تسجيل الدخول"}

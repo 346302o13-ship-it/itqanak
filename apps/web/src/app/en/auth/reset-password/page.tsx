@@ -75,7 +75,7 @@ export default async function EnglishResetPasswordPage({ searchParams }: ResetPa
       </FragmentTokenForm>
       <p className="mt-6 text-center text-sm">
         <Link
-          className="font-bold text-[var(--itq-color-brand-700)] underline"
+          className="font-bold text-[var(--itq-color-brand-strong)] underline"
           href="/en/auth/forgot-password"
         >
           Request a new link

@@ -163,7 +163,7 @@ export function AdminNavigation({ locale = "ar" }: Readonly<{ locale?: "ar" | "e
               className={`relative flex min-h-12 items-center gap-3 rounded-2xl px-4 text-sm font-black transition ${
                 active
                   ? "bg-[var(--itq-color-brand-700)] text-white shadow-sm"
-                  : "text-[var(--itq-color-muted)] hover:bg-[var(--itq-color-brand-50)] hover:text-[var(--itq-color-brand-800)]"
+                  : "text-[var(--itq-color-muted)] hover:bg-[var(--itq-color-brand-50)] hover:text-[var(--itq-color-brand-strong)]"
               }`}
               href={href}
             >

@@ -207,7 +207,7 @@ export default async function EnglishRegisterPage({ searchParams }: RegisterPage
             <span>
               I accept the{" "}
               <Link
-                className="font-black text-[var(--itq-color-brand-700)] underline underline-offset-4"
+                className="font-black text-[var(--itq-color-brand-strong)] underline underline-offset-4"
                 href="/en/terms"
                 rel="noopener"
                 target="_blank"
@@ -222,7 +222,7 @@ export default async function EnglishRegisterPage({ searchParams }: RegisterPage
             <span>
               I accept the{" "}
               <Link
-                className="font-black text-[var(--itq-color-brand-700)] underline underline-offset-4"
+                className="font-black text-[var(--itq-color-brand-strong)] underline underline-offset-4"
                 href="/en/privacy"
                 rel="noopener"
                 target="_blank"

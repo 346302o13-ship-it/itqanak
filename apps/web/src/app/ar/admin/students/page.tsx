@@ -41,7 +41,9 @@ export default async function AdminStudentsPage({ searchParams }: PageProps) {
   return (
     <AdminShell csrfToken={csrfToken} displayName={principal.displayName}>
       <div className="mb-7">
-        <p className="text-sm font-black text-[var(--itq-color-brand-700)]">إدارة آمنة ومباشرة</p>
+        <p className="text-sm font-black text-[var(--itq-color-brand-strong)]">
+          إدارة آمنة ومباشرة
+        </p>
         <h1 className="mt-1 text-3xl font-black">الطلاب وإنشاء الطلبات</h1>
       </div>
       <AdminStudentOperations

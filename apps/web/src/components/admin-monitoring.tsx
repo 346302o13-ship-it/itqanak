@@ -248,7 +248,7 @@ export function AdminMonitoring({
               <p className="mt-4 leading-8 text-white/75">{t.description}</p>
             </div>
             <Link
-              className="inline-flex min-h-11 items-center gap-2 rounded-xl bg-[var(--itq-color-surface)] px-4 text-sm font-black text-[var(--itq-color-ink-deep)]"
+              className="inline-flex min-h-11 items-center gap-2 rounded-xl bg-[var(--itq-color-brand-600)] px-4 text-sm font-black text-white"
               href={path}
             >
               <ClockIcon className="size-5" /> {t.refresh}
@@ -451,7 +451,7 @@ export function AdminMonitoring({
         <div className="grid gap-5 xl:grid-cols-[minmax(0,.8fr)_minmax(0,1.2fr)]">
           <section className="rounded-[1.75rem] border border-[var(--itq-color-border)] bg-[var(--itq-color-surface)] p-6 shadow-[var(--itq-shadow-sm)]">
             <div className="flex items-center gap-3">
-              <RequestsIcon className="size-5 text-[var(--itq-color-brand-700)]" />
+              <RequestsIcon className="size-5 text-[var(--itq-color-brand-strong)]" />
               <h2 className="text-xl font-black">{t.requestDistribution}</h2>
             </div>
             <div className="mt-5 grid gap-2">

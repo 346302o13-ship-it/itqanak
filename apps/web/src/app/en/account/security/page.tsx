@@ -109,7 +109,7 @@ export default async function EnglishSecurityPage({ searchParams }: SecurityPage
       <p className="mt-6 max-w-lg rounded-xl bg-[var(--itq-color-surface-soft)] p-4 text-sm font-semibold leading-7">
         Forgot the current password?{" "}
         <Link
-          className="font-black text-[var(--itq-color-brand-700)] underline"
+          className="font-black text-[var(--itq-color-brand-strong)] underline"
           href="/en/auth/forgot-password"
         >
           Create a support-assisted recovery request

@@ -45,7 +45,7 @@ export default async function AdminPage() {
     <AdminShell csrfToken={csrfToken} displayName={principal.displayName}>
       <div className="flex flex-wrap items-end justify-between gap-4">
         <div>
-          <p className="text-sm font-black text-[var(--itq-color-brand-700)]">مركز التشغيل</p>
+          <p className="text-sm font-black text-[var(--itq-color-brand-strong)]">مركز التشغيل</p>
           <h1 className="mt-2 text-3xl font-black sm:text-4xl">
             صباح الإنجاز، {principal.displayName}
           </h1>
@@ -121,7 +121,7 @@ export default async function AdminPage() {
               </p>
             </div>
             <Link
-              className="text-sm font-black text-[var(--itq-color-brand-700)] underline"
+              className="text-sm font-black text-[var(--itq-color-brand-strong)] underline"
               href="/ar/admin/support"
             >
               عرض الكل
@@ -172,7 +172,7 @@ export default async function AdminPage() {
             </strong>
             <p className="mt-2 text-sm font-bold">حسابات تنتظر المراجعة</p>
             <Link
-              className="mt-7 inline-flex min-h-11 items-center rounded-xl bg-[var(--itq-color-surface)] px-5 text-sm font-black text-[var(--itq-color-ink-deep)]"
+              className="mt-7 inline-flex min-h-11 items-center rounded-xl bg-[var(--itq-color-brand-600)] px-5 text-sm font-black text-white"
               href="/ar/admin/approvals?tab=phone"
             >
               فتح قائمة التوثيق
@@ -210,7 +210,7 @@ export default async function AdminPage() {
               )}
             </div>
             <Link
-              className="mt-4 inline-flex text-sm font-black text-[var(--itq-color-brand-700)] underline"
+              className="mt-4 inline-flex text-sm font-black text-[var(--itq-color-brand-strong)] underline"
               href="/ar/admin/finance"
             >
               فتح التقرير المالي

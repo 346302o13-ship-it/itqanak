@@ -9,7 +9,7 @@ export default function StudentForbidden() {
           هذا القسم متاح لحسابات الطلاب المخوّلة فقط.
         </p>
         <Link
-          className="mt-6 inline-block text-sm font-black text-[var(--itq-color-brand-700)] underline"
+          className="mt-6 inline-block text-sm font-black text-[var(--itq-color-brand-strong)] underline"
           href="/ar/account"
         >
           العودة إلى الحساب

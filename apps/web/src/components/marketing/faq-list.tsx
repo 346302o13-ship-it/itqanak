@@ -18,7 +18,7 @@ export function FaqList({ items }: Readonly<{ items: readonly FaqItem[] }>): JSX
         >
           <summary className="flex min-h-16 cursor-pointer list-none items-center justify-between gap-4 py-4 font-black marker:hidden">
             <span>{item.question}</span>
-            <span className="inline-flex size-8 shrink-0 items-center justify-center rounded-full bg-[var(--itq-color-brand-50)] text-[var(--itq-color-brand-700)] transition group-open:rotate-45">
+            <span className="inline-flex size-8 shrink-0 items-center justify-center rounded-full bg-[var(--itq-color-brand-50)] text-[var(--itq-color-brand-strong)] transition group-open:rotate-45">
               <MarketingIcon className="size-4" name="check" />
             </span>
           </summary>

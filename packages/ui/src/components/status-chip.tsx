@@ -11,7 +11,7 @@ export interface StatusChipProps {
 }
 
 const toneClasses: Readonly<Record<StatusTone, string>> = {
-  info: "bg-[var(--itq-color-brand-50)] text-[var(--itq-color-brand-800)]",
+  info: "bg-[var(--itq-color-brand-50)] text-[var(--itq-color-brand-strong)]",
   success: "bg-[var(--itq-color-success-50)] text-[var(--itq-color-success-700)]",
   warning: "bg-[var(--itq-color-warning-50)] text-[var(--itq-color-warning-800)]",
   danger: "bg-[var(--itq-color-danger-50)] text-[var(--itq-color-danger-700)]",

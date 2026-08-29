@@ -387,7 +387,7 @@ export function NotificationCenter({ csrfToken, locale = "ar", surface }: Notifi
             </div>
             <div className="ms-auto flex flex-wrap items-center justify-end gap-1.5">
               <button
-                className="min-h-9 rounded-xl bg-[var(--itq-color-surface-soft)] px-3 text-[11px] font-black text-[var(--itq-color-brand-800)] disabled:cursor-not-allowed disabled:opacity-45"
+                className="min-h-9 rounded-xl bg-[var(--itq-color-surface-soft)] px-3 text-[11px] font-black text-[var(--itq-color-brand-strong)] disabled:cursor-not-allowed disabled:opacity-45"
                 disabled={unreadCount === 0 || markingAllRead || csrfToken === undefined}
                 onClick={() => void markAllRead()}
                 type="button"

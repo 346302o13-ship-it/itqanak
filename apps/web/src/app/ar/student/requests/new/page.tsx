@@ -68,7 +68,7 @@ export default async function NewRequestPage({ searchParams }: NewRequestPagePro
           </p>
         </div>
         <Link
-          className="text-sm font-bold text-[var(--itq-color-brand-700)] underline"
+          className="text-sm font-bold text-[var(--itq-color-brand-strong)] underline"
           href="/ar/services"
         >
           مقارنة الخدمات

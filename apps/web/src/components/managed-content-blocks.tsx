@@ -32,7 +32,7 @@ function BlockAction({ block, locale }: Readonly<{ block: ContentBlock; locale: 
   if (label === null) return null;
   const className =
     block.variant === "ACTION"
-      ? "inline-flex min-h-11 items-center gap-2 rounded-xl bg-[var(--itq-color-surface)] px-5 py-2 text-sm font-black text-[var(--itq-color-brand-900)] shadow-sm"
+      ? "inline-flex min-h-11 items-center gap-2 rounded-xl bg-[var(--itq-color-surface)] px-5 py-2 text-sm font-black text-[var(--itq-color-brand-strong)] shadow-sm"
       : "inline-flex min-h-11 items-center gap-2 rounded-xl bg-[var(--itq-color-brand-700)] px-5 py-2 text-sm font-black text-white shadow-sm";
   if (block.actionHref.startsWith("/")) {
     return (
@@ -69,7 +69,7 @@ export function ManagedContentBlocks({ blocks, locale, surface }: ManagedContent
               key={block.id}
             >
               <div className="flex items-start gap-4">
-                <span className="grid size-11 shrink-0 place-items-center rounded-2xl bg-white/80 text-[var(--itq-color-brand-700)] shadow-sm">
+                <span className="grid size-11 shrink-0 place-items-center rounded-2xl bg-[var(--itq-color-surface)]/80 text-[var(--itq-color-brand-strong)] shadow-sm">
                   <Icon className="size-5" />
                 </span>
                 <div className="min-w-0 flex-1">

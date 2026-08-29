@@ -103,7 +103,7 @@ export default async function EnglishLoginPage({ searchParams }: LoginPageProps)
               Password
             </label>
             <Link
-              className="text-xs font-bold text-[var(--itq-color-brand-700)] underline"
+              className="text-xs font-bold text-[var(--itq-color-brand-strong)] underline"
               href="/en/auth/forgot-password"
             >
               Trouble signing in?
@@ -134,7 +134,7 @@ export default async function EnglishLoginPage({ searchParams }: LoginPageProps)
       <p className="mt-3 text-center text-sm">
         Administrator?{" "}
         <a
-          className="font-bold text-[var(--itq-color-brand-700)] underline"
+          className="font-bold text-[var(--itq-color-brand-strong)] underline"
           href={adminLoginHref("en")}
         >
           Open the admin center

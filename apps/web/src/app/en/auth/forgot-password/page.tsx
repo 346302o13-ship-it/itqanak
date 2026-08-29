@@ -121,7 +121,7 @@ export default async function EnglishForgotPasswordPage({ searchParams }: Forgot
       </form>
       <p className="mt-6 text-center text-sm">
         <Link
-          className="font-bold text-[var(--itq-color-brand-700)] underline"
+          className="font-bold text-[var(--itq-color-brand-strong)] underline"
           href="/en/auth/login"
         >
           Back to sign in

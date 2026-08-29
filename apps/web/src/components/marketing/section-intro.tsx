@@ -24,7 +24,7 @@ export function SectionIntro({
       className={classNames("max-w-3xl", align === "center" && "mx-auto text-center", className)}
     >
       {eyebrow === undefined ? null : (
-        <p className="text-sm font-black tracking-wide text-[var(--itq-color-brand-700)]">
+        <p className="text-sm font-black tracking-wide text-[var(--itq-color-brand-strong)]">
           {eyebrow}
         </p>
       )}

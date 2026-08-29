@@ -68,7 +68,7 @@ export function RequestPreview({
       </div>
       <div className="rounded-2xl bg-[var(--itq-color-surface-soft)] p-4">
         <div className="flex gap-3">
-          <span className="inline-flex size-9 shrink-0 items-center justify-center rounded-xl bg-[var(--itq-color-surface)] text-[var(--itq-color-brand-700)] shadow-sm">
+          <span className="inline-flex size-9 shrink-0 items-center justify-center rounded-xl bg-[var(--itq-color-surface)] text-[var(--itq-color-brand-strong)] shadow-sm">
             <MarketingIcon className="size-5" name="message" />
           </span>
           <div>
@@ -78,7 +78,7 @@ export function RequestPreview({
         </div>
       </div>
       <p className="mt-4 flex items-center gap-2 text-xs font-bold text-[var(--itq-color-muted)]">
-        <MarketingIcon className="size-4 text-[var(--itq-color-brand-700)]" name="lock" />
+        <MarketingIcon className="size-4 text-[var(--itq-color-brand-strong)]" name="lock" />
         {copy.privacy}
       </p>
     </div>

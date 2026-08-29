@@ -61,7 +61,7 @@ export function FinanceAdmin({
       <section className="rounded-[1.75rem] border border-[var(--itq-color-border)] bg-[var(--itq-color-surface)] p-5 shadow-[var(--itq-shadow-sm)] sm:p-7">
         <div className="flex flex-wrap items-start justify-between gap-4">
           <div>
-            <p className="text-sm font-black text-[var(--itq-color-brand-700)]">
+            <p className="text-sm font-black text-[var(--itq-color-brand-strong)]">
               {english ? "Internal financial ledger" : "السجل المالي الداخلي"}
             </p>
             <h1 className="mt-1 text-3xl font-black">
@@ -73,7 +73,7 @@ export function FinanceAdmin({
                 : "أنشئ مستحقات مرتبطة بطلب فعلي وأكّد الدفع يدويًا. لا توجد بوابة دفع خارجية ولا تُحفظ بيانات بطاقات."}
             </p>
           </div>
-          <span className="rounded-full bg-[var(--itq-color-brand-50)] px-4 py-2 text-sm font-black text-[var(--itq-color-brand-800)]">
+          <span className="rounded-full bg-[var(--itq-color-brand-50)] px-4 py-2 text-sm font-black text-[var(--itq-color-brand-strong)]">
             {numberFormat.format(dues.total)} {english ? "records" : "سجل"}
           </span>
         </div>
@@ -277,7 +277,7 @@ export function FinanceAdmin({
                       </p>
                     </div>
                     <strong
-                      className="text-xl font-black text-[var(--itq-color-brand-800)]"
+                      className="text-xl font-black text-[var(--itq-color-brand-strong)]"
                       dir="ltr"
                     >
                       {formatFinanceAmount(due.amountMinor, due.currency, due.minorUnit, locale)}

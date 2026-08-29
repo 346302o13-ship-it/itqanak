@@ -42,7 +42,7 @@ export function FinanceReportCards({
             <strong className="text-lg font-black" dir="ltr">
               {total.currency}
             </strong>
-            <span className="rounded-full bg-[var(--itq-color-brand-50)] px-3 py-1 text-xs font-black text-[var(--itq-color-brand-800)]">
+            <span className="rounded-full bg-[var(--itq-color-brand-50)] px-3 py-1 text-xs font-black text-[var(--itq-color-brand-strong)]">
               {english ? `${total.unpaidCount} unpaid` : `${total.unpaidCount} غير مدفوع`}
             </span>
           </div>

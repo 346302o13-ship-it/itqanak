@@ -37,7 +37,7 @@ export function AdminShell({
       <header className="sticky top-0 z-30 border-b border-[var(--itq-color-border)] bg-[var(--itq-color-ink-deep)]/95 text-white backdrop-blur-xl">
         <div className="mx-auto flex h-[4.75rem] max-w-[96rem] items-center justify-between gap-4 px-4 sm:px-7 lg:px-10">
           <Link className="inline-flex items-center gap-3 font-black" href={`${prefix}/admin`}>
-            <BrandMark className="size-11 bg-[var(--itq-color-surface)] text-[var(--itq-color-brand-800)]" />
+            <BrandMark className="size-11 bg-[var(--itq-color-surface)] text-[var(--itq-color-brand-strong)]" />
             <span className="hidden sm:inline">{english ? "ITQANAK" : "إتقانك"}</span>
             <span className="hidden rounded-full bg-white/10 px-2.5 py-1 text-[10px] md:inline">
               {english ? "ADMIN CENTER" : "مركز الإدارة"}

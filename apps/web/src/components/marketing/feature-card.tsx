@@ -26,7 +26,7 @@ export function FeatureCard({
         className,
       )}
     >
-      <span className="inline-flex size-12 items-center justify-center rounded-2xl bg-[var(--itq-color-brand-50)] text-[var(--itq-color-brand-700)] transition group-hover:bg-[var(--itq-color-brand-700)] group-hover:text-white">
+      <span className="inline-flex size-12 items-center justify-center rounded-2xl bg-[var(--itq-color-brand-50)] text-[var(--itq-color-brand-strong)] transition group-hover:bg-[var(--itq-color-brand-700)] group-hover:text-white">
         <MarketingIcon name={icon} />
       </span>
       <h3 className="mt-5 text-xl font-black leading-8 text-[var(--itq-color-ink)]">{title}</h3>

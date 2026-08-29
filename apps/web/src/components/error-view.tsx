@@ -62,7 +62,7 @@ export function ErrorView({ kind, reset, digest }: ErrorViewProps) {
     >
       <section className="w-full rounded-3xl border border-[var(--itq-color-border)] bg-[var(--itq-color-surface)] p-8 shadow-[var(--itq-shadow-card)]">
         {kind === "not-found" ? (
-          <p className="text-sm font-bold text-[var(--itq-color-brand-700)]">404</p>
+          <p className="text-sm font-bold text-[var(--itq-color-brand-strong)]">404</p>
         ) : null}
         <h1 className="mt-3 text-3xl font-black">
           {kind === "not-found" ? t.notFoundTitle : t.errorTitle}

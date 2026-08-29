@@ -131,7 +131,7 @@ export function ApprovalsWorkspace({
   return (
     <div className="rounded-[1.75rem] border border-[var(--itq-color-border)] bg-[var(--itq-color-surface)] p-5 shadow-[var(--itq-shadow-sm)] sm:p-8">
       <div>
-        <p className="text-sm font-black text-[var(--itq-color-brand-700)]">
+        <p className="text-sm font-black text-[var(--itq-color-brand-strong)]">
           {t("أمان الحسابات", "Account security")}
         </p>
         <h1 className="mt-1 text-3xl font-black">{t("الاعتمادات", "Approvals")}</h1>

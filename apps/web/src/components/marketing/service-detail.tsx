@@ -69,7 +69,7 @@ export function ServiceDetailView({
     <>
       <nav aria-label={copy.backLabel} className="mb-5">
         <Link
-          className="inline-flex min-h-11 items-center rounded-xl px-2 text-sm font-black text-[var(--itq-color-brand-700)] hover:bg-[var(--itq-color-brand-50)]"
+          className="inline-flex min-h-11 items-center rounded-xl px-2 text-sm font-black text-[var(--itq-color-brand-strong)] hover:bg-[var(--itq-color-brand-50)]"
           href={`${prefix}/services`}
         >
           {copy.backLabel}
@@ -92,7 +92,7 @@ export function ServiceDetailView({
             <p className="mt-5 max-w-3xl text-lg leading-9 text-white/75">{service.description}</p>
             <div className="mt-8 flex flex-col gap-3 sm:flex-row">
               <Link
-                className="inline-flex min-h-12 items-center justify-center rounded-xl bg-[var(--itq-color-surface)] px-6 py-3 font-black text-[var(--itq-color-brand-800)] transition hover:-translate-y-0.5 hover:bg-[var(--itq-color-brand-50)]"
+                className="inline-flex min-h-12 items-center justify-center rounded-xl bg-[var(--itq-color-surface)] px-6 py-3 font-black text-[var(--itq-color-brand-strong)] transition hover:-translate-y-0.5 hover:bg-[var(--itq-color-brand-50)]"
                 href={`${prefix}/student/requests/new?service=${encodeURIComponent(service.slug)}`}
               >
                 {copy.requestLabel}
@@ -112,7 +112,7 @@ export function ServiceDetailView({
             <dl className="mt-4 grid gap-4 text-sm">
               <div className="flex items-start gap-3">
                 <MarketingIcon
-                  className="mt-0.5 size-5 shrink-0 text-[var(--itq-color-brand-100)]"
+                  className="mt-0.5 size-5 shrink-0 text-[var(--itq-color-accent-200)]"
                   name="route"
                 />
                 <div>
@@ -122,7 +122,7 @@ export function ServiceDetailView({
               </div>
               <div className="flex items-start gap-3">
                 <MarketingIcon
-                  className="mt-0.5 size-5 shrink-0 text-[var(--itq-color-brand-100)]"
+                  className="mt-0.5 size-5 shrink-0 text-[var(--itq-color-accent-200)]"
                   name="files"
                 />
                 <div>
@@ -136,7 +136,7 @@ export function ServiceDetailView({
               </div>
               <div className="flex items-start gap-3">
                 <MarketingIcon
-                  className="mt-0.5 size-5 shrink-0 text-[var(--itq-color-brand-100)]"
+                  className="mt-0.5 size-5 shrink-0 text-[var(--itq-color-accent-200)]"
                   name="sparkles"
                 />
                 <div>
@@ -191,7 +191,7 @@ export function ServiceDetailView({
           <ul className="mt-6 grid gap-4 sm:grid-cols-2">
             {copy.prepareItems.map((item) => (
               <li className="flex items-start gap-3 font-bold leading-7" key={item}>
-                <span className="mt-1 inline-flex size-6 shrink-0 items-center justify-center rounded-full bg-[var(--itq-color-brand-50)] text-[var(--itq-color-brand-700)]">
+                <span className="mt-1 inline-flex size-6 shrink-0 items-center justify-center rounded-full bg-[var(--itq-color-brand-50)] text-[var(--itq-color-brand-strong)]">
                   <MarketingIcon className="size-4" name="check" />
                 </span>
                 {item}
@@ -218,7 +218,7 @@ export function ServiceDetailView({
           </div>
           <div className="flex w-full flex-col gap-3 sm:w-auto sm:flex-row">
             <Link
-              className="inline-flex min-h-12 items-center justify-center rounded-xl bg-[var(--itq-color-surface)] px-6 py-3 font-black text-[var(--itq-color-brand-800)] hover:bg-[var(--itq-color-brand-50)]"
+              className="inline-flex min-h-12 items-center justify-center rounded-xl bg-[var(--itq-color-surface)] px-6 py-3 font-black text-[var(--itq-color-brand-strong)] hover:bg-[var(--itq-color-brand-50)]"
               href={`${prefix}/student/requests/new?service=${encodeURIComponent(service.slug)}`}
             >
               {copy.requestLabel}

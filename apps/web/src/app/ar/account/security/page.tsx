@@ -101,7 +101,7 @@ export default async function AccountSecurityPage({ searchParams }: SecurityPage
       <p className="mt-6 max-w-lg rounded-xl bg-[var(--itq-color-surface-soft)] p-4 text-sm font-semibold leading-7">
         لا تتذكر كلمة المرور الحالية؟{" "}
         <Link
-          className="font-black text-[var(--itq-color-brand-700)] underline"
+          className="font-black text-[var(--itq-color-brand-strong)] underline"
           href="/ar/auth/forgot-password"
         >
           أنشئ طلب استعادة عبر الدعم

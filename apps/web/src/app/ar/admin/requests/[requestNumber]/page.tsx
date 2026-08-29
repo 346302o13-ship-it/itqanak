@@ -66,7 +66,7 @@ export default async function AdminRequestPage({ params, searchParams }: AdminRe
         <aside className="hidden border-e border-[var(--itq-color-border)] xl:block">
           <div className="border-b border-[var(--itq-color-border)] p-5">
             <Link
-              className="inline-flex items-center gap-2 text-sm font-black text-[var(--itq-color-brand-700)]"
+              className="inline-flex items-center gap-2 text-sm font-black text-[var(--itq-color-brand-strong)]"
               href="/ar/admin/support"
             >
               <ArrowIcon className="size-4" /> كل المحادثات
@@ -111,7 +111,7 @@ export default async function AdminRequestPage({ params, searchParams }: AdminRe
           <div className="mb-5 flex flex-wrap items-start justify-between gap-3 px-1">
             <div>
               <Link
-                className="text-xs font-black text-[var(--itq-color-brand-700)] underline xl:hidden"
+                className="text-xs font-black text-[var(--itq-color-brand-strong)] underline xl:hidden"
                 href="/ar/admin/support"
               >
                 عودة للطلبات
@@ -146,7 +146,7 @@ export default async function AdminRequestPage({ params, searchParams }: AdminRe
           ) : null}
           <section className="grid min-h-[28rem] place-items-center rounded-[1.5rem] border border-[var(--itq-color-brand-200)] bg-[var(--itq-color-brand-50)] p-6 text-center">
             <div className="max-w-md">
-              <span className="mx-auto grid size-16 place-items-center rounded-full bg-[var(--itq-color-surface)] text-[var(--itq-color-brand-700)] shadow-sm">
+              <span className="mx-auto grid size-16 place-items-center rounded-full bg-[var(--itq-color-surface)] text-[var(--itq-color-brand-strong)] shadow-sm">
                 <MessageIcon className="size-7" />
               </span>
               <h2 className="mt-5 text-xl font-black">المحادثة الموحدة مع الطالب</h2>
@@ -374,7 +374,7 @@ export default async function AdminRequestPage({ params, searchParams }: AdminRe
                     (attachment.scanStatus === "CLEAN" ||
                       attachment.scanStatus === "SCAN_SKIPPED_BY_ADMIN") ? (
                       <a
-                        className="block truncate font-black text-[var(--itq-color-brand-700)] underline"
+                        className="block truncate font-black text-[var(--itq-color-brand-strong)] underline"
                         dir="auto"
                         href={`/api/student/requests/${encodeURIComponent(detail.requestNumber)}/attachments/${encodeURIComponent(attachment.id)}/download`}
                       >

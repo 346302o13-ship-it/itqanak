@@ -52,7 +52,7 @@ export function AccountNavigation({
             aria-current={active ? "page" : undefined}
             className={`relative flex min-h-12 items-center gap-3 rounded-2xl px-3.5 text-sm font-extrabold transition ${
               active
-                ? "bg-[var(--itq-color-brand-50)] text-[var(--itq-color-brand-800)]"
+                ? "bg-[var(--itq-color-brand-50)] text-[var(--itq-color-brand-strong)]"
                 : "text-[var(--itq-color-muted)] hover:bg-[var(--itq-color-surface-soft)] hover:text-[var(--itq-color-ink)]"
             }`}
             href={item.href}

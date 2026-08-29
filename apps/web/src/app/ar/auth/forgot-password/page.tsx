@@ -117,7 +117,7 @@ export default async function ForgotPasswordPage({ searchParams }: ForgotPagePro
       </form>
       <p className="mt-6 text-center text-sm">
         <Link
-          className="font-bold text-[var(--itq-color-brand-700)] underline"
+          className="font-bold text-[var(--itq-color-brand-strong)] underline"
           href="/ar/auth/login"
         >
           العودة لتسجيل الدخول

@@ -75,7 +75,7 @@ export default async function ResetPasswordPage({ searchParams }: ResetPageProps
       </FragmentTokenForm>
       <p className="mt-6 text-center text-sm">
         <Link
-          className="font-bold text-[var(--itq-color-brand-700)] underline"
+          className="font-bold text-[var(--itq-color-brand-strong)] underline"
           href="/ar/auth/forgot-password"
         >
           طلب رابط جديد

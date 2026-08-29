@@ -47,7 +47,7 @@ export function MobileNavBar({ items, ariaLabel, moreLabel, primaryCount = 4 }: 
                 aria-current={item.active ? "page" : undefined}
                 className={`flex min-h-16 flex-col items-center justify-center gap-1 rounded-xl px-1 text-center text-[10px] font-black ${
                   item.active
-                    ? "bg-[var(--itq-color-brand-50)] text-[var(--itq-color-brand-800)]"
+                    ? "bg-[var(--itq-color-brand-50)] text-[var(--itq-color-brand-strong)]"
                     : "text-[var(--itq-color-muted)]"
                 }`}
                 href={item.href}
@@ -71,7 +71,7 @@ export function MobileNavBar({ items, ariaLabel, moreLabel, primaryCount = 4 }: 
             aria-current={item.active ? "page" : undefined}
             className={`flex min-h-14 flex-1 flex-col items-center justify-center gap-1 rounded-xl px-1 text-center text-[10px] font-black ${
               item.active
-                ? "bg-[var(--itq-color-brand-50)] text-[var(--itq-color-brand-800)]"
+                ? "bg-[var(--itq-color-brand-50)] text-[var(--itq-color-brand-strong)]"
                 : "text-[var(--itq-color-muted)]"
             }`}
             href={item.href}
@@ -86,7 +86,7 @@ export function MobileNavBar({ items, ariaLabel, moreLabel, primaryCount = 4 }: 
             aria-expanded={open}
             className={`flex min-h-14 flex-1 flex-col items-center justify-center gap-1 rounded-xl px-1 text-center text-[10px] font-black ${
               open || restActive
-                ? "bg-[var(--itq-color-brand-50)] text-[var(--itq-color-brand-800)]"
+                ? "bg-[var(--itq-color-brand-50)] text-[var(--itq-color-brand-strong)]"
                 : "text-[var(--itq-color-muted)]"
             }`}
             onClick={() => setOpen((value) => !value)}

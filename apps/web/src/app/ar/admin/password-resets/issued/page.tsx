@@ -47,7 +47,9 @@ export default async function IssuedPasswordResetPage({ searchParams }: PageProp
   return (
     <AdminShell csrfToken={csrfToken} displayName={principal.displayName}>
       <div className="mx-auto max-w-3xl rounded-[1.75rem] border border-[var(--itq-color-border)] bg-[var(--itq-color-surface)] p-5 shadow-[var(--itq-shadow-sm)] sm:p-8">
-        <p className="text-sm font-black text-[var(--itq-color-brand-700)]">تمت الموافقة بأمان</p>
+        <p className="text-sm font-black text-[var(--itq-color-brand-strong)]">
+          تمت الموافقة بأمان
+        </p>
         <h1 className="mt-1 text-3xl font-black">أرسل رابط الاستعادة للطالب</h1>
         <p className="mt-3 leading-7 text-[var(--itq-color-muted)]">
           تم حفظ موافقتك ومرجع واتساب في سجل التدقيق. لا يمكن للمدير رؤية كلمة المرور التي سيختارها
@@ -61,7 +63,7 @@ export default async function IssuedPasswordResetPage({ searchParams }: PageProp
           publicReference={item.publicReference}
         />
         <Link
-          className="mt-7 inline-flex font-black text-[var(--itq-color-brand-700)] underline"
+          className="mt-7 inline-flex font-black text-[var(--itq-color-brand-strong)] underline"
           href="/ar/admin/approvals?tab=reset"
         >
           العودة إلى الاعتمادات

@@ -74,14 +74,17 @@ export function LegalPage({ copy }: LegalPageProps): JSX.Element {
             className="rounded-2xl border border-[var(--itq-color-border)] bg-[var(--itq-color-surface)] p-5 shadow-[var(--itq-shadow-sm)]"
           >
             <h2 className="flex items-center gap-2 font-black text-[var(--itq-color-ink)]">
-              <MarketingIcon className="size-5 text-[var(--itq-color-brand-700)]" name="document" />
+              <MarketingIcon
+                className="size-5 text-[var(--itq-color-brand-strong)]"
+                name="document"
+              />
               {copy.contentsLabel}
             </h2>
             <ol className="mt-4 grid gap-1 text-sm font-bold text-[var(--itq-color-muted)]">
               {copy.sections.map((section, index) => (
                 <li key={section.id}>
                   <a
-                    className="flex gap-2 rounded-xl px-3 py-2.5 transition hover:bg-[var(--itq-color-brand-50)] hover:text-[var(--itq-color-brand-800)]"
+                    className="flex gap-2 rounded-xl px-3 py-2.5 transition hover:bg-[var(--itq-color-brand-50)] hover:text-[var(--itq-color-brand-strong)]"
                     href={`#${section.id}`}
                   >
                     <span aria-hidden="true" className="text-[var(--itq-color-brand-500)]">
@@ -109,7 +112,7 @@ export function LegalPage({ copy }: LegalPageProps): JSX.Element {
               <div className="flex items-start gap-4">
                 <span
                   aria-hidden="true"
-                  className="inline-flex size-10 shrink-0 items-center justify-center rounded-xl bg-[var(--itq-color-brand-50)] text-sm font-black text-[var(--itq-color-brand-700)]"
+                  className="inline-flex size-10 shrink-0 items-center justify-center rounded-xl bg-[var(--itq-color-brand-50)] text-sm font-black text-[var(--itq-color-brand-strong)]"
                 >
                   {String(index + 1).padStart(2, "0")}
                 </span>

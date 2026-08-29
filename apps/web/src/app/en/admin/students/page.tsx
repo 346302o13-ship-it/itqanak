@@ -41,7 +41,7 @@ export default async function EnglishAdminStudentsPage({ searchParams }: PagePro
   return (
     <AdminShell csrfToken={csrfToken} displayName={principal.displayName} locale="en">
       <div className="mb-7">
-        <p className="text-sm font-black text-[var(--itq-color-brand-700)]">
+        <p className="text-sm font-black text-[var(--itq-color-brand-strong)]">
           Safe direct operations
         </p>
         <h1 className="mt-1 text-3xl font-black">Students & request creation</h1>

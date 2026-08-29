@@ -48,7 +48,7 @@ export function FinanceStudent({
     <StudentShell csrfToken={csrfToken} displayName={displayName} locale={locale}>
       <div className="flex flex-wrap items-start justify-between gap-4">
         <div>
-          <p className="text-sm font-black text-[var(--itq-color-brand-700)]">
+          <p className="text-sm font-black text-[var(--itq-color-brand-strong)]">
             {english ? "Private account ledger" : "سجل حسابك الخاص"}
           </p>
           <h1 className="mt-1 text-3xl font-black">
@@ -160,7 +160,7 @@ export function FinanceStudent({
                     </p>
                   </div>
                   <strong
-                    className="text-xl font-black text-[var(--itq-color-brand-800)]"
+                    className="text-xl font-black text-[var(--itq-color-brand-strong)]"
                     dir="ltr"
                   >
                     {formatFinanceAmount(due.amountMinor, due.currency, due.minorUnit, locale)}
@@ -196,7 +196,7 @@ export function FinanceStudent({
                   )}
                 </dl>
                 <Link
-                  className="mt-4 inline-flex text-sm font-black text-[var(--itq-color-brand-700)] underline"
+                  className="mt-4 inline-flex text-sm font-black text-[var(--itq-color-brand-strong)] underline"
                   href={`/${locale}/student/requests/${encodeURIComponent(due.requestNumber)}`}
                 >
                   {english ? "Open linked request" : "فتح الطلب المرتبط"}

@@ -94,7 +94,7 @@ export function ServicesCatalogView({
       {categories.length === 0 ? (
         <section className="my-12 rounded-3xl border border-dashed border-[var(--itq-color-border-strong)] bg-[var(--itq-color-surface)] p-10 text-center">
           <MarketingIcon
-            className="mx-auto size-10 text-[var(--itq-color-brand-700)]"
+            className="mx-auto size-10 text-[var(--itq-color-brand-strong)]"
             name="files"
           />
           <h2 className="mt-5 text-2xl font-black">{copy.emptyTitle}</h2>
@@ -132,7 +132,7 @@ export function ServicesCatalogView({
                   key={category.id}
                 >
                   <div className="border-b border-[var(--itq-color-border)] bg-[var(--itq-color-surface-soft)] p-6">
-                    <span className="inline-flex size-12 items-center justify-center rounded-2xl bg-[var(--itq-color-surface)] text-[var(--itq-color-brand-700)] shadow-sm">
+                    <span className="inline-flex size-12 items-center justify-center rounded-2xl bg-[var(--itq-color-surface)] text-[var(--itq-color-brand-strong)] shadow-sm">
                       <MarketingIcon
                         name={categoryIcons[categoryIndex % categoryIcons.length] ?? "sparkles"}
                       />
