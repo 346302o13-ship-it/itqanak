@@ -27,10 +27,42 @@ export async function POST(request: NextRequest) {
         createDraftInput(protectedForm.formData),
         { ...protectedForm.context, requestId },
       );
-      const destination = new URL(
-        `/${locale}/student/requests/${encodeURIComponent(result.request.requestNumber)}`,
-        protectedForm.config.publicAppUrl,
-      );
+      const detailPath = `/${locale}/student/requests/${encodeURIComponent(result.request.requestNumber)}`;
+      const destination = new URL(detailPath, protectedForm.config.publicAppUrl);
+
+      // "Save & send": create the draft, then submit it in the same request so a
+      // student without files reaches the team in one click instead of a
+      // draft-then-submit detour across two pages. A submit failure (incomplete
+      // fields, unaccepted policy) still leaves the draft, and we land the
+      // student on the detail page with the error to finish there.
+      if (protectedForm.formData.get("intent") === "submit" && !result.idempotentReplay) {
+        try {
+          await runtime.requests.submit(
+            principal,
+            result.request.requestNumber,
+            {
+              expectedVersion: result.request.version,
+              acceptedAcademicIntegrity:
+                protectedForm.formData.get("acceptedAcademicIntegrity") === "true",
+              academicIntegrityVersion: String(
+                protectedForm.formData.get("academicIntegrityVersion") ?? "",
+              ),
+            },
+            { ...protectedForm.context, requestId },
+          );
+          destination.searchParams.set("status", "submitted");
+          return NextResponse.redirect(destination, 303);
+        } catch (submitError: unknown) {
+          return requestFormErrorResponse(
+            request,
+            submitError,
+            requestId,
+            detailPath,
+            publicAppUrl,
+          );
+        }
+      }
+
       destination.searchParams.set(
         "status",
         result.idempotentReplay ? "draft_exists" : "draft_created",

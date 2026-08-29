@@ -4,11 +4,11 @@ import type { ReactNode } from "react";
 import { BrandMark } from "@itqanak/ui";
 
 import { CsrfInput } from "./auth-shell";
-import { EducationalGuide } from "./educational-guide";
 import { LogOutIcon, ShieldCheckIcon, WhatsAppIcon } from "./icons";
 import { InstallAppButton } from "./install-app-button";
 import { NotificationCenter } from "./notification-center";
 import { StudentMobileNavigation, StudentNavigation } from "./student-navigation";
+import { StudentSupportFab } from "./student-support-fab";
 import { SubmitButton } from "./submit-button";
 import { supportWhatsAppHref } from "@/lib/support-contact";
 
@@ -138,7 +138,7 @@ export function StudentShell({
         </main>
       </div>
       {workspace ? null : <StudentMobileNavigation locale={locale} />}
-      {workspace ? null : <EducationalGuide audience="student" locale={locale} />}
+      {workspace ? null : <StudentSupportFab locale={locale} />}
     </div>
   );
 }

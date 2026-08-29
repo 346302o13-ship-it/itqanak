@@ -32,8 +32,10 @@ export default async function NewRequestPage({ searchParams }: NewRequestPagePro
   ]);
   const runtime = await createStudentRequestRuntime();
   let catalog;
+  let integrityVersion: string;
   try {
     catalog = await runtime.catalog.listPublicCatalog();
+    integrityVersion = runtime.config.academicIntegrityVersion;
   } finally {
     await runtime.close();
   }
@@ -53,7 +55,8 @@ export default async function NewRequestPage({ searchParams }: NewRequestPagePro
         <div>
           <h1 className="text-3xl font-black">إنشاء طلب جديد</h1>
           <p className="mt-3 max-w-2xl leading-7 text-[var(--itq-color-muted)]">
-            احفظ الطلب أولاً كمسودة. بعدها يمكنك رفع الملفات ومراجعة البيانات قبل الإرسال.
+            اختر الخدمة واكتب عنوانًا ووصفًا، ثم أرسله مباشرة. إن كنت تريد إرفاق ملفات أولًا، احفظه
+            كمسودة وأكمِله لاحقًا.
           </p>
         </div>
         <Link
@@ -92,11 +95,32 @@ export default async function NewRequestPage({ searchParams }: NewRequestPagePro
             </select>
           </div>
           <RequestFields />
-          <div className="rounded-2xl bg-[var(--itq-color-brand-50)] p-5 text-sm leading-7">
-            يمكنك ترك العنوان أو الوصف فارغاً عند حفظ المسودة. يلزم إكمالهما وقبول سياسة النزاهة
-            الأكاديمية قبل الإرسال النهائي.
+          <input name="academicIntegrityVersion" type="hidden" value={integrityVersion} />
+          <label className="flex items-start gap-3 rounded-xl border border-[var(--itq-color-border)] bg-white p-4 text-sm font-semibold leading-7">
+            <input
+              className="mt-1 size-4"
+              name="acceptedAcademicIntegrity"
+              type="checkbox"
+              value="true"
+            />
+            <span>
+              أقر بأن الطلب ملتزم بسياسة النزاهة الأكاديمية الحالية ({integrityVersion})، وأن الخدمة
+              للتعلّم والمراجعة لا للانتحال أو أداء الاختبارات. (مطلوب للإرسال المباشر فقط)
+            </span>
+          </label>
+          <div className="flex flex-wrap gap-3">
+            <SubmitButton name="intent" pendingLabel="جارٍ الإرسال…" value="submit" variant="primary">
+              احفظ وأرسل الآن
+            </SubmitButton>
+            <SubmitButton
+              name="intent"
+              pendingLabel="جارٍ حفظ المسودة…"
+              value="draft"
+              variant="secondary"
+            >
+              حفظ كمسودة
+            </SubmitButton>
           </div>
-          <SubmitButton pendingLabel="جارٍ حفظ المسودة…">حفظ كمسودة</SubmitButton>
         </form>
       )}
     </StudentShell>

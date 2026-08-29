@@ -49,6 +49,12 @@ interface InstallAppButtonProps {
   readonly surface?: AppSurface;
   readonly compact?: boolean;
   readonly className?: string;
+  /**
+   * "inline" (default) is the small pill used in headers.
+   * "fab" is the floating round pill; it renders nothing once the app is
+   * installed / running standalone, or on a browser that offers no install path.
+   */
+  readonly variant?: "inline" | "fab";
 }
 
 function isStandalone(): boolean {
@@ -66,12 +72,14 @@ export function InstallAppButton({
   compact = false,
   locale = "ar",
   surface = "public",
+  variant = "inline",
 }: InstallAppButtonProps) {
   const copy = labels[locale];
   const [promptEvent, setPromptEvent] = useState<InstallPromptEvent>();
   const [installed, setInstalled] = useState(false);
   const [instructions, setInstructions] = useState(false);
   const [prompting, setPrompting] = useState(false);
+  const [iosDevice, setIosDevice] = useState(false);
   const dialogId = useId();
   const titleId = useId();
   const dialogRef = useRef<HTMLDivElement>(null);
@@ -80,6 +88,13 @@ export function InstallAppButton({
 
   useEffect(() => {
     setInstalled(isStandalone());
+    setIosDevice(
+      installInstructionKind({
+        maxTouchPoints: navigator.maxTouchPoints,
+        platform: navigator.platform,
+        userAgent: navigator.userAgent,
+      }) === "ios",
+    );
     const capturePrompt = (event: Event) => {
       event.preventDefault();
       setPromptEvent(event as InstallPromptEvent);
@@ -162,12 +177,23 @@ export function InstallAppButton({
     }
   }
 
+  // The floating variant is an offer, not a status line: once there is nothing
+  // to offer (already installed / standalone / a browser with no install path)
+  // it disappears entirely.
+  if (variant === "fab" && (installed || !(promptEvent !== undefined || iosDevice))) {
+    return null;
+  }
+
   const label = installed ? copy.installed : copy[surface];
   const interactionClass = prompting
     ? "cursor-wait opacity-70"
     : installed
       ? "cursor-default opacity-70"
       : "hover:-translate-y-0.5 hover:border-[var(--itq-color-brand-200)] hover:bg-[var(--itq-color-brand-50)]";
+  const baseClass =
+    variant === "fab"
+      ? "inline-flex min-h-14 items-center justify-center gap-3 rounded-full border border-white/25 bg-white px-4 text-sm font-black text-[var(--itq-color-brand-800)] shadow-[var(--itq-shadow-float)] transition"
+      : "inline-flex min-h-11 items-center justify-center gap-2 rounded-xl border border-[var(--itq-color-border)] bg-white px-3 text-xs font-black text-[var(--itq-color-brand-800)] shadow-sm transition";
   return (
     <>
       <button
@@ -176,14 +202,17 @@ export function InstallAppButton({
         aria-disabled={installed || prompting}
         aria-haspopup="dialog"
         aria-label={label}
-        className={`inline-flex min-h-11 items-center justify-center gap-2 rounded-xl border border-[var(--itq-color-border)] bg-white px-3 text-xs font-black text-[var(--itq-color-brand-800)] shadow-sm transition ${interactionClass} ${className}`}
+        className={`${baseClass} ${interactionClass} ${className}`}
         disabled={prompting}
         onClick={() => void install()}
         ref={triggerRef}
         type="button"
       >
-        <InstallIcon className="size-4.5" />
-        <span aria-live="polite" className={compact ? "sr-only sm:not-sr-only" : undefined}>
+        <InstallIcon className={variant === "fab" ? "size-5" : "size-4.5"} />
+        <span
+          aria-live="polite"
+          className={compact && variant !== "fab" ? "sr-only sm:not-sr-only" : undefined}
+        >
           {label}
         </span>
       </button>

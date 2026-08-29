@@ -32,8 +32,10 @@ export default async function EnglishNewRequestPage({ searchParams }: NewRequest
   ]);
   const runtime = await createStudentRequestRuntime();
   let catalog;
+  let integrityVersion: string;
   try {
     catalog = await runtime.catalog.listPublicCatalog();
+    integrityVersion = runtime.config.academicIntegrityVersion;
   } finally {
     await runtime.close();
   }
@@ -56,7 +58,8 @@ export default async function EnglishNewRequestPage({ searchParams }: NewRequest
         <div>
           <h1 className="text-3xl font-black">Create a new request</h1>
           <p className="mt-3 max-w-2xl leading-7 text-[var(--itq-color-muted)]">
-            Save a draft first. You can then upload files and review every detail before submitting.
+            Pick a service, add a title and description, then send it straight away. If you need to
+            attach files first, save it as a draft and finish later.
           </p>
         </div>
         <Link
@@ -96,11 +99,33 @@ export default async function EnglishNewRequestPage({ searchParams }: NewRequest
             </select>
           </div>
           <RequestFields locale="en" />
-          <div className="rounded-2xl bg-[var(--itq-color-brand-50)] p-5 text-sm leading-7">
-            You may leave the title or description empty while saving a draft. Both fields and the
-            academic-integrity confirmation are required before final submission.
+          <input name="academicIntegrityVersion" type="hidden" value={integrityVersion} />
+          <label className="flex items-start gap-3 rounded-xl border border-[var(--itq-color-border)] bg-white p-4 text-sm font-semibold leading-7">
+            <input
+              className="mt-1 size-4"
+              name="acceptedAcademicIntegrity"
+              type="checkbox"
+              value="true"
+            />
+            <span>
+              I confirm this request follows the current academic-integrity policy ({integrityVersion}
+              ) and that the service is for learning and review, not plagiarism or exam-taking.
+              (Required only for sending directly.)
+            </span>
+          </label>
+          <div className="flex flex-wrap gap-3">
+            <SubmitButton name="intent" pendingLabel="Sending…" value="submit" variant="primary">
+              Save &amp; send now
+            </SubmitButton>
+            <SubmitButton
+              name="intent"
+              pendingLabel="Saving draft…"
+              value="draft"
+              variant="secondary"
+            >
+              Save as draft
+            </SubmitButton>
           </div>
-          <SubmitButton pendingLabel="Saving draft…">Save as draft</SubmitButton>
         </form>
       )}
     </StudentShell>
