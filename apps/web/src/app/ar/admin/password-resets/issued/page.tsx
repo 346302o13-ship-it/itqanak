@@ -62,9 +62,9 @@ export default async function IssuedPasswordResetPage({ searchParams }: PageProp
         />
         <Link
           className="mt-7 inline-flex font-black text-[var(--itq-color-brand-700)] underline"
-          href="/ar/admin/password-resets"
+          href="/ar/admin/approvals?tab=reset"
         >
-          العودة إلى طلبات الاستعادة
+          العودة إلى الاعتمادات
         </Link>
       </div>
     </AdminShell>

@@ -62,9 +62,9 @@ export default async function EnglishIssuedPasswordResetPage({ searchParams }: P
         />
         <Link
           className="mt-7 inline-flex font-black text-[var(--itq-color-brand-700)] underline"
-          href="/en/admin/password-resets"
+          href="/en/admin/approvals?tab=reset"
         >
-          Back to recovery requests
+          Back to approvals
         </Link>
       </div>
     </AdminShell>

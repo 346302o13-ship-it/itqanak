@@ -56,7 +56,7 @@ describe("notification payload parsing", () => {
     );
     expect(localizedNotificationHref("/conversation", "en", "admin")).toBe("/en/admin/support");
     expect(localizedNotificationHref("/verifications", "ar", "admin")).toBe(
-      "/ar/admin/verifications",
+      "/ar/admin/approvals?tab=phone",
     );
     expect(localizedNotificationHref("/verifications", "ar", "student")).toBe("/ar/student");
     expect(localizedNotificationHref("https://example.test", "ar", "admin")).toBe("/ar/admin");

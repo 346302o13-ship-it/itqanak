@@ -10,7 +10,6 @@ import {
   MessageIcon,
   OperationsIcon,
   ServicesIcon,
-  ShieldCheckIcon,
   UserIcon,
   VerifiedIcon,
 } from "./icons";
@@ -31,16 +30,10 @@ const itemsByLocale = {
       Icon: UserIcon,
     },
     {
-      href: "/ar/admin/verifications",
-      label: "توثيق الحسابات",
-      mobileLabel: "التوثيق",
+      href: "/ar/admin/approvals",
+      label: "الاعتمادات",
+      mobileLabel: "الاعتمادات",
       Icon: VerifiedIcon,
-    },
-    {
-      href: "/ar/admin/password-resets",
-      label: "استعادة كلمات المرور",
-      mobileLabel: "الاستعادة",
-      Icon: ShieldCheckIcon,
     },
     {
       href: "/ar/admin/finance",
@@ -91,16 +84,10 @@ const itemsByLocale = {
       Icon: UserIcon,
     },
     {
-      href: "/en/admin/verifications",
-      label: "Account verification",
-      mobileLabel: "Verify",
+      href: "/en/admin/approvals",
+      label: "Approvals",
+      mobileLabel: "Approvals",
       Icon: VerifiedIcon,
-    },
-    {
-      href: "/en/admin/password-resets",
-      label: "Password recovery",
-      mobileLabel: "Recovery",
-      Icon: ShieldCheckIcon,
     },
     {
       href: "/en/admin/finance",
@@ -141,12 +128,16 @@ const itemsByLocale = {
 function adminNavActive(pathname: string, href: string): boolean {
   if (href === "/ar/admin" || href === "/en/admin") return pathname === href;
   if (pathname.startsWith(href)) return true;
-  // The request inbox now lives under /admin/support; keep the item lit while an
-  // admin is on a legacy /admin/requests/* detail route.
-  return (
-    (href === "/ar/admin/support" && pathname.startsWith("/ar/admin/requests")) ||
-    (href === "/en/admin/support" && pathname.startsWith("/en/admin/requests"))
-  );
+  // The request inbox now lives under /admin/support; phone verification and
+  // password recovery now live under /admin/approvals. Keep the item lit on the
+  // legacy paths that redirect there.
+  const legacy: Readonly<Record<string, readonly string[]>> = {
+    "/ar/admin/support": ["/ar/admin/requests"],
+    "/en/admin/support": ["/en/admin/requests"],
+    "/ar/admin/approvals": ["/ar/admin/verifications", "/ar/admin/password-resets"],
+    "/en/admin/approvals": ["/en/admin/verifications", "/en/admin/password-resets"],
+  };
+  return (legacy[href] ?? []).some((prefix) => pathname.startsWith(prefix));
 }
 
 export function AdminNavigation({ locale = "ar" }: Readonly<{ locale?: "ar" | "en" }>) {

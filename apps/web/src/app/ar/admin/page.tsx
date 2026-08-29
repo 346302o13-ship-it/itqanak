@@ -173,7 +173,7 @@ export default async function AdminPage() {
             <p className="mt-2 text-sm font-bold">حسابات تنتظر المراجعة</p>
             <Link
               className="mt-7 inline-flex min-h-11 items-center rounded-xl bg-white px-5 text-sm font-black text-[var(--itq-color-ink-deep)]"
-              href="/ar/admin/verifications"
+              href="/ar/admin/approvals?tab=phone"
             >
               فتح قائمة التوثيق
             </Link>

@@ -23,7 +23,7 @@ export async function POST(request: NextRequest, context: ConfirmRouteContext) {
       assertProtectedForm(request),
     ]);
     locale = formValue(protectedForm.formData, "locale") === "en" ? "en" : "ar";
-    const fallback = `/${locale}/admin/verifications`;
+    const fallback = `/${locale}/admin/approvals?tab=phone`;
     const runtime = await createStudentRequestRuntime();
     try {
       const principal = await principalForRequest(runtime, request);
@@ -43,14 +43,14 @@ export async function POST(request: NextRequest, context: ConfirmRouteContext) {
         { ...protectedForm.context, requestId },
       );
       return NextResponse.redirect(
-        new URL(`${fallback}?notice=verified`, protectedForm.config.adminAppUrl),
+        new URL(`${fallback}&notice=verified`, protectedForm.config.adminAppUrl),
         303,
       );
     } finally {
       await runtime.close();
     }
   } catch (error: unknown) {
-    const fallback = `/${locale}/admin/verifications`;
+    const fallback = `/${locale}/admin/approvals?tab=phone`;
     return adminFormErrorResponse(request, error, requestId, fallback, adminAppUrl);
   }
 }

@@ -20,7 +20,7 @@ export async function POST(request: NextRequest, context: RouteContext) {
       assertProtectedForm(request),
     ]);
     locale = formValue(protectedForm.formData, "locale") === "en" ? "en" : "ar";
-    const fallback = `/${locale}/admin/password-resets`;
+    const fallback = `/${locale}/admin/approvals?tab=reset`;
     const runtime = await createStudentRequestRuntime();
     try {
       const principal = await principalForRequest(runtime, request);
@@ -46,7 +46,7 @@ export async function POST(request: NextRequest, context: RouteContext) {
   } catch (error: unknown) {
     const destination = appUrl(
       config,
-      `/${locale}/admin/password-resets`,
+      `/${locale}/admin/approvals?tab=reset`,
       statusForAuthError(error),
       "admin",
     );

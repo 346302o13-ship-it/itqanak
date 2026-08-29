@@ -169,7 +169,7 @@ export default async function EnglishAdminPage() {
             <p className="mt-2 text-sm font-bold">accounts waiting for review</p>
             <Link
               className="mt-7 inline-flex min-h-11 items-center rounded-xl bg-white px-5 text-sm font-black text-[var(--itq-color-ink-deep)]"
-              href="/en/admin/verifications"
+              href="/en/admin/approvals?tab=phone"
             >
               Open verification queue
             </Link>
