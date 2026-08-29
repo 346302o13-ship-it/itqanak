@@ -21,6 +21,7 @@ jobs:
       - run: pnpm install --frozen-lockfile
       - run: scripts/check-secrets.sh
       - run: scripts/check-design-tokens.sh
+      - run: scripts/check-production-compose.sh
       - run: scripts/tests/libpq-service.test.sh
       - run: scripts/tests/reconcile-clamav.test.sh
       - run: pnpm format:check
