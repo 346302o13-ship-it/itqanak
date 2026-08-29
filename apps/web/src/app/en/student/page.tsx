@@ -164,9 +164,9 @@ export default async function EnglishStudentDashboard({ searchParams }: Dashboar
             </p>
             <Link
               className="mt-5 inline-flex min-h-11 items-center gap-2 rounded-xl bg-[var(--itq-color-brand-700)] px-4 text-sm font-black text-white"
-              href="/en/services"
+              href="/en/student/requests/new"
             >
-              <ServicesIcon className="size-4" /> Explore services
+              <PlusIcon className="size-4" /> Create your first request
             </Link>
           </div>
         ) : (

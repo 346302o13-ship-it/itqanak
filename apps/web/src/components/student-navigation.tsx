@@ -6,15 +6,7 @@ import type { ComponentType, SVGProps } from "react";
 import { MobileNavBar } from "./mobile-nav-bar";
 import { NavLink } from "./nav-link";
 
-import {
-  FinanceIcon,
-  HomeIcon,
-  MessageIcon,
-  PlusIcon,
-  RequestsIcon,
-  ServicesIcon,
-  UserIcon,
-} from "./icons";
+import { FinanceIcon, HomeIcon, MessageIcon, RequestsIcon, ServicesIcon, UserIcon } from "./icons";
 
 type NavigationItem = Readonly<{
   href: string;
@@ -40,12 +32,6 @@ const itemsByLocale: Readonly<Record<"ar" | "en", readonly NavigationItem[]>> = 
       shortLabel: "المالية",
       icon: FinanceIcon,
     },
-    {
-      href: "/ar/student/requests/new",
-      label: "إنشاء طلب جديد",
-      shortLabel: "طلب جديد",
-      icon: PlusIcon,
-    },
     { href: "/ar/services", label: "استكشف الخدمات", shortLabel: "الخدمات", icon: ServicesIcon },
     {
       href: "/ar/student/support",
@@ -69,12 +55,6 @@ const itemsByLocale: Readonly<Record<"ar" | "en", readonly NavigationItem[]>> = 
       shortLabel: "Finance",
       icon: FinanceIcon,
     },
-    {
-      href: "/en/student/requests/new",
-      label: "Create a request",
-      shortLabel: "New",
-      icon: PlusIcon,
-    },
     { href: "/en/services", label: "Explore services", shortLabel: "Services", icon: ServicesIcon },
     {
       href: "/en/student/support",
@@ -89,13 +69,6 @@ const itemsByLocale: Readonly<Record<"ar" | "en", readonly NavigationItem[]>> = 
 function isActive(pathname: string, item: NavigationItem): boolean {
   if (item.exact === true) {
     return pathname === item.href;
-  }
-  if (item.href === "/ar/student/requests" || item.href === "/en/student/requests") {
-    return (
-      pathname.startsWith(item.href) &&
-      pathname !== "/ar/student/requests/new" &&
-      pathname !== "/en/student/requests/new"
-    );
   }
   return pathname === item.href || pathname.startsWith(`${item.href}/`);
 }

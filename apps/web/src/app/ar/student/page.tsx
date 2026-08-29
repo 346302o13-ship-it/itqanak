@@ -160,9 +160,9 @@ export default async function StudentDashboardPage({ searchParams }: StudentDash
             </p>
             <Link
               className="mt-5 inline-flex min-h-11 items-center gap-2 rounded-xl bg-[var(--itq-color-brand-700)] px-4 text-sm font-black text-white"
-              href="/ar/services"
+              href="/ar/student/requests/new"
             >
-              <ServicesIcon className="size-4" /> استعراض الخدمات
+              <PlusIcon className="size-4" /> إنشاء طلبك الأول
             </Link>
           </div>
         ) : (
