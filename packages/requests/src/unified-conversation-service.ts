@@ -16,6 +16,7 @@ import type { Logger } from "@itqanak/observability";
 
 import { isUuid, normalizeBoundedPage } from "./chat-validation.js";
 import { RequestDomainError } from "./errors.js";
+import { messageReactionEmojis } from "./types.js";
 import type {
   AttachmentScanStatus,
   ChatContentType,
@@ -653,7 +654,7 @@ export class UnifiedConversationService {
           [access.row.id, anchor[0].sent_at, anchor[0].id, deltaLimit],
         );
         return {
-          items: deltaRows.map(toMessage),
+          items: await this.withReactions(deltaRows.map(toMessage), principal.userId),
           page: 1,
           pageSize: deltaLimit,
           incremental: true,
@@ -688,13 +689,89 @@ export class UnifiedConversationService {
     ]);
     const total = toSafeInteger(counts[0]?.count ?? "0", "message count");
     return {
-      items: rows.map(toMessage).reverse(),
+      items: await this.withReactions(rows.map(toMessage).reverse(), principal.userId),
       page,
       pageSize,
       total,
       pageCount: Math.max(1, Math.ceil(total / pageSize)),
       incremental: false,
     };
+  }
+
+  private async withReactions(
+    messages: readonly UnifiedMessage[],
+    viewerUserId: string,
+  ): Promise<UnifiedMessage[]> {
+    if (messages.length === 0) return [];
+    const ids = messages.map((message) => message.id);
+    const rows = await this.database<
+      {
+        readonly message_id: string;
+        readonly emoji: string;
+        readonly count: number | string;
+        readonly mine: boolean;
+      }[]
+    >`
+      SELECT message_id, emoji, count(*)::int AS count,
+             bool_or(user_id = ${viewerUserId}) AS mine
+      FROM support_message_reactions
+      WHERE message_id = ANY(${ids})
+      GROUP BY message_id, emoji
+      ORDER BY message_id, min(created_at)
+    `;
+    if (rows.length === 0) return [...messages];
+    const byMessage = new Map<string, { emoji: string; count: number; mine: boolean }[]>();
+    for (const row of rows) {
+      const list = byMessage.get(row.message_id) ?? [];
+      list.push({
+        emoji: row.emoji,
+        count: toSafeInteger(row.count, "reaction count"),
+        mine: row.mine === true,
+      });
+      byMessage.set(row.message_id, list);
+    }
+    return messages.map((message) => {
+      const reactions = byMessage.get(message.id);
+      return reactions === undefined ? message : { ...message, reactions };
+    });
+  }
+
+  /**
+   * Add or remove the requesting user's reaction with `emoji` on a message in a
+   * conversation they can access. Returns the resulting state.
+   */
+  public async toggleReaction(
+    principal: AuthenticatedPrincipal,
+    conversationId: string,
+    messageId: string,
+    emoji: string,
+  ): Promise<{ readonly reacted: boolean }> {
+    if (!(messageReactionEmojis as readonly string[]).includes(emoji)) {
+      throw new RequestDomainError("INVALID_MESSAGE");
+    }
+    if (!isUuid(messageId)) throw new RequestDomainError("INVALID_MESSAGE");
+    return this.database.begin(async (transaction) => {
+      const tx = transaction as DatabaseClient;
+      const access = await this.resolveConversation(tx, principal, conversationId, "send");
+      const target = await tx<{ readonly id: string }[]>`
+        SELECT id FROM support_messages
+        WHERE id = ${messageId} AND conversation_id = ${access.row.id}
+        LIMIT 1
+      `;
+      if (target[0] === undefined) throw new RequestDomainError("INVALID_MESSAGE");
+      const inserted = await tx<{ readonly message_id: string }[]>`
+        INSERT INTO support_message_reactions (message_id, user_id, emoji)
+        VALUES (${messageId}, ${principal.userId}, ${emoji})
+        ON CONFLICT (message_id, user_id, emoji) DO NOTHING
+        RETURNING message_id
+      `;
+      if (inserted[0] !== undefined) return { reacted: true };
+      await tx`
+        DELETE FROM support_message_reactions
+        WHERE message_id = ${messageId} AND user_id = ${principal.userId} AND emoji = ${emoji}
+      `;
+      return { reacted: false };
+    });
   }
 
   public async sendMessage(

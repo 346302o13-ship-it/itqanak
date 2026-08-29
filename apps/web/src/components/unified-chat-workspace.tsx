@@ -657,6 +657,8 @@ export function UnifiedChatWorkspace({
   const [replyingTo, setReplyingTo] = useState<
     { readonly id: string; readonly body: string; readonly senderType: string } | undefined
   >(undefined);
+  const [reactionPickerFor, setReactionPickerFor] = useState<string>();
+  const reactionChoices = ["👍", "❤️", "😂", "😮", "😢", "🙏"];
 
   const closeContacts = useCallback((restoreFocus = true): void => {
     setContactsOpen(false);
@@ -1270,6 +1272,47 @@ export function UnifiedChatWorkspace({
       endRef.current?.scrollIntoView({ behavior: "smooth", block: "nearest" }),
     );
     void deliverText(entry);
+  }
+
+  async function toggleReaction(messageId: string, emoji: string) {
+    if (apiBase === undefined || csrfToken === undefined) return;
+    // Optimistic: flip mine / adjust count locally, reconcile on the next poll.
+    setMessages((current) =>
+      current.map((message) => {
+        if (message.id !== messageId) return message;
+        const existing = message.reactions ?? [];
+        const hit = existing.find((reaction) => reaction.emoji === emoji);
+        let next: { emoji: string; count: number; mine: boolean }[];
+        if (hit === undefined) {
+          next = [...existing, { emoji, count: 1, mine: true }];
+        } else if (hit.mine) {
+          next = existing
+            .map((reaction) =>
+              reaction.emoji === emoji
+                ? { ...reaction, count: reaction.count - 1, mine: false }
+                : reaction,
+            )
+            .filter((reaction) => reaction.count > 0);
+        } else {
+          next = existing.map((reaction) =>
+            reaction.emoji === emoji
+              ? { ...reaction, count: reaction.count + 1, mine: true }
+              : reaction,
+          );
+        }
+        return { ...message, reactions: next };
+      }),
+    );
+    try {
+      await fetch(`${apiBase}/messages/${encodeURIComponent(messageId)}/reactions`, {
+        method: "POST",
+        credentials: "same-origin",
+        headers: { "Content-Type": "application/x-www-form-urlencoded" },
+        body: new URLSearchParams({ csrfToken, emoji }),
+      });
+    } catch {
+      // The next poll / stream delta restores the true state.
+    }
   }
 
   async function waitForAttachment(attachment: UnifiedConversationAttachment) {
@@ -2458,31 +2501,91 @@ export function UnifiedChatWorkspace({
                               <bdi dir="auto">{message.body}</bdi>
                             </p>
                           ) : null}
+                          {(message.reactions?.length ?? 0) > 0 ? (
+                            <div className="mt-1.5 flex flex-wrap gap-1">
+                              {message.reactions?.map((reaction) => (
+                                <button
+                                  className={`inline-flex items-center gap-1 rounded-full px-1.5 py-0.5 text-[11px] font-bold tabular-nums ${
+                                    reaction.mine
+                                      ? "bg-[var(--itq-color-brand-100)] text-[var(--itq-color-brand-800)]"
+                                      : mine
+                                        ? "bg-white/15 text-white"
+                                        : "bg-[var(--itq-color-surface-soft)] text-[var(--itq-color-muted)]"
+                                  }`}
+                                  key={reaction.emoji}
+                                  onClick={() => void toggleReaction(message.id, reaction.emoji)}
+                                  type="button"
+                                >
+                                  <span>{reaction.emoji}</span>
+                                  <span>{reaction.count}</span>
+                                </button>
+                              ))}
+                            </div>
+                          ) : null}
                           <footer
                             className={`mt-1.5 flex items-center justify-end gap-1 text-[9px] font-semibold ${
                               mine ? "text-white/70" : "text-[var(--itq-color-muted)]"
                             }`}
                           >
-                            <button
-                              className={`me-auto rounded px-1.5 py-0.5 font-black ${
-                                mine ? "hover:bg-white/15" : "hover:bg-[var(--itq-color-brand-50)]"
-                              }`}
-                              onClick={() =>
-                                setReplyingTo({
-                                  id: message.id,
-                                  body:
-                                    message.contentType === "TEXT"
-                                      ? message.body
-                                      : english
-                                        ? "Attachment"
-                                        : "مرفق",
-                                  senderType: message.senderType,
-                                })
-                              }
-                              type="button"
-                            >
-                              {english ? "Reply" : "رد"}
-                            </button>
+                            <span className="me-auto flex items-center gap-1">
+                              <button
+                                className={`rounded px-1.5 py-0.5 font-black ${
+                                  mine
+                                    ? "hover:bg-white/15"
+                                    : "hover:bg-[var(--itq-color-brand-50)]"
+                                }`}
+                                onClick={() =>
+                                  setReplyingTo({
+                                    id: message.id,
+                                    body:
+                                      message.contentType === "TEXT"
+                                        ? message.body
+                                        : english
+                                          ? "Attachment"
+                                          : "مرفق",
+                                    senderType: message.senderType,
+                                  })
+                                }
+                                type="button"
+                              >
+                                {english ? "Reply" : "رد"}
+                              </button>
+                              <span className="relative">
+                                <button
+                                  aria-label={english ? "Add a reaction" : "أضف تفاعلًا"}
+                                  className={`rounded px-1.5 py-0.5 font-black ${
+                                    mine
+                                      ? "hover:bg-white/15"
+                                      : "hover:bg-[var(--itq-color-brand-50)]"
+                                  }`}
+                                  onClick={() =>
+                                    setReactionPickerFor((value) =>
+                                      value === message.id ? undefined : message.id,
+                                    )
+                                  }
+                                  type="button"
+                                >
+                                  {english ? "React" : "تفاعل"}
+                                </button>
+                                {reactionPickerFor === message.id ? (
+                                  <span className="absolute bottom-full z-20 mb-1 flex gap-0.5 rounded-full border border-[var(--itq-color-border)] bg-white p-1 shadow-lg">
+                                    {reactionChoices.map((emoji) => (
+                                      <button
+                                        className="grid size-7 place-items-center rounded-full text-base hover:bg-[var(--itq-color-surface-soft)]"
+                                        key={emoji}
+                                        onClick={() => {
+                                          void toggleReaction(message.id, emoji);
+                                          setReactionPickerFor(undefined);
+                                        }}
+                                        type="button"
+                                      >
+                                        {emoji}
+                                      </button>
+                                    ))}
+                                  </span>
+                                ) : null}
+                              </span>
+                            </span>
                             <time dateTime={message.sentAt.toISOString()}>
                               {formatMessageTime(message.sentAt, locale)}
                             </time>

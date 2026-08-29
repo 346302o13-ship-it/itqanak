@@ -457,6 +457,7 @@ export interface UnifiedMessage {
   readonly attachment?: UnifiedMessageAttachment;
   readonly quote?: ServiceQuote;
   readonly replyTo?: UnifiedMessageReply;
+  readonly reactions?: readonly UnifiedMessageReaction[];
   readonly clientMessageId?: string;
   readonly metadata: JsonObject;
   readonly status: MessageReceiptStatus;
@@ -468,6 +469,16 @@ export interface UnifiedMessageReply {
   readonly body: string;
   readonly senderType: ChatSenderType;
   readonly contentType: ChatContentType;
+}
+
+export const messageReactionEmojis = ["👍", "❤️", "😂", "😮", "😢", "🙏"] as const;
+export type MessageReactionEmoji = (typeof messageReactionEmojis)[number];
+
+export interface UnifiedMessageReaction {
+  readonly emoji: string;
+  readonly count: number;
+  /** True when the requesting principal is one of the reactors. */
+  readonly mine: boolean;
 }
 
 export interface SendUnifiedMessageInput {
