@@ -18,7 +18,7 @@ export default function PendingPhoneVerificationPage() {
         <li>بعد مطابقة الرقم وتأكيد الإدارة للحساب، سجّل الدخول برقمك بصيغة دولية.</li>
       </ol>
       <a
-        className="mt-7 flex min-h-12 items-center justify-center rounded-xl bg-emerald-600 px-5 py-3 text-center font-black text-white"
+        className="mt-7 flex min-h-12 items-center justify-center rounded-xl bg-[var(--itq-color-success-600)] px-5 py-3 text-center font-black text-white"
         href={supportWhatsAppHref("ar", "تأكيد حساب طالب")}
         rel="noreferrer"
         target="_blank"

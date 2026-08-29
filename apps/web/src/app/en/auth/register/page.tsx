@@ -18,7 +18,7 @@ interface RegisterPageProps {
 }
 
 function fieldClassName(invalid: boolean): string {
-  return `mt-2 w-full rounded-xl border bg-white px-3 py-3 text-base shadow-sm ${
+  return `mt-2 w-full rounded-xl border bg-[var(--itq-color-surface)] px-3 py-3 text-base shadow-sm ${
     invalid ? "border-[var(--itq-color-danger-600)]" : "border-[var(--itq-color-border)]"
   }`;
 }

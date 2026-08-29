@@ -71,32 +71,32 @@ export default async function AdminPage() {
             value: requests.total,
             detail: `${active} نشطة في القائمة`,
             Icon: RequestsIcon,
-            tone: "bg-sky-50 text-sky-800",
+            tone: "bg-[var(--itq-color-info-50)] text-[var(--itq-color-info-800)]",
           },
           {
             label: "المحادثات الموحدة",
             value: unread,
             detail: `${conversations.total} طالباً في صندوق التواصل`,
             Icon: MessageIcon,
-            tone: "bg-emerald-50 text-emerald-800",
+            tone: "bg-[var(--itq-color-success-50)] text-[var(--itq-color-success-800)]",
           },
           {
             label: "مستحقات غير مدفوعة",
             value: unpaid,
             detail: "راجع مبالغها مفصّلة بحسب العملة",
             Icon: FinanceIcon,
-            tone: "bg-violet-50 text-violet-800",
+            tone: "bg-[var(--itq-color-info-50)] text-[var(--itq-color-info-800)]",
           },
           {
             label: "بانتظار التوثيق",
             value: verifications.length,
             detail: "تحتاج مراجعة واتساب",
             Icon: VerifiedIcon,
-            tone: "bg-amber-50 text-amber-900",
+            tone: "bg-[var(--itq-color-warning-50)] text-[var(--itq-color-warning-900)]",
           },
         ].map(({ label, value, detail, Icon, tone }) => (
           <article
-            className="rounded-[1.5rem] border border-[var(--itq-color-border)] bg-white p-5 shadow-[var(--itq-shadow-sm)]"
+            className="rounded-[1.5rem] border border-[var(--itq-color-border)] bg-[var(--itq-color-surface)] p-5 shadow-[var(--itq-shadow-sm)]"
             key={label}
           >
             <span className={`grid size-11 place-items-center rounded-2xl ${tone}`}>
@@ -112,7 +112,7 @@ export default async function AdminPage() {
       </section>
 
       <div className="mt-7 grid gap-6 xl:grid-cols-[minmax(0,1.45fr)_minmax(18rem,.8fr)]">
-        <section className="rounded-[1.5rem] border border-[var(--itq-color-border)] bg-white p-5 shadow-[var(--itq-shadow-sm)]">
+        <section className="rounded-[1.5rem] border border-[var(--itq-color-border)] bg-[var(--itq-color-surface)] p-5 shadow-[var(--itq-shadow-sm)]">
           <div className="flex items-center justify-between gap-3">
             <div>
               <h2 className="text-xl font-black">أحدث الطلبات</h2>
@@ -150,7 +150,7 @@ export default async function AdminPage() {
                   <div className="flex items-center gap-2">
                     <RequestStatusChip status={item.status} />
                     {item.unreadMessageCount > 0 ? (
-                      <span className="grid size-7 place-items-center rounded-full bg-red-500 text-xs font-black text-white">
+                      <span className="grid size-7 place-items-center rounded-full bg-[var(--itq-color-danger-500)] text-xs font-black text-white">
                         {item.unreadMessageCount}
                       </span>
                     ) : null}
@@ -172,13 +172,13 @@ export default async function AdminPage() {
             </strong>
             <p className="mt-2 text-sm font-bold">حسابات تنتظر المراجعة</p>
             <Link
-              className="mt-7 inline-flex min-h-11 items-center rounded-xl bg-white px-5 text-sm font-black text-[var(--itq-color-ink-deep)]"
+              className="mt-7 inline-flex min-h-11 items-center rounded-xl bg-[var(--itq-color-surface)] px-5 text-sm font-black text-[var(--itq-color-ink-deep)]"
               href="/ar/admin/approvals?tab=phone"
             >
               فتح قائمة التوثيق
             </Link>
           </section>
-          <section className="rounded-[1.5rem] border border-[var(--itq-color-border)] bg-white p-5 shadow-[var(--itq-shadow-sm)]">
+          <section className="rounded-[1.5rem] border border-[var(--itq-color-border)] bg-[var(--itq-color-surface)] p-5 shadow-[var(--itq-shadow-sm)]">
             <h2 className="text-xl font-black">ملخص المستحقات</h2>
             <p className="mt-2 text-sm text-[var(--itq-color-muted)]">
               تقرير المدفوع وغير المدفوع مفصول بحسب العملة.

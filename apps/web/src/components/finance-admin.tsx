@@ -31,7 +31,7 @@ interface FinanceAdminProps {
 }
 
 const controlClassName =
-  "mt-2 min-h-12 w-full rounded-xl border border-[var(--itq-color-border)] bg-white px-3 py-3 text-sm shadow-sm outline-none focus:border-[var(--itq-color-brand-500)]";
+  "mt-2 min-h-12 w-full rounded-xl border border-[var(--itq-color-border)] bg-[var(--itq-color-surface)] px-3 py-3 text-sm shadow-sm outline-none focus:border-[var(--itq-color-brand-500)]";
 
 function pageHref(locale: "ar" | "en", filters: FinanceListInput, page: number): string {
   const query = new URLSearchParams();
@@ -58,7 +58,7 @@ export function FinanceAdmin({
     <AdminShell csrfToken={csrfToken} displayName={displayName} locale={locale}>
       <FinanceFlash locale={locale} {...(notice === undefined ? {} : { notice })} />
 
-      <section className="rounded-[1.75rem] border border-[var(--itq-color-border)] bg-white p-5 shadow-[var(--itq-shadow-sm)] sm:p-7">
+      <section className="rounded-[1.75rem] border border-[var(--itq-color-border)] bg-[var(--itq-color-surface)] p-5 shadow-[var(--itq-shadow-sm)] sm:p-7">
         <div className="flex flex-wrap items-start justify-between gap-4">
           <div>
             <p className="text-sm font-black text-[var(--itq-color-brand-700)]">
@@ -86,7 +86,7 @@ export function FinanceAdmin({
       </section>
 
       {canManage ? (
-        <details className="mt-6 rounded-[1.75rem] border border-[var(--itq-color-border)] bg-white shadow-[var(--itq-shadow-sm)]">
+        <details className="mt-6 rounded-[1.75rem] border border-[var(--itq-color-border)] bg-[var(--itq-color-surface)] shadow-[var(--itq-shadow-sm)]">
           <summary className="cursor-pointer list-none p-5 text-lg font-black sm:p-7">
             {english ? "+ Create a request-linked due" : "+ إنشاء مستحق مرتبط بطلب"}
           </summary>
@@ -184,7 +184,7 @@ export function FinanceAdmin({
         </details>
       ) : null}
 
-      <section className="mt-6 rounded-[1.75rem] border border-[var(--itq-color-border)] bg-white p-5 shadow-[var(--itq-shadow-sm)] sm:p-7">
+      <section className="mt-6 rounded-[1.75rem] border border-[var(--itq-color-border)] bg-[var(--itq-color-surface)] p-5 shadow-[var(--itq-shadow-sm)] sm:p-7">
         <form className="grid gap-4 md:grid-cols-[minmax(0,1fr)_11rem_9rem_auto]" method="get">
           <label className="text-xs font-black">
             {english ? "Search" : "البحث"}
@@ -334,7 +334,7 @@ export function FinanceAdmin({
                       {due.status === "UNPAID" ? (
                         <form
                           action={`/api/admin/finance/${encodeURIComponent(due.id)}`}
-                          className="grid gap-3 rounded-2xl bg-emerald-50 p-4 sm:grid-cols-2"
+                          className="grid gap-3 rounded-2xl bg-[var(--itq-color-success-50)] p-4 sm:grid-cols-2"
                           method="post"
                         >
                           <CsrfInput token={csrfToken} />
@@ -381,7 +381,7 @@ export function FinanceAdmin({
                       ) : (
                         <form
                           action={`/api/admin/finance/${encodeURIComponent(due.id)}`}
-                          className="grid gap-3 rounded-2xl bg-amber-50 p-4"
+                          className="grid gap-3 rounded-2xl bg-[var(--itq-color-warning-50)] p-4"
                           method="post"
                         >
                           <CsrfInput token={csrfToken} />
@@ -400,7 +400,7 @@ export function FinanceAdmin({
                             />
                           </label>
                           <SubmitButton
-                            className="bg-amber-700"
+                            className="bg-[var(--itq-color-warning-700)]"
                             pendingLabel={english ? "Reversing…" : "جارٍ العكس…"}
                           >
                             {english ? "Reverse payment confirmation" : "عكس تأكيد الدفع"}
@@ -410,7 +410,7 @@ export function FinanceAdmin({
                       {due.status === "UNPAID" ? (
                         <form
                           action={`/api/admin/finance/${encodeURIComponent(due.id)}`}
-                          className="grid gap-3 rounded-2xl bg-slate-50 p-4"
+                          className="grid gap-3 rounded-2xl bg-[var(--itq-color-surface-soft)] p-4"
                           method="post"
                         >
                           <CsrfInput token={csrfToken} />
@@ -429,7 +429,7 @@ export function FinanceAdmin({
                             />
                           </label>
                           <SubmitButton
-                            className="bg-slate-700"
+                            className="bg-[var(--itq-color-ink-soft)]"
                             pendingLabel={english ? "Voiding…" : "جارٍ الإلغاء…"}
                           >
                             {english ? "Void due" : "إلغاء المستحق"}

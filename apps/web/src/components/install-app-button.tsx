@@ -192,8 +192,8 @@ export function InstallAppButton({
       : "hover:-translate-y-0.5 hover:border-[var(--itq-color-brand-200)] hover:bg-[var(--itq-color-brand-50)]";
   const baseClass =
     variant === "fab"
-      ? "inline-flex min-h-14 items-center justify-center gap-3 rounded-full border border-white/25 bg-white px-4 text-sm font-black text-[var(--itq-color-brand-800)] shadow-[var(--itq-shadow-float)] transition"
-      : "inline-flex min-h-11 items-center justify-center gap-2 rounded-xl border border-[var(--itq-color-border)] bg-white px-3 text-xs font-black text-[var(--itq-color-brand-800)] shadow-sm transition";
+      ? "inline-flex min-h-14 items-center justify-center gap-3 rounded-full border border-white/25 bg-[var(--itq-color-surface)] px-4 text-sm font-black text-[var(--itq-color-brand-800)] shadow-[var(--itq-shadow-float)] transition"
+      : "inline-flex min-h-11 items-center justify-center gap-2 rounded-xl border border-[var(--itq-color-border)] bg-[var(--itq-color-surface)] px-3 text-xs font-black text-[var(--itq-color-brand-800)] shadow-sm transition";
   return (
     <>
       <button
@@ -230,7 +230,7 @@ export function InstallAppButton({
           role="dialog"
         >
           <div
-            className="w-full max-w-md rounded-[1.75rem] border border-white/70 bg-white p-6 text-start shadow-[var(--itq-shadow-float)] outline-none sm:p-7"
+            className="w-full max-w-md rounded-[1.75rem] border border-white/70 bg-[var(--itq-color-surface)] p-6 text-start shadow-[var(--itq-shadow-float)] outline-none sm:p-7"
             ref={dialogRef}
             tabIndex={-1}
           >

@@ -16,7 +16,7 @@ const toneClass: Record<"danger" | "ghost-danger", string> = {
   danger:
     "bg-[var(--itq-color-danger-700)] text-white hover:bg-[var(--itq-color-danger-800)] focus-visible:outline-[var(--itq-color-danger-600)]",
   "ghost-danger":
-    "border border-[var(--itq-color-danger-100)] bg-white text-[var(--itq-color-danger-700)] hover:bg-[var(--itq-color-danger-50)] focus-visible:outline-[var(--itq-color-danger-600)]",
+    "border border-[var(--itq-color-danger-100)] bg-[var(--itq-color-surface)] text-[var(--itq-color-danger-700)] hover:bg-[var(--itq-color-danger-50)] focus-visible:outline-[var(--itq-color-danger-600)]",
 };
 
 /**
@@ -50,7 +50,7 @@ export function ConfirmSubmitButton({
       </button>
       <dialog
         aria-labelledby="confirm-title"
-        className="m-auto w-[min(26rem,calc(100vw-2rem))] rounded-2xl border border-[var(--itq-color-border)] bg-white p-6 text-start shadow-[var(--itq-shadow-float)] backdrop:bg-black/40"
+        className="m-auto w-[min(26rem,calc(100vw-2rem))] rounded-2xl border border-[var(--itq-color-border)] bg-[var(--itq-color-surface)] p-6 text-start shadow-[var(--itq-shadow-float)] backdrop:bg-black/40"
         dir={locale === "en" ? "ltr" : "rtl"}
         onClick={(event) => {
           if (event.target === dialogRef.current) dialogRef.current?.close();
@@ -63,7 +63,7 @@ export function ConfirmSubmitButton({
         <p className="mt-3 text-sm leading-7 text-[var(--itq-color-muted)]">{body}</p>
         <div className="mt-6 flex flex-wrap justify-end gap-3">
           <button
-            className="inline-flex min-h-11 items-center justify-center rounded-xl border border-[var(--itq-color-border-strong)] bg-white px-4 py-2 text-sm font-bold text-[var(--itq-color-ink-soft)] transition hover:bg-[var(--itq-color-surface-soft)]"
+            className="inline-flex min-h-11 items-center justify-center rounded-xl border border-[var(--itq-color-border-strong)] bg-[var(--itq-color-surface)] px-4 py-2 text-sm font-bold text-[var(--itq-color-ink-soft)] transition hover:bg-[var(--itq-color-surface-soft)]"
             onClick={() => dialogRef.current?.close()}
             type="button"
           >

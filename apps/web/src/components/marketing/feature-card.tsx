@@ -22,7 +22,7 @@ export function FeatureCard({
   return (
     <article
       className={classNames(
-        "group rounded-3xl border border-[var(--itq-color-border)] bg-white p-6 shadow-[var(--itq-shadow-sm)] transition duration-300 hover:-translate-y-1 hover:border-[var(--itq-color-brand-200)] hover:shadow-[var(--itq-shadow-card)] sm:p-7",
+        "group rounded-3xl border border-[var(--itq-color-border)] bg-[var(--itq-color-surface)] p-6 shadow-[var(--itq-shadow-sm)] transition duration-300 hover:-translate-y-1 hover:border-[var(--itq-color-brand-200)] hover:shadow-[var(--itq-shadow-card)] sm:p-7",
         className,
       )}
     >

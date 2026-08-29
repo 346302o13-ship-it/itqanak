@@ -21,7 +21,7 @@ export function ProcessSteps({ locale = "ar", steps }: ProcessStepsProps): JSX.E
     <ol className="grid gap-4 lg:grid-cols-3">
       {steps.map((step, index) => (
         <li
-          className="relative overflow-hidden rounded-3xl border border-[var(--itq-color-border)] bg-white p-6 shadow-[var(--itq-shadow-sm)] sm:p-7"
+          className="relative overflow-hidden rounded-3xl border border-[var(--itq-color-border)] bg-[var(--itq-color-surface)] p-6 shadow-[var(--itq-shadow-sm)] sm:p-7"
           key={step.title}
         >
           <span

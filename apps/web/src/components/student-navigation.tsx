@@ -95,7 +95,7 @@ export function StudentNavigation({ locale = "ar" }: Readonly<{ locale?: "ar" | 
             <span
               className={`grid size-9 place-items-center rounded-xl transition ${
                 active
-                  ? "bg-white text-[var(--itq-color-brand-700)] shadow-sm"
+                  ? "bg-[var(--itq-color-surface)] text-[var(--itq-color-brand-700)] shadow-sm"
                   : "text-[var(--itq-color-muted)] group-hover:text-[var(--itq-color-brand-700)]"
               }`}
             >

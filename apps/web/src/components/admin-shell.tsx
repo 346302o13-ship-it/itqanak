@@ -37,7 +37,7 @@ export function AdminShell({
       <header className="sticky top-0 z-30 border-b border-[var(--itq-color-border)] bg-[var(--itq-color-ink-deep)]/95 text-white backdrop-blur-xl">
         <div className="mx-auto flex h-[4.75rem] max-w-[96rem] items-center justify-between gap-4 px-4 sm:px-7 lg:px-10">
           <Link className="inline-flex items-center gap-3 font-black" href={`${prefix}/admin`}>
-            <BrandMark className="size-11 bg-white text-[var(--itq-color-brand-800)]" />
+            <BrandMark className="size-11 bg-[var(--itq-color-surface)] text-[var(--itq-color-brand-800)]" />
             <span className="hidden sm:inline">{english ? "ITQANAK" : "إتقانك"}</span>
             <span className="hidden rounded-full bg-white/10 px-2.5 py-1 text-[10px] md:inline">
               {english ? "ADMIN CENTER" : "مركز الإدارة"}
@@ -60,7 +60,7 @@ export function AdminShell({
               <input name="locale" type="hidden" value={locale} />
               <SubmitButton
                 aria-label={english ? "Sign out" : "تسجيل الخروج"}
-                className="size-11 bg-white/10 p-0 text-white shadow-none hover:bg-red-500/20"
+                className="size-11 bg-white/10 p-0 text-white shadow-none hover:bg-[color-mix(in_srgb,var(--itq-color-danger-500)_22%,transparent)]"
                 pendingLabel="…"
               >
                 <LogOutIcon className="size-5" />
@@ -78,9 +78,9 @@ export function AdminShell({
       >
         {workspace ? null : (
           <aside className="hidden self-start lg:sticky lg:top-[6.75rem] lg:block">
-            <div className="rounded-[1.75rem] border border-[var(--itq-color-border)] bg-white p-3 shadow-[var(--itq-shadow-sm)]">
+            <div className="rounded-[1.75rem] border border-[var(--itq-color-border)] bg-[var(--itq-color-surface)] p-3 shadow-[var(--itq-shadow-sm)]">
               <div className="mb-3 rounded-2xl bg-[var(--itq-color-brand-50)] p-4">
-                <div className="flex items-center gap-2 text-xs font-black text-emerald-800">
+                <div className="flex items-center gap-2 text-xs font-black text-[var(--itq-color-success-800)]">
                   <ShieldCheckIcon className="size-4" />{" "}
                   {english ? "Trusted admin session" : "جلسة إدارية موثوقة"}
                 </div>

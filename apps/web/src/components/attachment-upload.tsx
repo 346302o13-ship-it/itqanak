@@ -148,7 +148,7 @@ export function AttachmentUpload({
       </label>
       <input
         accept=".pdf,.docx,.pptx,.xlsx,.txt,.png,.jpg,.jpeg,.webm,.ogg,.mp3,.wav"
-        className="mt-3 block w-full rounded-xl border border-[var(--itq-color-border)] bg-white p-3 text-sm"
+        className="mt-3 block w-full rounded-xl border border-[var(--itq-color-border)] bg-[var(--itq-color-surface)] p-3 text-sm"
         disabled={pending}
         id="requestAttachment"
         ref={fileInput}
@@ -172,8 +172,8 @@ export function AttachmentUpload({
           aria-live="polite"
           className={`mt-4 rounded-xl border px-4 py-3 text-sm font-semibold ${
             success
-              ? "border-emerald-200 bg-emerald-50 text-emerald-950"
-              : "border-red-200 bg-red-50 text-red-950"
+              ? "border-[var(--itq-color-success-200)] bg-[var(--itq-color-success-50)] text-[var(--itq-color-success-900)]"
+              : "border-[var(--itq-color-danger-200)] bg-[var(--itq-color-danger-50)] text-[var(--itq-color-danger-950)]"
           }`}
           role="status"
         >

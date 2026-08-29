@@ -45,7 +45,7 @@ export function IssuedPasswordResetLink({
 
   return (
     <div className="mt-6 grid gap-5">
-      <div className="rounded-2xl border border-amber-200 bg-amber-50 p-5 text-sm font-semibold leading-7 text-amber-950">
+      <div className="rounded-2xl border border-[var(--itq-color-warning-200)] bg-[var(--itq-color-warning-50)] p-5 text-sm font-semibold leading-7 text-[var(--itq-color-warning-950)]">
         <strong className="block font-black">
           {english
             ? "This link is shown only on this screen"
@@ -88,7 +88,7 @@ export function IssuedPasswordResetLink({
       </dl>
       {resetLink.length === 0 ? (
         <p
-          className="rounded-2xl border border-red-200 bg-red-50 p-5 font-bold text-red-950"
+          className="rounded-2xl border border-[var(--itq-color-danger-200)] bg-[var(--itq-color-danger-50)] p-5 font-bold text-[var(--itq-color-danger-950)]"
           role="alert"
         >
           {english
@@ -101,7 +101,7 @@ export function IssuedPasswordResetLink({
             {english ? "One-time reset link" : "رابط إعادة التعيين الأحادي"}
           </label>
           <textarea
-            className="min-h-28 w-full rounded-xl border border-[var(--itq-color-border)] bg-white p-4 font-mono text-xs"
+            className="min-h-28 w-full rounded-xl border border-[var(--itq-color-border)] bg-[var(--itq-color-surface)] p-4 font-mono text-xs"
             dir="ltr"
             id="issued-reset-link"
             readOnly

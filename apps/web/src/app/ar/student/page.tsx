@@ -49,7 +49,7 @@ export default async function StudentDashboardPage({ searchParams }: StudentDash
       value: dashboard.activeCount,
       caption: "نعمل عليها الآن",
       icon: RequestsIcon,
-      tone: "bg-cyan-50 text-cyan-800",
+      tone: "bg-[var(--itq-color-info-50)] text-[var(--itq-color-info-800)]",
     },
     {
       label: "تحتاج إلى ردك",
@@ -57,14 +57,14 @@ export default async function StudentDashboardPage({ searchParams }: StudentDash
       caption:
         dashboard.waitingForStudentCount > 0 ? "راجعها لتفادي التأخير" : "لا يوجد إجراء مطلوب",
       icon: MessageIcon,
-      tone: "bg-amber-50 text-amber-800",
+      tone: "bg-[var(--itq-color-warning-50)] text-[var(--itq-color-warning-800)]",
     },
     {
       label: "طلبات مكتملة",
       value: dashboard.completedCount,
       caption: "محفوظة في حسابك",
       icon: CheckIcon,
-      tone: "bg-emerald-50 text-emerald-800",
+      tone: "bg-[var(--itq-color-success-50)] text-[var(--itq-color-success-800)]",
     },
   ] as const;
 
@@ -92,16 +92,16 @@ export default async function StudentDashboardPage({ searchParams }: StudentDash
 
       {dashboard.waitingForStudentCount > 0 ? (
         <Link
-          className="mt-7 flex flex-wrap items-center justify-between gap-4 rounded-2xl border border-amber-200 bg-amber-50 p-4 text-amber-950 transition hover:border-amber-300"
+          className="mt-7 flex flex-wrap items-center justify-between gap-4 rounded-2xl border border-[var(--itq-color-warning-200)] bg-[var(--itq-color-warning-50)] p-4 text-[var(--itq-color-warning-950)] transition hover:border-[var(--itq-color-warning-300)]"
           href="/ar/student/requests?status=WAITING_FOR_STUDENT"
         >
           <span className="flex items-center gap-3">
-            <span className="grid size-10 place-items-center rounded-xl bg-white text-amber-700 shadow-sm">
+            <span className="grid size-10 place-items-center rounded-xl bg-[var(--itq-color-surface)] text-[var(--itq-color-warning-700)] shadow-sm">
               <ClockIcon className="size-5" />
             </span>
             <span>
               <span className="block text-sm font-black">هناك طلب ينتظر معلومات منك</span>
-              <span className="mt-1 block text-xs font-semibold text-amber-800">
+              <span className="mt-1 block text-xs font-semibold text-[var(--itq-color-warning-800)]">
                 افتح الطلب وأرسل المطلوب حتى نكمل العمل دون تأخير.
               </span>
             </span>
@@ -115,7 +115,7 @@ export default async function StudentDashboardPage({ searchParams }: StudentDash
       <dl className="mt-7 grid gap-4 sm:grid-cols-3">
         {metrics.map((metric) => (
           <div
-            className="group rounded-[1.35rem] border border-[var(--itq-color-border)] bg-white p-5 transition hover:-translate-y-0.5 hover:shadow-[var(--itq-shadow-sm)]"
+            className="group rounded-[1.35rem] border border-[var(--itq-color-border)] bg-[var(--itq-color-surface)] p-5 transition hover:-translate-y-0.5 hover:shadow-[var(--itq-shadow-sm)]"
             key={metric.label}
           >
             <div className="flex items-start justify-between gap-3">
@@ -151,7 +151,7 @@ export default async function StudentDashboardPage({ searchParams }: StudentDash
         </div>
         {dashboard.recent.length === 0 ? (
           <div className="mt-5 rounded-[1.5rem] border border-dashed border-[var(--itq-color-brand-200)] bg-[var(--itq-color-brand-50)]/50 p-9 text-center">
-            <span className="mx-auto grid size-14 place-items-center rounded-2xl bg-white text-[var(--itq-color-brand-700)] shadow-sm">
+            <span className="mx-auto grid size-14 place-items-center rounded-2xl bg-[var(--itq-color-surface)] text-[var(--itq-color-brand-700)] shadow-sm">
               <RequestsIcon className="size-7" />
             </span>
             <p className="mt-4 font-black">مساحتك جاهزة لأول طلب</p>
@@ -166,7 +166,7 @@ export default async function StudentDashboardPage({ searchParams }: StudentDash
             </Link>
           </div>
         ) : (
-          <ul className="mt-5 overflow-hidden rounded-[1.35rem] border border-[var(--itq-color-border)] bg-white">
+          <ul className="mt-5 overflow-hidden rounded-[1.35rem] border border-[var(--itq-color-border)] bg-[var(--itq-color-surface)]">
             {dashboard.recent.map((request) => (
               <li
                 className="border-b border-[var(--itq-color-border)] last:border-0"

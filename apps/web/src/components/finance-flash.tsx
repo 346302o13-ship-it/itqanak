@@ -36,8 +36,8 @@ export function FinanceFlash({
       aria-live="polite"
       className={`mb-5 rounded-2xl border p-4 text-sm font-bold ${
         success
-          ? "border-emerald-200 bg-emerald-50 text-emerald-900"
-          : "border-amber-200 bg-amber-50 text-amber-950"
+          ? "border-[var(--itq-color-success-200)] bg-[var(--itq-color-success-50)] text-[var(--itq-color-success-900)]"
+          : "border-[var(--itq-color-warning-200)] bg-[var(--itq-color-warning-50)] text-[var(--itq-color-warning-950)]"
       }`}
     >
       {notices[locale][notice as keyof (typeof notices)[typeof locale]]}

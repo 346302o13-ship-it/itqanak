@@ -54,7 +54,7 @@ export function LocalDeadlineInput({ initialIso, locale = "ar" }: LocalDeadlineI
       <input name="deadlineAt" type="hidden" value={isoValue} />
       <input
         aria-describedby="deadline-help"
-        className="mt-2 w-full rounded-xl border border-[var(--itq-color-border)] bg-white px-3 py-3 text-base shadow-sm"
+        className="mt-2 w-full rounded-xl border border-[var(--itq-color-border)] bg-[var(--itq-color-surface)] px-3 py-3 text-base shadow-sm"
         id="deadlineLocal"
         min={minimum}
         onChange={(event) => {

@@ -71,7 +71,7 @@ export function LegalPage({ copy }: LegalPageProps): JSX.Element {
         <aside className="lg:sticky lg:top-28">
           <nav
             aria-label={copy.contentsLabel}
-            className="rounded-2xl border border-[var(--itq-color-border)] bg-white p-5 shadow-[var(--itq-shadow-sm)]"
+            className="rounded-2xl border border-[var(--itq-color-border)] bg-[var(--itq-color-surface)] p-5 shadow-[var(--itq-shadow-sm)]"
           >
             <h2 className="flex items-center gap-2 font-black text-[var(--itq-color-ink)]">
               <MarketingIcon className="size-5 text-[var(--itq-color-brand-700)]" name="document" />
@@ -102,7 +102,7 @@ export function LegalPage({ copy }: LegalPageProps): JSX.Element {
         <article className="grid min-w-0 gap-5">
           {copy.sections.map((section, index) => (
             <section
-              className="scroll-mt-28 rounded-2xl border border-[var(--itq-color-border)] bg-white p-5 shadow-[var(--itq-shadow-sm)] sm:p-7"
+              className="scroll-mt-28 rounded-2xl border border-[var(--itq-color-border)] bg-[var(--itq-color-surface)] p-5 shadow-[var(--itq-shadow-sm)] sm:p-7"
               id={section.id}
               key={section.id}
             >

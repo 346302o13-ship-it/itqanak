@@ -10,7 +10,7 @@ interface ResetPageProps {
   }>;
 }
 const inputClassName =
-  "mt-2 w-full rounded-xl border border-[var(--itq-color-border)] bg-white px-3 py-3 text-base shadow-sm";
+  "mt-2 w-full rounded-xl border border-[var(--itq-color-border)] bg-[var(--itq-color-surface)] px-3 py-3 text-base shadow-sm";
 
 export const dynamic = "force-dynamic";
 export const metadata = { title: "تعيين كلمة مرور جديدة", robots: { index: false, follow: false } };

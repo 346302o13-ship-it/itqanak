@@ -16,7 +16,7 @@ interface ForgotPageProps {
 }
 
 const inputClassName =
-  "mt-2 w-full rounded-xl border border-[var(--itq-color-border)] bg-white px-3 py-3 text-base shadow-sm";
+  "mt-2 w-full rounded-xl border border-[var(--itq-color-border)] bg-[var(--itq-color-surface)] px-3 py-3 text-base shadow-sm";
 const referencePattern = /^PR-[A-F0-9]{10}$/u;
 
 export const metadata = { title: "استعادة كلمة المرور" };
@@ -36,7 +36,7 @@ export default async function ForgotPasswordPage({ searchParams }: ForgotPagePro
       title="استعادة آمنة للحساب"
     >
       {status === "sent" && reference !== undefined ? (
-        <div className="mb-6 rounded-2xl border border-emerald-200 bg-emerald-50 p-5 text-emerald-950">
+        <div className="mb-6 rounded-2xl border border-[var(--itq-color-success-200)] bg-[var(--itq-color-success-50)] p-5 text-[var(--itq-color-success-900)]">
           <p className="text-sm font-black">تم إنشاء مرجع صالح لمدة ساعتين</p>
           <bdi
             className="mt-3 block text-center font-mono text-2xl font-black tracking-wider"

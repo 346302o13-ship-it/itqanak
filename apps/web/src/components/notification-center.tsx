@@ -365,7 +365,7 @@ export function NotificationCenter({ csrfToken, locale = "ar", surface }: Notifi
       >
         <BellIcon className="size-5" />
         {unreadCount > 0 ? (
-          <span className="absolute -end-1 -top-1 grid min-h-5 min-w-5 place-items-center rounded-full bg-red-500 px-1 text-[10px] font-black text-white ring-2 ring-white">
+          <span className="absolute -end-1 -top-1 grid min-h-5 min-w-5 place-items-center rounded-full bg-[var(--itq-color-danger-500)] px-1 text-[10px] font-black text-white ring-2 ring-white">
             {unreadCount > 99 ? "99+" : unreadCount}
           </span>
         ) : null}
@@ -374,7 +374,7 @@ export function NotificationCenter({ csrfToken, locale = "ar", surface }: Notifi
       {open ? (
         <section
           aria-label={english ? "Notification center" : "مركز الإشعارات"}
-          className="fixed inset-x-3 top-20 z-50 flex max-h-[calc(100dvh-6rem)] flex-col overflow-hidden rounded-[1.5rem] border border-[var(--itq-color-border)] bg-white text-[var(--itq-color-ink)] shadow-[var(--itq-shadow-float)] sm:absolute sm:inset-x-auto sm:end-0 sm:top-14 sm:w-[25rem]"
+          className="fixed inset-x-3 top-20 z-50 flex max-h-[calc(100dvh-6rem)] flex-col overflow-hidden rounded-[1.5rem] border border-[var(--itq-color-border)] bg-[var(--itq-color-surface)] text-[var(--itq-color-ink)] shadow-[var(--itq-shadow-float)] sm:absolute sm:inset-x-auto sm:end-0 sm:top-14 sm:w-[25rem]"
           id={panelId}
           role="dialog"
         >
@@ -404,7 +404,7 @@ export function NotificationCenter({ csrfToken, locale = "ar", surface }: Notifi
                 aria-pressed={soundEnabled}
                 className={`min-h-9 rounded-xl px-3 text-[11px] font-black ${
                   soundEnabled
-                    ? "bg-emerald-50 text-emerald-800"
+                    ? "bg-[var(--itq-color-success-50)] text-[var(--itq-color-success-800)]"
                     : "bg-[var(--itq-color-surface-soft)] text-[var(--itq-color-muted)]"
                 }`}
                 onClick={() => void toggleSound()}
@@ -432,7 +432,7 @@ export function NotificationCenter({ csrfToken, locale = "ar", surface }: Notifi
 
           <div className="min-h-0 flex-1 overflow-y-auto p-2" role="log">
             {unavailable ? (
-              <p className="m-2 rounded-xl bg-amber-50 p-3 text-xs font-bold text-amber-900">
+              <p className="m-2 rounded-xl bg-[var(--itq-color-warning-50)] p-3 text-xs font-bold text-[var(--itq-color-warning-900)]">
                 {english
                   ? "Notifications are temporarily unavailable. Messages remain available in chat."
                   : "الإشعارات غير متاحة مؤقتاً. تبقى الرسائل متاحة داخل المحادثة."}
@@ -445,7 +445,7 @@ export function NotificationCenter({ csrfToken, locale = "ar", surface }: Notifi
             ) : items.length === 0 ? (
               <div className="grid min-h-52 place-items-center p-8 text-center">
                 <div>
-                  <span className="mx-auto grid size-12 place-items-center rounded-2xl bg-emerald-50 text-emerald-700">
+                  <span className="mx-auto grid size-12 place-items-center rounded-2xl bg-[var(--itq-color-success-50)] text-[var(--itq-color-success-700)]">
                     <CheckIcon className="size-6" />
                   </span>
                   <p className="mt-3 font-black">

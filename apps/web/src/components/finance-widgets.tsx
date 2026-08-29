@@ -26,7 +26,7 @@ export function FinanceReportCards({
   const english = locale === "en";
   if (report.totals.length === 0) {
     return (
-      <div className="rounded-2xl border border-dashed border-[var(--itq-color-border)] bg-white p-5 text-sm font-bold text-[var(--itq-color-muted)]">
+      <div className="rounded-2xl border border-dashed border-[var(--itq-color-border)] bg-[var(--itq-color-surface)] p-5 text-sm font-bold text-[var(--itq-color-muted)]">
         {english ? "No financial totals yet." : "لا توجد إجماليات مالية حتى الآن."}
       </div>
     );
@@ -35,7 +35,7 @@ export function FinanceReportCards({
     <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
       {report.totals.map((total) => (
         <article
-          className="rounded-2xl border border-[var(--itq-color-border)] bg-white p-5 shadow-[var(--itq-shadow-sm)]"
+          className="rounded-2xl border border-[var(--itq-color-border)] bg-[var(--itq-color-surface)] p-5 shadow-[var(--itq-shadow-sm)]"
           key={total.currency}
         >
           <div className="flex items-center justify-between gap-3">
@@ -47,11 +47,11 @@ export function FinanceReportCards({
             </span>
           </div>
           <dl className="mt-4 grid grid-cols-2 gap-3 text-sm">
-            <div className="rounded-xl bg-amber-50 p-3">
-              <dt className="text-xs font-bold text-amber-900/70">
+            <div className="rounded-xl bg-[var(--itq-color-warning-50)] p-3">
+              <dt className="text-xs font-bold text-[var(--itq-color-warning-800)]">
                 {english ? "Outstanding" : "المستحق"}
               </dt>
-              <dd className="mt-1 font-black text-amber-950" dir="ltr">
+              <dd className="mt-1 font-black text-[var(--itq-color-warning-950)]" dir="ltr">
                 {formatFinanceAmount(
                   total.unpaidAmountMinor,
                   total.currency,
@@ -60,11 +60,11 @@ export function FinanceReportCards({
                 )}
               </dd>
             </div>
-            <div className="rounded-xl bg-emerald-50 p-3">
-              <dt className="text-xs font-bold text-emerald-900/70">
+            <div className="rounded-xl bg-[var(--itq-color-success-50)] p-3">
+              <dt className="text-xs font-bold text-[var(--itq-color-success-800)]">
                 {english ? "Confirmed paid" : "المؤكد دفعه"}
               </dt>
-              <dd className="mt-1 font-black text-emerald-950" dir="ltr">
+              <dd className="mt-1 font-black text-[var(--itq-color-success-900)]" dir="ltr">
                 {formatFinanceAmount(
                   total.paidAmountMinor,
                   total.currency,

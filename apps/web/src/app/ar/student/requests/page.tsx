@@ -17,7 +17,7 @@ interface StudentRequestsPageProps {
 }
 
 const controlClassName =
-  "w-full rounded-xl border border-[var(--itq-color-border)] bg-white px-3 py-3 text-sm shadow-sm";
+  "w-full rounded-xl border border-[var(--itq-color-border)] bg-[var(--itq-color-surface)] px-3 py-3 text-sm shadow-sm";
 
 function pageHref(
   query: Readonly<Record<string, string | readonly string[] | undefined>>,
@@ -163,7 +163,7 @@ export default async function StudentRequestsPage({ searchParams }: StudentReque
             تطبيق
           </button>
           <Link
-            className="rounded-xl border border-[var(--itq-color-border)] bg-white px-5 py-3 text-sm font-black"
+            className="rounded-xl border border-[var(--itq-color-border)] bg-[var(--itq-color-surface)] px-5 py-3 text-sm font-black"
             href="/ar/student/requests"
           >
             مسح الفلاتر

@@ -12,7 +12,7 @@ export interface RequestFieldDefaults {
 }
 
 const inputClassName =
-  "mt-2 w-full rounded-xl border border-[var(--itq-color-border)] bg-white px-3 py-3 text-base shadow-sm";
+  "mt-2 w-full rounded-xl border border-[var(--itq-color-border)] bg-[var(--itq-color-surface)] px-3 py-3 text-base shadow-sm";
 
 const languageOptions = {
   ar: [
@@ -189,7 +189,7 @@ export function RequestFields({
               />
             </div>
           </div>
-          <label className="flex items-start gap-3 rounded-xl border border-[var(--itq-color-border)] bg-white p-4 text-sm font-semibold">
+          <label className="flex items-start gap-3 rounded-xl border border-[var(--itq-color-border)] bg-[var(--itq-color-surface)] p-4 text-sm font-semibold">
             <input
               className="mt-1 size-4"
               defaultChecked={defaults.privacyRequested}

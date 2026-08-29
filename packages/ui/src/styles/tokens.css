@@ -1,4 +1,11 @@
+/* Design tokens. Light values first on :root; the dark palette is redefined
+   under prefers-color-scheme (guarded so a future [data-theme="light"] can opt
+   back out) and again under an explicit [data-theme="dark"]. Only colours flip;
+   radii and the shadow geometry are shared, shadows just deepen in dark. */
+
 :root {
+  color-scheme: light;
+
   --itq-color-canvas: #f5f7f4;
   --itq-color-canvas-warm: #fbf6ec;
   --itq-color-surface: #ffffff;
@@ -8,6 +15,12 @@
   --itq-color-muted: #596d72;
   --itq-color-border: #dbe5e1;
   --itq-color-border-strong: #c6d6d1;
+  --itq-color-neutral-50: #f1f4f3;
+  --itq-color-neutral-700: #45534e;
+  /* One dark navy for chat/admin identity panels; replaces the drifting
+     #112c38 / #102f3b / #123640 literals. */
+  --itq-color-ink-deep: #112c38;
+
   --itq-color-brand-50: #edf8f5;
   --itq-color-brand-100: #d5eee8;
   --itq-color-brand-200: #addfd5;
@@ -19,26 +32,15 @@
   --itq-color-brand-800: #07544f;
   --itq-color-brand-900: #073f3c;
   --itq-color-brand-950: #052e2b;
+
   --itq-color-accent-50: #fff8e9;
   --itq-color-accent-200: #f2d69c;
   --itq-color-accent-300: #e9c27a;
   --itq-color-accent-500: #c58b2b;
   --itq-color-accent-700: #8d5d13;
-  --itq-color-success-50: #ecfdf3;
-  --itq-color-success-700: #137547;
-  --itq-color-warning-50: #fff8e7;
-  --itq-color-warning-800: #9a5c00;
-  --itq-color-danger-50: #fff1f1;
-  --itq-color-danger-100: #ffe0e1;
-  --itq-color-danger-600: #cc2b34;
-  --itq-color-danger-700: #b4232b;
-  --itq-color-danger-800: #8f1a22;
-  --itq-color-neutral-50: #f1f4f3;
-  --itq-color-neutral-700: #45534e;
-  /* WhatsApp-branded support surfaces. The support CTAs are deliberately
-     WhatsApp-green rather than app-teal; this consolidates the drifted
-     #159447 / #1ca75b / #168b4b / #16834a / #167d59 button greens, their
-     hovers, tints, border and on-tint text. */
+
+  /* WhatsApp-branded support surfaces: the support CTAs are deliberately
+     WhatsApp-green, not app-teal. */
   --itq-color-whatsapp-50: #f0fcf5;
   --itq-color-whatsapp-100: #e4f9ec;
   --itq-color-whatsapp-200: #bde8ce;
@@ -46,16 +48,239 @@
   --itq-color-whatsapp-700: #116c4c;
   --itq-color-whatsapp-800: #12643c;
   --itq-color-whatsapp-muted: #48745d;
-  /* One dark navy for chat/admin surfaces; replaces the drifting #112c38 /
-     #102f3b / #123640 literals. */
-  --itq-color-ink-deep: #112c38;
+
+  /* Status ramps. Light values track Tailwind emerald/amber/red/sky so the
+     existing screens do not shift; -50/-100 are tints, -500/-600 solids,
+     -700..-950 foreground text. "info" covers sky + cyan + violet callouts. */
+  --itq-color-success-50: #ecfdf5;
+  --itq-color-success-100: #d1fae5;
+  --itq-color-success-200: #a7f3d0;
+  --itq-color-success-500: #10b981;
+  --itq-color-success-600: #059669;
+  --itq-color-success-700: #047857;
+  --itq-color-success-800: #065f46;
+  --itq-color-success-900: #064e3b;
+
+  --itq-color-warning-50: #fffbeb;
+  --itq-color-warning-100: #fef3c7;
+  --itq-color-warning-200: #fde68a;
+  --itq-color-warning-300: #fcd34d;
+  --itq-color-warning-500: #f59e0b;
+  --itq-color-warning-700: #b45309;
+  --itq-color-warning-800: #92400e;
+  --itq-color-warning-900: #78350f;
+  --itq-color-warning-950: #451a03;
+
+  --itq-color-danger-50: #fef2f2;
+  --itq-color-danger-100: #fee2e2;
+  --itq-color-danger-200: #fecaca;
+  --itq-color-danger-500: #ef4444;
+  --itq-color-danger-600: #dc2626;
+  --itq-color-danger-700: #b91c1c;
+  --itq-color-danger-800: #991b1b;
+  --itq-color-danger-900: #7f1d1d;
+  --itq-color-danger-950: #450a0a;
+
+  --itq-color-info-50: #f0f9ff;
+  --itq-color-info-100: #e0f2fe;
+  --itq-color-info-200: #bae6fd;
+  --itq-color-info-300: #7dd3fc;
+  --itq-color-info-500: #0ea5e9;
+  --itq-color-info-700: #0369a1;
+  --itq-color-info-800: #075985;
+  --itq-color-info-900: #0c4a6e;
+  --itq-color-info-950: #082f49;
+
   --itq-shadow-sm: 0 1px 2px rgb(13 41 49 / 5%), 0 7px 24px rgb(13 41 49 / 5%);
   --itq-shadow-md: 0 2px 4px rgb(13 41 49 / 6%), 0 14px 44px rgb(13 41 49 / 8%);
   --itq-shadow-lg: 0 10px 24px rgb(13 41 49 / 8%), 0 32px 80px rgb(13 41 49 / 12%);
   --itq-shadow-card: 0 24px 72px rgb(13 41 49 / 9%);
   --itq-shadow-float: 0 28px 80px rgb(7 84 79 / 20%);
+
   --itq-radius-control: 0.875rem;
   --itq-radius-card: 1.5rem;
   --itq-radius-panel: 1.75rem;
   --itq-radius-hero: 2rem;
+}
+
+/* Dark palette. The brand / accent / whatsapp / status hues are shifted a few
+   steps lighter so each one still reads two ways at once: a -600/-700 solid
+   keeps enough contrast under bold white button text, and the same value works
+   as foreground text on a dark surface. */
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    color-scheme: dark;
+
+    --itq-color-canvas: #0b1416;
+    --itq-color-canvas-warm: #12191b;
+    --itq-color-surface: #131e21;
+    --itq-color-surface-soft: #1b282b;
+    --itq-color-ink: #e8f0ee;
+    --itq-color-ink-soft: #c2d2d0;
+    --itq-color-muted: #91a5a5;
+    --itq-color-border: #2c3b3d;
+    --itq-color-border-strong: #3d4f51;
+    --itq-color-neutral-50: #1b282b;
+    --itq-color-neutral-700: #b7c4c1;
+    --itq-color-ink-deep: #0c1d24;
+
+    --itq-color-brand-50: #0f2c28;
+    --itq-color-brand-100: #153a34;
+    --itq-color-brand-200: #1d514a;
+    --itq-color-brand-300: #2f7a70;
+    --itq-color-brand-400: #38948a;
+    --itq-color-brand-500: #22a597;
+    --itq-color-brand-600: #1c9c8d;
+    --itq-color-brand-700: #23a294;
+    --itq-color-brand-800: #2cad9d;
+    --itq-color-brand-900: #56c3b6;
+    --itq-color-brand-950: #7fd3c8;
+
+    --itq-color-accent-50: #2a2213;
+    --itq-color-accent-200: #f2d69c;
+    --itq-color-accent-300: #e9c27a;
+    --itq-color-accent-500: #dcae5f;
+    --itq-color-accent-700: #e6bd6f;
+
+    --itq-color-whatsapp-50: #0e2a1c;
+    --itq-color-whatsapp-100: #123a26;
+    --itq-color-whatsapp-200: #1e5236;
+    --itq-color-whatsapp-600: #26b264;
+    --itq-color-whatsapp-700: #23a75d;
+    --itq-color-whatsapp-800: #7fd7a5;
+    --itq-color-whatsapp-muted: #8fb3a1;
+
+    --itq-color-success-50: #0c261a;
+    --itq-color-success-100: #123a29;
+    --itq-color-success-200: #1c5540;
+    --itq-color-success-500: #22c07f;
+    --itq-color-success-600: #1fb073;
+    --itq-color-success-700: #56d29e;
+    --itq-color-success-800: #8fe0be;
+    --itq-color-success-900: #b6ecd5;
+
+    --itq-color-warning-50: #2a2008;
+    --itq-color-warning-100: #3a2c0a;
+    --itq-color-warning-200: #55420f;
+    --itq-color-warning-300: #7a5c15;
+    --itq-color-warning-500: #f0a92c;
+    --itq-color-warning-700: #eab764;
+    --itq-color-warning-800: #f0c988;
+    --itq-color-warning-900: #f5dbb0;
+    --itq-color-warning-950: #fbeed3;
+
+    --itq-color-danger-50: #2a1214;
+    --itq-color-danger-100: #3b171a;
+    --itq-color-danger-200: #5a2327;
+    --itq-color-danger-500: #f0555c;
+    --itq-color-danger-600: #e14b52;
+    --itq-color-danger-700: #f08b8f;
+    --itq-color-danger-800: #f5b0b3;
+    --itq-color-danger-900: #f8c9cb;
+    --itq-color-danger-950: #fde5e6;
+
+    --itq-color-info-50: #0c2432;
+    --itq-color-info-100: #123246;
+    --itq-color-info-200: #1c4a68;
+    --itq-color-info-300: #2f6a92;
+    --itq-color-info-500: #38bdf8;
+    --itq-color-info-700: #7cc6ee;
+    --itq-color-info-800: #a6d9f4;
+    --itq-color-info-900: #cbe8fa;
+    --itq-color-info-950: #e5f3fd;
+
+    --itq-shadow-sm: 0 1px 2px rgb(0 0 0 / 40%), 0 7px 24px rgb(0 0 0 / 40%);
+    --itq-shadow-md: 0 2px 4px rgb(0 0 0 / 45%), 0 14px 44px rgb(0 0 0 / 50%);
+    --itq-shadow-lg: 0 10px 24px rgb(0 0 0 / 50%), 0 32px 80px rgb(0 0 0 / 60%);
+    --itq-shadow-card: 0 24px 72px rgb(0 0 0 / 55%);
+    --itq-shadow-float: 0 28px 80px rgb(0 0 0 / 65%);
+  }
+}
+
+:root[data-theme="dark"] {
+  color-scheme: dark;
+
+  --itq-color-canvas: #0b1416;
+  --itq-color-canvas-warm: #12191b;
+  --itq-color-surface: #131e21;
+  --itq-color-surface-soft: #1b282b;
+  --itq-color-ink: #e8f0ee;
+  --itq-color-ink-soft: #c2d2d0;
+  --itq-color-muted: #91a5a5;
+  --itq-color-border: #2c3b3d;
+  --itq-color-border-strong: #3d4f51;
+  --itq-color-neutral-50: #1b282b;
+  --itq-color-neutral-700: #b7c4c1;
+  --itq-color-ink-deep: #0c1d24;
+
+  --itq-color-brand-50: #0f2c28;
+  --itq-color-brand-100: #153a34;
+  --itq-color-brand-200: #1d514a;
+  --itq-color-brand-300: #2f7a70;
+  --itq-color-brand-400: #38948a;
+  --itq-color-brand-500: #22a597;
+  --itq-color-brand-600: #1c9c8d;
+  --itq-color-brand-700: #23a294;
+  --itq-color-brand-800: #2cad9d;
+  --itq-color-brand-900: #56c3b6;
+  --itq-color-brand-950: #7fd3c8;
+
+  --itq-color-accent-50: #2a2213;
+  --itq-color-accent-200: #f2d69c;
+  --itq-color-accent-300: #e9c27a;
+  --itq-color-accent-500: #dcae5f;
+  --itq-color-accent-700: #e6bd6f;
+
+  --itq-color-whatsapp-50: #0e2a1c;
+  --itq-color-whatsapp-100: #123a26;
+  --itq-color-whatsapp-200: #1e5236;
+  --itq-color-whatsapp-600: #26b264;
+  --itq-color-whatsapp-700: #23a75d;
+  --itq-color-whatsapp-800: #7fd7a5;
+  --itq-color-whatsapp-muted: #8fb3a1;
+
+  --itq-color-success-50: #0c261a;
+  --itq-color-success-100: #123a29;
+  --itq-color-success-200: #1c5540;
+  --itq-color-success-500: #22c07f;
+  --itq-color-success-600: #1fb073;
+  --itq-color-success-700: #56d29e;
+  --itq-color-success-800: #8fe0be;
+  --itq-color-success-900: #b6ecd5;
+
+  --itq-color-warning-50: #2a2008;
+  --itq-color-warning-100: #3a2c0a;
+  --itq-color-warning-200: #55420f;
+  --itq-color-warning-300: #7a5c15;
+  --itq-color-warning-500: #f0a92c;
+  --itq-color-warning-700: #eab764;
+  --itq-color-warning-800: #f0c988;
+  --itq-color-warning-900: #f5dbb0;
+  --itq-color-warning-950: #fbeed3;
+
+  --itq-color-danger-50: #2a1214;
+  --itq-color-danger-100: #3b171a;
+  --itq-color-danger-200: #5a2327;
+  --itq-color-danger-500: #f0555c;
+  --itq-color-danger-600: #e14b52;
+  --itq-color-danger-700: #f08b8f;
+  --itq-color-danger-800: #f5b0b3;
+  --itq-color-danger-900: #f8c9cb;
+  --itq-color-danger-950: #fde5e6;
+
+  --itq-color-info-50: #0c2432;
+  --itq-color-info-100: #123246;
+  --itq-color-info-200: #1c4a68;
+  --itq-color-info-300: #2f6a92;
+  --itq-color-info-500: #38bdf8;
+  --itq-color-info-700: #7cc6ee;
+  --itq-color-info-800: #a6d9f4;
+  --itq-color-info-900: #cbe8fa;
+  --itq-color-info-950: #e5f3fd;
+
+  --itq-shadow-sm: 0 1px 2px rgb(0 0 0 / 40%), 0 7px 24px rgb(0 0 0 / 40%);
+  --itq-shadow-md: 0 2px 4px rgb(0 0 0 / 45%), 0 14px 44px rgb(0 0 0 / 50%);
+  --itq-shadow-lg: 0 10px 24px rgb(0 0 0 / 50%), 0 32px 80px rgb(0 0 0 / 60%);
+  --itq-shadow-card: 0 24px 72px rgb(0 0 0 / 55%);
+  --itq-shadow-float: 0 28px 80px rgb(0 0 0 / 65%);
 }

@@ -264,12 +264,12 @@ export default async function RequestDetailPage({ params, searchParams }: Reques
                       {fileSize(attachment.sizeBytes)} — {attachmentStateLabel(attachment)}
                     </span>
                     {attachment.scanStatus === "SCAN_SKIPPED_DEVELOPMENT" ? (
-                      <span className="mt-2 block text-xs font-bold text-amber-800">
+                      <span className="mt-2 block text-xs font-bold text-[var(--itq-color-warning-800)]">
                         تحذير: هذا الملف لم يخضع لفحص البرمجيات الضارة لأن البيئة تطويرية.
                       </span>
                     ) : null}
                     {attachment.scanStatus === "SCAN_SKIPPED_BY_ADMIN" ? (
-                      <span className="mt-2 block text-xs font-bold text-amber-800">
+                      <span className="mt-2 block text-xs font-bold text-[var(--itq-color-warning-800)]">
                         تحذير: لم يُفحص هذا الملف بحثًا عن برمجيات ضارة. نزّله فقط إذا كنت تثق
                         بالمرسل، ولن تتم معاينته داخل المنصة.
                       </span>

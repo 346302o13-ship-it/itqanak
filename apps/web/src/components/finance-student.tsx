@@ -24,7 +24,7 @@ interface FinanceStudentProps {
 }
 
 const controlClassName =
-  "mt-2 min-h-12 w-full rounded-xl border border-[var(--itq-color-border)] bg-white px-3 py-3 text-sm shadow-sm outline-none focus:border-[var(--itq-color-brand-500)]";
+  "mt-2 min-h-12 w-full rounded-xl border border-[var(--itq-color-border)] bg-[var(--itq-color-surface)] px-3 py-3 text-sm shadow-sm outline-none focus:border-[var(--itq-color-brand-500)]";
 
 function pageHref(locale: "ar" | "en", filters: FinanceListInput, page: number): string {
   const query = new URLSearchParams();
@@ -60,7 +60,7 @@ export function FinanceStudent({
               : "تظهر هنا السجلات المرتبطة بطلباتك فقط. يحدّث فريق الدعم المخوّل حالة الدفع يدويًا بعد التحقق."}
           </p>
         </div>
-        <span className="rounded-full bg-emerald-50 px-4 py-2 text-xs font-black text-emerald-800">
+        <span className="rounded-full bg-[var(--itq-color-success-50)] px-4 py-2 text-xs font-black text-[var(--itq-color-success-800)]">
           {english ? "No card data stored" : "لا تُحفظ بيانات بطاقات"}
         </span>
       </div>

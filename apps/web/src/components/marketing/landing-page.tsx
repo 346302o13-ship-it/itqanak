@@ -173,7 +173,7 @@ export function LandingPage({
             </div>
           </div>
         </div>
-        <div className="relative border-t border-[var(--itq-color-border)] bg-white lg:hidden">
+        <div className="relative border-t border-[var(--itq-color-border)] bg-[var(--itq-color-surface)] lg:hidden">
           <Image
             alt={copy.hero.imageAlt}
             className={classNames("h-auto w-full", locale === "en" && "-scale-x-100")}
@@ -187,7 +187,7 @@ export function LandingPage({
       </section>
 
       <section aria-label={copy.hero.eyebrow} className="relative z-10 mx-3 -mt-5 sm:mx-8 lg:mx-12">
-        <div className="grid overflow-hidden rounded-3xl border border-[var(--itq-color-border)] bg-white shadow-[var(--itq-shadow-card)] md:grid-cols-3">
+        <div className="grid overflow-hidden rounded-3xl border border-[var(--itq-color-border)] bg-[var(--itq-color-surface)] shadow-[var(--itq-shadow-card)] md:grid-cols-3">
           {copy.trustItems.map((item, index) => (
             <article
               className={classNames(
@@ -221,7 +221,7 @@ export function LandingPage({
             titleId="services-preview-title"
           />
           <Link
-            className="inline-flex min-h-11 w-fit items-center rounded-xl border border-[var(--itq-color-border-strong)] bg-white px-5 py-2 text-sm font-black text-[var(--itq-color-brand-800)] shadow-sm hover:bg-[var(--itq-color-brand-50)]"
+            className="inline-flex min-h-11 w-fit items-center rounded-xl border border-[var(--itq-color-border-strong)] bg-[var(--itq-color-surface)] px-5 py-2 text-sm font-black text-[var(--itq-color-brand-800)] shadow-sm hover:bg-[var(--itq-color-brand-50)]"
             href={`${prefix}/services`}
           >
             {copy.services.allCta}

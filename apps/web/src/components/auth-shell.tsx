@@ -52,8 +52,8 @@ export function FormAlert({
 }) {
   const colors =
     tone === "success"
-      ? "border-emerald-200 bg-emerald-50 text-emerald-950"
-      : "border-red-200 bg-red-50 text-red-950";
+      ? "border-[var(--itq-color-success-200)] bg-[var(--itq-color-success-50)] text-[var(--itq-color-success-900)]"
+      : "border-[var(--itq-color-danger-200)] bg-[var(--itq-color-danger-50)] text-[var(--itq-color-danger-950)]";
   return (
     <p
       aria-live="polite"

@@ -52,7 +52,7 @@ export function readAdminStudentDraft(query: Query): AdminStudentDraft | undefin
 }
 
 const inputClassName =
-  "mt-2 w-full rounded-xl border border-[var(--itq-color-border)] bg-white px-3 py-3 text-base shadow-sm";
+  "mt-2 w-full rounded-xl border border-[var(--itq-color-border)] bg-[var(--itq-color-surface)] px-3 py-3 text-base shadow-sm";
 
 export function AdminStudentOperations({
   csrfToken,
@@ -81,7 +81,7 @@ export function AdminStudentOperations({
         <FormAlert>{message}</FormAlert>
       )}
       <div className="grid gap-6 xl:grid-cols-2">
-        <section className="rounded-[1.5rem] border border-[var(--itq-color-border)] bg-white p-5 shadow-sm sm:p-6">
+        <section className="rounded-[1.5rem] border border-[var(--itq-color-border)] bg-[var(--itq-color-surface)] p-5 shadow-sm sm:p-6">
           <p className="text-sm font-black text-[var(--itq-color-brand-700)]">
             {english ? "Verified account" : "حساب موثق"}
           </p>
@@ -164,7 +164,7 @@ export function AdminStudentOperations({
                 rows={3}
               />
             </label>
-            <label className="flex items-start gap-3 rounded-xl bg-amber-50 p-4 text-sm font-bold text-amber-950">
+            <label className="flex items-start gap-3 rounded-xl bg-[var(--itq-color-warning-50)] p-4 text-sm font-bold text-[var(--itq-color-warning-950)]">
               <input
                 className="mt-1 size-4"
                 name="confirmedSameNumber"
@@ -182,7 +182,7 @@ export function AdminStudentOperations({
           </form>
         </section>
 
-        <section className="rounded-[1.5rem] border border-[var(--itq-color-border)] bg-white p-5 shadow-sm sm:p-6">
+        <section className="rounded-[1.5rem] border border-[var(--itq-color-border)] bg-[var(--itq-color-surface)] p-5 shadow-sm sm:p-6">
           <p className="text-sm font-black text-[var(--itq-color-brand-700)]">
             {english ? "On behalf of a student" : "نيابةً عن الطالب"}
           </p>
@@ -223,7 +223,7 @@ export function AdminStudentOperations({
                 </select>
               </label>
               <RequestFields locale={locale} />
-              <label className="flex items-start gap-3 rounded-xl bg-emerald-50 p-4 text-sm font-bold text-emerald-950">
+              <label className="flex items-start gap-3 rounded-xl bg-[var(--itq-color-success-50)] p-4 text-sm font-bold text-[var(--itq-color-success-900)]">
                 <input
                   className="mt-1 size-4"
                   defaultChecked
@@ -240,7 +240,7 @@ export function AdminStudentOperations({
         </section>
       </div>
 
-      <section className="mt-7 rounded-[1.5rem] border border-[var(--itq-color-border)] bg-white p-5 shadow-sm sm:p-6">
+      <section className="mt-7 rounded-[1.5rem] border border-[var(--itq-color-border)] bg-[var(--itq-color-surface)] p-5 shadow-sm sm:p-6">
         <div className="flex flex-wrap items-end justify-between gap-3">
           <div>
             <p className="text-sm font-black text-[var(--itq-color-brand-700)]">

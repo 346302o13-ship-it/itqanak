@@ -154,27 +154,30 @@ export function PublicShell({
             <Link
               aria-current={active === "services" ? "page" : undefined}
               className={classNames(
-                "rounded-xl px-4 py-3 transition hover:bg-white",
+                "rounded-xl px-4 py-3 transition hover:bg-[var(--itq-color-surface)]",
                 active === "services" &&
-                  "bg-white text-[var(--itq-color-brand-700)] shadow-[var(--itq-shadow-sm)]",
+                  "bg-[var(--itq-color-surface)] text-[var(--itq-color-brand-700)] shadow-[var(--itq-shadow-sm)]",
               )}
               href={`${prefix}/services`}
             >
               {copy.servicesLabel}
             </Link>
             <Link
-              className="rounded-xl px-4 py-3 transition hover:bg-white"
+              className="rounded-xl px-4 py-3 transition hover:bg-[var(--itq-color-surface)]"
               href={`${prefix}#how-it-works`}
             >
               {copy.processLabel}
             </Link>
             <Link
-              className="rounded-xl px-4 py-3 transition hover:bg-white"
+              className="rounded-xl px-4 py-3 transition hover:bg-[var(--itq-color-surface)]"
               href={`${prefix}#why-itqanak`}
             >
               {copy.whyLabel}
             </Link>
-            <Link className="rounded-xl px-4 py-3 transition hover:bg-white" href={`${prefix}#faq`}>
+            <Link
+              className="rounded-xl px-4 py-3 transition hover:bg-[var(--itq-color-surface)]"
+              href={`${prefix}#faq`}
+            >
               {copy.faqLabel}
             </Link>
           </nav>
@@ -183,7 +186,7 @@ export function PublicShell({
             <InstallAppButton compact locale={locale} surface="public" />
             <Link
               aria-label={copy.languageLabel}
-              className="inline-flex size-11 items-center justify-center rounded-xl border border-[var(--itq-color-border)] bg-white text-xs font-black text-[var(--itq-color-brand-800)] shadow-sm transition hover:bg-[var(--itq-color-brand-50)]"
+              className="inline-flex size-11 items-center justify-center rounded-xl border border-[var(--itq-color-border)] bg-[var(--itq-color-surface)] text-xs font-black text-[var(--itq-color-brand-800)] shadow-sm transition hover:bg-[var(--itq-color-brand-50)]"
               href={oppositeHref}
               hrefLang={oppositeLocale}
               lang={oppositeLocale}
@@ -207,7 +210,7 @@ export function PublicShell({
         {children}
       </main>
 
-      <footer className="border-t border-[var(--itq-color-border)] bg-white">
+      <footer className="border-t border-[var(--itq-color-border)] bg-[var(--itq-color-surface)]">
         <div className="mx-auto grid w-full max-w-[80rem] gap-10 px-5 py-12 sm:px-8 lg:grid-cols-[minmax(16rem,1.5fr)_repeat(3,minmax(9rem,0.65fr))] lg:py-16">
           <div className="max-w-md">
             <Link className="inline-flex items-center gap-3" href={prefix}>

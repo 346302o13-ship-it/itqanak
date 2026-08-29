@@ -22,10 +22,14 @@ interface AdminMonitoringProps {
 }
 
 const healthTone: Readonly<Record<MonitoringHealth, string>> = {
-  HEALTHY: "border-emerald-200 bg-emerald-50 text-emerald-950",
-  WARNING: "border-amber-200 bg-amber-50 text-amber-950",
-  CRITICAL: "border-red-200 bg-red-50 text-red-950",
-  UNKNOWN: "border-slate-200 bg-slate-50 text-slate-800",
+  HEALTHY:
+    "border-[var(--itq-color-success-200)] bg-[var(--itq-color-success-50)] text-[var(--itq-color-success-900)]",
+  WARNING:
+    "border-[var(--itq-color-warning-200)] bg-[var(--itq-color-warning-50)] text-[var(--itq-color-warning-950)]",
+  CRITICAL:
+    "border-[var(--itq-color-danger-200)] bg-[var(--itq-color-danger-50)] text-[var(--itq-color-danger-950)]",
+  UNKNOWN:
+    "border-[var(--itq-color-border)] bg-[var(--itq-color-surface-soft)] text-[var(--itq-color-ink)]",
 };
 
 const copy = {
@@ -201,7 +205,7 @@ function formatAgeSeconds(seconds: number, locale: "ar" | "en"): string {
 
 function Metric({ label, value }: Readonly<{ label: string; value: number | string }>) {
   return (
-    <div className="rounded-2xl border border-[var(--itq-color-border)] bg-white p-4">
+    <div className="rounded-2xl border border-[var(--itq-color-border)] bg-[var(--itq-color-surface)] p-4">
       <strong
         className="block text-2xl font-black"
         dir={typeof value === "string" ? "auto" : undefined}
@@ -237,14 +241,14 @@ export function AdminMonitoring({
         <section className="overflow-hidden rounded-[2rem] bg-[var(--itq-color-ink-deep)] p-7 text-white shadow-xl sm:p-9">
           <div className="flex flex-wrap items-start justify-between gap-5">
             <div className="max-w-3xl">
-              <p className="text-xs font-black uppercase tracking-[0.16em] text-emerald-200">
+              <p className="text-xs font-black uppercase tracking-[0.16em] text-[var(--itq-color-accent-300)]">
                 {t.eyebrow}
               </p>
               <h1 className="mt-3 text-3xl font-black tracking-tight sm:text-4xl">{t.title}</h1>
               <p className="mt-4 leading-8 text-white/75">{t.description}</p>
             </div>
             <Link
-              className="inline-flex min-h-11 items-center gap-2 rounded-xl bg-white px-4 text-sm font-black text-[var(--itq-color-ink-deep)]"
+              className="inline-flex min-h-11 items-center gap-2 rounded-xl bg-[var(--itq-color-surface)] px-4 text-sm font-black text-[var(--itq-color-ink-deep)]"
               href={path}
             >
               <ClockIcon className="size-5" /> {t.refresh}
@@ -257,10 +261,10 @@ export function AdminMonitoring({
         </section>
 
         <div className="grid gap-5 xl:grid-cols-2">
-          <section className="rounded-[1.75rem] border border-[var(--itq-color-border)] bg-white p-6 shadow-[var(--itq-shadow-sm)]">
+          <section className="rounded-[1.75rem] border border-[var(--itq-color-border)] bg-[var(--itq-color-surface)] p-6 shadow-[var(--itq-shadow-sm)]">
             <div className="flex items-start justify-between gap-4">
               <div className="flex items-start gap-3">
-                <span className="grid size-11 shrink-0 place-items-center rounded-2xl bg-sky-50 text-sky-800">
+                <span className="grid size-11 shrink-0 place-items-center rounded-2xl bg-[var(--itq-color-info-50)] text-[var(--itq-color-info-800)]">
                   <OperationsIcon className="size-5" />
                 </span>
                 <div>
@@ -275,7 +279,7 @@ export function AdminMonitoring({
             </div>
             <div className="mt-6 grid gap-3 sm:grid-cols-2">
               <Metric label={t.workers} value={number.format(snapshot.worker.activeCount)} />
-              <div className="rounded-2xl border border-[var(--itq-color-border)] bg-white p-4">
+              <div className="rounded-2xl border border-[var(--itq-color-border)] bg-[var(--itq-color-surface)] p-4">
                 <strong className="block text-sm font-black">{t.lastSeen}</strong>
                 <span className="mt-2 block text-xs font-bold text-[var(--itq-color-muted)]">
                   {snapshot.worker.lastSeenAt === undefined ? (
@@ -291,10 +295,10 @@ export function AdminMonitoring({
             </div>
           </section>
 
-          <section className="rounded-[1.75rem] border border-[var(--itq-color-border)] bg-white p-6 shadow-[var(--itq-shadow-sm)]">
+          <section className="rounded-[1.75rem] border border-[var(--itq-color-border)] bg-[var(--itq-color-surface)] p-6 shadow-[var(--itq-shadow-sm)]">
             <div className="flex items-start justify-between gap-4">
               <div className="flex items-start gap-3">
-                <span className="grid size-11 shrink-0 place-items-center rounded-2xl bg-emerald-50 text-emerald-800">
+                <span className="grid size-11 shrink-0 place-items-center rounded-2xl bg-[var(--itq-color-success-50)] text-[var(--itq-color-success-800)]">
                   <WhatsAppIcon className="size-5" />
                 </span>
                 <div>
@@ -348,9 +352,9 @@ export function AdminMonitoring({
         </div>
 
         <div className="grid gap-5 xl:grid-cols-[minmax(0,.9fr)_minmax(0,1.1fr)]">
-          <section className="rounded-[1.75rem] border border-[var(--itq-color-border)] bg-white p-6 shadow-[var(--itq-shadow-sm)]">
+          <section className="rounded-[1.75rem] border border-[var(--itq-color-border)] bg-[var(--itq-color-surface)] p-6 shadow-[var(--itq-shadow-sm)]">
             <div className="flex items-start gap-3">
-              <span className="grid size-11 shrink-0 place-items-center rounded-2xl bg-amber-50 text-amber-900">
+              <span className="grid size-11 shrink-0 place-items-center rounded-2xl bg-[var(--itq-color-warning-50)] text-[var(--itq-color-warning-900)]">
                 <ShieldCheckIcon className="size-5" />
               </span>
               <h2 className="pt-2 text-xl font-black">{t.operations}</h2>
@@ -381,9 +385,9 @@ export function AdminMonitoring({
             </Link>
           </section>
 
-          <section className="rounded-[1.75rem] border border-[var(--itq-color-border)] bg-white p-6 shadow-[var(--itq-shadow-sm)]">
+          <section className="rounded-[1.75rem] border border-[var(--itq-color-border)] bg-[var(--itq-color-surface)] p-6 shadow-[var(--itq-shadow-sm)]">
             <div className="flex items-start gap-3">
-              <span className="grid size-11 shrink-0 place-items-center rounded-2xl bg-violet-50 text-violet-800">
+              <span className="grid size-11 shrink-0 place-items-center rounded-2xl bg-[var(--itq-color-info-50)] text-[var(--itq-color-info-800)]">
                 <ShieldCheckIcon className="size-5" />
               </span>
               <h2 className="pt-2 text-xl font-black">{t.files}</h2>
@@ -398,16 +402,16 @@ export function AdminMonitoring({
               <Metric label={t.blocked} value={number.format(snapshot.files.blocked)} />
             </div>
             {snapshot.files.explicitlyUnscanned > 0 ? (
-              <p className="mt-4 rounded-2xl border border-amber-200 bg-amber-50 p-4 text-sm font-bold leading-7 text-amber-950">
+              <p className="mt-4 rounded-2xl border border-[var(--itq-color-warning-200)] bg-[var(--itq-color-warning-50)] p-4 text-sm font-bold leading-7 text-[var(--itq-color-warning-950)]">
                 {t.fileWarning}
               </p>
             ) : null}
           </section>
         </div>
 
-        <section className="rounded-[1.75rem] border border-[var(--itq-color-border)] bg-white p-6 shadow-[var(--itq-shadow-sm)]">
+        <section className="rounded-[1.75rem] border border-[var(--itq-color-border)] bg-[var(--itq-color-surface)] p-6 shadow-[var(--itq-shadow-sm)]">
           <div className="flex items-start gap-3">
-            <span className="grid size-11 shrink-0 place-items-center rounded-2xl bg-emerald-50 text-emerald-800">
+            <span className="grid size-11 shrink-0 place-items-center rounded-2xl bg-[var(--itq-color-success-50)] text-[var(--itq-color-success-800)]">
               <MessageIcon className="size-5" />
             </span>
             <h2 className="pt-2 text-xl font-black">{t.activity}</h2>
@@ -445,7 +449,7 @@ export function AdminMonitoring({
         </section>
 
         <div className="grid gap-5 xl:grid-cols-[minmax(0,.8fr)_minmax(0,1.2fr)]">
-          <section className="rounded-[1.75rem] border border-[var(--itq-color-border)] bg-white p-6 shadow-[var(--itq-shadow-sm)]">
+          <section className="rounded-[1.75rem] border border-[var(--itq-color-border)] bg-[var(--itq-color-surface)] p-6 shadow-[var(--itq-shadow-sm)]">
             <div className="flex items-center gap-3">
               <RequestsIcon className="size-5 text-[var(--itq-color-brand-700)]" />
               <h2 className="text-xl font-black">{t.requestDistribution}</h2>
@@ -471,12 +475,12 @@ export function AdminMonitoring({
             </div>
           </section>
 
-          <section className="rounded-[1.75rem] border border-[var(--itq-color-border)] bg-white p-6 shadow-[var(--itq-shadow-sm)]">
+          <section className="rounded-[1.75rem] border border-[var(--itq-color-border)] bg-[var(--itq-color-surface)] p-6 shadow-[var(--itq-shadow-sm)]">
             <h2 className="text-xl font-black">{t.problems}</h2>
             <p className="mt-2 text-sm text-[var(--itq-color-muted)]">{t.problemDescription}</p>
             <div className="mt-5 grid gap-3">
               {snapshot.recentAutomationProblems.length === 0 ? (
-                <p className="rounded-2xl bg-emerald-50 p-5 text-sm font-bold text-emerald-950">
+                <p className="rounded-2xl bg-[var(--itq-color-success-50)] p-5 text-sm font-bold text-[var(--itq-color-success-900)]">
                   {t.noProblems}
                 </p>
               ) : (
@@ -490,7 +494,7 @@ export function AdminMonitoring({
                         {problem.eventType}
                       </bdi>
                       <span
-                        className={`rounded-full px-3 py-1 text-xs font-black ${problem.status === "DEAD_LETTER" ? "bg-red-100 text-red-950" : "bg-amber-100 text-amber-950"}`}
+                        className={`rounded-full px-3 py-1 text-xs font-black ${problem.status === "DEAD_LETTER" ? "bg-[var(--itq-color-danger-100)] text-[var(--itq-color-danger-950)]" : "bg-[var(--itq-color-warning-100)] text-[var(--itq-color-warning-950)]"}`}
                       >
                         {problem.status === "DEAD_LETTER" ? t.deadLetter : t.retry}
                       </span>

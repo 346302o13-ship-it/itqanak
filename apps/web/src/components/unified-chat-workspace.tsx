@@ -228,7 +228,7 @@ function Receipt({
   const read = status === "READ";
   return (
     <span
-      className={`inline-flex items-center gap-0.5 ${read ? "text-sky-300" : ""}`}
+      className={`inline-flex items-center gap-0.5 ${read ? "text-[var(--itq-color-info-500)]" : ""}`}
       title={read ? (english ? "Read" : "قُرئت") : english ? "Delivered" : "وصلت"}
     >
       <CheckCheckIcon className="size-3.5" />
@@ -275,8 +275,8 @@ function QuoteCard({
   const accepted = displayStatus === "ACCEPTED";
   const rejected = displayStatus === "REJECTED" || displayStatus === "WITHDRAWN";
   return (
-    <article className="mx-auto w-full max-w-xl overflow-hidden rounded-[1.35rem] border border-sky-200 bg-white shadow-sm">
-      <header className="flex items-center justify-between gap-3 bg-sky-950 px-4 py-3 text-white sm:px-5">
+    <article className="mx-auto w-full max-w-xl overflow-hidden rounded-[1.35rem] border border-[var(--itq-color-info-200)] bg-[var(--itq-color-surface)] shadow-sm">
+      <header className="flex items-center justify-between gap-3 bg-[var(--itq-color-info-950)] px-4 py-3 text-white sm:px-5">
         <span className="inline-flex items-center gap-2 text-sm font-black">
           <span className="grid size-8 place-items-center rounded-xl bg-white/10">﷼</span>
           {english ? "Price quote" : "عرض سعر"}
@@ -284,9 +284,9 @@ function QuoteCard({
         <span
           className={`rounded-full px-2.5 py-1 text-[10px] font-black ${
             accepted
-              ? "bg-emerald-400/20 text-emerald-100"
+              ? "bg-[color-mix(in_srgb,var(--itq-color-success-500)_22%,transparent)] text-[var(--itq-color-success-100)]"
               : rejected
-                ? "bg-red-400/20 text-red-100"
+                ? "bg-[color-mix(in_srgb,var(--itq-color-danger-500)_22%,transparent)] text-[var(--itq-color-danger-100)]"
                 : "bg-white/10 text-white"
           }`}
         >
@@ -294,7 +294,7 @@ function QuoteCard({
         </span>
       </header>
       <div className="p-4 sm:p-5">
-        <p className="text-2xl font-black text-sky-950" dir="ltr">
+        <p className="text-2xl font-black text-[var(--itq-color-info-950)]" dir="ltr">
           {formatQuoteAmount(quote.amountMinor, quote.currency, quote.minorUnit, locale)}
         </p>
         <p className="mt-3 whitespace-pre-wrap text-sm leading-7 text-[var(--itq-color-ink)]">
@@ -310,15 +310,15 @@ function QuoteCard({
           </time>
         </p>
         {actionable ? (
-          <div className="mt-4 border-t border-sky-100 pt-4">
-            <p className="mb-3 rounded-xl bg-amber-50 px-3 py-2 text-xs font-bold leading-5 text-amber-950">
+          <div className="mt-4 border-t border-[var(--itq-color-info-100)] pt-4">
+            <p className="mb-3 rounded-xl bg-[var(--itq-color-warning-50)] px-3 py-2 text-xs font-bold leading-5 text-[var(--itq-color-warning-950)]">
               {english
                 ? "Accepting creates an unpaid amount due on your account for this quote."
                 : "الموافقة تنشئ مستحقًا غير مدفوع في حسابك بقيمة هذا العرض."}
             </p>
             <div className="grid grid-cols-2 gap-2">
               <button
-                className="min-h-11 rounded-xl border border-red-200 bg-red-50 px-4 text-sm font-black text-red-800 transition hover:bg-red-100 disabled:opacity-50"
+                className="min-h-11 rounded-xl border border-[var(--itq-color-danger-200)] bg-[var(--itq-color-danger-50)] px-4 text-sm font-black text-[var(--itq-color-danger-800)] transition hover:bg-[var(--itq-color-danger-100)] disabled:opacity-50"
                 disabled={pending}
                 onClick={() => onRespond(quote, "REJECT")}
                 type="button"
@@ -326,7 +326,7 @@ function QuoteCard({
                 {english ? "Decline" : "رفض العرض"}
               </button>
               <button
-                className="min-h-11 rounded-xl bg-emerald-700 px-4 text-sm font-black text-white transition hover:bg-emerald-800 disabled:opacity-50"
+                className="min-h-11 rounded-xl bg-[var(--itq-color-success-600)] px-4 text-sm font-black text-white transition hover:bg-[var(--itq-color-success-700)] disabled:opacity-50"
                 disabled={pending}
                 onClick={() => {
                   const confirmed = window.confirm(
@@ -344,14 +344,14 @@ function QuoteCard({
           </div>
         ) : null}
         {withdrawable ? (
-          <div className="mt-4 border-t border-sky-100 pt-4">
+          <div className="mt-4 border-t border-[var(--itq-color-info-100)] pt-4">
             <p className="mb-3 text-xs font-bold leading-5 text-[var(--itq-color-muted)]">
               {english
                 ? "Withdraw this pending quote before sending a corrected replacement."
                 : "اسحب العرض المعلّق أولًا إذا أردت إرسال عرض بديل مصحح."}
             </p>
             <button
-              className="min-h-11 w-full rounded-xl border border-red-200 bg-red-50 px-4 text-sm font-black text-red-800 transition hover:bg-red-100 disabled:opacity-50"
+              className="min-h-11 w-full rounded-xl border border-[var(--itq-color-danger-200)] bg-[var(--itq-color-danger-50)] px-4 text-sm font-black text-[var(--itq-color-danger-800)] transition hover:bg-[var(--itq-color-danger-100)] disabled:opacity-50"
               disabled={pending}
               onClick={() => {
                 const confirmed = window.confirm(
@@ -425,7 +425,7 @@ function AttachmentBody({
         </div>
       ) : contentType === "AUDIO" ? (
         <button
-          className="min-h-12 w-full rounded-xl border border-amber-300 bg-amber-50 px-4 text-sm font-black text-amber-950"
+          className="min-h-12 w-full rounded-xl border border-[var(--itq-color-warning-300)] bg-[var(--itq-color-warning-50)] px-4 text-sm font-black text-[var(--itq-color-warning-950)]"
           onClick={() => setUnscannedAudioAllowed(true)}
           type="button"
         >
@@ -433,7 +433,7 @@ function AttachmentBody({
         </button>
       ) : (
         <a
-          className="flex min-h-14 items-center gap-3 rounded-xl border border-current/15 bg-white/70 p-3 font-black text-[var(--itq-color-ink)] no-underline"
+          className="flex min-h-14 items-center gap-3 rounded-xl border border-current/15 bg-[var(--itq-color-surface)]/70 p-3 font-black text-[var(--itq-color-ink)] no-underline"
           href={download}
         >
           <span className="grid size-10 shrink-0 place-items-center rounded-xl bg-[var(--itq-color-brand-50)] text-[var(--itq-color-brand-700)]">
@@ -458,7 +458,7 @@ function AttachmentBody({
         </a>
       ) : null}
       {unscanned ? (
-        <p className="mt-2 rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-[11px] font-bold leading-5 text-amber-950">
+        <p className="mt-2 rounded-xl border border-[var(--itq-color-warning-200)] bg-[var(--itq-color-warning-50)] px-3 py-2 text-[11px] font-bold leading-5 text-[var(--itq-color-warning-950)]">
           {warning}
         </p>
       ) : null}
@@ -494,7 +494,7 @@ function ConversationList({
           {onClose === undefined ? null : (
             <button
               aria-label={english ? "Close conversations" : "إغلاق قائمة المحادثات"}
-              className="grid size-10 place-items-center rounded-2xl bg-white text-[var(--itq-color-muted)] shadow-sm lg:hidden"
+              className="grid size-10 place-items-center rounded-2xl bg-[var(--itq-color-surface)] text-[var(--itq-color-muted)] shadow-sm lg:hidden"
               onClick={onClose}
               type="button"
             >
@@ -511,7 +511,7 @@ function ConversationList({
           <SearchIcon className="pointer-events-none absolute start-3 top-1/2 size-4 -translate-y-1/2 text-[var(--itq-color-muted)]" />
           <input
             aria-label={english ? "Search students" : "البحث عن طالب"}
-            className="h-11 w-full rounded-xl border border-[var(--itq-color-border)] bg-white ps-10 pe-3 text-sm outline-none focus:border-[var(--itq-color-brand-500)]"
+            className="h-11 w-full rounded-xl border border-[var(--itq-color-border)] bg-[var(--itq-color-surface)] ps-10 pe-3 text-sm outline-none focus:border-[var(--itq-color-brand-500)]"
             defaultValue={search}
             maxLength={100}
             name="q"
@@ -541,7 +541,7 @@ function ConversationList({
                 className={`mb-1.5 flex gap-3 rounded-2xl border p-3 no-underline transition ${
                   active
                     ? "border-[var(--itq-color-brand-200)] bg-[var(--itq-color-brand-50)]"
-                    : "border-transparent hover:bg-white"
+                    : "border-transparent hover:bg-[var(--itq-color-surface)]"
                 }`}
                 href={href}
                 key={item.id}
@@ -570,7 +570,7 @@ function ConversationList({
                         (english ? "No messages yet" : "لا توجد رسائل بعد")}
                     </bdi>
                     {item.unreadCount > 0 ? (
-                      <span className="grid min-w-5 shrink-0 place-items-center rounded-full bg-emerald-600 px-1.5 py-0.5 text-[10px] font-black text-white">
+                      <span className="grid min-w-5 shrink-0 place-items-center rounded-full bg-[var(--itq-color-success-600)] px-1.5 py-0.5 text-[10px] font-black text-white">
                         {item.unreadCount > 99 ? "99+" : item.unreadCount}
                       </span>
                     ) : null}
@@ -1866,7 +1866,7 @@ export function UnifiedChatWorkspace({
 
   const detailsPanel =
     conversation === undefined ? null : (
-      <div className="flex h-full min-h-0 flex-col bg-white">
+      <div className="flex h-full min-h-0 flex-col bg-[var(--itq-color-surface)]">
         <header className="flex h-[4.65rem] shrink-0 items-center justify-between border-b border-[var(--itq-color-border)] px-4">
           <div>
             <h2 className="font-black">{english ? "Requests" : "الطلبات"}</h2>
@@ -1945,7 +1945,7 @@ export function UnifiedChatWorkspace({
                       </span>
                     </button>
                     <Link
-                      className="mt-3 flex min-h-9 items-center justify-center rounded-xl border border-[var(--itq-color-border)] bg-white px-3 text-xs font-black no-underline"
+                      className="mt-3 flex min-h-9 items-center justify-center rounded-xl border border-[var(--itq-color-border)] bg-[var(--itq-color-surface)] px-3 text-xs font-black no-underline"
                       href={manageHref}
                     >
                       {mode === "admin"
@@ -1965,7 +1965,7 @@ export function UnifiedChatWorkspace({
                           {english ? "New request status" : "حالة الطلب الجديدة"}
                         </label>
                         <select
-                          className="h-10 min-w-0 rounded-xl border border-[var(--itq-color-border)] bg-white px-2 text-xs font-black"
+                          className="h-10 min-w-0 rounded-xl border border-[var(--itq-color-border)] bg-[var(--itq-color-surface)] px-2 text-xs font-black"
                           defaultValue=""
                           id={`quick-status-${request.id}`}
                           name="toStatus"
@@ -1991,7 +1991,7 @@ export function UnifiedChatWorkspace({
                     ) : null}
                     {mode === "student" && selected && request.status === "WAITING_FOR_STUDENT" ? (
                       <button
-                        className="mt-2 min-h-10 w-full rounded-xl bg-amber-800 px-3 text-xs font-black text-white disabled:opacity-50"
+                        className="mt-2 min-h-10 w-full rounded-xl bg-[var(--itq-color-warning-800)] px-3 text-xs font-black text-white disabled:opacity-50"
                         disabled={interactionLocked}
                         onClick={() => void transitionStudentRequest(request, "SUBMITTED")}
                         type="button"
@@ -2004,7 +2004,7 @@ export function UnifiedChatWorkspace({
                     {mode === "student" && selected && request.status === "DELIVERED" ? (
                       <div className="mt-2 grid grid-cols-2 gap-2">
                         <button
-                          className="min-h-10 rounded-xl border border-emerald-200 bg-white px-2 text-xs font-black text-emerald-900 disabled:opacity-50"
+                          className="min-h-10 rounded-xl border border-[var(--itq-color-success-200)] bg-[var(--itq-color-surface)] px-2 text-xs font-black text-[var(--itq-color-success-900)] disabled:opacity-50"
                           disabled={interactionLocked}
                           onClick={() =>
                             void transitionStudentRequest(request, "REVISION_REQUESTED")
@@ -2014,7 +2014,7 @@ export function UnifiedChatWorkspace({
                           {english ? "Request revision" : "طلب تعديل"}
                         </button>
                         <button
-                          className="min-h-10 rounded-xl bg-emerald-700 px-2 text-xs font-black text-white disabled:opacity-50"
+                          className="min-h-10 rounded-xl bg-[var(--itq-color-success-600)] px-2 text-xs font-black text-white disabled:opacity-50"
                           disabled={interactionLocked}
                           onClick={() => void transitionStudentRequest(request, "COMPLETED")}
                           type="button"
@@ -2033,19 +2033,19 @@ export function UnifiedChatWorkspace({
           selectedRequest !== undefined &&
           !selectedRequestHasPendingQuote &&
           quoteEligibleRequestStatuses.has(selectedRequest.status) ? (
-            <details className="mt-4 overflow-hidden rounded-2xl border border-sky-200 bg-sky-50">
-              <summary className="cursor-pointer px-4 py-3 text-sm font-black text-sky-950">
+            <details className="mt-4 overflow-hidden rounded-2xl border border-[var(--itq-color-info-200)] bg-[var(--itq-color-info-50)]">
+              <summary className="cursor-pointer px-4 py-3 text-sm font-black text-[var(--itq-color-info-950)]">
                 {english ? "Send a price quote" : "إرسال عرض سعر"}
               </summary>
               <form
-                className="grid gap-3 border-t border-sky-200 p-4"
+                className="grid gap-3 border-t border-[var(--itq-color-info-200)] p-4"
                 onSubmit={(event) => void createQuote(event)}
               >
                 <div className="grid grid-cols-[minmax(0,1fr)_5.5rem] gap-2">
                   <label className="grid gap-1 text-xs font-black">
                     {english ? "Amount" : "المبلغ"}
                     <input
-                      className="h-11 min-w-0 rounded-xl border border-sky-200 bg-white px-3"
+                      className="h-11 min-w-0 rounded-xl border border-[var(--itq-color-info-200)] bg-[var(--itq-color-surface)] px-3"
                       inputMode="decimal"
                       maxLength={13}
                       name="amount"
@@ -2056,7 +2056,7 @@ export function UnifiedChatWorkspace({
                   <label className="grid gap-1 text-xs font-black">
                     {english ? "Currency" : "العملة"}
                     <select
-                      className="h-11 rounded-xl border border-sky-200 bg-white px-2"
+                      className="h-11 rounded-xl border border-[var(--itq-color-info-200)] bg-[var(--itq-color-surface)] px-2"
                       defaultValue="SAR"
                       name="currency"
                     >
@@ -2069,7 +2069,7 @@ export function UnifiedChatWorkspace({
                 <label className="grid gap-1 text-xs font-black">
                   الوصف بالعربية
                   <textarea
-                    className="min-h-20 rounded-xl border border-sky-200 bg-white p-3"
+                    className="min-h-20 rounded-xl border border-[var(--itq-color-info-200)] bg-[var(--itq-color-surface)] p-3"
                     maxLength={2000}
                     minLength={3}
                     name="descriptionAr"
@@ -2079,7 +2079,7 @@ export function UnifiedChatWorkspace({
                 <label className="grid gap-1 text-xs font-black">
                   Description in English
                   <textarea
-                    className="min-h-20 rounded-xl border border-sky-200 bg-white p-3"
+                    className="min-h-20 rounded-xl border border-[var(--itq-color-info-200)] bg-[var(--itq-color-surface)] p-3"
                     dir="ltr"
                     maxLength={2000}
                     minLength={3}
@@ -2090,14 +2090,14 @@ export function UnifiedChatWorkspace({
                 <label className="grid gap-1 text-xs font-black">
                   {english ? "Valid until" : "صالح حتى"}
                   <input
-                    className="h-11 rounded-xl border border-sky-200 bg-white px-3"
+                    className="h-11 rounded-xl border border-[var(--itq-color-info-200)] bg-[var(--itq-color-surface)] px-3"
                     name="expiresAt"
                     required
                     type="datetime-local"
                   />
                 </label>
                 <button
-                  className="min-h-11 rounded-xl bg-sky-950 px-4 text-sm font-black text-white disabled:opacity-50"
+                  className="min-h-11 rounded-xl bg-[var(--itq-color-info-950)] px-4 text-sm font-black text-white disabled:opacity-50"
                   disabled={interactionLocked}
                   type="submit"
                 >
@@ -2114,7 +2114,7 @@ export function UnifiedChatWorkspace({
     return (
       <section
         aria-label={english ? "Unified conversation center" : "مركز المحادثات الموحد"}
-        className="relative grid h-full overflow-hidden bg-white lg:grid-cols-[22rem_minmax(0,1fr)]"
+        className="relative grid h-full overflow-hidden bg-[var(--itq-color-surface)] lg:grid-cols-[22rem_minmax(0,1fr)]"
       >
         <aside className="flex min-h-0 flex-col border-e border-[var(--itq-color-border)] bg-[var(--itq-color-surface-soft)]">
           <ConversationList
@@ -2125,7 +2125,7 @@ export function UnifiedChatWorkspace({
         </aside>
         <main className="hidden place-items-center bg-[var(--itq-color-surface-soft)] p-8 text-center lg:grid">
           <div className="max-w-sm">
-            <span className="mx-auto grid size-20 place-items-center rounded-full bg-white text-[var(--itq-color-brand-700)] shadow-sm">
+            <span className="mx-auto grid size-20 place-items-center rounded-full bg-[var(--itq-color-surface)] text-[var(--itq-color-brand-700)] shadow-sm">
               <MessageIcon className="size-9" />
             </span>
             <h1 className="mt-5 text-2xl font-black">
@@ -2145,7 +2145,7 @@ export function UnifiedChatWorkspace({
   return (
     <section
       aria-label={english ? "Unified conversation" : "المحادثة الموحدة"}
-      className={`relative grid h-full min-h-0 overflow-hidden border-x border-[var(--itq-color-border)] bg-white ${
+      className={`relative grid h-full min-h-0 overflow-hidden border-x border-[var(--itq-color-border)] bg-[var(--itq-color-surface)] ${
         mode === "admin"
           ? "lg:grid-cols-[21rem_minmax(0,1fr)] xl:grid-cols-[21rem_minmax(0,1fr)_19rem]"
           : "xl:grid-cols-[minmax(0,1fr)_20rem]"
@@ -2186,7 +2186,7 @@ export function UnifiedChatWorkspace({
       ) : null}
 
       <main className="flex min-h-0 min-w-0 flex-col bg-[var(--itq-color-surface-soft)]">
-        <header className="flex h-[4.65rem] shrink-0 items-center justify-between gap-3 border-b border-[var(--itq-color-border)] bg-white px-3 sm:px-5">
+        <header className="flex h-[4.65rem] shrink-0 items-center justify-between gap-3 border-b border-[var(--itq-color-border)] bg-[var(--itq-color-surface)] px-3 sm:px-5">
           <div className="flex min-w-0 items-center gap-3">
             {mode === "admin" ? (
               <button
@@ -2230,14 +2230,14 @@ export function UnifiedChatWorkspace({
                       : "دعم إتقانك"}
                 </bdi>
               </h1>
-              <p className="flex items-center gap-1.5 truncate text-[10px] font-bold text-emerald-700 sm:text-xs">
-                <span className="size-2 rounded-full bg-emerald-500" />
+              <p className="flex items-center gap-1.5 truncate text-[10px] font-bold text-[var(--itq-color-success-700)] sm:text-xs">
+                <span className="size-2 rounded-full bg-[var(--itq-color-success-500)]" />
                 {english ? "Private unified conversation" : "محادثة موحدة وخاصة"}
               </p>
             </div>
           </div>
           <div className="flex items-center gap-2">
-            <span className="hidden items-center gap-1.5 rounded-full bg-emerald-50 px-3 py-1.5 text-[10px] font-black text-emerald-800 sm:inline-flex">
+            <span className="hidden items-center gap-1.5 rounded-full bg-[var(--itq-color-success-50)] px-3 py-1.5 text-[10px] font-black text-[var(--itq-color-success-800)] sm:inline-flex">
               <ShieldCheckIcon className="size-3.5" /> {english ? "Secure" : "آمنة"}
             </span>
             <button
@@ -2278,11 +2278,11 @@ export function UnifiedChatWorkspace({
         </header>
 
         {searchOpen ? (
-          <div className="flex shrink-0 items-center gap-2 border-b border-[var(--itq-color-border)] bg-white px-3 py-2 sm:px-5">
+          <div className="flex shrink-0 items-center gap-2 border-b border-[var(--itq-color-border)] bg-[var(--itq-color-surface)] px-3 py-2 sm:px-5">
             <div className="relative flex-1">
               <SearchIcon className="pointer-events-none absolute start-3 top-1/2 size-4 -translate-y-1/2 text-[var(--itq-color-muted)]" />
               <input
-                className="w-full rounded-xl border border-[var(--itq-color-border)] bg-white py-2 pe-3 ps-9 text-sm outline-none focus:border-[var(--itq-color-brand-500)] focus:ring-2 focus:ring-[var(--itq-color-brand-100)]"
+                className="w-full rounded-xl border border-[var(--itq-color-border)] bg-[var(--itq-color-surface)] py-2 pe-3 ps-9 text-sm outline-none focus:border-[var(--itq-color-brand-500)] focus:ring-2 focus:ring-[var(--itq-color-brand-100)]"
                 onChange={(event) => setSearchTerm(event.target.value)}
                 onKeyDown={(event) => {
                   if (event.key === "Enter") {
@@ -2330,7 +2330,7 @@ export function UnifiedChatWorkspace({
         ) : null}
 
         {selectedRequest === undefined ? null : (
-          <div className="flex shrink-0 items-center justify-between gap-3 border-b border-[var(--itq-color-border)] bg-white/90 px-4 py-2 text-xs">
+          <div className="flex shrink-0 items-center justify-between gap-3 border-b border-[var(--itq-color-border)] bg-[var(--itq-color-surface)]/90 px-4 py-2 text-xs">
             <button
               aria-controls={detailsPanelId}
               className="flex min-w-0 items-center gap-2 text-start"
@@ -2351,7 +2351,7 @@ export function UnifiedChatWorkspace({
               <RequestStatusChip locale={locale} status={selectedRequest.status} />
               <button
                 aria-label={english ? "Send as a general message" : "إرسال كرسالة عامة"}
-                className="grid size-7 place-items-center rounded-lg text-[var(--itq-color-muted)] hover:bg-red-50 hover:text-red-700"
+                className="grid size-7 place-items-center rounded-lg text-[var(--itq-color-muted)] hover:bg-[var(--itq-color-danger-50)] hover:text-[var(--itq-color-danger-700)]"
                 onClick={() => setLinkedRequestId(undefined)}
                 title={english ? "Remove request link" : "إلغاء ربط الطلب"}
                 type="button"
@@ -2383,7 +2383,7 @@ export function UnifiedChatWorkspace({
         >
           {loadedPage < pageCount ? (
             <button
-              className="mx-auto mb-5 block rounded-full border border-[var(--itq-color-border)] bg-white px-4 py-2 text-xs font-black shadow-sm disabled:opacity-60"
+              className="mx-auto mb-5 block rounded-full border border-[var(--itq-color-border)] bg-[var(--itq-color-surface)] px-4 py-2 text-xs font-black shadow-sm disabled:opacity-60"
               disabled={loadingOlder}
               onClick={() => void loadOlder()}
               type="button"
@@ -2401,7 +2401,7 @@ export function UnifiedChatWorkspace({
           {messages.length === 0 ? (
             <div className="grid min-h-full place-items-center py-12 text-center">
               <div className="max-w-sm">
-                <span className="mx-auto grid size-20 place-items-center rounded-full bg-white text-[var(--itq-color-brand-700)] shadow-sm">
+                <span className="mx-auto grid size-20 place-items-center rounded-full bg-[var(--itq-color-surface)] text-[var(--itq-color-brand-700)] shadow-sm">
                   <MessageIcon className="size-9" />
                 </span>
                 <p className="mt-5 text-xl font-black">
@@ -2431,7 +2431,7 @@ export function UnifiedChatWorkspace({
                 return (
                   <Fragment key={message.id}>
                     {showDate ? (
-                      <li className="sticky top-2 z-10 mx-auto my-2 rounded-full border border-white/70 bg-white/90 px-3 py-1 text-[10px] font-black text-[var(--itq-color-muted)] shadow-sm backdrop-blur">
+                      <li className="sticky top-2 z-10 mx-auto my-2 rounded-full border border-[var(--itq-color-border)] bg-[var(--itq-color-surface)]/90 px-3 py-1 text-[10px] font-black text-[var(--itq-color-muted)] shadow-sm backdrop-blur">
                         <time dateTime={message.sentAt.toISOString()}>
                           {formatMessageDate(message.sentAt, locale)}
                         </time>
@@ -2441,7 +2441,7 @@ export function UnifiedChatWorkspace({
                       <li className="my-2">
                         {message.request === undefined ? null : (
                           <Link
-                            className="mx-auto mb-2 flex w-fit items-center gap-2 rounded-full bg-white/90 px-3 py-1 text-[10px] font-black text-[var(--itq-color-brand-700)] no-underline shadow-sm"
+                            className="mx-auto mb-2 flex w-fit items-center gap-2 rounded-full bg-[var(--itq-color-surface)]/90 px-3 py-1 text-[10px] font-black text-[var(--itq-color-brand-700)] no-underline shadow-sm"
                             href={
                               mode === "admin"
                                 ? `/${locale}/admin/requests/${encodeURIComponent(message.request.requestNumber)}`
@@ -2463,15 +2463,15 @@ export function UnifiedChatWorkspace({
                       </li>
                     ) : system ? (
                       <li className="mx-auto my-1 w-full max-w-xl">
-                        <article className="rounded-2xl border border-amber-200/80 bg-amber-50/95 px-4 py-3 text-center shadow-sm">
-                          <p className="text-xs font-black text-amber-950">
+                        <article className="rounded-2xl border border-[var(--itq-color-warning-200)] bg-[var(--itq-color-warning-50)] px-4 py-3 text-center shadow-sm">
+                          <p className="text-xs font-black text-[var(--itq-color-warning-950)]">
                             <bdi dir="auto">{systemMessageLabel(message, locale)}</bdi>
                           </p>
                           {message.request === undefined ? null : (
                             <div className="mt-2 flex flex-wrap items-center justify-center gap-2">
                               <RequestStatusChip locale={locale} status={message.request.status} />
                               <Link
-                                className="text-[10px] font-black text-amber-900 underline"
+                                className="text-[10px] font-black text-[var(--itq-color-warning-900)] underline"
                                 href={
                                   mode === "admin"
                                     ? `/${locale}/admin/requests/${encodeURIComponent(message.request.requestNumber)}`
@@ -2483,7 +2483,7 @@ export function UnifiedChatWorkspace({
                             </div>
                           )}
                           <time
-                            className="mt-2 block text-[9px] font-bold text-amber-800/70"
+                            className="mt-2 block text-[9px] font-bold text-[var(--itq-color-warning-700)]"
                             dateTime={message.sentAt.toISOString()}
                           >
                             {formatMessageTime(message.sentAt, locale)}
@@ -2499,10 +2499,10 @@ export function UnifiedChatWorkspace({
                           className={`max-w-[88%] rounded-2xl px-3.5 py-2.5 shadow-sm transition sm:max-w-[72%] sm:px-4 ${
                             mine
                               ? "rounded-ee-sm bg-[var(--itq-color-brand-700)] text-white"
-                              : "rounded-es-sm border border-[var(--itq-color-border)] bg-white text-[var(--itq-color-ink)]"
+                              : "rounded-es-sm border border-[var(--itq-color-border)] bg-[var(--itq-color-surface)] text-[var(--itq-color-ink)]"
                           } ${
                             highlightId === message.id
-                              ? "ring-2 ring-amber-400 ring-offset-2 ring-offset-[var(--itq-color-surface-soft)]"
+                              ? "ring-2 ring-[var(--itq-color-warning-500)] ring-offset-2 ring-offset-[var(--itq-color-surface-soft)]"
                               : ""
                           }`}
                         >
@@ -2583,7 +2583,7 @@ export function UnifiedChatWorkspace({
                               <textarea
                                 aria-label={english ? "Edit message" : "تعديل الرسالة"}
                                 autoFocus
-                                className="min-h-16 w-full resize-none rounded-lg border border-white/40 bg-white/95 px-2.5 py-1.5 text-sm leading-6 text-[var(--itq-color-ink)] outline-none"
+                                className="min-h-16 w-full resize-none rounded-lg border border-white/40 bg-[var(--itq-color-surface)] px-2.5 py-1.5 text-sm leading-6 text-[var(--itq-color-ink)] outline-none"
                                 dir="auto"
                                 maxLength={10_000}
                                 onChange={(event) => setEditingText(event.currentTarget.value)}
@@ -2609,7 +2609,7 @@ export function UnifiedChatWorkspace({
                                   {english ? "Cancel" : "إلغاء"}
                                 </button>
                                 <button
-                                  className="rounded bg-white px-2 py-0.5 text-[var(--itq-color-brand-800)] disabled:opacity-50"
+                                  className="rounded bg-[var(--itq-color-surface)] px-2 py-0.5 text-[var(--itq-color-brand-800)] disabled:opacity-50"
                                   disabled={editingText.trim().length === 0}
                                   onClick={() => void submitEdit(message.id)}
                                   type="button"
@@ -2694,7 +2694,7 @@ export function UnifiedChatWorkspace({
                                       {english ? "React" : "تفاعل"}
                                     </button>
                                     {reactionPickerFor === message.id ? (
-                                      <span className="absolute bottom-full z-20 mb-1 flex gap-0.5 rounded-full border border-[var(--itq-color-border)] bg-white p-1 shadow-lg">
+                                      <span className="absolute bottom-full z-20 mb-1 flex gap-0.5 rounded-full border border-[var(--itq-color-border)] bg-[var(--itq-color-surface)] p-1 shadow-lg">
                                         {reactionChoices.map((emoji) => (
                                           <button
                                             className="grid size-7 place-items-center rounded-full text-base hover:bg-[var(--itq-color-surface-soft)]"
@@ -2718,7 +2718,7 @@ export function UnifiedChatWorkspace({
                                           {english ? "Delete?" : "حذف؟"}
                                         </span>
                                         <button
-                                          className="rounded px-1.5 py-0.5 font-black text-red-200 hover:bg-white/15"
+                                          className="rounded px-1.5 py-0.5 font-black text-[var(--itq-color-danger-200)] hover:bg-white/15"
                                           onClick={() => void deleteMessage(message.id)}
                                           type="button"
                                         >
@@ -2799,7 +2799,7 @@ export function UnifiedChatWorkspace({
                     <footer className="mt-1.5 flex items-center justify-end gap-2 text-[9px] font-semibold text-white/80">
                       {entry.status === "failed" ? (
                         <>
-                          <span className="text-amber-200">
+                          <span className="text-[var(--itq-color-warning-500)]">
                             {english ? "Not sent" : "لم تُرسل"}
                           </span>
                           <button
@@ -2851,7 +2851,7 @@ export function UnifiedChatWorkspace({
           <div ref={endRef} />
         </div>
 
-        <footer className="shrink-0 border-t border-[var(--itq-color-border)] bg-white px-2.5 py-2.5 sm:px-4">
+        <footer className="shrink-0 border-t border-[var(--itq-color-border)] bg-[var(--itq-color-surface)] px-2.5 py-2.5 sm:px-4">
           {notice === undefined ? null : (
             <p
               className="mb-2 rounded-xl bg-[var(--itq-color-surface-soft)] px-3 py-2 text-xs font-bold"
@@ -2861,9 +2861,9 @@ export function UnifiedChatWorkspace({
             </p>
           )}
           {recording ? (
-            <div className="mb-2 flex items-center justify-between rounded-xl bg-red-50 px-3 py-2 text-xs font-black text-red-800">
+            <div className="mb-2 flex items-center justify-between rounded-xl bg-[var(--itq-color-danger-50)] px-3 py-2 text-xs font-black text-[var(--itq-color-danger-800)]">
               <span className="inline-flex items-center gap-2">
-                <span className="size-2 animate-pulse rounded-full bg-red-600" />
+                <span className="size-2 animate-pulse rounded-full bg-[var(--itq-color-danger-600)]" />
                 {english ? "Recording voice message…" : "جارٍ تسجيل رسالة صوتية…"}
               </span>
               <button className="underline" onClick={() => void toggleRecording()} type="button">
@@ -2906,7 +2906,7 @@ export function UnifiedChatWorkspace({
               </button>
               <button
                 aria-label={english ? "Cancel reply" : "إلغاء الرد"}
-                className="shrink-0 rounded-lg p-1 text-[var(--itq-color-muted)] hover:bg-white"
+                className="shrink-0 rounded-lg p-1 text-[var(--itq-color-muted)] hover:bg-[var(--itq-color-surface)]"
                 onClick={() => setReplyingTo(undefined)}
                 type="button"
               >
@@ -2947,8 +2947,8 @@ export function UnifiedChatWorkspace({
               }
               className={`grid size-11 shrink-0 place-items-center rounded-xl transition disabled:opacity-50 ${
                 recording
-                  ? "bg-red-600 text-white"
-                  : "text-[var(--itq-color-muted)] hover:bg-red-50 hover:text-red-700"
+                  ? "bg-[var(--itq-color-danger-600)] text-white"
+                  : "text-[var(--itq-color-muted)] hover:bg-[var(--itq-color-danger-50)] hover:text-[var(--itq-color-danger-700)]"
               }`}
               disabled={recordingStarting || (pending && !recording)}
               onClick={() => void toggleRecording()}
@@ -2958,7 +2958,7 @@ export function UnifiedChatWorkspace({
             </button>
             <textarea
               aria-label={english ? "Message" : "الرسالة"}
-              className="max-h-32 min-h-11 min-w-0 flex-1 resize-none rounded-2xl border border-[var(--itq-color-border)] bg-[var(--itq-color-surface-soft)] px-4 py-2.5 text-sm leading-6 outline-none focus:border-[var(--itq-color-brand-500)] focus:bg-white"
+              className="max-h-32 min-h-11 min-w-0 flex-1 resize-none rounded-2xl border border-[var(--itq-color-border)] bg-[var(--itq-color-surface-soft)] px-4 py-2.5 text-sm leading-6 outline-none focus:border-[var(--itq-color-brand-500)] focus:bg-[var(--itq-color-surface)]"
               dir="auto"
               disabled={recording || recordingStarting}
               maxLength={10_000}
@@ -3010,7 +3010,7 @@ export function UnifiedChatWorkspace({
           <aside
             aria-label={english ? "Requests panel" : "لوحة الطلبات"}
             aria-modal="true"
-            className="fixed inset-y-0 end-0 z-50 w-[min(92vw,24rem)] border-s border-[var(--itq-color-border)] bg-white shadow-2xl xl:hidden"
+            className="fixed inset-y-0 end-0 z-50 w-[min(92vw,24rem)] border-s border-[var(--itq-color-border)] bg-[var(--itq-color-surface)] shadow-2xl xl:hidden"
             id={detailsPanelId}
             ref={detailsPanelRef}
             role="dialog"

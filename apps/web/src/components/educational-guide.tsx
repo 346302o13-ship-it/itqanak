@@ -87,7 +87,7 @@ export function EducationalGuide({
         <section
           aria-labelledby={titleId}
           aria-modal="false"
-          className={`fixed inset-x-3 ${panelPosition} z-[70] flex max-h-[min(39rem,calc(100dvh-11rem))] flex-col overflow-hidden rounded-[1.75rem] border border-[var(--itq-color-border)] bg-white shadow-[0_28px_90px_rgba(11,38,46,0.24)] sm:inset-x-auto sm:end-6 sm:w-[27rem]`}
+          className={`fixed inset-x-3 ${panelPosition} z-[70] flex max-h-[min(39rem,calc(100dvh-11rem))] flex-col overflow-hidden rounded-[1.75rem] border border-[var(--itq-color-border)] bg-[var(--itq-color-surface)] shadow-[0_28px_90px_rgba(11,38,46,0.24)] sm:inset-x-auto sm:end-6 sm:w-[27rem]`}
           id={panelId}
           role="dialog"
         >
@@ -123,7 +123,7 @@ export function EducationalGuide({
               </button>
             </div>
             <div className="relative mt-4 flex items-center gap-2 rounded-xl bg-white/10 px-3 py-2 text-[10px] font-bold leading-5 text-white/75 ring-1 ring-white/10">
-              <ShieldCheckIcon className="size-4 shrink-0 text-emerald-300" />
+              <ShieldCheckIcon className="size-4 shrink-0 text-[var(--itq-color-success-600)]" />
               {english
                 ? "Your question is matched on this device and is not sent to an external service."
                 : "تتم مطابقة سؤالك على جهازك ولا يُرسل إلى أي خدمة خارجية."}
@@ -131,7 +131,7 @@ export function EducationalGuide({
           </header>
 
           <div className="flex-1 overflow-y-auto bg-[var(--itq-color-surface-soft)] p-4 [scrollbar-width:thin]">
-            <div className="rounded-2xl rounded-ss-md border border-[var(--itq-color-border)] bg-white p-4 shadow-sm">
+            <div className="rounded-2xl rounded-ss-md border border-[var(--itq-color-border)] bg-[var(--itq-color-surface)] p-4 shadow-sm">
               <p className="text-sm font-extrabold leading-7">
                 {english
                   ? "Welcome. Choose a topic or type a short question about services, requests, verification, files, or responsible learning."
@@ -146,7 +146,7 @@ export function EducationalGuide({
               >
                 {topics.map((topic) => (
                   <button
-                    className="min-h-14 rounded-2xl border border-[var(--itq-color-border)] bg-white px-3 py-2 text-start text-xs font-black leading-5 text-[var(--itq-color-ink-soft)] shadow-sm transition hover:border-[var(--itq-color-brand-200)] hover:bg-[var(--itq-color-brand-50)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--itq-color-brand-600)]"
+                    className="min-h-14 rounded-2xl border border-[var(--itq-color-border)] bg-[var(--itq-color-surface)] px-3 py-2 text-start text-xs font-black leading-5 text-[var(--itq-color-ink-soft)] shadow-sm transition hover:border-[var(--itq-color-brand-200)] hover:bg-[var(--itq-color-brand-50)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--itq-color-brand-600)]"
                     key={topic.id}
                     onClick={() => answerQuestion(topic.title)}
                     type="button"
@@ -164,7 +164,7 @@ export function EducationalGuide({
                     {message.question}
                   </p>
                   {message.answer === undefined ? (
-                    <div className="max-w-[94%] rounded-2xl rounded-ss-md border border-[var(--itq-color-border)] bg-white p-4 shadow-sm">
+                    <div className="max-w-[94%] rounded-2xl rounded-ss-md border border-[var(--itq-color-border)] bg-[var(--itq-color-surface)] p-4 shadow-sm">
                       <p className="text-sm font-bold leading-7">
                         {english
                           ? "I do not have a sufficiently precise saved answer for that question. Support can help without sending your typed question automatically."
@@ -181,7 +181,7 @@ export function EducationalGuide({
                       </a>
                     </div>
                   ) : (
-                    <article className="max-w-[94%] rounded-2xl rounded-ss-md border border-[var(--itq-color-border)] bg-white p-4 shadow-sm">
+                    <article className="max-w-[94%] rounded-2xl rounded-ss-md border border-[var(--itq-color-border)] bg-[var(--itq-color-surface)] p-4 shadow-sm">
                       <h3 className="text-sm font-black text-[var(--itq-color-brand-800)]">
                         {message.answer.title}
                       </h3>
@@ -218,13 +218,13 @@ export function EducationalGuide({
           </div>
 
           <form
-            className="border-t border-[var(--itq-color-border)] bg-white p-3"
+            className="border-t border-[var(--itq-color-border)] bg-[var(--itq-color-surface)] p-3"
             onSubmit={handleSubmit}
           >
             <label className="sr-only" htmlFor={`${panelId}-question`}>
               {english ? "Your question" : "سؤالك"}
             </label>
-            <div className="flex items-center gap-2 rounded-2xl border border-[var(--itq-color-border-strong)] bg-white p-1.5 focus-within:border-[var(--itq-color-brand-500)] focus-within:ring-2 focus-within:ring-[var(--itq-color-brand-100)]">
+            <div className="flex items-center gap-2 rounded-2xl border border-[var(--itq-color-border-strong)] bg-[var(--itq-color-surface)] p-1.5 focus-within:border-[var(--itq-color-brand-500)] focus-within:ring-2 focus-within:ring-[var(--itq-color-brand-100)]">
               <input
                 className="min-h-10 min-w-0 flex-1 bg-transparent px-2 text-sm font-semibold outline-none placeholder:text-[var(--itq-color-muted)]"
                 id={`${panelId}-question`}

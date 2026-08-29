@@ -23,7 +23,7 @@ const inputClass =
   "mt-2 h-12 w-full rounded-xl border border-[var(--itq-color-border)] px-4 aria-[invalid]:border-[var(--itq-color-danger-600)]";
 const areaClass = "mt-2 min-h-20 w-full rounded-xl border border-[var(--itq-color-border)] p-4";
 const attestationClass =
-  "flex items-start gap-3 rounded-xl bg-amber-50 p-4 text-xs font-bold leading-6 text-amber-950";
+  "flex items-start gap-3 rounded-xl bg-[var(--itq-color-warning-50)] p-4 text-xs font-bold leading-6 text-[var(--itq-color-warning-950)]";
 
 const countryLabels: Record<"ar" | "en", Record<string, string>> = {
   ar: { SA: "السعودية", AE: "الإمارات", KW: "الكويت" },
@@ -129,7 +129,7 @@ export function ApprovalsWorkspace({
   const activeNotice = notice === undefined ? undefined : notices[notice];
 
   return (
-    <div className="rounded-[1.75rem] border border-[var(--itq-color-border)] bg-white p-5 shadow-[var(--itq-shadow-sm)] sm:p-8">
+    <div className="rounded-[1.75rem] border border-[var(--itq-color-border)] bg-[var(--itq-color-surface)] p-5 shadow-[var(--itq-shadow-sm)] sm:p-8">
       <div>
         <p className="text-sm font-black text-[var(--itq-color-brand-700)]">
           {t("أمان الحسابات", "Account security")}
@@ -160,7 +160,7 @@ export function ApprovalsWorkspace({
               {entry.label}
               <span
                 className={`grid min-w-5 place-items-center rounded-full px-1 text-xs tabular-nums ${
-                  active ? "bg-white/20" : "bg-white"
+                  active ? "bg-white/20" : "bg-[var(--itq-color-surface)]"
                 }`}
               >
                 {entry.count}
@@ -179,8 +179,8 @@ export function ApprovalsWorkspace({
           <p
             className={`mt-6 rounded-xl border p-4 font-bold ${
               activeNotice.tone === "ok"
-                ? "border-emerald-200 bg-emerald-50 text-emerald-900"
-                : "border-amber-200 bg-amber-50 text-amber-950"
+                ? "border-[var(--itq-color-success-200)] bg-[var(--itq-color-success-50)] text-[var(--itq-color-success-900)]"
+                : "border-[var(--itq-color-warning-200)] bg-[var(--itq-color-warning-50)] text-[var(--itq-color-warning-950)]"
             }`}
             role="status"
           >
@@ -193,7 +193,7 @@ export function ApprovalsWorkspace({
         <div className="mt-7 grid gap-5">
           {phoneVerifications.length === 0 ? (
             <div className="grid place-items-center rounded-3xl bg-[var(--itq-color-surface-soft)] py-20 text-center">
-              <VerifiedIcon className="size-12 text-emerald-700" />
+              <VerifiedIcon className="size-12 text-[var(--itq-color-success-700)]" />
               <h2 className="mt-4 text-xl font-black">
                 {t("لا توجد حسابات معلقة", "No pending accounts")}
               </h2>

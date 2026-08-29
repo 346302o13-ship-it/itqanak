@@ -19,7 +19,7 @@ export default function EnglishPendingPhoneVerificationPage() {
         <li>After an administrator matches the number, sign in using its E.164 format.</li>
       </ol>
       <a
-        className="mt-7 flex min-h-12 items-center justify-center rounded-xl bg-emerald-600 px-5 py-3 text-center font-black text-white"
+        className="mt-7 flex min-h-12 items-center justify-center rounded-xl bg-[var(--itq-color-success-600)] px-5 py-3 text-center font-black text-white"
         href={supportWhatsAppHref("en", "Student account verification")}
         rel="noreferrer"
         target="_blank"

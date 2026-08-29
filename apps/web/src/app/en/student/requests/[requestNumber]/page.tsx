@@ -262,13 +262,13 @@ export default async function EnglishRequestDetailPage({
                       {fileSize(attachment.sizeBytes)} — {attachmentStateLabel(attachment)}
                     </span>
                     {attachment.scanStatus === "SCAN_SKIPPED_DEVELOPMENT" ? (
-                      <span className="mt-2 block text-xs font-bold text-amber-800">
+                      <span className="mt-2 block text-xs font-bold text-[var(--itq-color-warning-800)]">
                         Warning: this file was not malware-scanned because the environment is in
                         development mode.
                       </span>
                     ) : null}
                     {attachment.scanStatus === "SCAN_SKIPPED_BY_ADMIN" ? (
-                      <span className="mt-2 block text-xs font-bold text-amber-800">
+                      <span className="mt-2 block text-xs font-bold text-[var(--itq-color-warning-800)]">
                         Warning: this file was not malware-scanned. Download it only if you trust
                         the sender; the platform will not preview it inline.
                       </span>

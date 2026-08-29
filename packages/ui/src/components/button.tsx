@@ -12,13 +12,13 @@ const variantClasses: Readonly<Record<ButtonVariant, string>> = {
   primary:
     "bg-[var(--itq-color-brand-700)] text-white shadow-[var(--itq-shadow-sm)] hover:-translate-y-0.5 hover:bg-[var(--itq-color-brand-800)] focus-visible:outline-[var(--itq-color-brand-600)]",
   secondary:
-    "border border-[var(--itq-color-border-strong)] bg-white text-[var(--itq-color-brand-800)] shadow-sm hover:border-[var(--itq-color-brand-200)] hover:bg-[var(--itq-color-brand-50)] focus-visible:outline-[var(--itq-color-brand-600)]",
+    "border border-[var(--itq-color-border-strong)] bg-[var(--itq-color-surface)] text-[var(--itq-color-brand-800)] shadow-sm hover:border-[var(--itq-color-brand-200)] hover:bg-[var(--itq-color-brand-50)] focus-visible:outline-[var(--itq-color-brand-600)]",
   quiet:
     "text-[var(--itq-color-brand-800)] hover:bg-[var(--itq-color-brand-50)] focus-visible:outline-[var(--itq-color-brand-600)]",
   danger:
     "bg-[var(--itq-color-danger-700)] text-white shadow-[var(--itq-shadow-sm)] hover:bg-[var(--itq-color-danger-800)] focus-visible:outline-[var(--itq-color-danger-600)]",
   "ghost-danger":
-    "border border-[var(--itq-color-danger-100)] bg-white text-[var(--itq-color-danger-700)] hover:bg-[var(--itq-color-danger-50)] focus-visible:outline-[var(--itq-color-danger-600)]",
+    "border border-[var(--itq-color-danger-100)] bg-[var(--itq-color-surface)] text-[var(--itq-color-danger-700)] hover:bg-[var(--itq-color-danger-50)] focus-visible:outline-[var(--itq-color-danger-600)]",
 };
 
 export function Button({

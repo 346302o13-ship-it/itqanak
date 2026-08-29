@@ -60,7 +60,7 @@ export function ErrorView({ kind, reset, digest }: ErrorViewProps) {
       dir={english ? "ltr" : "rtl"}
       lang={locale}
     >
-      <section className="w-full rounded-3xl border border-[var(--itq-color-border)] bg-white p-8 shadow-[var(--itq-shadow-card)]">
+      <section className="w-full rounded-3xl border border-[var(--itq-color-border)] bg-[var(--itq-color-surface)] p-8 shadow-[var(--itq-shadow-card)]">
         {kind === "not-found" ? (
           <p className="text-sm font-bold text-[var(--itq-color-brand-700)]">404</p>
         ) : null}

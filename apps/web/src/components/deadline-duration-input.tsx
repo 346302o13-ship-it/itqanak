@@ -86,7 +86,7 @@ export function DeadlineDurationInput({ initialIso, locale = "ar" }: DeadlineDur
         <input
           aria-describedby={`${fieldId}-help`}
           aria-label={english ? "Deadline amount" : "مدة الموعد"}
-          className="w-24 rounded-xl border border-[var(--itq-color-border)] bg-white px-3 py-3 text-base shadow-sm"
+          className="w-24 rounded-xl border border-[var(--itq-color-border)] bg-[var(--itq-color-surface)] px-3 py-3 text-base shadow-sm"
           inputMode="numeric"
           max={365}
           min={1}
@@ -100,7 +100,7 @@ export function DeadlineDurationInput({ initialIso, locale = "ar" }: DeadlineDur
         />
         <select
           aria-label={english ? "Deadline unit" : "وحدة المدة"}
-          className="flex-1 rounded-xl border border-[var(--itq-color-border)] bg-white px-3 py-3 text-base shadow-sm"
+          className="flex-1 rounded-xl border border-[var(--itq-color-border)] bg-[var(--itq-color-surface)] px-3 py-3 text-base shadow-sm"
           onChange={(event) => {
             const nextUnit = event.target.value as Unit;
             setUnit(nextUnit);

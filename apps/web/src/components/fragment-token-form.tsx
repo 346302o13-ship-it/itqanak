@@ -59,7 +59,7 @@ export function FragmentTokenForm({
       {fragmentState.loaded && !usable ? (
         <p
           aria-live="polite"
-          className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-semibold text-red-950"
+          className="rounded-xl border border-[var(--itq-color-danger-200)] bg-[var(--itq-color-danger-50)] px-4 py-3 text-sm font-semibold text-[var(--itq-color-danger-950)]"
           role="status"
         >
           {missingMessage}

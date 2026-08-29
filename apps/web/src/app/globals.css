@@ -33,6 +33,24 @@ html[lang="en"] body {
   font-family: "IBM Plex Sans", "IBM Plex Sans Arabic", "Segoe UI", Arial, sans-serif;
 }
 
+/* The two pastel corner glows read as bright spots on a dark canvas; dim them
+   and warm them toward the dark surface so the background stays a soft wash. */
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) body {
+    background:
+      radial-gradient(circle at 92% -8%, rgb(29 81 74 / 30%), transparent 34rem),
+      radial-gradient(circle at 0% 38%, rgb(42 34 19 / 34%), transparent 30rem),
+      var(--itq-color-canvas);
+  }
+}
+
+:root[data-theme="dark"] body {
+  background:
+    radial-gradient(circle at 92% -8%, rgb(29 81 74 / 30%), transparent 34rem),
+    radial-gradient(circle at 0% 38%, rgb(42 34 19 / 34%), transparent 30rem),
+    var(--itq-color-canvas);
+}
+
 h1,
 h2,
 h3 {

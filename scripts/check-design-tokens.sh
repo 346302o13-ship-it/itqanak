@@ -25,4 +25,18 @@ if grep -rnE -- '\b(bg|text|border|ring|ring-offset|outline|from|to|via|fill|str
   fail=1
 fi
 
+# 4. No named-palette colour utilities either -- they do not follow the dark
+#    theme. `white`/`black` at an opacity (overlays on coloured surfaces) and a
+#    bare `text-white` / `border-white` / `ring-white` / `outline-white` are the
+#    only allowed literals.
+palette='slate|gray|zinc|neutral|stone|red|orange|amber|yellow|lime|green|emerald|teal|cyan|sky|blue|indigo|violet|purple|fuchsia|pink|rose'
+if grep -rnE -- "\\b(bg|text|border|ring|ring-offset|outline|from|to|via|divide|fill|stroke|decoration|caret|accent)-($palette)(-[0-9]{1,3})?(/[0-9]{1,3})?\\b" "${roots[@]}" 2>/dev/null; then
+  echo "error: use a var(--itq-color-*) token instead of a named Tailwind colour." >&2
+  fail=1
+fi
+if grep -rnE -- 'bg-white($|[^-/0-9])' "${roots[@]}" 2>/dev/null; then
+  echo "error: use bg-[var(--itq-color-surface)] instead of bg-white." >&2
+  fail=1
+fi
+
 exit "$fail"

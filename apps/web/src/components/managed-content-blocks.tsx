@@ -11,9 +11,11 @@ interface ManagedContentBlocksProps {
 }
 
 const toneByVariant: Readonly<Record<ContentVariant, string>> = {
-  INFO: "border-sky-200 bg-sky-50 text-sky-950",
-  HIGHLIGHT: "border-emerald-200 bg-emerald-50 text-emerald-950",
-  ANNOUNCEMENT: "border-amber-200 bg-amber-50 text-amber-950",
+  INFO: "border-[var(--itq-color-info-200)] bg-[var(--itq-color-info-50)] text-[var(--itq-color-info-950)]",
+  HIGHLIGHT:
+    "border-[var(--itq-color-success-200)] bg-[var(--itq-color-success-50)] text-[var(--itq-color-success-900)]",
+  ANNOUNCEMENT:
+    "border-[var(--itq-color-warning-200)] bg-[var(--itq-color-warning-50)] text-[var(--itq-color-warning-950)]",
   ACTION: "border-[var(--itq-color-brand-200)] bg-[var(--itq-color-brand-900)] text-white",
 };
 
@@ -30,7 +32,7 @@ function BlockAction({ block, locale }: Readonly<{ block: ContentBlock; locale: 
   if (label === null) return null;
   const className =
     block.variant === "ACTION"
-      ? "inline-flex min-h-11 items-center gap-2 rounded-xl bg-white px-5 py-2 text-sm font-black text-[var(--itq-color-brand-900)] shadow-sm"
+      ? "inline-flex min-h-11 items-center gap-2 rounded-xl bg-[var(--itq-color-surface)] px-5 py-2 text-sm font-black text-[var(--itq-color-brand-900)] shadow-sm"
       : "inline-flex min-h-11 items-center gap-2 rounded-xl bg-[var(--itq-color-brand-700)] px-5 py-2 text-sm font-black text-white shadow-sm";
   if (block.actionHref.startsWith("/")) {
     return (

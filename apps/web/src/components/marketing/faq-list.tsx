@@ -12,7 +12,7 @@ export function FaqList({ items }: Readonly<{ items: readonly FaqItem[] }>): JSX
     <div className="grid gap-3">
       {items.map((item, index) => (
         <details
-          className="group rounded-2xl border border-[var(--itq-color-border)] bg-white px-5 shadow-[var(--itq-shadow-sm)] open:border-[var(--itq-color-brand-200)] sm:px-6"
+          className="group rounded-2xl border border-[var(--itq-color-border)] bg-[var(--itq-color-surface)] px-5 shadow-[var(--itq-shadow-sm)] open:border-[var(--itq-color-brand-200)] sm:px-6"
           key={item.question}
           open={index === 0}
         >

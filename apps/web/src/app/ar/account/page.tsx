@@ -10,7 +10,7 @@ interface AccountPageProps {
   readonly searchParams: Promise<{ readonly status?: string | string[] }>;
 }
 const inputClassName =
-  "mt-2 w-full rounded-xl border border-[var(--itq-color-border)] bg-white px-3 py-3 text-base shadow-sm";
+  "mt-2 w-full rounded-xl border border-[var(--itq-color-border)] bg-[var(--itq-color-surface)] px-3 py-3 text-base shadow-sm";
 
 const academicLevelOptions: readonly (readonly [string, string])[] = [
   ["SECONDARY", "الثانوية"],

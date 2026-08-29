@@ -19,7 +19,7 @@ interface NewRequestPageProps {
 }
 
 const inputClassName =
-  "mt-2 w-full rounded-xl border border-[var(--itq-color-border)] bg-white px-3 py-3 text-base shadow-sm";
+  "mt-2 w-full rounded-xl border border-[var(--itq-color-border)] bg-[var(--itq-color-surface)] px-3 py-3 text-base shadow-sm";
 
 export const metadata = { title: "طلب جديد" };
 export const dynamic = "force-dynamic";
@@ -104,7 +104,7 @@ export default async function NewRequestPage({ searchParams }: NewRequestPagePro
           </div>
           <RequestFields defaults={profileDefaults} />
           <input name="academicIntegrityVersion" type="hidden" value={integrityVersion} />
-          <label className="flex items-start gap-3 rounded-xl border border-[var(--itq-color-border)] bg-white p-4 text-sm font-semibold leading-7">
+          <label className="flex items-start gap-3 rounded-xl border border-[var(--itq-color-border)] bg-[var(--itq-color-surface)] p-4 text-sm font-semibold leading-7">
             <input
               className="mt-1 size-4"
               name="acceptedAcademicIntegrity"

@@ -33,7 +33,7 @@ export function AccountShell({
       dir={english ? "ltr" : "rtl"}
       lang={locale}
     >
-      <header className="border-b border-[var(--itq-color-border)] bg-white/90 backdrop-blur-xl">
+      <header className="border-b border-[var(--itq-color-border)] bg-[var(--itq-color-surface)]/90 backdrop-blur-xl">
         <div className="mx-auto flex h-[4.75rem] max-w-7xl items-center justify-between gap-4 px-4 sm:px-7">
           <Link className="inline-flex items-center gap-3 text-lg font-black" href={homeHref}>
             <BrandMark className="size-11" />
@@ -51,7 +51,7 @@ export function AccountShell({
               <input name="locale" type="hidden" value={locale} />
               <SubmitButton
                 aria-label={english ? "Sign out" : "تسجيل الخروج"}
-                className="size-11 rounded-2xl border border-[var(--itq-color-border)] bg-white p-0 text-[var(--itq-color-muted)] shadow-none hover:bg-red-50 hover:text-red-700"
+                className="size-11 rounded-2xl border border-[var(--itq-color-border)] bg-[var(--itq-color-surface)] p-0 text-[var(--itq-color-muted)] shadow-none hover:bg-[var(--itq-color-danger-50)] hover:text-[var(--itq-color-danger-700)]"
                 pendingLabel="…"
               >
                 <LogOutIcon className="size-5" />
@@ -61,9 +61,9 @@ export function AccountShell({
         </div>
       </header>
       <main className="mx-auto grid max-w-7xl gap-7 px-4 py-7 sm:px-7 lg:grid-cols-[17rem_minmax(0,1fr)] lg:py-10">
-        <aside className="self-start rounded-[1.75rem] border border-[var(--itq-color-border)] bg-white p-3 shadow-[var(--itq-shadow-sm)] lg:sticky lg:top-6">
+        <aside className="self-start rounded-[1.75rem] border border-[var(--itq-color-border)] bg-[var(--itq-color-surface)] p-3 shadow-[var(--itq-shadow-sm)] lg:sticky lg:top-6">
           <div className="mb-3 rounded-2xl bg-[var(--itq-color-surface-soft)] p-4">
-            <span className="flex items-center gap-2 text-xs font-black text-emerald-800">
+            <span className="flex items-center gap-2 text-xs font-black text-[var(--itq-color-success-800)]">
               <ShieldCheckIcon className="size-4" />{" "}
               {english ? "Account settings" : "إعدادات حسابك"}
             </span>
@@ -75,7 +75,7 @@ export function AccountShell({
           </div>
           <AccountNavigation locale={locale} surface={surface} />
         </aside>
-        <section className="min-w-0 rounded-[1.75rem] border border-[var(--itq-color-border)] bg-white p-5 shadow-[var(--itq-shadow-sm)] sm:p-8 lg:p-9">
+        <section className="min-w-0 rounded-[1.75rem] border border-[var(--itq-color-border)] bg-[var(--itq-color-surface)] p-5 shadow-[var(--itq-shadow-sm)] sm:p-8 lg:p-9">
           {children}
         </section>
       </main>

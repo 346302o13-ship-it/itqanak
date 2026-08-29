@@ -62,7 +62,7 @@ export default async function AdminRequestPage({ params, searchParams }: AdminRe
 
   return (
     <AdminShell csrfToken={csrfToken} displayName={principal.displayName}>
-      <div className="grid min-h-[calc(100vh-9rem)] overflow-hidden rounded-[1.75rem] border border-[var(--itq-color-border)] bg-white shadow-[var(--itq-shadow-sm)] xl:grid-cols-[20rem_minmax(0,1fr)_20rem]">
+      <div className="grid min-h-[calc(100vh-9rem)] overflow-hidden rounded-[1.75rem] border border-[var(--itq-color-border)] bg-[var(--itq-color-surface)] shadow-[var(--itq-shadow-sm)] xl:grid-cols-[20rem_minmax(0,1fr)_20rem]">
         <aside className="hidden border-e border-[var(--itq-color-border)] xl:block">
           <div className="border-b border-[var(--itq-color-border)] p-5">
             <Link
@@ -84,7 +84,7 @@ export default async function AdminRequestPage({ params, searchParams }: AdminRe
                 <span className="flex items-center justify-between gap-2">
                   <strong className="truncate text-sm">{item.studentDisplayName}</strong>
                   {item.unreadCount > 0 ? (
-                    <span className="grid size-6 place-items-center rounded-full bg-red-500 text-[10px] font-black text-white">
+                    <span className="grid size-6 place-items-center rounded-full bg-[var(--itq-color-danger-500)] text-[10px] font-black text-white">
                       {item.unreadCount}
                     </span>
                   ) : null}
@@ -127,7 +127,7 @@ export default async function AdminRequestPage({ params, searchParams }: AdminRe
           </div>
           {notice === "updated" || notice === "assigned" || notice === "details_saved" ? (
             <p
-              className="mb-4 rounded-xl border border-emerald-200 bg-emerald-50 p-3 text-sm font-bold text-emerald-900"
+              className="mb-4 rounded-xl border border-[var(--itq-color-success-200)] bg-[var(--itq-color-success-50)] p-3 text-sm font-bold text-[var(--itq-color-success-900)]"
               role="status"
             >
               تم حفظ الإجراء وتحديث الطلب.
@@ -138,7 +138,7 @@ export default async function AdminRequestPage({ params, searchParams }: AdminRe
           notice !== "assigned" &&
           notice !== "details_saved" ? (
             <p
-              className="mb-4 rounded-xl border border-red-200 bg-red-50 p-3 text-sm font-bold text-red-950"
+              className="mb-4 rounded-xl border border-[var(--itq-color-danger-200)] bg-[var(--itq-color-danger-50)] p-3 text-sm font-bold text-[var(--itq-color-danger-950)]"
               role="alert"
             >
               تعذر حفظ الإجراء. راجع الحقول وحدّث الصفحة ثم أعد المحاولة.
@@ -146,7 +146,7 @@ export default async function AdminRequestPage({ params, searchParams }: AdminRe
           ) : null}
           <section className="grid min-h-[28rem] place-items-center rounded-[1.5rem] border border-[var(--itq-color-brand-200)] bg-[var(--itq-color-brand-50)] p-6 text-center">
             <div className="max-w-md">
-              <span className="mx-auto grid size-16 place-items-center rounded-full bg-white text-[var(--itq-color-brand-700)] shadow-sm">
+              <span className="mx-auto grid size-16 place-items-center rounded-full bg-[var(--itq-color-surface)] text-[var(--itq-color-brand-700)] shadow-sm">
                 <MessageIcon className="size-7" />
               </span>
               <h2 className="mt-5 text-xl font-black">المحادثة الموحدة مع الطالب</h2>
@@ -173,7 +173,7 @@ export default async function AdminRequestPage({ params, searchParams }: AdminRe
               <div>
                 <h2 className="font-black">{detail.studentDisplayName}</h2>
                 <span
-                  className={`mt-1 inline-flex items-center gap-1 text-[10px] font-black ${detail.studentPhoneVerified ? "text-emerald-700" : "text-amber-700"}`}
+                  className={`mt-1 inline-flex items-center gap-1 text-[10px] font-black ${detail.studentPhoneVerified ? "text-[var(--itq-color-success-700)]" : "text-[var(--itq-color-warning-700)]"}`}
                 >
                   <VerifiedIcon className="size-3" />{" "}
                   {detail.studentPhoneVerified ? "رقم موثق" : "غير موثق"}
@@ -232,7 +232,7 @@ export default async function AdminRequestPage({ params, searchParams }: AdminRe
                 <CsrfInput token={csrfToken} />
                 <input name="version" type="hidden" value={detail.version} />
                 <select
-                  className="h-12 rounded-xl border border-[var(--itq-color-border)] bg-white px-3 text-sm font-bold"
+                  className="h-12 rounded-xl border border-[var(--itq-color-border)] bg-[var(--itq-color-surface)] px-3 text-sm font-bold"
                   name="toStatus"
                   required
                   defaultValue=""
@@ -311,7 +311,7 @@ export default async function AdminRequestPage({ params, searchParams }: AdminRe
                     الاستعجال
                   </label>
                   <select
-                    className="mt-2 h-11 w-full rounded-xl border border-[var(--itq-color-border)] bg-white px-3 text-sm font-bold"
+                    className="mt-2 h-11 w-full rounded-xl border border-[var(--itq-color-border)] bg-[var(--itq-color-surface)] px-3 text-sm font-bold"
                     defaultValue={detail.urgency}
                     id="admin-urgency"
                     name="urgency"
@@ -389,7 +389,7 @@ export default async function AdminRequestPage({ params, searchParams }: AdminRe
                       {size(attachment.sizeBytes)} · {attachment.scanStatus}
                     </span>
                     {attachment.scanStatus === "SCAN_SKIPPED_BY_ADMIN" ? (
-                      <span className="mt-1 block text-[10px] font-black text-amber-800">
+                      <span className="mt-1 block text-[10px] font-black text-[var(--itq-color-warning-800)]">
                         غير مفحوص — تنزيل خارجي فقط
                       </span>
                     ) : null}

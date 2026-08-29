@@ -92,7 +92,7 @@ export function ServicesCatalogView({
       </section>
 
       {categories.length === 0 ? (
-        <section className="my-12 rounded-3xl border border-dashed border-[var(--itq-color-border-strong)] bg-white p-10 text-center">
+        <section className="my-12 rounded-3xl border border-dashed border-[var(--itq-color-border-strong)] bg-[var(--itq-color-surface)] p-10 text-center">
           <MarketingIcon
             className="mx-auto size-10 text-[var(--itq-color-brand-700)]"
             name="files"
@@ -108,7 +108,7 @@ export function ServicesCatalogView({
           >
             {categories.map((category) => (
               <a
-                className="shrink-0 rounded-full border border-[var(--itq-color-border)] bg-white px-4 py-2.5 text-sm font-black text-[var(--itq-color-ink-soft)] shadow-sm transition hover:border-[var(--itq-color-brand-200)] hover:bg-[var(--itq-color-brand-50)]"
+                className="shrink-0 rounded-full border border-[var(--itq-color-border)] bg-[var(--itq-color-surface)] px-4 py-2.5 text-sm font-black text-[var(--itq-color-ink-soft)] shadow-sm transition hover:border-[var(--itq-color-brand-200)] hover:bg-[var(--itq-color-brand-50)]"
                 href={`#category-${category.slug}`}
                 key={category.id}
               >
@@ -127,12 +127,12 @@ export function ServicesCatalogView({
             <div className="mt-9 grid items-start gap-5 md:grid-cols-2 xl:grid-cols-3">
               {categories.map((category, categoryIndex) => (
                 <article
-                  className="group scroll-mt-28 overflow-hidden rounded-3xl border border-[var(--itq-color-border)] bg-white shadow-[var(--itq-shadow-sm)] transition duration-300 hover:-translate-y-1 hover:border-[var(--itq-color-brand-200)] hover:shadow-[var(--itq-shadow-card)]"
+                  className="group scroll-mt-28 overflow-hidden rounded-3xl border border-[var(--itq-color-border)] bg-[var(--itq-color-surface)] shadow-[var(--itq-shadow-sm)] transition duration-300 hover:-translate-y-1 hover:border-[var(--itq-color-brand-200)] hover:shadow-[var(--itq-shadow-card)]"
                   id={`category-${category.slug}`}
                   key={category.id}
                 >
                   <div className="border-b border-[var(--itq-color-border)] bg-[var(--itq-color-surface-soft)] p-6">
-                    <span className="inline-flex size-12 items-center justify-center rounded-2xl bg-white text-[var(--itq-color-brand-700)] shadow-sm">
+                    <span className="inline-flex size-12 items-center justify-center rounded-2xl bg-[var(--itq-color-surface)] text-[var(--itq-color-brand-700)] shadow-sm">
                       <MarketingIcon
                         name={categoryIcons[categoryIndex % categoryIcons.length] ?? "sparkles"}
                       />

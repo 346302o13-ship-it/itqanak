@@ -123,7 +123,7 @@ const copyByLocale = {
 } as const;
 
 const inputClass =
-  "mt-2 min-h-12 w-full rounded-xl border border-[var(--itq-color-border-strong)] bg-white px-3.5 py-2 text-sm outline-none transition focus:border-[var(--itq-color-brand-500)] focus:ring-4 focus:ring-[var(--itq-color-brand-100)]";
+  "mt-2 min-h-12 w-full rounded-xl border border-[var(--itq-color-border-strong)] bg-[var(--itq-color-surface)] px-3.5 py-2 text-sm outline-none transition focus:border-[var(--itq-color-brand-500)] focus:ring-4 focus:ring-[var(--itq-color-brand-100)]";
 
 function ContentFields({
   block,
@@ -330,7 +330,7 @@ export function ContentAdmin({
       )}
 
       <details
-        className="mt-8 rounded-[1.5rem] border border-[var(--itq-color-border)] bg-white shadow-[var(--itq-shadow-sm)]"
+        className="mt-8 rounded-[1.5rem] border border-[var(--itq-color-border)] bg-[var(--itq-color-surface)] shadow-[var(--itq-shadow-sm)]"
         open
       >
         <summary className="cursor-pointer list-none p-5 text-xl font-black sm:p-6">
@@ -369,7 +369,7 @@ export function ContentAdmin({
               const action = `/api/admin/content/${encodeURIComponent(block.id)}`;
               return (
                 <details
-                  className="rounded-[1.5rem] border border-[var(--itq-color-border)] bg-white shadow-[var(--itq-shadow-sm)]"
+                  className="rounded-[1.5rem] border border-[var(--itq-color-border)] bg-[var(--itq-color-surface)] shadow-[var(--itq-shadow-sm)]"
                   key={block.id}
                 >
                   <summary className="cursor-pointer list-none p-5 sm:p-6">
@@ -383,7 +383,7 @@ export function ContentAdmin({
                         </bdi>
                       </span>
                       <span
-                        className={`rounded-full px-3 py-1 text-xs font-black ${block.active ? "bg-emerald-50 text-emerald-800" : "bg-slate-100 text-slate-600"}`}
+                        className={`rounded-full px-3 py-1 text-xs font-black ${block.active ? "bg-[var(--itq-color-success-50)] text-[var(--itq-color-success-800)]" : "bg-[var(--itq-color-surface-soft)] text-[var(--itq-color-muted)]"}`}
                       >
                         {block.active ? copy.visible : copy.hidden}
                       </span>
@@ -410,11 +410,14 @@ export function ContentAdmin({
                         <input name="locale" type="hidden" value={locale} />
                         <input name="version" type="hidden" value={block.version} />
                         <input name="action" type="hidden" value={block.active ? "hide" : "show"} />
-                        <SubmitButton className="!bg-slate-700 !text-white" pendingLabel="…">
+                        <SubmitButton
+                          className="!bg-[var(--itq-color-ink-soft)] !text-white"
+                          pendingLabel="…"
+                        >
                           {block.active ? copy.hide : copy.show}
                         </SubmitButton>
                       </form>
-                      <details className="max-w-md rounded-xl border border-red-200 bg-red-50 p-3 text-red-900">
+                      <details className="max-w-md rounded-xl border border-[var(--itq-color-danger-200)] bg-[var(--itq-color-danger-50)] p-3 text-[var(--itq-color-danger-900)]">
                         <summary className="cursor-pointer text-sm font-black">
                           {copy.delete}
                         </summary>
@@ -433,7 +436,10 @@ export function ContentAdmin({
                             />
                             {copy.confirmDelete}
                           </label>
-                          <SubmitButton className="mt-3 !bg-red-700 !text-white" pendingLabel="…">
+                          <SubmitButton
+                            className="mt-3 !bg-[var(--itq-color-danger-700)] !text-white"
+                            pendingLabel="…"
+                          >
                             {copy.delete}
                           </SubmitButton>
                         </form>

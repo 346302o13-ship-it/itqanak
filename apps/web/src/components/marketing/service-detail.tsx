@@ -92,7 +92,7 @@ export function ServiceDetailView({
             <p className="mt-5 max-w-3xl text-lg leading-9 text-white/75">{service.description}</p>
             <div className="mt-8 flex flex-col gap-3 sm:flex-row">
               <Link
-                className="inline-flex min-h-12 items-center justify-center rounded-xl bg-white px-6 py-3 font-black text-[var(--itq-color-brand-800)] transition hover:-translate-y-0.5 hover:bg-[var(--itq-color-brand-50)]"
+                className="inline-flex min-h-12 items-center justify-center rounded-xl bg-[var(--itq-color-surface)] px-6 py-3 font-black text-[var(--itq-color-brand-800)] transition hover:-translate-y-0.5 hover:bg-[var(--itq-color-brand-50)]"
                 href={`${prefix}/student/requests/new?service=${encodeURIComponent(service.slug)}`}
               >
                 {copy.requestLabel}
@@ -185,7 +185,7 @@ export function ServiceDetailView({
       </section>
 
       <section className="grid gap-5 pb-16 lg:grid-cols-[minmax(0,1.2fr)_minmax(18rem,0.8fr)] sm:pb-20">
-        <div className="rounded-3xl border border-[var(--itq-color-border)] bg-white p-7 shadow-[var(--itq-shadow-sm)] sm:p-9">
+        <div className="rounded-3xl border border-[var(--itq-color-border)] bg-[var(--itq-color-surface)] p-7 shadow-[var(--itq-shadow-sm)] sm:p-9">
           <h2 className="text-2xl font-black">{copy.prepareTitle}</h2>
           <p className="mt-3 leading-8 text-[var(--itq-color-muted)]">{copy.prepareDescription}</p>
           <ul className="mt-6 grid gap-4 sm:grid-cols-2">
@@ -200,7 +200,7 @@ export function ServiceDetailView({
           </ul>
         </div>
         <aside className="rounded-3xl border border-[var(--itq-color-accent-200)] bg-[var(--itq-color-canvas-warm)] p-7 sm:p-9">
-          <span className="inline-flex size-12 items-center justify-center rounded-2xl bg-white text-[var(--itq-color-accent-700)] shadow-sm">
+          <span className="inline-flex size-12 items-center justify-center rounded-2xl bg-[var(--itq-color-surface)] text-[var(--itq-color-accent-700)] shadow-sm">
             <MarketingIcon name="shield" />
           </span>
           <h2 className="mt-5 text-2xl font-black">{copy.integrityTitle}</h2>
@@ -218,7 +218,7 @@ export function ServiceDetailView({
           </div>
           <div className="flex w-full flex-col gap-3 sm:w-auto sm:flex-row">
             <Link
-              className="inline-flex min-h-12 items-center justify-center rounded-xl bg-white px-6 py-3 font-black text-[var(--itq-color-brand-800)] hover:bg-[var(--itq-color-brand-50)]"
+              className="inline-flex min-h-12 items-center justify-center rounded-xl bg-[var(--itq-color-surface)] px-6 py-3 font-black text-[var(--itq-color-brand-800)] hover:bg-[var(--itq-color-brand-50)]"
               href={`${prefix}/student/requests/new?service=${encodeURIComponent(service.slug)}`}
             >
               {copy.requestLabel}

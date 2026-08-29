@@ -123,7 +123,7 @@ const copyByLocale = {
 } as const;
 
 const fieldClass =
-  "mt-2 min-h-12 w-full rounded-xl border border-[var(--itq-color-border-strong)] bg-white px-3.5 py-2 text-sm outline-none transition focus:border-[var(--itq-color-brand-500)] focus:ring-4 focus:ring-[var(--itq-color-brand-100)]";
+  "mt-2 min-h-12 w-full rounded-xl border border-[var(--itq-color-border-strong)] bg-[var(--itq-color-surface)] px-3.5 py-2 text-sm outline-none transition focus:border-[var(--itq-color-brand-500)] focus:ring-4 focus:ring-[var(--itq-color-brand-100)]";
 
 export function OperationsAdmin({
   state,
@@ -150,7 +150,7 @@ export function OperationsAdmin({
     <AdminShell csrfToken={csrfToken} displayName={displayName} locale={locale}>
       <div className="grid gap-6">
         <section className="overflow-hidden rounded-[2rem] bg-[var(--itq-color-ink-deep)] p-7 text-white shadow-xl sm:p-9">
-          <p className="text-xs font-black uppercase tracking-[0.16em] text-emerald-200">
+          <p className="text-xs font-black uppercase tracking-[0.16em] text-[var(--itq-color-accent-300)]">
             {copy.eyebrow}
           </p>
           <h1 className="mt-3 text-3xl font-black tracking-tight sm:text-4xl">{copy.title}</h1>
@@ -172,7 +172,7 @@ export function OperationsAdmin({
         {noticeMessage !== undefined ? (
           <p
             aria-live="polite"
-            className={`rounded-2xl border px-5 py-4 text-sm font-bold ${notice === "updated" ? "border-emerald-200 bg-emerald-50 text-emerald-950" : "border-amber-200 bg-amber-50 text-amber-950"}`}
+            className={`rounded-2xl border px-5 py-4 text-sm font-bold ${notice === "updated" ? "border-[var(--itq-color-success-200)] bg-[var(--itq-color-success-50)] text-[var(--itq-color-success-900)]" : "border-[var(--itq-color-warning-200)] bg-[var(--itq-color-warning-50)] text-[var(--itq-color-warning-950)]"}`}
             role="status"
           >
             {noticeMessage}
@@ -184,7 +184,7 @@ export function OperationsAdmin({
           <input name="locale" type="hidden" value={locale} />
           <input name="version" type="hidden" value={state.version} />
 
-          <section className="rounded-[1.75rem] border border-[var(--itq-color-border)] bg-white p-6 shadow-[var(--itq-shadow-sm)] sm:p-8">
+          <section className="rounded-[1.75rem] border border-[var(--itq-color-border)] bg-[var(--itq-color-surface)] p-6 shadow-[var(--itq-shadow-sm)] sm:p-8">
             <div className="flex flex-wrap items-start justify-between gap-4">
               <div className="max-w-3xl">
                 <h2 className="text-xl font-black">{copy.maintenanceTitle}</h2>
@@ -193,7 +193,7 @@ export function OperationsAdmin({
                 </p>
               </div>
               <span
-                className={`rounded-full px-3 py-1.5 text-xs font-black ${state.maintenanceEnabled ? "bg-amber-100 text-amber-900" : "bg-emerald-100 text-emerald-900"}`}
+                className={`rounded-full px-3 py-1.5 text-xs font-black ${state.maintenanceEnabled ? "bg-[var(--itq-color-warning-100)] text-[var(--itq-color-warning-900)]" : "bg-[var(--itq-color-success-100)] text-[var(--itq-color-success-900)]"}`}
               >
                 {state.maintenanceEnabled ? copy.maintenanceOn : copy.maintenanceOff}
               </span>
@@ -240,7 +240,7 @@ export function OperationsAdmin({
             </div>
           </section>
 
-          <section className="rounded-[1.75rem] border border-[var(--itq-color-border)] bg-white p-6 shadow-[var(--itq-shadow-sm)] sm:p-8">
+          <section className="rounded-[1.75rem] border border-[var(--itq-color-border)] bg-[var(--itq-color-surface)] p-6 shadow-[var(--itq-shadow-sm)] sm:p-8">
             <div className="flex flex-wrap items-start justify-between gap-4">
               <div className="max-w-3xl">
                 <h2 className="text-xl font-black">{copy.scannerTitle}</h2>
@@ -249,7 +249,7 @@ export function OperationsAdmin({
                 </p>
               </div>
               <span
-                className={`rounded-full px-3 py-1.5 text-xs font-black ${state.fileScanQueuePaused ? "bg-amber-100 text-amber-900" : "bg-emerald-100 text-emerald-900"}`}
+                className={`rounded-full px-3 py-1.5 text-xs font-black ${state.fileScanQueuePaused ? "bg-[var(--itq-color-warning-100)] text-[var(--itq-color-warning-900)]" : "bg-[var(--itq-color-success-100)] text-[var(--itq-color-success-900)]"}`}
               >
                 {state.fileScanQueuePaused ? copy.queuePaused : copy.queueRunning}
               </span>
@@ -284,13 +284,13 @@ export function OperationsAdmin({
                 </div>
               </div>
             </div>
-            <div className="mt-5 rounded-2xl border border-sky-200 bg-sky-50 p-5 text-sky-950">
+            <div className="mt-5 rounded-2xl border border-[var(--itq-color-info-200)] bg-[var(--itq-color-info-50)] p-5 text-[var(--itq-color-info-950)]">
               <p className="font-black">{copy.safetyTitle}</p>
               <p className="mt-2 text-sm leading-7">{copy.safetyBody}</p>
             </div>
           </section>
 
-          <section className="rounded-[1.75rem] border border-amber-200 bg-amber-50 p-6 sm:p-7">
+          <section className="rounded-[1.75rem] border border-[var(--itq-color-warning-200)] bg-[var(--itq-color-warning-50)] p-6 sm:p-7">
             <label className="flex cursor-pointer items-start gap-3 text-sm font-black leading-7">
               <input
                 className="mt-1 size-5 shrink-0 accent-[var(--itq-color-brand-700)]"

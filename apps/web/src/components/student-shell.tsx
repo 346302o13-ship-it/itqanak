@@ -45,7 +45,7 @@ export function StudentShell({
           >
             <BrandMark className="size-11" />
             <span className="hidden sm:inline">{english ? "ITQANAK" : "إتقانك"}</span>
-            <span className="hidden rounded-full bg-emerald-50 px-2.5 py-1 text-[10px] font-black text-emerald-800 md:inline">
+            <span className="hidden rounded-full bg-[var(--itq-color-success-50)] px-2.5 py-1 text-[10px] font-black text-[var(--itq-color-success-800)] md:inline">
               {english ? "STUDENT PORTAL" : "بوابة الطالب"}
             </span>
           </Link>
@@ -55,7 +55,7 @@ export function StudentShell({
               <NotificationCenter csrfToken={csrfToken} locale={locale} surface="student" />
             </div>
             <Link
-              className="flex min-h-11 items-center gap-2 rounded-2xl border border-[var(--itq-color-border)] bg-white px-2 pe-3"
+              className="flex min-h-11 items-center gap-2 rounded-2xl border border-[var(--itq-color-border)] bg-[var(--itq-color-surface)] px-2 pe-3"
               href={`${prefix}/account`}
             >
               <span className="grid size-8 place-items-center rounded-xl bg-[var(--itq-color-brand-700)] text-sm font-black text-white">
@@ -70,7 +70,7 @@ export function StudentShell({
               <input name="locale" type="hidden" value={locale} />
               <SubmitButton
                 aria-label={english ? "Sign out" : "تسجيل الخروج"}
-                className="size-11 rounded-2xl border border-[var(--itq-color-border)] bg-white p-0 text-[var(--itq-color-muted)] shadow-none hover:bg-red-50 hover:text-red-700"
+                className="size-11 rounded-2xl border border-[var(--itq-color-border)] bg-[var(--itq-color-surface)] p-0 text-[var(--itq-color-muted)] shadow-none hover:bg-[var(--itq-color-danger-50)] hover:text-[var(--itq-color-danger-700)]"
                 pendingLabel="…"
               >
                 <LogOutIcon className="size-5" />
@@ -89,7 +89,7 @@ export function StudentShell({
       >
         {workspace ? null : (
           <aside className="hidden self-start lg:sticky lg:top-[6.75rem] lg:block">
-            <div className="rounded-[1.75rem] border border-[var(--itq-color-border)] bg-white p-3 shadow-[var(--itq-shadow-sm)]">
+            <div className="rounded-[1.75rem] border border-[var(--itq-color-border)] bg-[var(--itq-color-surface)] p-3 shadow-[var(--itq-shadow-sm)]">
               <div className="mb-3 rounded-2xl bg-[var(--itq-color-surface-soft)] p-4">
                 <p className="text-xs font-bold text-[var(--itq-color-muted)]">
                   {english ? "Welcome back" : "مرحباً بعودتك"}
@@ -120,7 +120,7 @@ export function StudentShell({
                 </span>
               </a>
               <div className="mt-3 flex items-center gap-2 px-3 py-2 text-[10px] font-bold text-[var(--itq-color-muted)]">
-                <ShieldCheckIcon className="size-4 text-emerald-700" />
+                <ShieldCheckIcon className="size-4 text-[var(--itq-color-success-700)]" />
                 {english ? "Secure connection and private files" : "اتصال آمن وملفات خاصة"}
               </div>
             </div>
@@ -131,7 +131,7 @@ export function StudentShell({
           {workspace ? (
             children
           ) : (
-            <div className="rounded-[1.75rem] border border-[var(--itq-color-border)] bg-white p-5 shadow-[var(--itq-shadow-sm)] sm:p-8 lg:p-9">
+            <div className="rounded-[1.75rem] border border-[var(--itq-color-border)] bg-[var(--itq-color-surface)] p-5 shadow-[var(--itq-shadow-sm)] sm:p-8 lg:p-9">
               {children}
             </div>
           )}

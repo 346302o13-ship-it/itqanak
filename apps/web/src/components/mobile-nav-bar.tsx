@@ -39,7 +39,7 @@ export function MobileNavBar({ items, ariaLabel, moreLabel, primaryCount = 4 }: 
         >
           <nav
             aria-label={moreLabel}
-            className="absolute inset-x-3 bottom-3 grid grid-cols-3 gap-2 rounded-2xl border border-[var(--itq-color-border)] bg-white p-3 shadow-2xl"
+            className="absolute inset-x-3 bottom-3 grid grid-cols-3 gap-2 rounded-2xl border border-[var(--itq-color-border)] bg-[var(--itq-color-surface)] p-3 shadow-2xl"
             onClick={(event) => event.stopPropagation()}
           >
             {rest.map((item) => (
@@ -64,7 +64,7 @@ export function MobileNavBar({ items, ariaLabel, moreLabel, primaryCount = 4 }: 
 
       <nav
         aria-label={ariaLabel}
-        className="fixed inset-x-3 bottom-3 z-40 flex gap-1 rounded-2xl border border-[var(--itq-color-border)] bg-white/95 p-1.5 shadow-xl backdrop-blur lg:hidden"
+        className="fixed inset-x-3 bottom-3 z-40 flex gap-1 rounded-2xl border border-[var(--itq-color-border)] bg-[var(--itq-color-surface)]/95 p-1.5 shadow-xl backdrop-blur lg:hidden"
       >
         {primary.map((item) => (
           <Link
