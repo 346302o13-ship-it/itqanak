@@ -33,9 +33,17 @@ export default async function NewRequestPage({ searchParams }: NewRequestPagePro
   const runtime = await createStudentRequestRuntime();
   let catalog;
   let integrityVersion: string;
+  let profileDefaults: { academicLevel?: string; institutionName?: string } = {};
   try {
     catalog = await runtime.catalog.listPublicCatalog();
     integrityVersion = runtime.config.academicIntegrityVersion;
+    const account = await runtime.auth.getAccount(principal);
+    profileDefaults = {
+      ...(account.academicLevel === undefined ? {} : { academicLevel: account.academicLevel }),
+      ...(account.institutionName === undefined
+        ? {}
+        : { institutionName: account.institutionName }),
+    };
   } finally {
     await runtime.close();
   }
@@ -94,7 +102,7 @@ export default async function NewRequestPage({ searchParams }: NewRequestPagePro
               ))}
             </select>
           </div>
-          <RequestFields />
+          <RequestFields defaults={profileDefaults} />
           <input name="academicIntegrityVersion" type="hidden" value={integrityVersion} />
           <label className="flex items-start gap-3 rounded-xl border border-[var(--itq-color-border)] bg-white p-4 text-sm font-semibold leading-7">
             <input

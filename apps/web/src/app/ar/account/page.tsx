@@ -12,6 +12,16 @@ interface AccountPageProps {
 const inputClassName =
   "mt-2 w-full rounded-xl border border-[var(--itq-color-border)] bg-white px-3 py-3 text-base shadow-sm";
 
+const academicLevelOptions: readonly (readonly [string, string])[] = [
+  ["SECONDARY", "الثانوية"],
+  ["DIPLOMA", "الدبلوم"],
+  ["BACHELOR", "البكالوريوس"],
+  ["MASTER", "الماجستير"],
+  ["DOCTORATE", "الدكتوراه"],
+  ["PROFESSIONAL", "مهني"],
+  ["OTHER", "أخرى"],
+];
+
 export const metadata = { title: "حسابي" };
 export const dynamic = "force-dynamic";
 
@@ -86,7 +96,45 @@ export default async function AccountPage({ searchParams }: AccountPageProps) {
             required
           />
         </div>
-        <SubmitButton pendingLabel="جارٍ الحفظ…">حفظ الاسم</SubmitButton>
+        {account.roles.includes("ADMIN") ? null : (
+          <>
+            <div>
+              <label className="text-sm font-bold" htmlFor="academicLevel">
+                المستوى الدراسي
+              </label>
+              <select
+                className={inputClassName}
+                defaultValue={account.academicLevel ?? ""}
+                id="academicLevel"
+                name="academicLevel"
+              >
+                <option value="">غير محدد</option>
+                {academicLevelOptions.map(([value, label]) => (
+                  <option key={value} value={value}>
+                    {label}
+                  </option>
+                ))}
+              </select>
+            </div>
+            <div>
+              <label className="text-sm font-bold" htmlFor="institutionName">
+                المؤسسة أو الجامعة
+              </label>
+              <input
+                className={inputClassName}
+                defaultValue={account.institutionName}
+                id="institutionName"
+                maxLength={200}
+                minLength={2}
+                name="institutionName"
+              />
+              <p className="mt-1 text-xs text-[var(--itq-color-muted)]">
+                نستخدم هذين الحقلين لتعبئة طلباتك الجديدة تلقائيًّا.
+              </p>
+            </div>
+          </>
+        )}
+        <SubmitButton pendingLabel="جارٍ الحفظ…">حفظ التغييرات</SubmitButton>
       </form>
     </AccountShell>
   );

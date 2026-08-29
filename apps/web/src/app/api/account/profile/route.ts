@@ -24,6 +24,12 @@ export async function POST(request: NextRequest) {
         return NextResponse.redirect(loginUrl(config, accountPath), 303);
       }
       await runtime.auth.updateDisplayName(principal, formValue(formData, "displayName"), context);
+      await runtime.auth.updateStudyProfile(
+        principal,
+        formValue(formData, "academicLevel") || null,
+        formValue(formData, "institutionName") || null,
+        context,
+      );
       return redirectTo(config, accountPath, "profile_saved");
     } finally {
       await runtime.close();

@@ -1,7 +1,7 @@
 import { randomBytes, randomUUID } from "node:crypto";
 
 import type { AppConfig } from "@itqanak/config";
-import type { Role } from "@itqanak/core";
+import { requestAcademicLevels, type Role } from "@itqanak/core";
 import type { DatabaseClient } from "@itqanak/db";
 
 import { recordAuditEvent } from "./audit.js";
@@ -57,6 +57,8 @@ interface UserRow {
   readonly status: UserStatus;
   readonly email_verified_at: Date | null;
   readonly created_at: Date;
+  readonly academic_level: string | null;
+  readonly institution_name: string | null;
 }
 
 interface CredentialRow {
@@ -933,7 +935,8 @@ export class AuthService {
     const rows = await this.database<UserRow[]>`
       SELECT id, email, email_normalized, phone_e164, country_code, phone_verified_at,
              phone_verification_status, phone_verification_requested_at,
-             display_name, status, email_verified_at, created_at
+             display_name, status, email_verified_at, created_at,
+             academic_level, institution_name
       FROM users WHERE id = ${principal.userId} AND status = 'ACTIVE'
     `;
     const user = rows[0];
@@ -957,7 +960,50 @@ export class AuthService {
         : { emailVerifiedAt: asDate(user.email_verified_at) }),
       createdAt: asDate(user.created_at),
       roles,
+      ...(user.academic_level === null ? {} : { academicLevel: user.academic_level }),
+      ...(user.institution_name === null ? {} : { institutionName: user.institution_name }),
     };
+  }
+
+  /**
+   * Persist the student's one-time study profile. `null` clears a field. The
+   * academic level is checked against the shared allowlist; the institution
+   * name is trimmed and length-bounded.
+   */
+  public async updateStudyProfile(
+    principal: AuthenticatedPrincipal,
+    academicLevelInput: string | null,
+    institutionNameInput: string | null,
+    context: RequestAuditContext = {},
+  ): Promise<void> {
+    requirePermission(principal, "account.profile.update");
+    await this.enforceRate(authRateLimitRules.accountSensitiveByUser, principal.userId);
+    // Low-stakes profile fields: unknown / too-short values are coerced to null
+    // (cleared) rather than rejected, so a profile save never hard-fails on them.
+    const academicLevelTrimmed = academicLevelInput?.trim() ?? "";
+    const academicLevel = (requestAcademicLevels as readonly string[]).includes(
+      academicLevelTrimmed,
+    )
+      ? academicLevelTrimmed
+      : null;
+    const institutionTrimmed = (institutionNameInput ?? "").trim().slice(0, 200);
+    const institutionName = institutionTrimmed.length >= 2 ? institutionTrimmed : null;
+    await this.database.begin(async (transaction) => {
+      const tx = transaction as DatabaseClient;
+      await tx`
+        UPDATE users
+        SET academic_level = ${academicLevel}, institution_name = ${institutionName},
+            updated_at = now()
+        WHERE id = ${principal.userId} AND status = 'ACTIVE'
+      `;
+      await recordAuditEvent(tx, {
+        ...context,
+        eventType: "account.profile_updated",
+        outcome: "SUCCESS",
+        actorUserId: principal.userId,
+        targetUserId: principal.userId,
+      });
+    });
   }
 
   public async listPendingPhoneVerifications(

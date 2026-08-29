@@ -10,6 +10,16 @@ interface AccountPageProps {
   readonly searchParams: Promise<{ readonly status?: string | string[] }>;
 }
 
+const academicLevelOptions: readonly (readonly [string, string])[] = [
+  ["SECONDARY", "Secondary school"],
+  ["DIPLOMA", "Diploma"],
+  ["BACHELOR", "Bachelor's"],
+  ["MASTER", "Master's"],
+  ["DOCTORATE", "Doctorate"],
+  ["PROFESSIONAL", "Professional"],
+  ["OTHER", "Other"],
+];
+
 const inputClassName =
   "mt-2 w-full rounded-xl border border-[var(--itq-color-border)] bg-white px-3 py-3 text-base shadow-sm";
 
@@ -93,7 +103,45 @@ export default async function EnglishAccountPage({ searchParams }: AccountPagePr
             required
           />
         </div>
-        <SubmitButton pendingLabel="Saving…">Save name</SubmitButton>
+        {account.roles.includes("ADMIN") ? null : (
+          <>
+            <div>
+              <label className="text-sm font-bold" htmlFor="academicLevel">
+                Academic level
+              </label>
+              <select
+                className={inputClassName}
+                defaultValue={account.academicLevel ?? ""}
+                id="academicLevel"
+                name="academicLevel"
+              >
+                <option value="">Not specified</option>
+                {academicLevelOptions.map(([value, label]) => (
+                  <option key={value} value={value}>
+                    {label}
+                  </option>
+                ))}
+              </select>
+            </div>
+            <div>
+              <label className="text-sm font-bold" htmlFor="institutionName">
+                Institution or university
+              </label>
+              <input
+                className={inputClassName}
+                defaultValue={account.institutionName}
+                id="institutionName"
+                maxLength={200}
+                minLength={2}
+                name="institutionName"
+              />
+              <p className="mt-1 text-xs text-[var(--itq-color-muted)]">
+                We use these to pre-fill your new requests.
+              </p>
+            </div>
+          </>
+        )}
+        <SubmitButton pendingLabel="Saving…">Save changes</SubmitButton>
       </form>
     </AccountShell>
   );

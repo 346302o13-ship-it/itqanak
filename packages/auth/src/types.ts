@@ -105,6 +105,8 @@ export interface PublicAccount {
   readonly emailVerifiedAt?: Date;
   readonly createdAt: Date;
   readonly roles: readonly Role[];
+  readonly academicLevel?: string;
+  readonly institutionName?: string;
 }
 
 export interface PendingPhoneVerification {
