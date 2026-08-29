@@ -30,11 +30,11 @@ export function AdminShell({
   const prefix = `/${locale}`;
   return (
     <div
-      className="min-h-screen bg-[var(--itq-color-canvas)]"
+      className="min-h-[100svh] min-h-[100dvh] bg-[var(--itq-color-canvas)]"
       dir={english ? "ltr" : "rtl"}
       lang={locale}
     >
-      <header className="sticky top-0 z-30 border-b border-[var(--itq-color-border)] bg-[var(--itq-color-ink-deep)]/95 text-white backdrop-blur-xl">
+      <header className="sticky top-0 z-30 itq-safe-t border-b border-[var(--itq-color-border)] bg-[var(--itq-color-ink-deep)]/95 text-white backdrop-blur-xl">
         <div className="mx-auto flex h-[4.75rem] max-w-[96rem] items-center justify-between gap-4 px-4 sm:px-7 lg:px-10">
           <Link className="inline-flex items-center gap-3 font-black" href={`${prefix}/admin`}>
             <BrandMark className="size-11 bg-[var(--itq-color-surface)] text-[var(--itq-color-brand-strong)]" />

@@ -33,11 +33,11 @@ export function StudentShell({
   const initial = displayName.trim().slice(0, 1) || (english ? "S" : "ط");
   return (
     <div
-      className="min-h-screen bg-[var(--itq-color-canvas)]"
+      className="min-h-[100svh] min-h-[100dvh] bg-[var(--itq-color-canvas)]"
       dir={english ? "ltr" : "rtl"}
       lang={locale}
     >
-      <header className="sticky top-0 z-30 border-b border-[var(--itq-color-border)]/80 bg-[var(--itq-color-canvas)]/90 backdrop-blur-xl">
+      <header className="sticky top-0 z-30 itq-safe-t border-b border-[var(--itq-color-border)]/80 bg-[var(--itq-color-canvas)]/90 backdrop-blur-xl">
         <div className="mx-auto flex h-[4.75rem] max-w-[92rem] items-center justify-between gap-4 px-4 sm:px-7 lg:px-10">
           <Link
             className="inline-flex items-center gap-3 text-lg font-black"

@@ -29,11 +29,11 @@ export function AccountShell({
   const homeHref = surface === "admin" ? `${prefix}/admin` : `${prefix}/student`;
   return (
     <div
-      className="min-h-screen bg-[var(--itq-color-canvas)]"
+      className="min-h-[100svh] min-h-[100dvh] bg-[var(--itq-color-canvas)]"
       dir={english ? "ltr" : "rtl"}
       lang={locale}
     >
-      <header className="border-b border-[var(--itq-color-border)] bg-[var(--itq-color-surface)]/90 backdrop-blur-xl">
+      <header className="itq-safe-t sticky top-0 z-30 border-b border-[var(--itq-color-border)] bg-[var(--itq-color-surface)]/90 backdrop-blur-xl">
         <div className="mx-auto flex h-[4.75rem] max-w-7xl items-center justify-between gap-4 px-4 sm:px-7">
           <Link className="inline-flex items-center gap-3 text-lg font-black" href={homeHref}>
             <BrandMark className="size-11" />

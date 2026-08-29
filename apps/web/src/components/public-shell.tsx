@@ -120,7 +120,7 @@ export function PublicShell({
 
   return (
     <div
-      className="min-h-screen bg-[var(--itq-color-canvas)] text-[var(--itq-color-ink)]"
+      className="min-h-[100svh] min-h-[100dvh] bg-[var(--itq-color-canvas)] text-[var(--itq-color-ink)]"
       dir={direction}
       lang={locale}
     >
@@ -131,7 +131,7 @@ export function PublicShell({
         {copy.skipLabel}
       </a>
 
-      <header className="sticky top-0 z-50 border-b border-[var(--itq-color-border)]/80 bg-[var(--itq-color-canvas)]/90 backdrop-blur-xl">
+      <header className="sticky top-0 z-50 itq-safe-t border-b border-[var(--itq-color-border)]/80 bg-[var(--itq-color-canvas)]/90 backdrop-blur-xl">
         <div className="mx-auto flex min-h-[4.75rem] w-full max-w-[80rem] items-center justify-between gap-4 px-4 sm:px-6 lg:px-8">
           <Link
             aria-current={active === "home" ? "page" : undefined}

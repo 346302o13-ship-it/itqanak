@@ -16,10 +16,14 @@ html {
   scroll-behavior: smooth;
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+  -webkit-tap-highlight-color: transparent;
 }
 
 body {
-  min-height: 100vh;
+  min-height: 100svh;
+  min-height: 100dvh;
   margin: 0;
   background:
     radial-gradient(circle at 92% -8%, rgb(213 238 232 / 62%), transparent 34rem),
@@ -27,6 +31,51 @@ body {
     var(--itq-color-canvas);
   font-family: "IBM Plex Sans Arabic", "IBM Plex Sans", "Segoe UI", Tahoma, Arial, sans-serif;
   line-height: 1.5;
+  overscroll-behavior-y: none;
+}
+
+/* Native-app feel on phones: press feedback on anything tappable, contained
+   scrolling inside panes, and safe-area helpers for the notch / home bar. */
+button,
+a,
+[role="button"],
+summary,
+label:has(> input[type="checkbox"]),
+label:has(> input[type="radio"]) {
+  transition:
+    transform 120ms ease,
+    background-color 150ms ease,
+    border-color 150ms ease,
+    color 150ms ease,
+    box-shadow 150ms ease;
+}
+
+@media (hover: none) and (pointer: coarse) {
+  button:active,
+  a:active,
+  [role="button"]:active,
+  summary:active {
+    transform: scale(0.97);
+  }
+}
+
+.itq-scroll {
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
+}
+
+.itq-safe-b {
+  padding-bottom: max(0.75rem, env(safe-area-inset-bottom));
+}
+
+.itq-safe-t {
+  padding-top: env(safe-area-inset-top);
+}
+
+@media (display-mode: standalone) {
+  body {
+    overscroll-behavior: none;
+  }
 }
 
 html[lang="en"] body {

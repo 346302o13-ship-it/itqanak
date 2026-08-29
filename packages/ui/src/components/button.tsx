@@ -31,7 +31,7 @@ export function Button({
     <button
       {...props}
       className={classNames(
-        "inline-flex min-h-11 items-center justify-center rounded-xl px-4 py-2 text-sm font-bold transition focus-visible:outline-2 focus-visible:outline-offset-2 disabled:pointer-events-none disabled:opacity-50",
+        "inline-flex min-h-11 items-center justify-center rounded-xl px-4 py-2 text-sm font-bold transition duration-150 focus-visible:outline-2 focus-visible:outline-offset-2 active:scale-[0.97] disabled:pointer-events-none disabled:opacity-50",
         variantClasses[variant],
         className,
       )}

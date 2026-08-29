@@ -27,6 +27,11 @@ export const viewport: Viewport = {
     { media: "(prefers-color-scheme: dark)", color: "#0b1416" },
   ],
   colorScheme: "light dark",
+  // Draw under the notch / home indicator so installed on a phone it fills the
+  // screen like a native app; components pad with env(safe-area-inset-*).
+  viewportFit: "cover",
+  width: "device-width",
+  initialScale: 1,
 };
 
 // Applies a saved manual theme choice before first paint so switching does not
