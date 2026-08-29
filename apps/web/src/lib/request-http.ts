@@ -163,7 +163,7 @@ export function adminFormErrorResponse(
                 ? "unavailable"
                 : "failed";
   const safePath =
-    status === 404 ? `/${localeFromRequestPath(fallbackPath)}/admin/requests` : fallbackPath;
+    status === 404 ? `/${localeFromRequestPath(fallbackPath)}/admin/support` : fallbackPath;
   const destination = new URL(safePath, adminAppUrl);
   destination.searchParams.set("notice", notice);
   return NextResponse.redirect(destination, 303);

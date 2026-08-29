@@ -72,7 +72,7 @@ export default async function EnglishAdminRequestPage({
           <div className="border-b border-[var(--itq-color-border)] p-5">
             <Link
               className="inline-flex items-center gap-2 text-sm font-black text-[var(--itq-color-brand-700)]"
-              href="/en/admin/requests"
+              href="/en/admin/support"
             >
               <ArrowIcon className="size-4 -scale-x-100" /> All conversations
             </Link>
@@ -117,7 +117,7 @@ export default async function EnglishAdminRequestPage({
             <div>
               <Link
                 className="text-xs font-black text-[var(--itq-color-brand-700)] underline xl:hidden"
-                href="/en/admin/requests"
+                href="/en/admin/support"
               >
                 Back to requests
               </Link>

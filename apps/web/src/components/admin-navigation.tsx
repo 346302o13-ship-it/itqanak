@@ -19,15 +19,9 @@ const itemsByLocale = {
   ar: [
     { href: "/ar/admin", label: "نظرة عامة", mobileLabel: "الرئيسية", Icon: DashboardIcon },
     {
-      href: "/ar/admin/requests",
-      label: "إدارة الطلبات",
-      mobileLabel: "الطلبات",
-      Icon: MessageIcon,
-    },
-    {
       href: "/ar/admin/support",
-      label: "مركز المحادثات الموحد",
-      mobileLabel: "المحادثات",
+      label: "الطلبات والمحادثات",
+      mobileLabel: "الطلبات",
       Icon: MessageIcon,
     },
     {
@@ -85,15 +79,9 @@ const itemsByLocale = {
   en: [
     { href: "/en/admin", label: "Overview", mobileLabel: "Home", Icon: DashboardIcon },
     {
-      href: "/en/admin/requests",
-      label: "Request management",
-      mobileLabel: "Requests",
-      Icon: MessageIcon,
-    },
-    {
       href: "/en/admin/support",
-      label: "Unified conversation center",
-      mobileLabel: "Chats",
+      label: "Requests & chat",
+      mobileLabel: "Requests",
       Icon: MessageIcon,
     },
     {
@@ -150,6 +138,17 @@ const itemsByLocale = {
   ],
 } as const;
 
+function adminNavActive(pathname: string, href: string): boolean {
+  if (href === "/ar/admin" || href === "/en/admin") return pathname === href;
+  if (pathname.startsWith(href)) return true;
+  // The request inbox now lives under /admin/support; keep the item lit while an
+  // admin is on a legacy /admin/requests/* detail route.
+  return (
+    (href === "/ar/admin/support" && pathname.startsWith("/ar/admin/requests")) ||
+    (href === "/en/admin/support" && pathname.startsWith("/en/admin/requests"))
+  );
+}
+
 export function AdminNavigation({ locale = "ar" }: Readonly<{ locale?: "ar" | "en" }>) {
   const pathname = usePathname();
   const items = itemsByLocale[locale];
@@ -160,10 +159,7 @@ export function AdminNavigation({ locale = "ar" }: Readonly<{ locale?: "ar" | "e
       className="grid gap-1.5"
     >
       {items.map(({ href, label, Icon }) => {
-        const active =
-          href === "/ar/admin" || href === "/en/admin"
-            ? pathname === href
-            : pathname.startsWith(href);
+        const active = adminNavActive(pathname, href);
         return (
           <div className="contents" key={href}>
             {href === firstSystemHref ? (
@@ -195,8 +191,7 @@ export function AdminMobileNavigation({ locale = "ar" }: Readonly<{ locale?: "ar
     href,
     label: mobileLabel,
     icon: Icon,
-    active:
-      href === "/ar/admin" || href === "/en/admin" ? pathname === href : pathname.startsWith(href),
+    active: adminNavActive(pathname, href),
   }));
   return (
     <MobileNavBar

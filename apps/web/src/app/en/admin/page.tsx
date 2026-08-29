@@ -118,7 +118,7 @@ export default async function EnglishAdminPage() {
             </div>
             <Link
               className="text-sm font-black text-[var(--itq-color-brand-700)] underline"
-              href="/en/admin/requests"
+              href="/en/admin/support"
             >
               View all
             </Link>

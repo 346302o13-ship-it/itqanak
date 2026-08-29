@@ -67,7 +67,7 @@ export default async function AdminRequestPage({ params, searchParams }: AdminRe
           <div className="border-b border-[var(--itq-color-border)] p-5">
             <Link
               className="inline-flex items-center gap-2 text-sm font-black text-[var(--itq-color-brand-700)]"
-              href="/ar/admin/requests"
+              href="/ar/admin/support"
             >
               <ArrowIcon className="size-4" /> كل المحادثات
             </Link>
@@ -112,7 +112,7 @@ export default async function AdminRequestPage({ params, searchParams }: AdminRe
             <div>
               <Link
                 className="text-xs font-black text-[var(--itq-color-brand-700)] underline xl:hidden"
-                href="/ar/admin/requests"
+                href="/ar/admin/support"
               >
                 عودة للطلبات
               </Link>

@@ -122,7 +122,7 @@ export default async function AdminPage() {
             </div>
             <Link
               className="text-sm font-black text-[var(--itq-color-brand-700)] underline"
-              href="/ar/admin/requests"
+              href="/ar/admin/support"
             >
               عرض الكل
             </Link>

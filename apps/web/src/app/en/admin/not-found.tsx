@@ -17,7 +17,7 @@ export default function EnglishAdminRequestNotFound() {
         </p>
         <Link
           className="mt-6 inline-flex rounded-xl bg-[var(--itq-color-brand-700)] px-5 py-3 font-black text-white"
-          href="/en/admin/requests"
+          href="/en/admin/support"
         >
           Return to requests
         </Link>
