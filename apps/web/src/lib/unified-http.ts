@@ -48,6 +48,26 @@ export function conversationListInput(searchParams: URLSearchParams): UnifiedCon
   };
 }
 
+export interface ConversationUpdatesInput {
+  readonly search?: string;
+  readonly updatedAfter?: Date;
+  readonly limit?: number;
+}
+
+export function conversationUpdatesInput(searchParams: URLSearchParams): ConversationUpdatesInput {
+  const search = searchParams.get("q")?.trim().slice(0, 100);
+  const rawUpdatedAfter = searchParams.get("updatedAfter")?.trim();
+  const updatedAfter =
+    rawUpdatedAfter === undefined || rawUpdatedAfter.length === 0
+      ? undefined
+      : new Date(rawUpdatedAfter);
+  return {
+    limit: positiveInteger(searchParams.get("pageSize"), 30, 100),
+    ...(search === undefined || search.length === 0 ? {} : { search }),
+    ...(updatedAfter !== undefined && !Number.isNaN(updatedAfter.getTime()) ? { updatedAfter } : {}),
+  };
+}
+
 export function notificationListInput(searchParams: URLSearchParams): NotificationListInput {
   return {
     page: positiveInteger(searchParams.get("page"), 1, 1_000),

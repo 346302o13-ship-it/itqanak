@@ -786,6 +786,11 @@ export function UnifiedChatWorkspace({
     })();
   }, [apiBase, conversation, csrfToken, latestIncomingId]);
 
+  const contactItemsRef = useRef(contactItems);
+  useEffect(() => {
+    contactItemsRef.current = contactItems;
+  }, [contactItems]);
+
   useEffect(() => {
     if (mode !== "admin") return;
     let cancelled = false;
@@ -793,11 +798,8 @@ export function UnifiedChatWorkspace({
     let timeout: number | undefined;
     let inFlight = false;
     let controller: AbortController | undefined;
-    // Use the server's default conversation-list page size (30). Pulling 100 rows
-    // every poll re-runs the platform's most expensive read for pages the admin
-    // never scrolls to.
-    const query = new URLSearchParams({ page: "1" });
-    if (search !== undefined && search.trim().length > 0) query.set("q", search.trim());
+    const trimmedSearch = search?.trim() ?? "";
+    const searching = trimmedSearch.length > 0;
 
     const schedule = (delay?: number) => {
       if (cancelled) return;
@@ -819,6 +821,18 @@ export function UnifiedChatWorkspace({
       inFlight = true;
       controller = new AbortController();
       try {
+        const query = new URLSearchParams();
+        if (searching) {
+          query.set("q", trimmedSearch);
+        } else {
+          // Only ask for conversations touched since the newest activity we
+          // already hold. A quiet inbox returns zero rows.
+          const newest = contactItemsRef.current.reduce(
+            (max, item) => Math.max(max, item.lastMessageAt?.getTime() ?? 0),
+            0,
+          );
+          if (newest > 0) query.set("updatedAfter", new Date(newest).toISOString());
+        }
         const response = await fetch(`/api/admin/conversations/updates?${query.toString()}`, {
           cache: "no-store",
           credentials: "same-origin",
@@ -828,12 +842,24 @@ export function UnifiedChatWorkspace({
         if (!response.ok) throw new Error("conversation_poll_failed");
         const result = (await response.json()) as ConversationListWire;
         if (!cancelled && Array.isArray(result.items)) {
-          const refreshed = result.items.map(hydrateUnifiedConversationSummary);
-          setContactItems(
-            conversation === undefined || refreshed.some((item) => item.id === conversation.id)
-              ? refreshed
-              : [conversation, ...refreshed],
-          );
+          const delta = result.items.map(hydrateUnifiedConversationSummary);
+          if (searching) {
+            setContactItems(
+              conversation === undefined || delta.some((item) => item.id === conversation.id)
+                ? delta
+                : [conversation, ...delta],
+            );
+          } else if (delta.length > 0) {
+            setContactItems((current) => {
+              const byId = new Map(current.map((item) => [item.id, item]));
+              for (const item of delta) byId.set(item.id, item);
+              return [...byId.values()].sort(
+                (left, right) =>
+                  (right.lastMessageAt?.getTime() ?? 0) - (left.lastMessageAt?.getTime() ?? 0) ||
+                  right.createdAt.getTime() - left.createdAt.getTime(),
+              );
+            });
+          }
         }
         failedAttempts = 0;
       } catch {

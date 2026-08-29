@@ -5,7 +5,7 @@ import { requestErrorResponse, requestUnauthorizedResponse } from "@/lib/request
 import { getRequestId } from "@/lib/request-id";
 import { createStudentRequestRuntime } from "@/lib/request-runtime";
 import { principalForRequest } from "@/lib/route-principal";
-import { conversationListInput, jsonReady } from "@/lib/unified-http";
+import { conversationUpdatesInput, jsonReady } from "@/lib/unified-http";
 
 /**
  * Lightweight authenticated polling endpoint. Permission checks are identical
@@ -19,11 +19,9 @@ export async function GET(request: NextRequest) {
     try {
       const principal = await principalForRequest(runtime, request);
       if (principal === undefined) return requestUnauthorizedResponse(requestId);
-      const result = await runtime.unifiedConversations.listConversations(
+      const result = await runtime.unifiedConversations.listConversationUpdates(
         principal,
-        conversationListInput(request.nextUrl.searchParams),
-        {},
-        { recordAudit: false },
+        conversationUpdatesInput(request.nextUrl.searchParams),
       );
       return NextResponse.json(jsonReady(result), {
         headers: { "Cache-Control": "no-store", "X-Request-ID": requestId },

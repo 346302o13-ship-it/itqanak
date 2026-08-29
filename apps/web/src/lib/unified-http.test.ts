@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 
 import {
   conversationListInput,
+  conversationUpdatesInput,
   jsonReady,
   messageListInput,
   notificationListInput,
@@ -38,6 +39,21 @@ describe("unified conversation HTTP mapping", () => {
     expect(messageListInput(new URLSearchParams("afterId=not-a-uuid"))).toEqual({
       page: 1,
       pageSize: 50,
+    });
+  });
+
+  it("parses the conversation-updates cursor and drops an invalid timestamp", () => {
+    expect(
+      conversationUpdatesInput(
+        new URLSearchParams("updatedAfter=2026-08-29T10:00:00.000Z&pageSize=50&q=%20ali%20"),
+      ),
+    ).toEqual({
+      limit: 50,
+      search: "ali",
+      updatedAfter: new Date("2026-08-29T10:00:00.000Z"),
+    });
+    expect(conversationUpdatesInput(new URLSearchParams("updatedAfter=not-a-date"))).toEqual({
+      limit: 30,
     });
   });
 

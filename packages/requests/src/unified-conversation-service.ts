@@ -567,6 +567,38 @@ export class UnifiedConversationService {
     return result;
   }
 
+  /**
+   * Poll-tuned sibling of listConversations: no COUNT(*), no audit row, and an
+   * optional `updatedAfter` cursor so a steady-state refresh returns only the
+   * conversations that changed since the client's last poll (usually none).
+   */
+  public async listConversationUpdates(
+    principal: AuthenticatedPrincipal,
+    input: Readonly<{ search?: string; updatedAfter?: Date; limit?: number }> = {},
+  ): Promise<{ readonly items: readonly UnifiedConversationSummary[] }> {
+    requirePermission(requireRole(principal, "ADMIN"), "admin.conversations.read");
+    const limit = Math.min(100, Math.max(1, Math.trunc(input.limit ?? 30)));
+    const search = input.search?.trim().slice(0, 100);
+    const pattern = search === undefined || search.length === 0 ? null : `%${escapeLike(search)}%`;
+    const since =
+      input.updatedAfter instanceof Date && !Number.isNaN(input.updatedAfter.getTime())
+        ? input.updatedAfter
+        : null;
+    const rows = await this.database.unsafe<ConversationListRow[]>(
+      `${this.conversationListQuery()}
+       WHERE ($1::text IS NULL
+            OR students.display_name ILIKE $1 ESCAPE E'\\\\'
+            OR students.phone_e164 ILIKE $1 ESCAPE E'\\\\'
+            OR students.email ILIKE $1 ESCAPE E'\\\\')
+         AND ($4::timestamptz IS NULL OR conversations.last_message_at > $4)
+       ORDER BY conversations.last_message_at DESC NULLS LAST,
+                conversations.created_at DESC, conversations.id DESC
+       LIMIT $3`,
+      [pattern, principal.userId, limit, since],
+    );
+    return { items: rows.map(toConversation) };
+  }
+
   public async listMessages(
     principal: AuthenticatedPrincipal,
     conversationId: string,
@@ -939,14 +971,7 @@ export class UnifiedConversationService {
     return `SELECT ${conversationSelect},
       last_message.body AS last_message_preview,
       last_message.sent_at AS last_message_at,
-      (
-        SELECT count(*)::text
-        FROM support_message_receipts AS receipts
-        INNER JOIN support_messages AS unread_messages ON unread_messages.id = receipts.message_id
-        WHERE unread_messages.conversation_id = conversations.id
-          AND receipts.recipient_user_id = $2
-          AND receipts.status <> 'READ'
-      ) AS unread_count,
+      COALESCE(unread.unread_count, '0') AS unread_count,
       request_counts.request_count,
       request_counts.active_request_count,
       latest_request.id AS latest_request_id,
@@ -963,6 +988,16 @@ export class UnifiedConversationService {
       WHERE messages.conversation_id = conversations.id
       ORDER BY messages.sent_at DESC, messages.id DESC LIMIT 1
     ) AS last_message ON TRUE
+    LEFT JOIN (
+      -- All of this recipient's unread counts in one grouped pass, joined once,
+      -- instead of a correlated COUNT re-run for every conversation row.
+      SELECT unread_messages.conversation_id, count(*)::text AS unread_count
+      FROM support_message_receipts AS receipts
+      INNER JOIN support_messages AS unread_messages ON unread_messages.id = receipts.message_id
+      WHERE receipts.recipient_user_id = $2
+        AND receipts.status <> 'READ'
+      GROUP BY unread_messages.conversation_id
+    ) AS unread ON unread.conversation_id = conversations.id
     LEFT JOIN LATERAL (
       SELECT count(*)::text AS request_count,
         count(*) FILTER (
