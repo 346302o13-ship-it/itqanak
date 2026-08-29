@@ -386,24 +386,12 @@ function AttachmentBody({
   messageId: string;
 }>) {
   const english = locale === "en";
-  const [unscannedAudioAllowed, setUnscannedAudioAllowed] = useState(false);
   const download = `${apiBase}/messages/${encodeURIComponent(messageId)}/attachment`;
   const preview = `${download}/preview`;
-  const unscanned =
-    attachment.scanStatus === "SCAN_SKIPPED_BY_ADMIN" ||
-    attachment.scanStatus === "SCAN_SKIPPED_DEVELOPMENT";
-  const warning =
-    attachment.scanStatus === "SCAN_SKIPPED_DEVELOPMENT"
-      ? english
-        ? "This development file was not malware-scanned. Open it only if you trust the sender."
-        : "لم يُفحص هذا الملف في بيئة التطوير. افتحه فقط إذا كنت تثق بالمرسل."
-      : english
-        ? "Malware scanning was disabled when this file was uploaded. Open it only if you trust the sender."
-        : "كان فحص البرمجيات الضارة معطّلًا عند رفع هذا الملف. افتحه فقط إذا كنت تثق بالمرسل.";
 
   return (
     <div className="min-w-0">
-      {contentType === "IMAGE" && !unscanned ? (
+      {contentType === "IMAGE" ? (
         <a className="block overflow-hidden rounded-xl bg-black/5" href={download}>
           <img
             alt={attachment.originalFilename}
@@ -412,25 +400,15 @@ function AttachmentBody({
             src={preview}
           />
         </a>
-      ) : contentType === "AUDIO" && (!unscanned || unscannedAudioAllowed) ? (
+      ) : contentType === "AUDIO" ? (
         <div className="min-w-56 max-w-full">
-          <audio
-            className="w-full"
-            controls
-            preload={unscanned ? "none" : "metadata"}
-            src={preview}
-          >
+          <audio className="w-full" controls preload="metadata" src={preview}>
             <a href={download}>{english ? "Download voice message" : "تنزيل الرسالة الصوتية"}</a>
           </audio>
+          <a className="mt-2 block truncate text-xs font-black underline" href={download}>
+            <bdi dir="auto">{attachment.originalFilename}</bdi>
+          </a>
         </div>
-      ) : contentType === "AUDIO" ? (
-        <button
-          className="min-h-12 w-full rounded-xl border border-[var(--itq-color-warning-300)] bg-[var(--itq-color-warning-50)] px-4 text-sm font-black text-[var(--itq-color-warning-950)]"
-          onClick={() => setUnscannedAudioAllowed(true)}
-          type="button"
-        >
-          {english ? "Play this unscanned audio" : "تشغيل هذا الصوت غير المفحوص"}
-        </button>
       ) : (
         <a
           className="flex min-h-14 items-center gap-3 rounded-xl border border-current/15 bg-[var(--itq-color-surface)]/70 p-3 font-black text-[var(--itq-color-ink)] no-underline"
@@ -452,16 +430,6 @@ function AttachmentBody({
           </span>
         </a>
       )}
-      {contentType === "AUDIO" ? (
-        <a className="mt-2 block truncate text-xs font-black underline" href={download}>
-          <bdi dir="auto">{attachment.originalFilename}</bdi>
-        </a>
-      ) : null}
-      {unscanned ? (
-        <p className="mt-2 rounded-xl border border-[var(--itq-color-warning-200)] bg-[var(--itq-color-warning-50)] px-3 py-2 text-[11px] font-bold leading-5 text-[var(--itq-color-warning-950)]">
-          {warning}
-        </p>
-      ) : null}
     </div>
   );
 }
@@ -1470,11 +1438,6 @@ export function UnifiedChatWorkspace({
           result.message ?? (english ? "The file could not be uploaded." : "تعذر رفع الملف."),
         );
       }
-      setNotice(
-        english
-          ? "Applying the current file security policy…"
-          : "جارٍ تطبيق سياسة أمان الملفات الحالية…",
-      );
       const ready = await waitForAttachment(result.attachment);
       const sent = await sendMessage({
         contentType: contentTypeForMime(ready.mimeType),
@@ -1482,16 +1445,7 @@ export function UnifiedChatWorkspace({
         ...(linkedRequestId === undefined ? {} : { requestId: linkedRequestId }),
       });
       if (sent) {
-        setNotice(
-          ready.scanStatus === "SCAN_SKIPPED_BY_ADMIN" ||
-            ready.scanStatus === "SCAN_SKIPPED_DEVELOPMENT"
-            ? english
-              ? "Sent without a malware scan. A warning remains visible on the file."
-              : "تم الإرسال دون فحص برمجيات ضارة، وسيبقى التحذير ظاهرًا على الملف."
-            : english
-              ? "File sent."
-              : "تم إرسال الملف.",
-        );
+        setNotice(undefined);
       }
     } catch (error: unknown) {
       setNotice(
