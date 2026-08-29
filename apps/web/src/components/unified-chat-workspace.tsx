@@ -619,6 +619,10 @@ export function UnifiedChatWorkspace({
   // Newest message id the client already holds; the poller sends it as `afterId`
   // so a steady-state poll fetches only the delta.
   const latestMessageIdRef = useRef<string | undefined>(initialMessagePage.items.at(-1)?.id);
+  // Set by the poll effects; the SSE stream calls these to fetch a delta at once.
+  const messagePokeRef = useRef<() => void>(() => undefined);
+  const contactPokeRef = useRef<() => void>(() => undefined);
+  const conversationIdRef = useRef<string | undefined>(conversation?.id);
   const mediaRecorder = useRef<MediaRecorder | undefined>(undefined);
   const mediaStream = useRef<MediaStream | undefined>(undefined);
   const recordedChunks = useRef<Blob[]>([]);
@@ -815,6 +819,9 @@ export function UnifiedChatWorkspace({
   useEffect(() => {
     contactItemsRef.current = contactItems;
   }, [contactItems]);
+  useEffect(() => {
+    conversationIdRef.current = conversation?.id;
+  }, [conversation?.id]);
 
   useEffect(() => {
     if (mode !== "admin") return;
@@ -895,6 +902,9 @@ export function UnifiedChatWorkspace({
         schedule();
       }
     };
+    contactPokeRef.current = () => {
+      if (!cancelled && !inFlight) schedule(150);
+    };
     const resume = () => {
       if (document.visibilityState !== "visible") return;
       schedule(250);
@@ -904,6 +914,7 @@ export function UnifiedChatWorkspace({
     schedule();
     return () => {
       cancelled = true;
+      contactPokeRef.current = () => undefined;
       if (timeout !== undefined) window.clearTimeout(timeout);
       controller?.abort();
       document.removeEventListener("visibilitychange", resume);
@@ -970,6 +981,9 @@ export function UnifiedChatWorkspace({
         schedule();
       }
     };
+    messagePokeRef.current = () => {
+      if (!cancelled && !inFlight) schedule(150);
+    };
     const resume = () => {
       if (document.visibilityState !== "visible") return;
       schedule(250);
@@ -979,12 +993,62 @@ export function UnifiedChatWorkspace({
     schedule();
     return () => {
       cancelled = true;
+      messagePokeRef.current = () => undefined;
       if (timeout !== undefined) window.clearTimeout(timeout);
       controller?.abort();
       document.removeEventListener("visibilitychange", resume);
       window.removeEventListener("online", resume);
     };
   }, [apiBase, conversation]);
+
+  useEffect(() => {
+    if (typeof EventSource === "undefined") return;
+    const url =
+      mode === "admin" ? "/api/admin/conversations/stream" : "/api/student/conversation/stream";
+    let source: EventSource | undefined;
+    let retryTimer: number | undefined;
+    let stopped = false;
+
+    const open = () => {
+      if (stopped) return;
+      source = new EventSource(url);
+      source.onmessage = (event) => {
+        let payload: { conversationId?: string; senderType?: string };
+        try {
+          payload = JSON.parse(event.data) as { conversationId?: string; senderType?: string };
+        } catch {
+          return;
+        }
+        if (mode === "admin") {
+          contactPokeRef.current();
+          if (
+            payload.conversationId === conversationIdRef.current &&
+            payload.senderType !== "ADMIN"
+          ) {
+            messagePokeRef.current();
+          }
+        } else if (payload.senderType !== "STUDENT") {
+          messagePokeRef.current();
+        }
+      };
+      source.onerror = () => {
+        // EventSource retries transient drops itself; a hard close needs a manual
+        // reopen. Either way the polls remain the reliable transport.
+        if (source?.readyState === EventSource.CLOSED && !stopped) {
+          source.close();
+          source = undefined;
+          retryTimer = window.setTimeout(open, 15_000);
+        }
+      };
+    };
+    open();
+
+    return () => {
+      stopped = true;
+      if (retryTimer !== undefined) window.clearTimeout(retryTimer);
+      source?.close();
+    };
+  }, [mode]);
 
   useEffect(
     () => () => {
