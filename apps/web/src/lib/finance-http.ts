@@ -8,8 +8,21 @@ import { localeFromRequestPath } from "./request-http";
 export function financeErrorStatus(error: unknown): number {
   if (error instanceof CsrfError || error instanceof AuthorizationError) return 403;
   if (!(error instanceof FinanceError)) return 500;
-  if (error.code === "DUE_NOT_FOUND" || error.code === "REQUEST_NOT_FOUND") return 404;
-  if (error.code === "VERSION_CONFLICT" || error.code === "INVALID_TRANSITION") return 409;
+  if (
+    error.code === "DUE_NOT_FOUND" ||
+    error.code === "REQUEST_NOT_FOUND" ||
+    error.code === "RECEIPT_NOT_FOUND"
+  ) {
+    return 404;
+  }
+  if (
+    error.code === "VERSION_CONFLICT" ||
+    error.code === "INVALID_TRANSITION" ||
+    error.code === "RECEIPT_ALREADY_REVIEWED" ||
+    error.code === "DUE_NOT_PAYABLE"
+  ) {
+    return 409;
+  }
   if (error.code === "INVALID_ID" || error.code === "INVALID_VERSION") return 400;
   return 422;
 }

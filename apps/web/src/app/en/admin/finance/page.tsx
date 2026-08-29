@@ -23,8 +23,10 @@ export default async function EnglishAdminFinancePage({ searchParams }: FinanceP
   const runtime = await createFinanceRuntime();
   let dues;
   let report;
+  let pendingReceipts;
   try {
     dues = await runtime.finance.listAdminDues(principal, filters);
+    pendingReceipts = await runtime.finance.listPendingReceipts(principal);
     if (hasPermission(principal, "admin.finance.reports.read")) {
       report = await runtime.finance.getAdminReport(principal);
     }
@@ -39,6 +41,7 @@ export default async function EnglishAdminFinancePage({ searchParams }: FinanceP
       dues={dues}
       filters={filters}
       locale="en"
+      pendingReceipts={pendingReceipts}
       {...(report === undefined ? {} : { report })}
       {...(typeof query.notice === "string" ? { notice: query.notice } : {})}
     />

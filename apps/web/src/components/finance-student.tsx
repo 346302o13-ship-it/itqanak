@@ -12,6 +12,7 @@ import { formatFinanceAmount } from "@/lib/finance-presenters";
 
 import { FinanceReportCards, FinanceStatusChip } from "./finance-widgets";
 import { LocalDateTime } from "./local-date-time";
+import { PaymentReceiptUploader } from "./payment-receipt-uploader";
 import { StudentShell } from "./student-shell";
 
 interface FinanceStudentProps {
@@ -201,6 +202,9 @@ export function FinanceStudent({
                 >
                   {english ? "Open linked request" : "فتح الطلب المرتبط"}
                 </Link>
+                {due.status === "UNPAID" ? (
+                  <PaymentReceiptUploader csrfToken={csrfToken} dueId={due.id} locale={locale} />
+                ) : null}
               </li>
             );
           })}

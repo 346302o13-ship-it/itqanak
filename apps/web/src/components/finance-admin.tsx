@@ -8,6 +8,7 @@ import {
   type FinanceListInput,
   type FinanceListResult,
   type FinanceReport,
+  type PaymentReceiptSubmission,
 } from "@itqanak/finance";
 
 import { financePaymentMethodLabel, formatFinanceAmount } from "@/lib/finance-presenters";
@@ -28,6 +29,7 @@ interface FinanceAdminProps {
   readonly canManage: boolean;
   readonly locale: "ar" | "en";
   readonly notice?: string;
+  readonly pendingReceipts?: readonly PaymentReceiptSubmission[];
 }
 
 const controlClassName =
@@ -51,9 +53,11 @@ export function FinanceAdmin({
   canManage,
   locale,
   notice,
+  pendingReceipts,
 }: FinanceAdminProps) {
   const english = locale === "en";
   const numberFormat = new Intl.NumberFormat(english ? "en-US" : "ar-SA");
+  const receipts = pendingReceipts ?? [];
   return (
     <AdminShell csrfToken={csrfToken} displayName={displayName} locale={locale}>
       <FinanceFlash locale={locale} {...(notice === undefined ? {} : { notice })} />
@@ -182,6 +186,112 @@ export function FinanceAdmin({
             </div>
           </form>
         </details>
+      ) : null}
+
+      {canManage && receipts.length > 0 ? (
+        <section className="mt-6 rounded-[1.75rem] border border-[var(--itq-color-warning-200)] bg-[var(--itq-color-warning-50)] p-5 shadow-[var(--itq-shadow-sm)] sm:p-7">
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <h2 className="text-lg font-black text-[var(--itq-color-warning-900)]">
+              {english ? "Payment receipts awaiting review" : "إيصالات دفع بانتظار المراجعة"}
+            </h2>
+            <span className="rounded-full bg-[var(--itq-color-warning-200)] px-3 py-1 text-xs font-black text-[var(--itq-color-warning-900)]">
+              {numberFormat.format(receipts.length)}
+            </span>
+          </div>
+          <ul className="mt-5 grid gap-4">
+            {receipts.map((receipt) => (
+              <li
+                className="grid gap-4 rounded-2xl border border-[var(--itq-color-border)] bg-[var(--itq-color-surface)] p-4 sm:grid-cols-[10rem_minmax(0,1fr)]"
+                key={receipt.id}
+              >
+                <a
+                  className="block overflow-hidden rounded-xl border border-[var(--itq-color-border)]"
+                  href={`/api/admin/finance/receipts/${encodeURIComponent(receipt.id)}/image`}
+                  rel="noreferrer"
+                  target="_blank"
+                >
+                  <img
+                    alt={english ? "Payment receipt" : "إيصال الدفع"}
+                    className="h-40 w-full bg-[var(--itq-color-surface-soft)] object-contain"
+                    src={`/api/admin/finance/receipts/${encodeURIComponent(receipt.id)}/image`}
+                  />
+                </a>
+                <div className="grid gap-3">
+                  <div>
+                    <p className="text-sm font-black">{receipt.studentDisplayName}</p>
+                    <p className="mt-1 text-xs text-[var(--itq-color-muted)]">
+                      <bdi dir="ltr">{receipt.dueReference}</bdi> ·{" "}
+                      <Link
+                        className="font-black underline"
+                        href={`/${locale}/admin/requests/${encodeURIComponent(receipt.requestNumber)}`}
+                      >
+                        <bdi dir="ltr">{receipt.requestNumber}</bdi>
+                      </Link>
+                    </p>
+                    <p
+                      className="mt-2 text-lg font-black text-[var(--itq-color-brand-strong)]"
+                      dir="ltr"
+                    >
+                      {formatFinanceAmount(
+                        receipt.amountMinor,
+                        receipt.currency,
+                        receipt.minorUnit,
+                        locale,
+                      )}
+                    </p>
+                    <p className="mt-1 text-xs text-[var(--itq-color-muted)]">
+                      {english ? "Submitted: " : "أُرسل: "}
+                      <LocalDateTime locale={locale} value={receipt.submittedAt.toISOString()} />
+                    </p>
+                    {receipt.note === undefined ? null : (
+                      <p
+                        className="mt-2 whitespace-pre-wrap rounded-lg bg-[var(--itq-color-surface-soft)] p-2 text-xs"
+                        dir="auto"
+                      >
+                        {receipt.note}
+                      </p>
+                    )}
+                  </div>
+                  <div className="grid gap-2 sm:grid-cols-2">
+                    <form
+                      action={`/api/admin/finance/receipts/${encodeURIComponent(receipt.id)}/review`}
+                      className="grid gap-2 rounded-xl bg-[var(--itq-color-success-50)] p-3"
+                      method="post"
+                    >
+                      <CsrfInput token={csrfToken} />
+                      <input name="locale" type="hidden" value={locale} />
+                      <input name="decision" type="hidden" value="ACCEPT" />
+                      <SubmitButton pendingLabel={english ? "Confirming…" : "جارٍ التأكيد…"}>
+                        {english ? "Accept — mark paid" : "قبول — تعليم كمدفوع"}
+                      </SubmitButton>
+                    </form>
+                    <form
+                      action={`/api/admin/finance/receipts/${encodeURIComponent(receipt.id)}/review`}
+                      className="grid gap-2 rounded-xl bg-[var(--itq-color-surface-soft)] p-3"
+                      method="post"
+                    >
+                      <CsrfInput token={csrfToken} />
+                      <input name="locale" type="hidden" value={locale} />
+                      <input name="decision" type="hidden" value="REJECT" />
+                      <input
+                        className="min-h-10 rounded-lg border border-[var(--itq-color-border)] px-2 text-xs"
+                        maxLength={1000}
+                        name="reviewNote"
+                        placeholder={english ? "Reason (optional)" : "السبب (اختياري)"}
+                      />
+                      <SubmitButton
+                        className="bg-[var(--itq-color-ink-soft)]"
+                        pendingLabel={english ? "Rejecting…" : "جارٍ الرفض…"}
+                      >
+                        {english ? "Reject" : "رفض"}
+                      </SubmitButton>
+                    </form>
+                  </div>
+                </div>
+              </li>
+            ))}
+          </ul>
+        </section>
       ) : null}
 
       <section className="mt-6 rounded-[1.75rem] border border-[var(--itq-color-border)] bg-[var(--itq-color-surface)] p-5 shadow-[var(--itq-shadow-sm)] sm:p-7">

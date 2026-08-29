@@ -93,6 +93,37 @@ export interface VoidFinanceDueInput {
   readonly reason: string;
 }
 
+export const paymentReceiptReviewStatuses = ["PENDING", "ACCEPTED", "REJECTED"] as const;
+export type PaymentReceiptReviewStatus = (typeof paymentReceiptReviewStatuses)[number];
+
+export interface PaymentReceiptSubmission {
+  readonly id: string;
+  readonly dueId: string;
+  readonly dueReference: string;
+  readonly requestNumber: string;
+  readonly studentUserId: string;
+  readonly studentDisplayName: string;
+  readonly attachmentId: string;
+  readonly note?: string;
+  readonly reviewStatus: PaymentReceiptReviewStatus;
+  readonly submittedAt: Date;
+  readonly reviewedAt?: Date;
+  readonly reviewNote?: string;
+  readonly amountMinor: number;
+  readonly currency: FinanceCurrency;
+  readonly minorUnit: 2 | 3;
+}
+
+export interface SubmitPaymentReceiptInput {
+  readonly attachmentId: string;
+  readonly note?: string | null;
+}
+
+export interface ReviewPaymentReceiptInput {
+  readonly decision: "ACCEPT" | "REJECT";
+  readonly reviewNote?: string | null;
+}
+
 export const financeErrorCodes = [
   "INVALID_ID",
   "INVALID_REQUEST",
@@ -109,6 +140,10 @@ export const financeErrorCodes = [
   "REQUEST_NOT_ELIGIBLE",
   "VERSION_CONFLICT",
   "INVALID_TRANSITION",
+  "RECEIPT_NOT_FOUND",
+  "RECEIPT_ALREADY_REVIEWED",
+  "RECEIPT_INVALID_ATTACHMENT",
+  "DUE_NOT_PAYABLE",
 ] as const;
 
 export type FinanceErrorCode = (typeof financeErrorCodes)[number];

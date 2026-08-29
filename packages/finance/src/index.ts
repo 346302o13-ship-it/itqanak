@@ -5,6 +5,7 @@ export {
   financeDueStatuses,
   financeErrorCodes,
   financePaymentMethods,
+  paymentReceiptReviewStatuses,
   type AdminFinanceDue,
   type CreateFinanceDueInput,
   type FinanceCurrency,
@@ -16,8 +17,12 @@ export {
   type FinanceListResult,
   type FinancePaymentMethod,
   type FinanceReport,
+  type PaymentReceiptReviewStatus,
+  type PaymentReceiptSubmission,
   type RecordFinancePaymentInput,
+  type ReviewPaymentReceiptInput,
   type ReverseFinancePaymentInput,
+  type SubmitPaymentReceiptInput,
   type VoidFinanceDueInput,
 } from "./types.js";
 export {

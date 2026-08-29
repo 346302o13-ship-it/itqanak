@@ -19,8 +19,11 @@ import {
   type FinanceListResult,
   type FinancePaymentMethod,
   type FinanceReport,
+  type PaymentReceiptSubmission,
   type RecordFinancePaymentInput,
   type ReverseFinancePaymentInput,
+  type ReviewPaymentReceiptInput,
+  type SubmitPaymentReceiptInput,
   type VoidFinanceDueInput,
 } from "./types.js";
 import {
@@ -637,5 +640,280 @@ export class FinanceService {
       if (result === undefined) throw new Error("Updated finance due could not be reloaded.");
       return toAdminFinanceDue(result);
     });
+  }
+
+  /**
+   * Student uploads proof of payment for one of their own UNPAID dues. The due
+   * itself is untouched; it stays UNPAID until an administrator accepts the
+   * submission. One pending submission per due (DB unique index also guards).
+   */
+  public async submitPaymentReceipt(
+    principal: AuthenticatedPrincipal,
+    dueIdInput: string,
+    input: SubmitPaymentReceiptInput,
+    context: RequestAuditContext = {},
+  ): Promise<PaymentReceiptSubmission> {
+    requirePermission(requireRole(principal, "STUDENT"), "finance.read.own");
+    const dueId = assertFinanceDueId(dueIdInput);
+    const attachmentId = assertFinanceDueId(input.attachmentId);
+    const note = normalizePaymentNote(input.note);
+    return this.database.begin(async (transaction) => {
+      const tx = transaction as DatabaseClient;
+      const dues = await tx<
+        {
+          readonly id: string;
+          readonly student_user_id: string;
+          readonly status: string;
+        }[]
+      >`
+        SELECT id, student_user_id, status FROM finance_dues
+        WHERE id = ${dueId} LIMIT 1 FOR SHARE
+      `;
+      const due = dues[0];
+      if (due === undefined || due.student_user_id !== principal.userId) {
+        throw new FinanceError("DUE_NOT_FOUND");
+      }
+      if (due.status !== "UNPAID") throw new FinanceError("DUE_NOT_PAYABLE");
+      const attachments = await tx<
+        {
+          readonly id: string;
+          readonly uploaded_by_user_id: string;
+          readonly storage_status: string;
+          readonly declared_mime_type: string;
+          readonly detected_mime_type: string | null;
+        }[]
+      >`
+        SELECT id, uploaded_by_user_id, storage_status, declared_mime_type, detected_mime_type
+        FROM unified_conversation_attachments
+        WHERE id = ${attachmentId} AND deleted_at IS NULL
+        LIMIT 1 FOR SHARE
+      `;
+      const attachment = attachments[0];
+      const mime = attachment?.detected_mime_type ?? attachment?.declared_mime_type ?? "";
+      if (
+        attachment === undefined ||
+        attachment.uploaded_by_user_id !== principal.userId ||
+        attachment.storage_status !== "STORED" ||
+        !(mime.startsWith("image/") || mime === "application/pdf")
+      ) {
+        throw new FinanceError("RECEIPT_INVALID_ATTACHMENT");
+      }
+      const inserted = await tx<{ readonly id: string; readonly submitted_at: Date }[]>`
+        INSERT INTO finance_payment_submissions (due_id, student_user_id, attachment_id, note)
+        VALUES (${dueId}, ${principal.userId}, ${attachmentId}, ${note})
+        ON CONFLICT (due_id) WHERE review_status = 'PENDING' DO NOTHING
+        RETURNING id, submitted_at
+      `;
+      if (inserted[0] === undefined) throw new FinanceError("RECEIPT_ALREADY_REVIEWED");
+      await recordAuditEvent(tx, {
+        ...context,
+        eventType: "finance.receipt_submitted",
+        outcome: "SUCCESS",
+        actorUserId: principal.userId,
+        targetUserId: principal.userId,
+        sessionId: principal.sessionId,
+        resourceType: "finance_payment_submission",
+        resourceId: inserted[0].id,
+        metadata: { dueId },
+      });
+      const rows = await this.readReceipts(tx, { submissionId: inserted[0].id });
+      const receipt = rows[0];
+      if (receipt === undefined) throw new Error("Payment receipt could not be reloaded.");
+      return receipt;
+    });
+  }
+
+  /** Pending payment receipts across all students, oldest first. */
+  public async listPendingReceipts(
+    principal: AuthenticatedPrincipal,
+  ): Promise<readonly PaymentReceiptSubmission[]> {
+    requireAdminFinancePermission(principal, "admin.finance.read");
+    return this.readReceipts(this.database, { pendingOnly: true });
+  }
+
+  /** One receipt by id. Admin, or the student who submitted it. */
+  public async getPaymentReceipt(
+    principal: AuthenticatedPrincipal,
+    submissionIdInput: string,
+  ): Promise<PaymentReceiptSubmission> {
+    const submissionId = assertFinanceDueId(submissionIdInput);
+    const isAdmin = principal.roles.includes("ADMIN");
+    if (!isAdmin) requirePermission(requireRole(principal, "STUDENT"), "finance.read.own");
+    const rows = await this.readReceipts(this.database, {
+      submissionId,
+      ...(isAdmin ? {} : { studentUserId: principal.userId }),
+    });
+    const receipt = rows[0];
+    if (receipt === undefined) throw new FinanceError("RECEIPT_NOT_FOUND");
+    return receipt;
+  }
+
+  /** Receipts for one due (any status), newest first. Owner or admin. */
+  public async listDueReceipts(
+    principal: AuthenticatedPrincipal,
+    dueIdInput: string,
+  ): Promise<readonly PaymentReceiptSubmission[]> {
+    const dueId = assertFinanceDueId(dueIdInput);
+    const isAdmin = principal.roles.includes("ADMIN");
+    if (!isAdmin) requirePermission(requireRole(principal, "STUDENT"), "finance.read.own");
+    return this.readReceipts(this.database, {
+      dueId,
+      ...(isAdmin ? {} : { studentUserId: principal.userId }),
+    });
+  }
+
+  /**
+   * Administrator accepts or rejects a pending receipt. Accept runs the
+   * existing record-payment path (UNPAID -> PAID) first, then marks the
+   * submission ACCEPTED, so a payment failure leaves the receipt pending.
+   */
+  public async reviewPaymentReceipt(
+    principal: AuthenticatedPrincipal,
+    submissionIdInput: string,
+    input: ReviewPaymentReceiptInput,
+    context: RequestAuditContext = {},
+  ): Promise<{
+    readonly submission: PaymentReceiptSubmission;
+    readonly due: AdminFinanceDue | null;
+  }> {
+    requireAdminFinancePermission(principal, "admin.finance.manage");
+    const submissionId = assertFinanceDueId(submissionIdInput);
+    const reviewNote = normalizePaymentNote(input.reviewNote);
+    if (input.decision !== "ACCEPT" && input.decision !== "REJECT") {
+      throw new FinanceError("INVALID_REQUEST");
+    }
+
+    const pending = await this.database<
+      {
+        readonly id: string;
+        readonly due_id: string;
+        readonly review_status: string;
+        readonly due_version: number | string;
+        readonly due_status: string;
+      }[]
+    >`
+      SELECT s.id, s.due_id, s.review_status, d.version AS due_version, d.status AS due_status
+      FROM finance_payment_submissions AS s
+      INNER JOIN finance_dues AS d ON d.id = s.due_id
+      WHERE s.id = ${submissionId} LIMIT 1
+    `;
+    const submission = pending[0];
+    if (submission === undefined) throw new FinanceError("RECEIPT_NOT_FOUND");
+    if (submission.review_status !== "PENDING") throw new FinanceError("RECEIPT_ALREADY_REVIEWED");
+
+    let due: AdminFinanceDue | null = null;
+    if (input.decision === "ACCEPT") {
+      if (submission.due_status !== "UNPAID") throw new FinanceError("DUE_NOT_PAYABLE");
+      due = await this.changeDue(
+        principal,
+        submission.due_id,
+        Number(submission.due_version),
+        "PAYMENT_RECORDED",
+        context,
+        {
+          method: "BANK_TRANSFER",
+          reference: `RCPT-${submission.id.slice(0, 8).toUpperCase()}`,
+          note: reviewNote ?? "Student-submitted payment receipt.",
+        },
+      );
+    }
+
+    const updated = await this.database<{ readonly id: string }[]>`
+      UPDATE finance_payment_submissions
+      SET review_status = ${input.decision === "ACCEPT" ? "ACCEPTED" : "REJECTED"},
+          reviewed_at = now(), reviewed_by_user_id = ${principal.userId},
+          review_note = ${reviewNote}
+      WHERE id = ${submissionId} AND review_status = 'PENDING'
+      RETURNING id
+    `;
+    if (updated[0] === undefined) throw new FinanceError("RECEIPT_ALREADY_REVIEWED");
+    await recordAuditEvent(this.database, {
+      ...context,
+      eventType: "finance.receipt_reviewed",
+      outcome: "SUCCESS",
+      actorUserId: principal.userId,
+      targetUserId: principal.userId,
+      sessionId: principal.sessionId,
+      resourceType: "finance_payment_submission",
+      resourceId: submissionId,
+      metadata: { decision: input.decision, dueId: submission.due_id },
+    });
+    const rows = await this.readReceipts(this.database, { submissionId });
+    const result = rows[0];
+    if (result === undefined) throw new Error("Reviewed receipt could not be reloaded.");
+    return { submission: result, due };
+  }
+
+  private async readReceipts(
+    database: DatabaseClient,
+    filter: {
+      readonly submissionId?: string;
+      readonly dueId?: string;
+      readonly studentUserId?: string;
+      readonly pendingOnly?: boolean;
+    },
+  ): Promise<PaymentReceiptSubmission[]> {
+    const rows = await database.unsafe<
+      {
+        readonly id: string;
+        readonly due_id: string;
+        readonly due_reference: string;
+        readonly request_number: string;
+        readonly student_user_id: string;
+        readonly student_display_name: string | null;
+        readonly attachment_id: string;
+        readonly note: string | null;
+        readonly review_status: string;
+        readonly submitted_at: Date | string;
+        readonly reviewed_at: Date | string | null;
+        readonly review_note: string | null;
+        readonly amount_minor: number | string;
+        readonly currency: string;
+        readonly minor_unit: number | string;
+      }[]
+    >(
+      `SELECT s.id, s.due_id, d.reference AS due_reference, r.request_number,
+              s.student_user_id, u.display_name AS student_display_name,
+              s.attachment_id, s.note, s.review_status, s.submitted_at, s.reviewed_at,
+              s.review_note, d.amount_minor, d.currency, d.minor_unit
+       FROM finance_payment_submissions AS s
+       INNER JOIN finance_dues AS d ON d.id = s.due_id
+       INNER JOIN service_requests AS r ON r.id = d.request_id
+       INNER JOIN users AS u ON u.id = s.student_user_id
+       WHERE ($1::uuid IS NULL OR s.id = $1)
+         AND ($2::uuid IS NULL OR s.due_id = $2)
+         AND ($3::uuid IS NULL OR s.student_user_id = $3)
+         AND ($4::boolean IS NOT TRUE OR s.review_status = 'PENDING')
+       ORDER BY s.submitted_at ${filter.pendingOnly === true ? "ASC" : "DESC"}, s.id DESC
+       LIMIT 200`,
+      [
+        filter.submissionId ?? null,
+        filter.dueId ?? null,
+        filter.studentUserId ?? null,
+        filter.pendingOnly ?? false,
+      ],
+    );
+    return rows.map((row) => ({
+      id: row.id,
+      dueId: row.due_id,
+      dueReference: row.due_reference,
+      requestNumber: row.request_number,
+      studentUserId: row.student_user_id,
+      studentDisplayName: row.student_display_name ?? "",
+      attachmentId: row.attachment_id,
+      ...(row.note === null ? {} : { note: row.note }),
+      reviewStatus:
+        row.review_status === "ACCEPTED"
+          ? "ACCEPTED"
+          : row.review_status === "REJECTED"
+            ? "REJECTED"
+            : "PENDING",
+      submittedAt: new Date(row.submitted_at),
+      ...(row.reviewed_at === null ? {} : { reviewedAt: new Date(row.reviewed_at) }),
+      ...(row.review_note === null ? {} : { reviewNote: row.review_note }),
+      amountMinor: Number(row.amount_minor),
+      currency: assertFinanceCurrency(row.currency),
+      minorUnit: Number(row.minor_unit) === 3 ? 3 : 2,
+    }));
   }
 }

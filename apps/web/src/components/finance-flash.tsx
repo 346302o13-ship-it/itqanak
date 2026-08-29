@@ -4,6 +4,8 @@ const notices = {
     "record-payment": "تم تأكيد الدفع وتحديث الحالة إلى مدفوع.",
     "reverse-payment": "تم عكس تأكيد الدفع وإعادة الحالة إلى غير مدفوع.",
     "void-due": "تم إلغاء المستحق مع الاحتفاظ بسجله.",
+    receipt_accepted: "تم قبول الإيصال وتعليم المستحق كمدفوع.",
+    receipt_rejected: "تم رفض الإيصال. أُبلغ الطالب ليعيد الرفع.",
     conflict: "تغير السجل في جلسة أخرى. حدّث الصفحة وحاول مجددًا.",
     not_found: "السجل المالي أو الطلب غير موجود.",
     forbidden: "لا تملك صلاحية تنفيذ هذا الإجراء.",
@@ -16,6 +18,8 @@ const notices = {
     "record-payment": "Payment was confirmed and the status is now paid.",
     "reverse-payment": "The payment confirmation was reversed and the due is unpaid again.",
     "void-due": "The due was voided while its audit history was retained.",
+    receipt_accepted: "The receipt was accepted and the due is now marked paid.",
+    receipt_rejected: "The receipt was rejected. The student was told to re-upload.",
     conflict: "This record changed in another session. Refresh and try again.",
     not_found: "The financial record or request was not found.",
     forbidden: "You do not have permission for this action.",
@@ -30,7 +34,14 @@ export function FinanceFlash({
   locale,
 }: Readonly<{ notice?: string; locale: "ar" | "en" }>) {
   if (notice === undefined || !(notice in notices[locale])) return null;
-  const success = ["created", "record-payment", "reverse-payment", "void-due"].includes(notice);
+  const success = [
+    "created",
+    "record-payment",
+    "reverse-payment",
+    "void-due",
+    "receipt_accepted",
+    "receipt_rejected",
+  ].includes(notice);
   return (
     <p
       aria-live="polite"
