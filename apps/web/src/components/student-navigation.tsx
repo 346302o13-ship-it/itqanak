@@ -25,6 +25,18 @@ const itemsByLocale: Readonly<Record<"ar" | "en", readonly NavigationItem[]>> = 
       exact: true,
       icon: HomeIcon,
     },
+    {
+      href: "/ar/student/requests/new",
+      label: "اطلب خدمة",
+      shortLabel: "اطلب",
+      icon: ServicesIcon,
+    },
+    {
+      href: "/ar/student/support",
+      label: "المحادثة",
+      shortLabel: "المحادثة",
+      icon: MessageIcon,
+    },
     { href: "/ar/student/requests", label: "طلباتي", shortLabel: "طلباتي", icon: RequestsIcon },
     {
       href: "/ar/student/finance",
@@ -32,17 +44,22 @@ const itemsByLocale: Readonly<Record<"ar" | "en", readonly NavigationItem[]>> = 
       shortLabel: "المالية",
       icon: FinanceIcon,
     },
-    { href: "/ar/services", label: "استكشف الخدمات", shortLabel: "الخدمات", icon: ServicesIcon },
-    {
-      href: "/ar/student/support",
-      label: "المحادثة الموحدة",
-      shortLabel: "المحادثة",
-      icon: MessageIcon,
-    },
     { href: "/ar/account", label: "الحساب والإعدادات", shortLabel: "حسابي", icon: UserIcon },
   ],
   en: [
     { href: "/en/student", label: "Overview", shortLabel: "Home", exact: true, icon: HomeIcon },
+    {
+      href: "/en/student/requests/new",
+      label: "Request a service",
+      shortLabel: "Request",
+      icon: ServicesIcon,
+    },
+    {
+      href: "/en/student/support",
+      label: "Chat",
+      shortLabel: "Chat",
+      icon: MessageIcon,
+    },
     {
       href: "/en/student/requests",
       label: "My requests",
@@ -55,13 +72,6 @@ const itemsByLocale: Readonly<Record<"ar" | "en", readonly NavigationItem[]>> = 
       shortLabel: "Finance",
       icon: FinanceIcon,
     },
-    { href: "/en/services", label: "Explore services", shortLabel: "Services", icon: ServicesIcon },
-    {
-      href: "/en/student/support",
-      label: "Unified conversation",
-      shortLabel: "Chat",
-      icon: MessageIcon,
-    },
     { href: "/en/account", label: "Account & settings", shortLabel: "Account", icon: UserIcon },
   ],
 };
@@ -69,6 +79,9 @@ const itemsByLocale: Readonly<Record<"ar" | "en", readonly NavigationItem[]>> = 
 function isActive(pathname: string, item: NavigationItem): boolean {
   if (item.exact === true) {
     return pathname === item.href;
+  }
+  if (item.href.endsWith("/student/requests") && pathname.endsWith("/student/requests/new")) {
+    return false;
   }
   return pathname === item.href || pathname.startsWith(`${item.href}/`);
 }
@@ -122,6 +135,7 @@ export function StudentMobileNavigation({ locale = "ar" }: Readonly<{ locale?: "
       ariaLabel={locale === "en" ? "Quick navigation" : "التنقل السريع"}
       items={items}
       moreLabel={locale === "en" ? "More" : "المزيد"}
+      primaryCount={5}
     />
   );
 }

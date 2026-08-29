@@ -83,7 +83,7 @@ export function StudentShell({
       <div
         className={
           workspace
-            ? "mx-auto h-[calc(100dvh-4.75rem-env(safe-area-inset-top))] max-w-[120rem] overflow-hidden"
+            ? "mx-auto h-[calc(100svh-4.75rem-3.75rem)] max-w-[120rem] overflow-hidden lg:h-[calc(100dvh-4.75rem-env(safe-area-inset-top))]"
             : "mx-auto grid max-w-[92rem] gap-7 px-4 pb-28 pt-6 sm:px-7 lg:grid-cols-[17.5rem_minmax(0,1fr)] lg:px-10 lg:pb-12 lg:pt-8"
         }
       >
@@ -137,7 +137,7 @@ export function StudentShell({
           )}
         </main>
       </div>
-      {workspace ? null : <StudentMobileNavigation locale={locale} />}
+      <StudentMobileNavigation locale={locale} />
       {workspace ? null : <StudentSupportFab locale={locale} />}
     </div>
   );
