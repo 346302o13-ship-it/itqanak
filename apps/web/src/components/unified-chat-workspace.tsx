@@ -223,40 +223,40 @@ function contentTypeForMime(mimeType: string): "IMAGE" | "AUDIO" | "FILE" {
 }
 
 function financeChips(
-  finance: NonNullable<UnifiedRequestSummary["finance"]>,
+  finance: UnifiedRequestSummary["finance"] | undefined,
   english: boolean,
   mode: "student" | "admin",
+  priced: boolean,
 ): readonly { key: string; className: string; label: string }[] {
   const chips: { key: string; className: string; label: string }[] = [];
-  if (!finance.hasDue) {
-    if (mode === "admin") {
-      chips.push({
-        key: "noprice",
-        className: "bg-[var(--itq-color-surface-soft)] text-[var(--itq-color-muted)]",
-        label: english ? "no price" : "بلا سعر",
-      });
-    }
-  } else if (finance.dueStatus === "UNPAID") {
-    chips.push({
-      key: "unpaid",
-      className: "bg-[var(--itq-color-warning-50)] text-[var(--itq-color-warning-900)]",
-      label:
-        mode === "admin"
-          ? english
-            ? "unpaid"
-            : "غير مدفوع"
-          : english
-            ? "payment due"
-            : "مبلغ مستحق",
-    });
-  } else if (finance.dueStatus === "PAID") {
+  const paid = finance?.dueStatus === "PAID";
+  const inLedger = finance?.hasDue === true && finance.dueStatus === "UNPAID";
+  if (paid) {
     chips.push({
       key: "paid",
       className: "bg-[var(--itq-color-success-50)] text-[var(--itq-color-success-800)]",
-      label: english ? "paid" : "مدفوع",
+      label: english ? "paid" : "تم السداد",
+    });
+  } else if (inLedger) {
+    chips.push({
+      key: "ledger",
+      className: "bg-[var(--itq-color-warning-50)] text-[var(--itq-color-warning-900)]",
+      label: english ? "in the ledger" : "في المديونية",
+    });
+  } else if (priced) {
+    chips.push({
+      key: "priced",
+      className: "bg-[var(--itq-color-info-50)] text-[var(--itq-color-info-950)]",
+      label: english ? "priced" : "تم التسعير",
+    });
+  } else {
+    chips.push({
+      key: "unpriced",
+      className: "bg-[var(--itq-color-surface-soft)] text-[var(--itq-color-muted)]",
+      label: english ? "not priced yet" : "لم يُسعّر بعد",
     });
   }
-  if (finance.hasPendingReceipt) {
+  if (finance?.hasPendingReceipt === true && !paid) {
     chips.push({
       key: "receipt",
       className: "bg-[var(--itq-color-info-50)] text-[var(--itq-color-info-950)]",
@@ -2997,9 +2997,13 @@ export function UnifiedChatWorkspace({
                     : `/${locale}/student/requests/${encodeURIComponent(request.requestNumber)}`;
                 const cardExpanded = mode === "admin" && expandedRequestId === request.id;
                 const cardHasPendingQuote = hasPendingQuoteForRequest(messages, request.id);
+                const cardPriced = cardHasPendingQuote || request.status === "QUOTED";
+                const cardPaid = request.finance?.dueStatus === "PAID";
                 const canQuoteCard =
-                  quoteEligibleRequestStatuses.has(request.status) && !cardHasPendingQuote;
-                const canChargeCard = request.status !== "DRAFT";
+                  !cardPaid &&
+                  quoteEligibleRequestStatuses.has(request.status) &&
+                  !cardHasPendingQuote;
+                const canChargeCard = !cardPaid && request.status !== "DRAFT";
                 return (
                   <li
                     className={`rounded-2xl border p-3 ${
@@ -3029,10 +3033,7 @@ export function UnifiedChatWorkspace({
                       </bdi>
                       <span className="mt-2 flex flex-wrap items-center gap-1.5">
                         <RequestStatusChip locale={locale} status={request.status} />
-                        {(request.finance !== undefined
-                          ? financeChips(request.finance, english, mode)
-                          : []
-                        ).map((chip) => (
+                        {financeChips(request.finance, english, mode, cardPriced).map((chip) => (
                           <span
                             className={`rounded-full px-2 py-0.5 text-[9px] font-black ${chip.className}`}
                             key={chip.key}
@@ -3054,7 +3055,14 @@ export function UnifiedChatWorkspace({
                           ? "Request details"
                           : "تفاصيل الطلب"}
                     </Link>
-                    {mode === "admin" && (canQuoteCard || canChargeCard || cardHasPendingQuote) ? (
+                    {mode === "admin" && cardPaid ? (
+                      <p className="mt-2 rounded-xl border border-[var(--itq-color-success-200)] bg-[var(--itq-color-success-50)] px-3 py-2 text-[11px] font-black text-[var(--itq-color-success-900)]">
+                        {english ? "Paid in full ✓" : "تم السداد بالكامل ✓"}
+                      </p>
+                    ) : null}
+                    {mode === "admin" &&
+                    !cardPaid &&
+                    (canQuoteCard || canChargeCard || cardHasPendingQuote) ? (
                       <>
                         <button
                           aria-expanded={cardExpanded}

@@ -45,8 +45,27 @@ export function QuickRequestForm({
   );
   const titleRef = useRef<HTMLInputElement>(null);
   const descriptionRef = useRef<HTMLInputElement>(null);
+  const serviceIdRef = useRef<HTMLInputElement>(null);
 
-  function handleSubmit(): void {
+  function handleSubmit(event: React.FormEvent<HTMLFormElement>): void {
+    // Copy the tapped service into a hidden field *before* anything disables the
+    // button: a disabled <button name="serviceId"> is dropped from the form
+    // payload by the browser, which was surfacing as "review the fields".
+    const submitter = (event.nativeEvent as SubmitEvent).submitter;
+    const picked =
+      submitter instanceof HTMLButtonElement && submitter.value.length > 0
+        ? submitter.value
+        : (serviceIdRef.current?.value ?? "");
+    if (picked.length === 0) {
+      event.preventDefault();
+      return;
+    }
+    if (serviceIdRef.current) {
+      serviceIdRef.current.value = picked;
+      // Only claim the field name once it holds a value, so a page whose JS
+      // never hydrated still submits the button's own name="serviceId".
+      serviceIdRef.current.name = "serviceId";
+    }
     const phrase = text.trim();
     if (phrase.length >= 3) {
       if (titleRef.current) titleRef.current.value = phrase;
@@ -56,7 +75,6 @@ export function QuickRequestForm({
           : `${phrase} — سأوضح التفاصيل في المحادثة.`;
       }
     }
-    // Never block the submit: the tapped button already carries the service id.
     setSubmitting(true);
   }
 
@@ -65,8 +83,11 @@ export function QuickRequestForm({
       action="/api/student/requests"
       className="grid gap-5"
       method="post"
-      onSubmit={() => handleSubmit()}
+      onSubmit={(event) => handleSubmit(event)}
     >
+      {/* First in the DOM so, once JS names it, form.get("serviceId") reads this
+          over the button; stays nameless (not submitted) until JS fills it. */}
+      <input defaultValue="" ref={serviceIdRef} type="hidden" />
       <input name="csrfToken" type="hidden" value={csrfToken ?? ""} />
       <input name="locale" type="hidden" value={locale} />
       <input name="submissionKey" type="hidden" value={submissionKey} />
