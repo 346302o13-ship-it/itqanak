@@ -561,7 +561,7 @@ export class UnifiedConversationService {
     context: RequestAuditContext = {},
   ): Promise<UnifiedConversationDetail> {
     const access = await this.resolveConversation(this.database, principal, conversationId, "read");
-    const [summaryRows, requestRows] = await Promise.all([
+    const [summaryRows, requestRows, presenceRows] = await Promise.all([
       this.readConversationRows(this.database, principal.userId, access.row.id),
       this.database<RequestSummaryRow[]>`
         SELECT
@@ -585,9 +585,17 @@ export class UnifiedConversationService {
         WHERE requests.student_user_id = ${access.row.student_user_id}
         ORDER BY requests.updated_at DESC, requests.id DESC
       `,
+      this.database<{ readonly last_seen: Date | string | null }[]>`
+        SELECT max(last_seen_at) AS last_seen
+        FROM user_sessions
+        WHERE user_id = ${access.row.student_user_id}
+          AND revoked_at IS NULL
+          AND expires_at > now()
+      `,
     ]);
     const summary = summaryRows[0];
     if (summary === undefined) throw new RequestDomainError("CONVERSATION_NOT_FOUND");
+    const studentLastSeenRaw = presenceRows[0]?.last_seen ?? null;
     await recordAuditEvent(this.database, {
       ...context,
       eventType: "unified_conversation.viewed",
@@ -599,7 +607,11 @@ export class UnifiedConversationService {
       resourceId: access.row.id,
       metadata: { mode: access.mode },
     });
-    return { ...toConversation(summary), requests: requestRows.map(toRequest) };
+    return {
+      ...toConversation(summary),
+      requests: requestRows.map(toRequest),
+      ...(studentLastSeenRaw === null ? {} : { studentLastSeenAt: toDate(studentLastSeenRaw) }),
+    };
   }
 
   public async listConversations(

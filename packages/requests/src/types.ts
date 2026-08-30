@@ -629,6 +629,8 @@ export interface UnifiedConversationSummary {
 
 export interface UnifiedConversationDetail extends UnifiedConversationSummary {
   readonly requests: readonly UnifiedRequestSummary[];
+  /** Most recent activity on any live session of the student (admin view only). */
+  readonly studentLastSeenAt?: Date;
 }
 
 export interface UnifiedConversationListInput {

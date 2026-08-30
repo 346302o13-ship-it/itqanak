@@ -805,6 +805,15 @@ export function UnifiedChatWorkspace({
     (request) => !["COMPLETED", "CANCELLED", "REJECTED"].includes(request.status),
   ).length;
   const interactionLocked = pending || recording || recordingStarting;
+  const studentLastSeen = conversation?.studentLastSeenAt;
+  const studentOnline =
+    studentLastSeen !== undefined && Date.now() - studentLastSeen.getTime() < 3 * 60_000;
+  const studentLastSeenLabel =
+    studentLastSeen === undefined
+      ? english
+        ? "Not signed in"
+        : "غير متصل"
+      : `${english ? "Last seen " : "آخر ظهور "}${formatMessageTime(studentLastSeen, locale)}`;
   const apiBase =
     mode === "student"
       ? "/api/student/conversation"
@@ -1483,9 +1492,12 @@ export function UnifiedChatWorkspace({
     setReplyingTo(undefined);
     setNotice(undefined);
     nearBottom.current = true;
-    window.requestAnimationFrame(() =>
-      endRef.current?.scrollIntoView({ behavior: "smooth", block: "nearest" }),
-    );
+    // Keep the keyboard up after sending, WhatsApp-style.
+    composerRef.current?.focus();
+    window.requestAnimationFrame(() => {
+      composerRef.current?.focus();
+      endRef.current?.scrollIntoView({ behavior: "smooth", block: "nearest" });
+    });
     void deliverText(entry);
   }
 
@@ -2698,10 +2710,29 @@ export function UnifiedChatWorkspace({
                       : "إدارة إتقانك"}
                 </bdi>
               </h1>
-              <p className="flex items-center gap-1.5 truncate text-[10px] font-bold text-[var(--itq-color-success-700)] sm:text-xs">
-                <span className="size-2 rounded-full bg-[var(--itq-color-success-500)]" />
-                {english ? "Private unified conversation" : "محادثة موحدة وخاصة"}
-              </p>
+              {mode === "admin" ? (
+                <p
+                  className={`flex items-center gap-1.5 truncate text-[10px] font-bold sm:text-xs ${
+                    studentOnline
+                      ? "text-[var(--itq-color-success-700)]"
+                      : "text-[var(--itq-color-muted)]"
+                  }`}
+                >
+                  <span
+                    className={`size-2 rounded-full ${
+                      studentOnline
+                        ? "bg-[var(--itq-color-success-500)]"
+                        : "bg-[var(--itq-color-border-strong)]"
+                    }`}
+                  />
+                  {studentOnline ? (english ? "Online now" : "متصل الآن") : studentLastSeenLabel}
+                </p>
+              ) : (
+                <p className="flex items-center gap-1.5 truncate text-[10px] font-bold text-[var(--itq-color-success-700)] sm:text-xs">
+                  <span className="size-2 rounded-full bg-[var(--itq-color-success-500)]" />
+                  {english ? "Private unified conversation" : "محادثة موحدة وخاصة"}
+                </p>
+              )}
             </div>
           </div>
           <div className="flex items-center gap-2">
@@ -3460,6 +3491,7 @@ export function UnifiedChatWorkspace({
                 className="grid size-11 shrink-0 place-items-center rounded-full bg-[var(--itq-color-brand-700)] text-white shadow-sm transition hover:bg-[var(--itq-color-brand-800)] disabled:cursor-not-allowed disabled:opacity-50"
                 disabled={interactionLocked}
                 onClick={() => void submitText()}
+                onMouseDown={(event) => event.preventDefault()}
                 type="button"
               >
                 <SendIcon className={`size-5 ${english ? "" : "-scale-x-100"}`} />

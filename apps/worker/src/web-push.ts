@@ -18,6 +18,7 @@ interface NotificationRow {
   readonly body_ar: string | null;
   readonly body_en: string | null;
   readonly action_href: string | null;
+  readonly message_id: string | null;
 }
 
 interface SubscriptionRow {
@@ -137,7 +138,7 @@ export class WebPushOutboxProcessor {
   private async process(job: ClaimedNotification): Promise<void> {
     const attempt = Number(job.attempt_count) || 1;
     const notifications = await this.database<NotificationRow[]>`
-      SELECT recipient_user_id, kind, title_ar, title_en, body_ar, body_en, action_href
+      SELECT recipient_user_id, kind, title_ar, title_en, body_ar, body_en, action_href, message_id
       FROM user_notifications WHERE id = ${job.aggregate_id}
     `;
     const notification = notifications[0];
@@ -191,6 +192,22 @@ export class WebPushOutboxProcessor {
           `;
         }
       }
+    }
+
+    if (
+      accepted > 0 &&
+      notification.kind === "MESSAGE_RECEIVED" &&
+      notification.message_id !== null
+    ) {
+      // The device received the push: mark the message delivered so the sender
+      // sees the second tick, WhatsApp-style, without the recipient opening it.
+      await this.database`
+        UPDATE support_message_receipts
+        SET status = 'DELIVERED', delivered_at = COALESCE(delivered_at, now()), updated_at = now()
+        WHERE message_id = ${notification.message_id}
+          AND recipient_user_id = ${notification.recipient_user_id}
+          AND status = 'SENT'
+      `;
     }
 
     if (accepted > 0 || transientFailures === 0) {
