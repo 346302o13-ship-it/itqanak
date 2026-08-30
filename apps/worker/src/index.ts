@@ -11,6 +11,7 @@ import { PlatformMessagingService, PlatformOperationsService } from "@itqanak/op
 import {
   AttachmentScanProcessor,
   AttachmentStorageReconciler,
+  UnifiedAttachmentRetentionSweeper,
   UnifiedAttachmentScanProcessor,
   UnifiedAttachmentStorageReconciler,
 } from "@itqanak/requests";
@@ -105,6 +106,11 @@ async function startWorker(config: AppConfig, logger: Logger, signal: AbortSigna
     storage: objectStorage,
     logger: logger.child({ workerName }),
   });
+  const unifiedAttachmentRetention = new UnifiedAttachmentRetentionSweeper({
+    database,
+    storage: objectStorage,
+    logger: logger.child({ workerName }),
+  });
   const authEmailSender = createAuthEmailSender(config);
   const authEmailOutbox =
     authEmailSender === undefined
@@ -158,6 +164,7 @@ async function startWorker(config: AppConfig, logger: Logger, signal: AbortSigna
       onFailure: () => logger.warn("worker_heartbeat_failed", { workerName }),
     });
     let previousScanQueuePaused: boolean | undefined;
+    let nextRetentionSweepAt = 0;
     while (!signal.aborted) {
       try {
         await outbox.poll();
@@ -182,6 +189,11 @@ async function startWorker(config: AppConfig, logger: Logger, signal: AbortSigna
         }
         await attachmentStorageReconciliation.processBatch(1);
         await unifiedAttachmentStorageReconciliation.processBatch(1);
+        if (Date.now() >= nextRetentionSweepAt) {
+          const swept = await unifiedAttachmentRetention.processBatch(50);
+          // Sweep again soon while there is a backlog, otherwise every 10 min.
+          nextRetentionSweepAt = Date.now() + (swept >= 50 ? 5_000 : 10 * 60_000);
+        }
         failedAttempts = 0;
         await waitFor(idleIntervalMs, signal);
       } catch {

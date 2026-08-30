@@ -466,6 +466,23 @@ function AttachmentBody({
   const preview = `${download}/preview`;
 
   const isVideo = attachment.mimeType.startsWith("video/");
+  const expired = attachment.storageStatus === "EXPIRED";
+
+  if (expired) {
+    return (
+      <div className="flex min-h-12 items-center gap-2.5 rounded-xl border border-dashed border-current/25 px-3 py-2 text-xs font-bold text-[var(--itq-color-bubble-meta)]">
+        <PaperclipIcon className="size-4 shrink-0" />
+        <span className="min-w-0">
+          <bdi className="block truncate" dir="auto">
+            {attachment.originalFilename}
+          </bdi>
+          <span className="mt-0.5 block">
+            {english ? "No longer available (removed from the server)" : "لم يعد هذا الملف متوفراً"}
+          </span>
+        </span>
+      </div>
+    );
+  }
 
   return (
     <div className="min-w-0">

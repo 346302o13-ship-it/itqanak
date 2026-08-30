@@ -413,6 +413,9 @@ export class UnifiedConversationAttachmentService {
     context: RequestAuditContext,
     policy: AttachmentAccessPolicy,
   ): Promise<AuthorizedAttachmentDownload> {
+    if (attachment.storage_status === "EXPIRED") {
+      throw new RequestDomainError("ATTACHMENT_EXPIRED");
+    }
     const mimeType = attachment.detected_mime_type ?? attachment.declared_mime_type;
     const skippedAllowed =
       policy.requireClean !== true ||

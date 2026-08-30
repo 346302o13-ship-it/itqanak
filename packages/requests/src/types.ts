@@ -23,6 +23,8 @@ export const attachmentStorageStatuses = [
   "DELETE_PENDING",
   "DELETED",
   "UPLOAD_FAILED",
+  // Object purged for retention; the row (name/size/type) is kept.
+  "EXPIRED",
 ] as const;
 export type AttachmentStorageStatus = (typeof attachmentStorageStatuses)[number];
 
@@ -424,6 +426,8 @@ export interface UnifiedMessageAttachment {
   readonly mimeType: string;
   readonly sizeBytes: number;
   readonly scanStatus: AttachmentScanStatus | "SCAN_SKIPPED_BY_ADMIN";
+  /** "EXPIRED" once the object has been purged for retention. */
+  readonly storageStatus: AttachmentStorageStatus;
 }
 
 export interface ServiceQuote {

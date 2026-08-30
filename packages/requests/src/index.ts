@@ -53,6 +53,10 @@ export {
   type UnifiedAttachmentStorageReconcilerOptions,
 } from "./unified-attachment-reconciliation.js";
 export {
+  UnifiedAttachmentRetentionSweeper,
+  type UnifiedAttachmentRetentionSweeperOptions,
+} from "./unified-attachment-retention.js";
+export {
   AttachmentStorageReconciler,
   boundedReconciliationLimit,
   removeReferencedObjectIfPresent,

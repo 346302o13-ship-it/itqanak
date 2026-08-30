@@ -16,9 +16,10 @@ import type { Logger } from "@itqanak/observability";
 
 import { isUuid, normalizeBoundedPage } from "./chat-validation.js";
 import { RequestDomainError } from "./errors.js";
-import { messageReactionEmojis } from "./types.js";
+import { attachmentStorageStatuses, messageReactionEmojis } from "./types.js";
 import type {
   AttachmentScanStatus,
+  AttachmentStorageStatus,
   ChatContentType,
   ChatSenderType,
   MarkConversationResult,
@@ -105,6 +106,7 @@ interface MessageRow {
   readonly attachment_mime_type: string | null;
   readonly attachment_size_bytes: number | string | null;
   readonly attachment_scan_status: string | null;
+  readonly attachment_storage_status: string | null;
   readonly quote_id: string | null;
   readonly quote_conversation_id: string | null;
   readonly quote_request_id: string | null;
@@ -197,6 +199,8 @@ const messageSelect = `
     AS attachment_size_bytes,
   COALESCE(conversation_attachments.scan_status, legacy_attachments.scan_status)
     AS attachment_scan_status,
+  COALESCE(conversation_attachments.storage_status, legacy_attachments.storage_status)
+    AS attachment_storage_status,
   quotes.id AS quote_id, quotes.conversation_id AS quote_conversation_id,
   quotes.request_id AS quote_request_id, quotes.student_user_id AS quote_student_user_id,
   quotes.amount_minor AS quote_amount_minor, quotes.currency AS quote_currency,
@@ -281,6 +285,12 @@ function toScanStatus(value: string): AttachmentScanStatus | "SCAN_SKIPPED_BY_AD
     throw new Error("Unified conversation has an invalid attachment scan status.");
   }
   return value as AttachmentScanStatus | "SCAN_SKIPPED_BY_ADMIN";
+}
+
+function toStorageStatus(value: string | null): AttachmentStorageStatus {
+  return (attachmentStorageStatuses as readonly string[]).includes(value ?? "")
+    ? (value as AttachmentStorageStatus)
+    : "STORED";
 }
 
 function isJsonValue(value: unknown): value is JsonValue {
@@ -470,6 +480,7 @@ function toMessage(row: MessageRow): UnifiedMessage {
             mimeType: row.attachment_mime_type,
             sizeBytes: toSafeInteger(row.attachment_size_bytes, "attachment size"),
             scanStatus: toScanStatus(row.attachment_scan_status),
+            storageStatus: toStorageStatus(row.attachment_storage_status),
           },
         }),
     ...(quote === undefined || deleted ? {} : { quote }),
