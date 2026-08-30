@@ -354,6 +354,12 @@ function systemMessageLabel(message: UnifiedMessage, locale: "ar" | "en"): strin
         ? "Receipt not accepted"
         : "لم يُقبل إيصال الدفع";
   }
+  if (message.body === "PAYMENT_REMINDER") {
+    return english ? "Payment reminder sent" : "تم إرسال تذكير بالدفع";
+  }
+  if (message.body === "INVOICE_SUMMARY") {
+    return english ? "Outstanding invoice sent" : "تم إرسال فاتورة بالمستحقات";
+  }
   return message.body || (english ? "Conversation updated" : "تم تحديث المحادثة");
 }
 
@@ -371,6 +377,8 @@ function isImportantSystemMessage(message: UnifiedMessage): boolean {
       "PAYMENT_DUE_CREATED",
       "PAYMENT_RECEIPT_SUBMITTED",
       "PAYMENT_REVIEWED",
+      "PAYMENT_REMINDER",
+      "INVOICE_SUMMARY",
     ].includes(message.body)
   ) {
     return true;
@@ -447,7 +455,9 @@ function PaymentDueCard({
   csrfToken,
   duePaid,
   locale,
+  onRemind,
   onSubmitted,
+  reminderBusy,
   receiptUnderReview,
 }: Readonly<{
   metadata: UnifiedMessage["metadata"];
@@ -455,7 +465,9 @@ function PaymentDueCard({
   csrfToken: string | undefined;
   duePaid: boolean;
   locale: "ar" | "en";
+  onRemind: (dueId: string) => void;
   onSubmitted: () => void;
+  reminderBusy: boolean;
   receiptUnderReview: boolean;
 }>) {
   const english = locale === "en";
@@ -479,15 +491,27 @@ function PaymentDueCard({
           {english ? "Paid ✓" : "تم الدفع ✓"}
         </p>
       ) : mode === "admin" ? (
-        <p className="mt-2 text-[10px] font-bold text-[var(--itq-color-warning-900)]">
-          {receiptUnderReview
-            ? english
-              ? "The student sent a receipt — review it below."
-              : "أرسل الطالب إيصالًا — راجعه في البطاقة أدناه."
-            : english
-              ? "Waiting for the student to upload a receipt."
-              : "بانتظار رفع الطالب لإيصال الدفع."}
-        </p>
+        <div className="mt-2">
+          <p className="text-[10px] font-bold text-[var(--itq-color-warning-900)]">
+            {receiptUnderReview
+              ? english
+                ? "The student sent a receipt — review it below."
+                : "أرسل الطالب إيصالًا — راجعه في البطاقة أدناه."
+              : english
+                ? "Waiting for the student to upload a receipt."
+                : "بانتظار رفع الطالب لإيصال الدفع."}
+          </p>
+          {!receiptUnderReview && dueId !== undefined ? (
+            <button
+              className="mt-2 min-h-9 rounded-xl border border-[var(--itq-color-warning-300)] bg-[var(--itq-color-surface)] px-3 text-[11px] font-black text-[var(--itq-color-warning-950)] disabled:opacity-50"
+              disabled={reminderBusy || csrfToken === undefined}
+              onClick={() => onRemind(dueId)}
+              type="button"
+            >
+              {english ? "Send a reminder" : "تذكير الطالب"}
+            </button>
+          ) : null}
+        </div>
       ) : receiptUnderReview ? (
         <p className="mt-2 rounded-xl border border-[var(--itq-color-info-200)] bg-[var(--itq-color-info-50)] px-3 py-2 text-xs font-bold text-[var(--itq-color-info-950)]">
           {english ? "Your receipt is under review." : "إيصالك قيد المراجعة."}
@@ -610,6 +634,58 @@ function PaymentReceiptCard({
           {statusLabel}
         </p>
       )}
+    </div>
+  );
+}
+
+/** "Everything you owe" card: the per-currency totals from a consolidated invoice. */
+function InvoiceSummaryCard({
+  locale,
+  metadata,
+}: Readonly<{
+  locale: "ar" | "en";
+  metadata: UnifiedMessage["metadata"];
+}>) {
+  const english = locale === "en";
+  const rawLines = Array.isArray(metadata.lines) ? metadata.lines : [];
+  const lines = rawLines.flatMap((line) => {
+    if (typeof line !== "object" || line === null) return [];
+    const record = line as Record<string, unknown>;
+    const currency = typeof record.currency === "string" ? record.currency : "SAR";
+    const minorUnit = record.minorUnit === 3 ? 3 : 2;
+    const totalMinor = typeof record.totalMinor === "number" ? record.totalMinor : 0;
+    const count = typeof record.count === "number" ? record.count : 0;
+    return [
+      {
+        currency,
+        count,
+        total: (totalMinor / 10 ** minorUnit).toLocaleString(english ? "en-US" : "ar-SA", {
+          minimumFractionDigits: minorUnit,
+          maximumFractionDigits: minorUnit,
+        }),
+      },
+    ];
+  });
+  return (
+    <div className="rounded-2xl border border-[var(--itq-color-brand-200)] bg-[var(--itq-color-brand-50)] p-3.5 shadow-sm">
+      <p className="text-xs font-black text-[var(--itq-color-brand-strong)]">
+        {english ? "Outstanding invoice" : "فاتورة بكل المستحقات"}
+      </p>
+      <ul className="mt-2 grid gap-1">
+        {lines.map((line) => (
+          <li
+            className="flex items-baseline justify-between gap-3 text-sm font-black"
+            key={line.currency}
+          >
+            <span dir="ltr">
+              {line.total} {line.currency}
+            </span>
+            <span className="text-[10px] font-bold text-[var(--itq-color-muted)]">
+              {english ? `${line.count} due(s)` : `${line.count} مستحق`}
+            </span>
+          </li>
+        ))}
+      </ul>
     </div>
   );
 }
@@ -2567,6 +2643,75 @@ export function UnifiedChatWorkspace({
     }
   }
 
+  // Admin: nudge the student about one unpaid due.
+  async function remindDue(dueId: string) {
+    if (csrfToken === undefined || interactionLocked || mode !== "admin") return;
+    setPending(true);
+    setNotice(english ? "Sending a reminder…" : "جارٍ إرسال التذكير…");
+    try {
+      const response = await fetch(`/api/admin/finance/${encodeURIComponent(dueId)}`, {
+        method: "POST",
+        body: new URLSearchParams({ csrfToken, locale, action: "remind" }),
+        credentials: "same-origin",
+        headers: {
+          "Content-Type": "application/x-www-form-urlencoded",
+          Accept: "application/json",
+        },
+      });
+      if (!response.ok) throw new Error();
+      setNotice(english ? "Reminder sent." : "تم إرسال التذكير.");
+      messagePokeRef.current();
+    } catch {
+      setNotice(english ? "The reminder could not be sent." : "تعذر إرسال التذكير.");
+    } finally {
+      setPending(false);
+    }
+  }
+
+  // Admin: send the student one consolidated invoice for every unpaid due.
+  async function sendInvoice() {
+    if (
+      csrfToken === undefined ||
+      interactionLocked ||
+      mode !== "admin" ||
+      conversation === undefined
+    )
+      return;
+    setPending(true);
+    setNotice(english ? "Sending the invoice…" : "جارٍ إرسال الفاتورة…");
+    try {
+      const response = await fetch(
+        `/api/admin/finance/students/${encodeURIComponent(conversation.studentUserId)}/invoice`,
+        {
+          method: "POST",
+          body: new URLSearchParams({ csrfToken, locale }),
+          credentials: "same-origin",
+          headers: {
+            "Content-Type": "application/x-www-form-urlencoded",
+            Accept: "application/json",
+          },
+        },
+      );
+      const result = (await response.json().catch(() => ({}))) as { count?: number };
+      if (!response.ok) throw new Error();
+      setNotice(
+        (result.count ?? 0) === 0
+          ? english
+            ? "No unpaid dues to invoice."
+            : "لا توجد مستحقات غير مدفوعة."
+          : english
+            ? "Invoice sent to the student."
+            : "تم إرسال الفاتورة إلى الطالب.",
+      );
+      messagePokeRef.current();
+      contactPokeRef.current();
+    } catch {
+      setNotice(english ? "The invoice could not be sent." : "تعذر إرسال الفاتورة.");
+    } finally {
+      setPending(false);
+    }
+  }
+
   async function withdrawQuote(quote: ServiceQuote) {
     if (csrfToken === undefined || interactionLocked) return;
     const request = requests.find((item) => item.id === quote.requestId);
@@ -2753,6 +2898,16 @@ export function UnifiedChatWorkspace({
           </button>
         </header>
         <div className="itq-scroll min-h-0 flex-1 overflow-y-auto overscroll-contain p-3">
+          {mode === "admin" ? (
+            <button
+              className="mb-3 w-full rounded-xl border border-[var(--itq-color-brand-200)] bg-[var(--itq-color-surface)] px-3 py-2 text-xs font-black text-[var(--itq-color-brand-strong)] disabled:opacity-50"
+              disabled={interactionLocked || csrfToken === undefined}
+              onClick={() => void sendInvoice()}
+              type="button"
+            >
+              {english ? "Send an invoice for all unpaid dues" : "أرسل فاتورة بكل المستحقات"}
+            </button>
+          ) : null}
           {services.length > 0 ? (
             <form
               className="mb-3 rounded-2xl border border-[var(--itq-color-brand-200)] bg-[var(--itq-color-brand-50)] p-3"
@@ -3419,10 +3574,12 @@ export function UnifiedChatWorkspace({
                             locale={locale}
                             metadata={message.metadata}
                             mode={mode}
+                            onRemind={(dueId) => void remindDue(dueId)}
                             onSubmitted={() => {
                               messagePokeRef.current();
                               contactPokeRef.current();
                             }}
+                            reminderBusy={interactionLocked}
                             receiptUnderReview={
                               requests.find(
                                 (candidate) =>
@@ -3457,6 +3614,10 @@ export function UnifiedChatWorkspace({
                               return "REJECTED";
                             })()}
                           />
+                        </li>
+                      ) : message.body === "INVOICE_SUMMARY" ? (
+                        <li className="mx-auto my-2 w-full max-w-sm">
+                          <InvoiceSummaryCard locale={locale} metadata={message.metadata} />
                         </li>
                       ) : isImportantSystemMessage(message) ? (
                         <li className="mx-auto my-1 flex max-w-md items-center gap-1.5 rounded-full bg-[var(--itq-color-surface)]/85 px-3 py-1 text-[10px] font-bold text-[var(--itq-color-muted)] shadow-sm">

@@ -969,6 +969,186 @@ export class FinanceService {
     return { submission: result, due };
   }
 
+  /**
+   * Nudge the student about one still-unpaid due: a notification (fanned out to
+   * Web Push + the bell) plus a small conversation pill. Deduplicated to one
+   * reminder per due per calendar day.
+   */
+  public async remindDue(
+    principal: AuthenticatedPrincipal,
+    dueIdInput: string,
+    context: RequestAuditContext = {},
+  ): Promise<{ readonly reminded: boolean }> {
+    requireAdminFinancePermission(principal, "admin.finance.manage");
+    const dueId = assertFinanceDueId(dueIdInput);
+    return this.database.begin(async (transaction) => {
+      const tx = transaction as DatabaseClient;
+      const dues = await tx<
+        {
+          readonly student_user_id: string;
+          readonly status: string;
+          readonly request_id: string;
+          readonly request_number: string | null;
+          readonly amount_minor: number | string;
+          readonly currency: string;
+          readonly minor_unit: number | string;
+        }[]
+      >`
+        SELECT dues.student_user_id, dues.status, dues.request_id, dues.amount_minor,
+               dues.currency, dues.minor_unit, requests.request_number
+        FROM finance_dues AS dues
+        LEFT JOIN service_requests AS requests ON requests.id = dues.request_id
+        WHERE dues.id = ${dueId} LIMIT 1 FOR SHARE OF dues
+      `;
+      const due = dues[0];
+      if (due === undefined) throw new FinanceError("DUE_NOT_FOUND");
+      if (due.status !== "UNPAID") throw new FinanceError("INVALID_TRANSITION");
+      const day = new Date().toISOString().slice(0, 10);
+      const minorUnit = Number(due.minor_unit) === 3 ? 3 : 2;
+      const amount = (Number(due.amount_minor) / 10 ** minorUnit).toFixed(minorUnit);
+      const label = due.request_number ?? "";
+      const inserted = await tx<{ readonly id: string }[]>`
+        INSERT INTO user_notifications (
+          recipient_user_id, kind, request_id, title_ar, title_en,
+          body_ar, body_en, action_href, idempotency_key
+        ) VALUES (
+          ${due.student_user_id}, 'SYSTEM_ANNOUNCEMENT', ${due.request_id},
+          'تذكير بمبلغ مستحق', 'Payment reminder',
+          ${`تذكير: لديك مبلغ مستحق ${amount} ${due.currency}${label.length > 0 ? ` على الطلب ${label}` : ""}. يرجى رفع إيصال الدفع.`},
+          ${`Reminder: you have ${amount} ${due.currency} due${label.length > 0 ? ` on request ${label}` : ""}. Please upload your payment receipt.`},
+          '/finance', ${`due-reminder:${dueId}:${day}`}
+        )
+        ON CONFLICT (idempotency_key) DO NOTHING
+        RETURNING id
+      `;
+      const reminded = inserted[0] !== undefined;
+      if (reminded) {
+        await recordAuditEvent(tx, {
+          ...context,
+          eventType: "finance.due_reminded",
+          outcome: "SUCCESS",
+          actorUserId: principal.userId,
+          targetUserId: due.student_user_id,
+          sessionId: principal.sessionId,
+          resourceType: "finance_due",
+          resourceId: dueId,
+          metadata: { requestId: due.request_id },
+        });
+        const conversations = await tx<{ readonly id: string }[]>`
+          SELECT id FROM support_conversations WHERE student_user_id = ${due.student_user_id}
+        `;
+        const conversationId = conversations[0]?.id;
+        if (conversationId !== undefined) {
+          await tx`
+            INSERT INTO support_messages (
+              conversation_id, sender_type, sender_user_id, content_type, body, metadata, request_id
+            ) VALUES (
+              ${conversationId}, 'SYSTEM', NULL, 'ACTION', 'PAYMENT_REMINDER',
+              ${tx.json({ dueId, requestNumber: due.request_number })},
+              ${due.request_id}
+            )
+          `;
+        }
+      }
+      return { reminded };
+    });
+  }
+
+  /**
+   * Consolidated "here is everything you owe" message: sums the student's
+   * still-unpaid dues per currency, sends one notification and drops an
+   * INVOICE_SUMMARY card into the conversation.
+   */
+  public async sendOutstandingInvoice(
+    principal: AuthenticatedPrincipal,
+    studentUserIdInput: string,
+    context: RequestAuditContext = {},
+  ): Promise<{ readonly count: number }> {
+    requireAdminFinancePermission(principal, "admin.finance.manage");
+    const studentUserId = assertFinanceDueId(studentUserIdInput);
+    return this.database.begin(async (transaction) => {
+      const tx = transaction as DatabaseClient;
+      const students = await tx<{ readonly id: string }[]>`
+        SELECT users.id
+        FROM users
+        INNER JOIN user_roles ON user_roles.user_id = users.id
+        WHERE users.id = ${studentUserId} AND users.status = 'ACTIVE'
+          AND user_roles.role_code = 'STUDENT'
+        LIMIT 1
+      `;
+      if (students[0] === undefined) throw new FinanceError("DUE_NOT_FOUND");
+      const groups = await tx<
+        {
+          readonly currency: string;
+          readonly minor_unit: number | string;
+          readonly total_minor: number | string;
+          readonly due_count: number | string;
+        }[]
+      >`
+        SELECT currency, minor_unit,
+               sum(amount_minor)::text AS total_minor,
+               count(*)::text AS due_count
+        FROM finance_dues
+        WHERE student_user_id = ${studentUserId} AND status = 'UNPAID'
+        GROUP BY currency, minor_unit
+        ORDER BY sum(amount_minor) DESC
+      `;
+      const lines = groups.map((group) => ({
+        currency: group.currency,
+        minorUnit: Number(group.minor_unit) === 3 ? 3 : 2,
+        totalMinor: Number(group.total_minor),
+        count: Number(group.due_count),
+      }));
+      const count = lines.reduce((sum, line) => sum + line.count, 0);
+      if (count === 0) return { count: 0 };
+
+      const primary = lines[0];
+      const primaryAmount =
+        primary === undefined
+          ? ""
+          : (primary.totalMinor / 10 ** primary.minorUnit).toFixed(primary.minorUnit);
+      await tx`
+        INSERT INTO user_notifications (
+          recipient_user_id, kind, title_ar, title_en,
+          body_ar, body_en, action_href, idempotency_key
+        ) VALUES (
+          ${studentUserId}, 'SYSTEM_ANNOUNCEMENT',
+          'فاتورة بمستحقاتك', 'Your outstanding invoice',
+          ${`لديك ${count} مستحق غير مدفوع بإجمالي ${primaryAmount} ${primary?.currency ?? ""}. افتح صفحة المدفوعات لرفع الإيصالات.`},
+          ${`You have ${count} unpaid due(s) totalling ${primaryAmount} ${primary?.currency ?? ""}. Open the payments page to upload receipts.`},
+          '/finance', ${`invoice:${studentUserId}:${new Date().toISOString().slice(0, 10)}`}
+        )
+        ON CONFLICT (idempotency_key) DO NOTHING
+      `;
+      await recordAuditEvent(tx, {
+        ...context,
+        eventType: "finance.invoice_sent",
+        outcome: "SUCCESS",
+        actorUserId: principal.userId,
+        targetUserId: studentUserId,
+        sessionId: principal.sessionId,
+        resourceType: "user",
+        resourceId: studentUserId,
+        metadata: { dueCount: count },
+      });
+      const conversations = await tx<{ readonly id: string }[]>`
+        SELECT id FROM support_conversations WHERE student_user_id = ${studentUserId}
+      `;
+      const conversationId = conversations[0]?.id;
+      if (conversationId !== undefined) {
+        await tx`
+          INSERT INTO support_messages (
+            conversation_id, sender_type, sender_user_id, content_type, body, metadata
+          ) VALUES (
+            ${conversationId}, 'SYSTEM', NULL, 'ACTION', 'INVOICE_SUMMARY',
+            ${tx.json({ lines, count })}
+          )
+        `;
+      }
+      return { count };
+    });
+  }
+
   private async readReceipts(
     database: DatabaseClient,
     filter: {

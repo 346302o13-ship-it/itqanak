@@ -459,6 +459,23 @@ export function FinanceAdmin({
                       {due.status === "UNPAID" ? (
                         <form
                           action={`/api/admin/finance/${encodeURIComponent(due.id)}`}
+                          className="lg:col-span-2"
+                          method="post"
+                        >
+                          <CsrfInput token={csrfToken} />
+                          <input name="locale" type="hidden" value={locale} />
+                          <input name="action" type="hidden" value="remind" />
+                          <SubmitButton
+                            className="w-full sm:w-auto"
+                            pendingLabel={english ? "Sending…" : "جارٍ الإرسال…"}
+                          >
+                            {english ? "Send a payment reminder" : "إرسال تذكير بالدفع"}
+                          </SubmitButton>
+                        </form>
+                      ) : null}
+                      {due.status === "UNPAID" ? (
+                        <form
+                          action={`/api/admin/finance/${encodeURIComponent(due.id)}`}
                           className="grid gap-3 rounded-2xl bg-[var(--itq-color-success-50)] p-4 sm:grid-cols-2"
                           method="post"
                         >

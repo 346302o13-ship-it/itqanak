@@ -8,7 +8,7 @@ import { financeVersionFromForm, recordFinancePaymentFromForm } from "@/lib/fina
 import { financeErrorResponse } from "@/lib/finance-http";
 import { createFinanceRuntime } from "@/lib/finance-runtime";
 import { getRequestId } from "@/lib/request-id";
-import { requestFormUnauthorizedResponse } from "@/lib/request-http";
+import { acceptsHtml, requestFormUnauthorizedResponse } from "@/lib/request-http";
 import { principalForRequest } from "@/lib/route-principal";
 
 interface FinanceDueRouteContext {
@@ -55,8 +55,25 @@ export async function POST(request: NextRequest, context: FinanceDueRouteContext
           { expectedVersion, reason: formValue(protectedForm.formData, "reason") },
           { ...protectedForm.context, requestId },
         );
+      } else if (action === "remind") {
+        const { reminded } = await runtime.finance.remindDue(principal, parameters.dueId, {
+          ...protectedForm.context,
+          requestId,
+        });
+        if (!acceptsHtml(request)) {
+          return NextResponse.json(
+            { reminded },
+            { status: 200, headers: { "Cache-Control": "no-store", "X-Request-ID": requestId } },
+          );
+        }
       } else {
         throw new FinanceError("INVALID_TRANSITION");
+      }
+      if (!acceptsHtml(request)) {
+        return NextResponse.json(
+          { ok: true },
+          { status: 200, headers: { "Cache-Control": "no-store", "X-Request-ID": requestId } },
+        );
       }
       return NextResponse.redirect(
         new URL(
