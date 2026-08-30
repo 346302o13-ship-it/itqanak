@@ -2,6 +2,7 @@ import Link from "next/link";
 
 import { requestStatuses } from "@itqanak/core";
 
+import { FilterDisclosure } from "@/components/filter-disclosure";
 import { LocalDateTime } from "@/components/local-date-time";
 import { RequestFlash } from "@/components/request-flash";
 import { RequestStatusChip } from "@/components/request-status-chip";
@@ -87,89 +88,101 @@ export default async function StudentRequestsPage({ searchParams }: StudentReque
         </Link>
       </div>
 
-      <form
-        className="mt-7 grid gap-4 rounded-2xl bg-[var(--itq-color-brand-50)] p-5 lg:grid-cols-5"
-        method="get"
+      <FilterDisclosure
+        activeCount={
+          [
+            selected.search,
+            selected.status,
+            selected.serviceId,
+            selected.sort !== undefined && selected.sort !== "newest",
+          ].filter(Boolean).length
+        }
+        label="الفلاتر"
       >
-        <div className="lg:col-span-2">
-          <label className="text-xs font-black" htmlFor="q">
-            رقم الطلب أو العنوان
-          </label>
-          <input
-            className={controlClassName}
-            defaultValue={selected.search}
-            id="q"
-            maxLength={100}
-            name="q"
-            placeholder="ITQ-2026-000001"
-          />
-        </div>
-        <div>
-          <label className="text-xs font-black" htmlFor="status">
-            الحالة
-          </label>
-          <select
-            className={controlClassName}
-            defaultValue={selected.status ?? ""}
-            id="status"
-            name="status"
-          >
-            <option value="">كل الحالات</option>
-            {requestStatuses.map((status) => (
-              <option key={status} value={status}>
-                {requestStatusLabel(status)}
-              </option>
-            ))}
-          </select>
-        </div>
-        <div>
-          <label className="text-xs font-black" htmlFor="service">
-            الخدمة
-          </label>
-          <select
-            className={controlClassName}
-            defaultValue={selected.serviceId ?? ""}
-            id="service"
-            name="service"
-          >
-            <option value="">كل الخدمات</option>
-            {services.map((service) => (
-              <option key={service.id} value={service.id}>
-                {service.label}
-              </option>
-            ))}
-          </select>
-        </div>
-        <div>
-          <label className="text-xs font-black" htmlFor="sort">
-            الترتيب
-          </label>
-          <select
-            className={controlClassName}
-            defaultValue={selected.sort ?? "newest"}
-            id="sort"
-            name="sort"
-          >
-            <option value="newest">الأحدث أولاً</option>
-            <option value="oldest">الأقدم أولاً</option>
-            <option value="deadline">الأقرب موعداً</option>
-          </select>
-        </div>
-        <div className="flex flex-wrap gap-3 lg:col-span-5">
-          <button
-            className="rounded-xl bg-[var(--itq-color-brand-700)] px-5 py-3 text-sm font-black text-white"
-            type="submit"
-          >
-            تطبيق
-          </button>
-          <Link
-            className="rounded-xl border border-[var(--itq-color-border)] bg-[var(--itq-color-surface)] px-5 py-3 text-sm font-black"
-            href="/ar/student/requests"
-          >
-            مسح الفلاتر
-          </Link>
-        </div>
-      </form>
+        <form
+          className="grid gap-4 rounded-2xl bg-[var(--itq-color-brand-50)] p-5 lg:grid-cols-5"
+          method="get"
+        >
+          <div className="lg:col-span-2">
+            <label className="text-xs font-black" htmlFor="q">
+              رقم الطلب أو العنوان
+            </label>
+            <input
+              className={controlClassName}
+              defaultValue={selected.search}
+              id="q"
+              maxLength={100}
+              name="q"
+              placeholder="ITQ-2026-000001"
+            />
+          </div>
+          <div>
+            <label className="text-xs font-black" htmlFor="status">
+              الحالة
+            </label>
+            <select
+              className={controlClassName}
+              defaultValue={selected.status ?? ""}
+              id="status"
+              name="status"
+            >
+              <option value="">كل الحالات</option>
+              {requestStatuses.map((status) => (
+                <option key={status} value={status}>
+                  {requestStatusLabel(status)}
+                </option>
+              ))}
+            </select>
+          </div>
+          <div>
+            <label className="text-xs font-black" htmlFor="service">
+              الخدمة
+            </label>
+            <select
+              className={controlClassName}
+              defaultValue={selected.serviceId ?? ""}
+              id="service"
+              name="service"
+            >
+              <option value="">كل الخدمات</option>
+              {services.map((service) => (
+                <option key={service.id} value={service.id}>
+                  {service.label}
+                </option>
+              ))}
+            </select>
+          </div>
+          <div>
+            <label className="text-xs font-black" htmlFor="sort">
+              الترتيب
+            </label>
+            <select
+              className={controlClassName}
+              defaultValue={selected.sort ?? "newest"}
+              id="sort"
+              name="sort"
+            >
+              <option value="newest">الأحدث أولاً</option>
+              <option value="oldest">الأقدم أولاً</option>
+              <option value="deadline">الأقرب موعداً</option>
+            </select>
+          </div>
+          <div className="flex flex-wrap gap-3 lg:col-span-5">
+            <button
+              className="rounded-xl bg-[var(--itq-color-brand-700)] px-5 py-3 text-sm font-black text-white"
+              type="submit"
+            >
+              تطبيق
+            </button>
+            <Link
+              className="rounded-xl border border-[var(--itq-color-border)] bg-[var(--itq-color-surface)] px-5 py-3 text-sm font-black"
+              href="/ar/student/requests"
+            >
+              مسح الفلاتر
+            </Link>
+          </div>
+        </form>
+      </FilterDisclosure>
 
       <p className="mt-6 text-sm font-bold text-[var(--itq-color-muted)]">
         {requests.total} طلب — الصفحة {requests.page} من {requests.pageCount}

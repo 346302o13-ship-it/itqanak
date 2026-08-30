@@ -2,6 +2,7 @@ import Link from "next/link";
 
 import { requestStatuses } from "@itqanak/core";
 
+import { FilterDisclosure } from "@/components/filter-disclosure";
 import { LocalDateTime } from "@/components/local-date-time";
 import { RequestFlash } from "@/components/request-flash";
 import { RequestStatusChip } from "@/components/request-status-chip";
@@ -80,89 +81,101 @@ export default async function EnglishRequestsPage({ searchParams }: RequestsPage
         </Link>
       </div>
 
-      <form
-        className="mt-7 grid gap-4 rounded-2xl bg-[var(--itq-color-brand-50)] p-5 lg:grid-cols-5"
-        method="get"
+      <FilterDisclosure
+        activeCount={
+          [
+            selected.search,
+            selected.status,
+            selected.serviceId,
+            selected.sort !== undefined && selected.sort !== "newest",
+          ].filter(Boolean).length
+        }
+        label="Filters"
       >
-        <div className="lg:col-span-2">
-          <label className="text-xs font-black" htmlFor="q">
-            Request number or title
-          </label>
-          <input
-            className={controlClassName}
-            defaultValue={selected.search}
-            id="q"
-            maxLength={100}
-            name="q"
-            placeholder="ITQ-2026-000001"
-          />
-        </div>
-        <div>
-          <label className="text-xs font-black" htmlFor="status">
-            Status
-          </label>
-          <select
-            className={controlClassName}
-            defaultValue={selected.status ?? ""}
-            id="status"
-            name="status"
-          >
-            <option value="">All statuses</option>
-            {requestStatuses.map((status) => (
-              <option key={status} value={status}>
-                {requestStatusLabel(status, "en")}
-              </option>
-            ))}
-          </select>
-        </div>
-        <div>
-          <label className="text-xs font-black" htmlFor="service">
-            Service
-          </label>
-          <select
-            className={controlClassName}
-            defaultValue={selected.serviceId ?? ""}
-            id="service"
-            name="service"
-          >
-            <option value="">All services</option>
-            {services.map((service) => (
-              <option key={service.id} value={service.id}>
-                {service.label}
-              </option>
-            ))}
-          </select>
-        </div>
-        <div>
-          <label className="text-xs font-black" htmlFor="sort">
-            Sort by
-          </label>
-          <select
-            className={controlClassName}
-            defaultValue={selected.sort ?? "newest"}
-            id="sort"
-            name="sort"
-          >
-            <option value="newest">Newest first</option>
-            <option value="oldest">Oldest first</option>
-            <option value="deadline">Nearest deadline</option>
-          </select>
-        </div>
-        <div className="flex flex-wrap gap-3 lg:col-span-5">
-          <button
-            className="rounded-xl bg-[var(--itq-color-brand-700)] px-5 py-3 text-sm font-black text-white"
-            type="submit"
-          >
-            Apply filters
-          </button>
-          <Link
-            className="rounded-xl border border-[var(--itq-color-border)] bg-[var(--itq-color-surface)] px-5 py-3 text-sm font-black"
-            href="/en/student/requests"
-          >
-            Clear filters
-          </Link>
-        </div>
-      </form>
+        <form
+          className="grid gap-4 rounded-2xl bg-[var(--itq-color-brand-50)] p-5 lg:grid-cols-5"
+          method="get"
+        >
+          <div className="lg:col-span-2">
+            <label className="text-xs font-black" htmlFor="q">
+              Request number or title
+            </label>
+            <input
+              className={controlClassName}
+              defaultValue={selected.search}
+              id="q"
+              maxLength={100}
+              name="q"
+              placeholder="ITQ-2026-000001"
+            />
+          </div>
+          <div>
+            <label className="text-xs font-black" htmlFor="status">
+              Status
+            </label>
+            <select
+              className={controlClassName}
+              defaultValue={selected.status ?? ""}
+              id="status"
+              name="status"
+            >
+              <option value="">All statuses</option>
+              {requestStatuses.map((status) => (
+                <option key={status} value={status}>
+                  {requestStatusLabel(status, "en")}
+                </option>
+              ))}
+            </select>
+          </div>
+          <div>
+            <label className="text-xs font-black" htmlFor="service">
+              Service
+            </label>
+            <select
+              className={controlClassName}
+              defaultValue={selected.serviceId ?? ""}
+              id="service"
+              name="service"
+            >
+              <option value="">All services</option>
+              {services.map((service) => (
+                <option key={service.id} value={service.id}>
+                  {service.label}
+                </option>
+              ))}
+            </select>
+          </div>
+          <div>
+            <label className="text-xs font-black" htmlFor="sort">
+              Sort by
+            </label>
+            <select
+              className={controlClassName}
+              defaultValue={selected.sort ?? "newest"}
+              id="sort"
+              name="sort"
+            >
+              <option value="newest">Newest first</option>
+              <option value="oldest">Oldest first</option>
+              <option value="deadline">Nearest deadline</option>
+            </select>
+          </div>
+          <div className="flex flex-wrap gap-3 lg:col-span-5">
+            <button
+              className="rounded-xl bg-[var(--itq-color-brand-700)] px-5 py-3 text-sm font-black text-white"
+              type="submit"
+            >
+              Apply filters
+            </button>
+            <Link
+              className="rounded-xl border border-[var(--itq-color-border)] bg-[var(--itq-color-surface)] px-5 py-3 text-sm font-black"
+              href="/en/student/requests"
+            >
+              Clear filters
+            </Link>
+          </div>
+        </form>
+      </FilterDisclosure>
 
       <p className="mt-6 text-sm font-bold text-[var(--itq-color-muted)]">
         {requests.total} request{requests.total === 1 ? "" : "s"} — page {requests.page} of{" "}

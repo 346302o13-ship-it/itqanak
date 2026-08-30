@@ -15,6 +15,7 @@ import { financePaymentMethodLabel, formatFinanceAmount } from "@/lib/finance-pr
 
 import { AdminShell } from "./admin-shell";
 import { CsrfInput } from "./auth-shell";
+import { FilterDisclosure } from "./filter-disclosure";
 import { FinanceFlash } from "./finance-flash";
 import { FinanceReportCards, FinanceStatusChip } from "./finance-widgets";
 import { LocalDateTime } from "./local-date-time";
@@ -295,63 +296,77 @@ export function FinanceAdmin({
       ) : null}
 
       <section className="mt-6 rounded-[1.75rem] border border-[var(--itq-color-border)] bg-[var(--itq-color-surface)] p-5 shadow-[var(--itq-shadow-sm)] sm:p-7">
-        <form className="grid gap-4 md:grid-cols-[minmax(0,1fr)_11rem_9rem_auto]" method="get">
-          <label className="text-xs font-black">
-            {english ? "Search" : "البحث"}
-            <input
-              className={controlClassName}
-              defaultValue={filters.search ?? ""}
-              maxLength={100}
-              name="q"
-              placeholder={
-                english ? "Student, request or due reference" : "الطالب أو الطلب أو مرجع المستحق"
-              }
-              type="search"
-            />
-          </label>
-          <label className="text-xs font-black">
-            {english ? "Status" : "الحالة"}
-            <select className={controlClassName} defaultValue={filters.status ?? ""} name="status">
-              <option value="">{english ? "All statuses" : "كل الحالات"}</option>
-              {financeDueStatuses.map((status) => (
-                <option key={status} value={status}>
-                  {status === "UNPAID"
-                    ? english
-                      ? "Unpaid"
-                      : "غير مدفوع"
-                    : status === "PAID"
+        <FilterDisclosure
+          activeCount={
+            [filters.search && filters.search.length > 0, filters.status, filters.currency].filter(
+              Boolean,
+            ).length
+          }
+          className=""
+          label={english ? "Filters" : "الفلاتر"}
+        >
+          <form className="grid gap-4 md:grid-cols-[minmax(0,1fr)_11rem_9rem_auto]" method="get">
+            <label className="text-xs font-black">
+              {english ? "Search" : "البحث"}
+              <input
+                className={controlClassName}
+                defaultValue={filters.search ?? ""}
+                maxLength={100}
+                name="q"
+                placeholder={
+                  english ? "Student, request or due reference" : "الطالب أو الطلب أو مرجع المستحق"
+                }
+                type="search"
+              />
+            </label>
+            <label className="text-xs font-black">
+              {english ? "Status" : "الحالة"}
+              <select
+                className={controlClassName}
+                defaultValue={filters.status ?? ""}
+                name="status"
+              >
+                <option value="">{english ? "All statuses" : "كل الحالات"}</option>
+                {financeDueStatuses.map((status) => (
+                  <option key={status} value={status}>
+                    {status === "UNPAID"
                       ? english
-                        ? "Paid"
-                        : "مدفوع"
-                      : english
-                        ? "Voided"
-                        : "ملغى"}
-                </option>
-              ))}
-            </select>
-          </label>
-          <label className="text-xs font-black">
-            {english ? "Currency" : "العملة"}
-            <select
-              className={controlClassName}
-              defaultValue={filters.currency ?? ""}
-              name="currency"
+                        ? "Unpaid"
+                        : "غير مدفوع"
+                      : status === "PAID"
+                        ? english
+                          ? "Paid"
+                          : "مدفوع"
+                        : english
+                          ? "Voided"
+                          : "ملغى"}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <label className="text-xs font-black">
+              {english ? "Currency" : "العملة"}
+              <select
+                className={controlClassName}
+                defaultValue={filters.currency ?? ""}
+                name="currency"
+              >
+                <option value="">{english ? "All" : "الكل"}</option>
+                {financeCurrencies.map((currency) => (
+                  <option key={currency} value={currency}>
+                    {currency}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <button
+              className="min-h-12 self-end rounded-xl bg-[var(--itq-color-brand-700)] px-5 text-sm font-black text-white"
+              type="submit"
             >
-              <option value="">{english ? "All" : "الكل"}</option>
-              {financeCurrencies.map((currency) => (
-                <option key={currency} value={currency}>
-                  {currency}
-                </option>
-              ))}
-            </select>
-          </label>
-          <button
-            className="min-h-12 self-end rounded-xl bg-[var(--itq-color-brand-700)] px-5 text-sm font-black text-white"
-            type="submit"
-          >
-            {english ? "Apply" : "تطبيق"}
-          </button>
-        </form>
+              {english ? "Apply" : "تطبيق"}
+            </button>
+          </form>
+        </FilterDisclosure>
 
         {dues.items.length === 0 ? (
           <p className="mt-6 rounded-2xl border border-dashed border-[var(--itq-color-border)] p-8 text-center font-bold text-[var(--itq-color-muted)]">
