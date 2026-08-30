@@ -77,6 +77,8 @@ interface RequestSummaryRow {
   readonly due_amount_minor?: number | string | null;
   readonly due_currency?: string | null;
   readonly due_minor_unit?: number | string | null;
+  readonly latest_receipt_status?: string | null;
+  readonly unpaid_due_count?: number | string | null;
 }
 
 interface MessageRow {
@@ -331,17 +333,27 @@ function toRequest(row: RequestSummaryRow): UnifiedRequestSummary {
     updatedAt: toDate(row.updated_at),
   };
   if (row.has_pending_receipt === undefined) return base;
+  // Only a live (UNPAID / PAID) due counts as "priced & in the ledger"; a due
+  // that is fully VOIDED (e.g. after an amount adjustment with no reissue)
+  // leaves the request re-priceable.
   const dueStatus =
-    row.due_status === "UNPAID" || row.due_status === "PAID" || row.due_status === "VOIDED"
-      ? row.due_status
+    row.due_status === "UNPAID" || row.due_status === "PAID" ? row.due_status : undefined;
+  const hasDue = dueStatus !== undefined;
+  const dueId = hasDue && typeof row.due_id === "string" ? row.due_id : undefined;
+  const latestReceiptStatus =
+    row.latest_receipt_status === "PENDING" ||
+    row.latest_receipt_status === "ACCEPTED" ||
+    row.latest_receipt_status === "REJECTED"
+      ? row.latest_receipt_status
       : undefined;
-  const dueId = typeof row.due_id === "string" ? row.due_id : undefined;
   return {
     ...base,
     finance: {
-      hasDue: dueStatus !== undefined,
+      hasDue,
       hasPendingReceipt: row.has_pending_receipt === true,
+      unpaidDueCount: toSafeInteger(row.unpaid_due_count ?? 0, "unpaid due count"),
       ...(dueStatus === undefined ? {} : { dueStatus }),
+      ...(latestReceiptStatus === undefined ? {} : { latestReceiptStatus }),
       ...(dueId === undefined
         ? {}
         : {
@@ -586,18 +598,33 @@ export class UnifiedConversationService {
           due.id AS due_id, due.version AS due_version,
           due.amount_minor AS due_amount_minor, due.currency AS due_currency,
           due.minor_unit AS due_minor_unit,
+          (
+            SELECT count(*) FROM finance_dues
+            WHERE finance_dues.request_id = requests.id AND finance_dues.status = 'UNPAID'
+          ) AS unpaid_due_count,
           EXISTS (
             SELECT 1
             FROM finance_payment_submissions AS receipts
             INNER JOIN finance_dues AS receipt_due ON receipt_due.id = receipts.due_id
             WHERE receipt_due.request_id = requests.id AND receipts.review_status = 'PENDING'
-          ) AS has_pending_receipt
+          ) AS has_pending_receipt,
+          (
+            SELECT receipts.review_status
+            FROM finance_payment_submissions AS receipts
+            INNER JOIN finance_dues AS receipt_due ON receipt_due.id = receipts.due_id
+            WHERE receipt_due.request_id = requests.id
+            ORDER BY receipts.submitted_at DESC, receipts.id DESC
+            LIMIT 1
+          ) AS latest_receipt_status
         FROM service_requests AS requests
         LEFT JOIN LATERAL (
           SELECT id, status, version, amount_minor, currency, minor_unit
           FROM finance_dues
           WHERE finance_dues.request_id = requests.id
-          ORDER BY created_at DESC, id DESC
+          -- The obligation that matters: a live (non-voided) due, preferring an
+          -- outstanding one, then the most recent.
+          ORDER BY (status <> 'VOIDED') DESC, (status = 'UNPAID') DESC,
+                   created_at DESC, id DESC
           LIMIT 1
         ) AS due ON TRUE
         WHERE requests.student_user_id = ${access.row.student_user_id}

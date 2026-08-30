@@ -33,6 +33,7 @@ import {
   assertFinanceDueStatus,
   assertFinancePaymentMethod,
   assertFinanceVersion,
+  minorUnitForCurrency,
   normalizeCreateFinanceDue,
   normalizeFinanceReason,
   normalizePaymentNote,
@@ -1283,6 +1284,100 @@ export class FinanceService {
       },
     });
     return { remainingDue, paidDue: paidConfirmed };
+  }
+
+  /**
+   * Adjust the amount of an UNPAID due. Issued dues are immutable (best practice
+   * for an accounts-receivable ledger), so this voids the current due and
+   * reissues an equivalent one at the new amount — the request stays "priced",
+   * only the figure changes. Failure-safe: the reissue happens before the void.
+   */
+  public async replaceDueAmount(
+    principal: AuthenticatedPrincipal,
+    dueIdInput: string,
+    input: { readonly newAmount: string; readonly reason?: string | null },
+    context: RequestAuditContext = {},
+  ): Promise<AdminFinanceDue> {
+    requireAdminFinancePermission(principal, "admin.finance.manage");
+    const dueId = assertFinanceDueId(dueIdInput);
+    const reason = normalizePaymentNote(input.reason) ?? "تعديل مبلغ المستحق";
+
+    const rows = await this.database<
+      {
+        readonly request_number: string;
+        readonly title_ar: string;
+        readonly title_en: string;
+        readonly description_ar: string | null;
+        readonly description_en: string | null;
+        readonly amount_minor: number | string;
+        readonly currency: string;
+        readonly status: string;
+        readonly version: number | string;
+        readonly due_at: Date | string | null;
+      }[]
+    >`
+      SELECT r.request_number, d.title_ar, d.title_en, d.description_ar, d.description_en,
+             d.amount_minor, d.currency, d.status, d.version, d.due_at
+      FROM finance_dues AS d
+      INNER JOIN service_requests AS r ON r.id = d.request_id
+      WHERE d.id = ${dueId} LIMIT 1
+    `;
+    const due = rows[0];
+    if (due === undefined) throw new FinanceError("DUE_NOT_FOUND");
+    if (due.status !== "UNPAID") throw new FinanceError("INVALID_TRANSITION");
+    const currency = assertFinanceCurrency(due.currency);
+    const newMinor = amountToMinorUnits(input.newAmount, currency);
+    if (!Number.isSafeInteger(newMinor) || newMinor <= 0) throw new FinanceError("INVALID_AMOUNT");
+    if (newMinor === Number(due.amount_minor))
+      return toAdminFinanceDue(
+        (
+          await this.database.unsafe<FinanceDueRow[]>(
+            `SELECT ${adminDueSelect} FROM finance_dues AS dues ${dueJoins} WHERE dues.id = $1 LIMIT 1`,
+            [dueId],
+          )
+        )[0] as FinanceDueRow,
+      );
+
+    const descriptions =
+      due.description_ar !== null && due.description_en !== null
+        ? { descriptionAr: due.description_ar, descriptionEn: due.description_en }
+        : {};
+    const minorUnit = minorUnitForCurrency(currency);
+    const reissued = await this.createDue(
+      principal,
+      {
+        requestNumber: due.request_number,
+        titleAr: due.title_ar,
+        titleEn: due.title_en,
+        ...descriptions,
+        amount: (newMinor / 10 ** minorUnit).toFixed(minorUnit),
+        currency,
+        ...(due.due_at === null ? {} : { dueAt: due.due_at }),
+      },
+      context,
+    );
+    await this.voidDue(
+      principal,
+      dueId,
+      { expectedVersion: Number(due.version), reason: `${reason} → ${reissued.reference}` },
+      context,
+    );
+    await recordAuditEvent(this.database, {
+      ...context,
+      eventType: "finance.due_amount_adjusted",
+      outcome: "SUCCESS",
+      actorUserId: principal.userId,
+      targetUserId: reissued.studentUserId,
+      sessionId: principal.sessionId,
+      resourceType: "finance_due",
+      resourceId: dueId,
+      metadata: {
+        fromMinor: Number(due.amount_minor),
+        toMinor: newMinor,
+        reissuedDueId: reissued.id,
+      },
+    });
+    return reissued;
   }
 
   private async readReceipts(

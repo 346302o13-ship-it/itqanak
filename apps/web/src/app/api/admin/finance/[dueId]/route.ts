@@ -66,6 +66,22 @@ export async function POST(request: NextRequest, context: FinanceDueRouteContext
             { status: 200, headers: { "Cache-Control": "no-store", "X-Request-ID": requestId } },
           );
         }
+      } else if (action === "adjust-amount") {
+        const adjusted = await runtime.finance.replaceDueAmount(
+          principal,
+          parameters.dueId,
+          {
+            newAmount: formValue(protectedForm.formData, "newAmount"),
+            reason: formValue(protectedForm.formData, "reason") || null,
+          },
+          { ...protectedForm.context, requestId },
+        );
+        if (!acceptsHtml(request)) {
+          return NextResponse.json(
+            { ok: true, reference: adjusted.reference },
+            { status: 200, headers: { "Cache-Control": "no-store", "X-Request-ID": requestId } },
+          );
+        }
       } else if (action === "split-payment") {
         const { remainingDue } = await runtime.finance.recordSplitPayment(
           principal,

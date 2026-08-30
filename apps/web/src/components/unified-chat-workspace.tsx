@@ -698,6 +698,229 @@ function InvoiceSummaryCard({
 }
 
 /**
+ * Money actions for a request that already has a live due (so it is locked from
+ * re-pricing): mark paid, adjust the amount, record a partial payment, remind —
+ * or, once paid, reverse the payment.
+ */
+function DueActionsPanel({
+  english,
+  finance,
+  locked,
+  onAdjust,
+  onMarkPaid,
+  onRemind,
+  onReverse,
+  onSplit,
+}: Readonly<{
+  english: boolean;
+  finance: NonNullable<UnifiedRequestSummary["finance"]>;
+  locked: boolean;
+  onAdjust: (dueId: string, newAmount: string) => void;
+  onMarkPaid: (dueId: string, version: number, method: string, reference: string) => void;
+  onRemind: (dueId: string) => void;
+  onReverse: (dueId: string, version: number, reason: string) => void;
+  onSplit: (dueId: string, paidAmount: string, method: string, reference: string) => void;
+}>) {
+  const dueId = finance.dueId;
+  if (dueId === undefined) return null;
+  const version = finance.dueVersion ?? 1;
+  const minorUnit = finance.dueMinorUnit ?? 2;
+  const currency = finance.dueCurrency ?? "";
+  const amount = ((finance.dueAmountMinor ?? 0) / 10 ** minorUnit).toFixed(minorUnit);
+  const otherUnpaid = Math.max(0, (finance.unpaidDueCount ?? 1) - 1);
+  const methodSelect = (border: string) => (
+    <select
+      aria-label={english ? "Payment method" : "وسيلة الدفع"}
+      className={`h-9 rounded-lg border ${border} bg-[var(--itq-color-surface)] px-2 text-xs font-black`}
+      defaultValue="BANK_TRANSFER"
+      name="method"
+    >
+      <option value="BANK_TRANSFER">{english ? "Bank transfer" : "تحويل بنكي"}</option>
+      <option value="CASH">{english ? "Cash" : "نقدًا"}</option>
+      <option value="OTHER">{english ? "Other" : "أخرى"}</option>
+    </select>
+  );
+
+  if (finance.dueStatus === "PAID") {
+    return (
+      <div className="mt-2 grid gap-2">
+        <p
+          className="rounded-xl border border-[var(--itq-color-success-200)] bg-[var(--itq-color-success-50)] px-3 py-2 text-[11px] font-black text-[var(--itq-color-success-900)]"
+          dir="ltr"
+        >
+          {english ? "Paid in full ✓ · " : "تم السداد بالكامل ✓ · "}
+          {amount} {currency}
+        </p>
+        <details className="rounded-xl border border-[var(--itq-color-danger-200)] bg-[var(--itq-color-danger-50)] p-2">
+          <summary className="cursor-pointer list-none text-[11px] font-black text-[var(--itq-color-danger-800)]">
+            {english ? "Reverse the payment" : "عكس الدفع"}
+          </summary>
+          <form
+            className="mt-2 grid gap-2"
+            onSubmit={(event) => {
+              event.preventDefault();
+              const data = new FormData(event.currentTarget);
+              onReverse(dueId, version, String(data.get("reason") ?? ""));
+            }}
+          >
+            <input
+              className="h-9 rounded-lg border border-[var(--itq-color-danger-200)] bg-[var(--itq-color-surface)] px-2 text-xs"
+              maxLength={200}
+              name="reason"
+              placeholder={english ? "Reason" : "السبب"}
+              required
+            />
+            <button
+              className="h-9 rounded-lg bg-[var(--itq-color-danger-600)] px-3 text-xs font-black text-white disabled:opacity-50"
+              disabled={locked}
+              type="submit"
+            >
+              {english ? "Confirm reversal" : "تأكيد العكس"}
+            </button>
+          </form>
+        </details>
+      </div>
+    );
+  }
+
+  return (
+    <div className="mt-2 grid gap-2">
+      <p
+        className="rounded-xl border border-[var(--itq-color-warning-200)] bg-[var(--itq-color-warning-50)] px-3 py-2 text-[11px] font-black text-[var(--itq-color-warning-950)]"
+        dir="ltr"
+      >
+        {english ? "Outstanding: " : "المستحق: "}
+        {amount} {currency}
+        {otherUnpaid > 0 ? (english ? ` (+${otherUnpaid} more)` : ` (+${otherUnpaid} أخرى)`) : ""}
+      </p>
+      {finance.latestReceiptStatus === "PENDING" ? (
+        <p className="rounded-xl border border-[var(--itq-color-info-200)] bg-[var(--itq-color-info-50)] px-3 py-2 text-[10px] font-bold text-[var(--itq-color-info-950)]">
+          {english
+            ? "The student sent a receipt — approve it from the card in the chat."
+            : "أرسل الطالب إيصالاً — اعتمد الدفع من البطاقة في المحادثة."}
+        </p>
+      ) : null}
+      <details className="rounded-xl border border-[var(--itq-color-success-200)] bg-[var(--itq-color-success-50)] p-2">
+        <summary className="cursor-pointer list-none text-[11px] font-black text-[var(--itq-color-success-900)]">
+          {english ? "Mark as paid" : "وضع كـ مدفوع"}
+        </summary>
+        <form
+          className="mt-2 grid gap-2"
+          onSubmit={(event) => {
+            event.preventDefault();
+            const data = new FormData(event.currentTarget);
+            onMarkPaid(
+              dueId,
+              version,
+              String(data.get("method") ?? "BANK_TRANSFER"),
+              String(data.get("reference") ?? ""),
+            );
+          }}
+        >
+          {methodSelect("border-[var(--itq-color-success-200)]")}
+          <input
+            className="h-9 rounded-lg border border-[var(--itq-color-success-200)] bg-[var(--itq-color-surface)] px-2 text-xs"
+            maxLength={120}
+            name="reference"
+            placeholder={english ? "Reference / note" : "المرجع أو ملاحظة"}
+          />
+          <button
+            className="h-9 rounded-lg bg-[var(--itq-color-success-600)] px-3 text-xs font-black text-white disabled:opacity-50"
+            disabled={locked}
+            type="submit"
+          >
+            {english ? "Confirm payment" : "تأكيد الدفع"}
+          </button>
+        </form>
+      </details>
+      <details className="rounded-xl border border-[var(--itq-color-border)] bg-[var(--itq-color-surface)] p-2">
+        <summary className="cursor-pointer list-none text-[11px] font-black">
+          {english ? "Adjust the amount" : "تعديل المبلغ"}
+        </summary>
+        <form
+          className="mt-2 grid gap-2"
+          onSubmit={(event) => {
+            event.preventDefault();
+            const data = new FormData(event.currentTarget);
+            onAdjust(dueId, String(data.get("newAmount") ?? ""));
+          }}
+        >
+          <input
+            className="h-9 rounded-lg border border-[var(--itq-color-border)] bg-[var(--itq-color-surface)] px-2 text-xs font-black"
+            defaultValue={amount}
+            inputMode="decimal"
+            maxLength={12}
+            name="newAmount"
+            required
+          />
+          <button
+            className="h-9 rounded-lg bg-[var(--itq-color-ink-deep)] px-3 text-xs font-black text-white disabled:opacity-50"
+            disabled={locked}
+            type="submit"
+          >
+            {english ? "Update amount" : "تحديث المبلغ"}
+          </button>
+        </form>
+      </details>
+      <details className="rounded-xl border border-[var(--itq-color-warning-200)] bg-[var(--itq-color-warning-50)] p-2">
+        <summary className="cursor-pointer list-none text-[11px] font-black text-[var(--itq-color-warning-950)]">
+          {english ? "Record a partial payment" : "تسجيل دفعة جزئية"}
+        </summary>
+        <p className="mt-1 text-[10px] font-bold text-[var(--itq-color-warning-900)]">
+          {english
+            ? "The unpaid remainder becomes a new due."
+            : "يتحوّل الباقي غير المدفوع إلى مستحق جديد."}
+        </p>
+        <form
+          className="mt-2 grid gap-2"
+          onSubmit={(event) => {
+            event.preventDefault();
+            const data = new FormData(event.currentTarget);
+            onSplit(
+              dueId,
+              String(data.get("paidAmount") ?? ""),
+              String(data.get("method") ?? "BANK_TRANSFER"),
+              String(data.get("reference") ?? ""),
+            );
+          }}
+        >
+          <input
+            className="h-9 rounded-lg border border-[var(--itq-color-warning-200)] bg-[var(--itq-color-surface)] px-2 text-xs font-black"
+            inputMode="decimal"
+            maxLength={12}
+            name="paidAmount"
+            placeholder={english ? "Amount paid now" : "المبلغ المدفوع الآن"}
+            required
+          />
+          {methodSelect("border-[var(--itq-color-warning-200)]")}
+          <input
+            className="h-9 rounded-lg border border-[var(--itq-color-warning-200)] bg-[var(--itq-color-surface)] px-2 text-xs"
+            maxLength={120}
+            name="reference"
+            placeholder={english ? "Reference / note" : "المرجع أو ملاحظة"}
+          />
+          <button
+            className="h-9 rounded-lg bg-[var(--itq-color-warning-800)] px-3 text-xs font-black text-white disabled:opacity-50"
+            disabled={locked}
+            type="submit"
+          >
+            {english ? "Record partial payment" : "تسجيل الدفعة الجزئية"}
+          </button>
+        </form>
+      </details>
+      <button
+        className="h-9 rounded-xl border border-[var(--itq-color-warning-300)] bg-[var(--itq-color-surface)] px-3 text-[11px] font-black text-[var(--itq-color-warning-950)] disabled:opacity-50"
+        disabled={locked}
+        onClick={() => onRemind(dueId)}
+        type="button"
+      >
+        {english ? "Send a reminder" : "تذكير الطالب"}
+      </button>
+    </div>
+  );
+}
+
+/**
  * One compact form inside an admin request card: pick "price quote" (student
  * approves) or "direct ledger charge", type an amount, send. Stacked so it fits
  * the narrow card — amount on its own row, currency + action below.
@@ -2909,6 +3132,69 @@ export function UnifiedChatWorkspace({
     }
   }
 
+  // Admin adjusts an UNPAID due's amount (voids + reissues at the new figure).
+  async function adjustDueAmount(dueId: string, newAmount: string) {
+    if (csrfToken === undefined || interactionLocked || mode !== "admin") return;
+    setPending(true);
+    setNotice(english ? "Adjusting the amount…" : "جارٍ تعديل المبلغ…");
+    try {
+      const response = await fetch(`/api/admin/finance/${encodeURIComponent(dueId)}`, {
+        method: "POST",
+        body: new URLSearchParams({
+          csrfToken,
+          locale,
+          action: "adjust-amount",
+          newAmount: newAmount.trim(),
+        }),
+        credentials: "same-origin",
+        headers: {
+          "Content-Type": "application/x-www-form-urlencoded",
+          Accept: "application/json",
+        },
+      });
+      if (!response.ok) throw new Error();
+      setNotice(english ? "Amount updated." : "تم تحديث المبلغ.");
+      messagePokeRef.current();
+      contactPokeRef.current();
+    } catch {
+      setNotice(english ? "The amount could not be updated." : "تعذر تحديث المبلغ.");
+    } finally {
+      setPending(false);
+    }
+  }
+
+  // Admin reverses a recorded payment (PAID → UNPAID again).
+  async function reverseDuePayment(dueId: string, expectedVersion: number, reason: string) {
+    if (csrfToken === undefined || interactionLocked || mode !== "admin") return;
+    setPending(true);
+    setNotice(english ? "Reversing the payment…" : "جارٍ عكس الدفع…");
+    try {
+      const response = await fetch(`/api/admin/finance/${encodeURIComponent(dueId)}`, {
+        method: "POST",
+        body: new URLSearchParams({
+          csrfToken,
+          locale,
+          action: "reverse-payment",
+          expectedVersion: String(expectedVersion),
+          reason: reason.trim().length >= 2 ? reason.trim() : "عكس دفع بقرار الإدارة",
+        }),
+        credentials: "same-origin",
+        headers: {
+          "Content-Type": "application/x-www-form-urlencoded",
+          Accept: "application/json",
+        },
+      });
+      if (!response.ok) throw new Error();
+      setNotice(english ? "Payment reversed." : "تم عكس الدفع.");
+      messagePokeRef.current();
+      contactPokeRef.current();
+    } catch {
+      setNotice(english ? "The payment could not be reversed." : "تعذر عكس الدفع.");
+    } finally {
+      setPending(false);
+    }
+  }
+
   // Attach a price to one request straight onto the ledger (used by the bulk pricer).
   async function chargeOneRequest(
     requestNumber: string,
@@ -3243,16 +3529,20 @@ export function UnifiedChatWorkspace({
                     : `/${locale}/student/requests/${encodeURIComponent(request.requestNumber)}`;
                 const cardExpanded = mode === "admin" && expandedRequestId === request.id;
                 const cardHasPendingQuote = hasPendingQuoteForRequest(messages, request.id);
+                const cardHasDue = request.finance?.hasDue === true;
                 const cardPriced =
                   hasAnyQuoteForRequest(messages, request.id) ||
                   request.status === "QUOTED" ||
-                  request.finance?.hasDue === true;
+                  cardHasDue;
                 const cardPaid = request.finance?.dueStatus === "PAID";
+                // Once a live due exists the request is locked from re-pricing:
+                // the only money actions left are adjust / pay / partial / reverse.
                 const canQuoteCard =
+                  !cardHasDue &&
                   !cardPaid &&
                   quoteEligibleRequestStatuses.has(request.status) &&
                   !cardHasPendingQuote;
-                const canChargeCard = !cardPaid && request.status !== "DRAFT";
+                const canChargeCard = !cardHasDue && !cardPaid && request.status !== "DRAFT";
                 // Latest quote raised for this request — its amount pre-fills the
                 // "add to ledger" form so the admin does not retype the price.
                 const latestQuote = messages
@@ -3316,131 +3606,26 @@ export function UnifiedChatWorkspace({
                           ? "Request details"
                           : "تفاصيل الطلب"}
                     </Link>
-                    {mode === "admin" && cardPaid ? (
-                      <p className="mt-2 rounded-xl border border-[var(--itq-color-success-200)] bg-[var(--itq-color-success-50)] px-3 py-2 text-[11px] font-black text-[var(--itq-color-success-900)]">
-                        {english ? "Paid in full ✓" : "تم السداد بالكامل ✓"}
-                      </p>
+                    {mode === "admin" && cardHasDue && request.finance !== undefined ? (
+                      <DueActionsPanel
+                        english={english}
+                        finance={request.finance}
+                        locked={interactionLocked}
+                        onAdjust={(dueId, newAmount) => void adjustDueAmount(dueId, newAmount)}
+                        onMarkPaid={(dueId, version, method, reference) =>
+                          void markRequestPaid(dueId, version, method, reference)
+                        }
+                        onRemind={(dueId) => void remindDue(dueId)}
+                        onReverse={(dueId, version, reason) =>
+                          void reverseDuePayment(dueId, version, reason)
+                        }
+                        onSplit={(dueId, paidAmount, method, reference) =>
+                          void recordSplitPayment(dueId, paidAmount, method, reference)
+                        }
+                      />
                     ) : null}
                     {mode === "admin" &&
-                    request.finance?.dueStatus === "UNPAID" &&
-                    request.finance.dueId !== undefined ? (
-                      <details className="mt-2 rounded-xl border border-[var(--itq-color-success-200)] bg-[var(--itq-color-success-50)] p-2">
-                        <summary className="cursor-pointer list-none text-[11px] font-black text-[var(--itq-color-success-900)]">
-                          {english ? "Mark as paid" : "وضع كـ مدفوع"}
-                        </summary>
-                        <form
-                          className="mt-2 grid gap-2"
-                          onSubmit={(event) => {
-                            event.preventDefault();
-                            const data = new FormData(event.currentTarget);
-                            void markRequestPaid(
-                              request.finance?.dueId ?? "",
-                              request.finance?.dueVersion ?? 1,
-                              String(data.get("method") ?? "BANK_TRANSFER"),
-                              String(data.get("reference") ?? ""),
-                            );
-                          }}
-                        >
-                          <select
-                            aria-label={english ? "Payment method" : "وسيلة الدفع"}
-                            className="h-9 rounded-lg border border-[var(--itq-color-success-200)] bg-[var(--itq-color-surface)] px-2 text-xs font-black"
-                            defaultValue="BANK_TRANSFER"
-                            name="method"
-                          >
-                            <option value="BANK_TRANSFER">
-                              {english ? "Bank transfer" : "تحويل بنكي"}
-                            </option>
-                            <option value="CASH">{english ? "Cash" : "نقدًا"}</option>
-                            <option value="OTHER">{english ? "Other" : "أخرى"}</option>
-                          </select>
-                          <input
-                            className="h-9 rounded-lg border border-[var(--itq-color-success-200)] bg-[var(--itq-color-surface)] px-2 text-xs"
-                            maxLength={120}
-                            name="reference"
-                            placeholder={english ? "Reference / note" : "المرجع أو ملاحظة"}
-                          />
-                          <button
-                            className="h-9 rounded-lg bg-[var(--itq-color-success-600)] px-3 text-xs font-black text-white disabled:opacity-50"
-                            disabled={interactionLocked}
-                            type="submit"
-                          >
-                            {english ? "Confirm payment" : "تأكيد الدفع"}
-                          </button>
-                        </form>
-                      </details>
-                    ) : null}
-                    {mode === "admin" &&
-                    request.finance?.dueStatus === "UNPAID" &&
-                    request.finance.dueId !== undefined ? (
-                      <details className="mt-2 rounded-xl border border-[var(--itq-color-warning-200)] bg-[var(--itq-color-warning-50)] p-2">
-                        <summary className="cursor-pointer list-none text-[11px] font-black text-[var(--itq-color-warning-950)]">
-                          {english ? "Record a partial payment" : "تسجيل دفعة جزئية"}
-                        </summary>
-                        <p className="mt-1 text-[10px] font-bold text-[var(--itq-color-warning-900)]">
-                          {english
-                            ? `Due total: ${(
-                                (request.finance.dueAmountMinor ?? 0) /
-                                10 ** (request.finance.dueMinorUnit ?? 2)
-                              ).toFixed(request.finance.dueMinorUnit ?? 2)} ${
-                                request.finance.dueCurrency ?? ""
-                              }. The rest becomes a new due.`
-                            : `إجمالي المستحق: ${(
-                                (request.finance.dueAmountMinor ?? 0) /
-                                10 ** (request.finance.dueMinorUnit ?? 2)
-                              ).toFixed(request.finance.dueMinorUnit ?? 2)} ${
-                                request.finance.dueCurrency ?? ""
-                              }. يُنشأ مستحق جديد بالمتبقّي.`}
-                        </p>
-                        <form
-                          className="mt-2 grid gap-2"
-                          onSubmit={(event) => {
-                            event.preventDefault();
-                            const data = new FormData(event.currentTarget);
-                            void recordSplitPayment(
-                              request.finance?.dueId ?? "",
-                              String(data.get("paidAmount") ?? ""),
-                              String(data.get("method") ?? "BANK_TRANSFER"),
-                              String(data.get("reference") ?? ""),
-                            );
-                          }}
-                        >
-                          <input
-                            className="h-9 rounded-lg border border-[var(--itq-color-warning-200)] bg-[var(--itq-color-surface)] px-2 text-xs font-black"
-                            inputMode="decimal"
-                            maxLength={12}
-                            name="paidAmount"
-                            placeholder={english ? "Amount paid now" : "المبلغ المدفوع الآن"}
-                            required
-                          />
-                          <select
-                            aria-label={english ? "Payment method" : "وسيلة الدفع"}
-                            className="h-9 rounded-lg border border-[var(--itq-color-warning-200)] bg-[var(--itq-color-surface)] px-2 text-xs font-black"
-                            defaultValue="BANK_TRANSFER"
-                            name="method"
-                          >
-                            <option value="BANK_TRANSFER">
-                              {english ? "Bank transfer" : "تحويل بنكي"}
-                            </option>
-                            <option value="CASH">{english ? "Cash" : "نقدًا"}</option>
-                            <option value="OTHER">{english ? "Other" : "أخرى"}</option>
-                          </select>
-                          <input
-                            className="h-9 rounded-lg border border-[var(--itq-color-warning-200)] bg-[var(--itq-color-surface)] px-2 text-xs"
-                            maxLength={120}
-                            name="reference"
-                            placeholder={english ? "Reference / note" : "المرجع أو ملاحظة"}
-                          />
-                          <button
-                            className="h-9 rounded-lg bg-[var(--itq-color-warning-800)] px-3 text-xs font-black text-white disabled:opacity-50"
-                            disabled={interactionLocked}
-                            type="submit"
-                          >
-                            {english ? "Record partial payment" : "تسجيل الدفعة الجزئية"}
-                          </button>
-                        </form>
-                      </details>
-                    ) : null}
-                    {mode === "admin" &&
+                    !cardHasDue &&
                     !cardPaid &&
                     (canQuoteCard || canChargeCard || cardHasPendingQuote) ? (
                       <>
@@ -4003,9 +4188,13 @@ export function UnifiedChatWorkspace({
                                   candidate.id === message.request?.id ||
                                   candidate.requestNumber === message.metadata.requestNumber,
                               )?.finance;
-                              if (finance?.hasPendingReceipt === true) return "PENDING";
+                              // Trust the actual receipt status; only fall to
+                              // "still pending" when nothing says otherwise —
+                              // never infer a rejection from missing data.
+                              if (finance?.latestReceiptStatus === "ACCEPTED") return "ACCEPTED";
+                              if (finance?.latestReceiptStatus === "REJECTED") return "REJECTED";
                               if (finance?.dueStatus === "PAID") return "ACCEPTED";
-                              return "REJECTED";
+                              return "PENDING";
                             })()}
                           />
                         </li>

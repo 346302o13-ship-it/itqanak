@@ -18,6 +18,7 @@ import { CsrfInput } from "./auth-shell";
 import { FilterDisclosure } from "./filter-disclosure";
 import { FinanceFlash } from "./finance-flash";
 import { FinanceReportCards, FinanceStatusChip } from "./finance-widgets";
+import { LiveRefresh } from "./live-refresh";
 import { LocalDateTime } from "./local-date-time";
 import { SubmitButton } from "./submit-button";
 
@@ -61,6 +62,7 @@ export function FinanceAdmin({
   const receipts = pendingReceipts ?? [];
   return (
     <AdminShell csrfToken={csrfToken} displayName={displayName} locale={locale}>
+      <LiveRefresh />
       <FinanceFlash locale={locale} {...(notice === undefined ? {} : { notice })} />
 
       <section className="rounded-[1.75rem] border border-[var(--itq-color-border)] bg-[var(--itq-color-surface)] p-5 shadow-[var(--itq-shadow-sm)] sm:p-7">

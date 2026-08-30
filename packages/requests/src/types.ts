@@ -419,10 +419,15 @@ export interface UnifiedRequestSummary {
   readonly updatedAt: Date;
   /** Present only in the conversation's own request list (admin panel chips). */
   readonly finance?: {
+    /** True once a live (UNPAID/PAID) due exists — the request is then locked from re-pricing. */
     readonly hasDue: boolean;
-    readonly dueStatus?: "UNPAID" | "PAID" | "VOIDED";
+    readonly dueStatus?: "UNPAID" | "PAID";
     readonly hasPendingReceipt: boolean;
-    /** The latest due for the request — set whenever `hasDue` is true. */
+    /** Review status of the most recent payment receipt for the request, if any. */
+    readonly latestReceiptStatus?: "PENDING" | "ACCEPTED" | "REJECTED";
+    /** Count of still-UNPAID dues on the request (splits can leave more than one). */
+    readonly unpaidDueCount?: number;
+    /** The current outstanding (or latest) due — set whenever `hasDue` is true. */
     readonly dueId?: string;
     readonly dueVersion?: number;
     readonly dueAmountMinor?: number;
