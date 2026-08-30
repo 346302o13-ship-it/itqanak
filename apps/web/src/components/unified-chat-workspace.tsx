@@ -220,6 +220,40 @@ function contentTypeForMime(mimeType: string): "IMAGE" | "AUDIO" | "FILE" {
   return "FILE";
 }
 
+function financeChips(
+  finance: NonNullable<UnifiedRequestSummary["finance"]>,
+  english: boolean,
+): readonly { key: string; className: string; label: string }[] {
+  const chips: { key: string; className: string; label: string }[] = [];
+  if (!finance.hasDue) {
+    chips.push({
+      key: "noprice",
+      className: "bg-[var(--itq-color-surface-soft)] text-[var(--itq-color-muted)]",
+      label: english ? "no price" : "بلا سعر",
+    });
+  } else if (finance.dueStatus === "UNPAID") {
+    chips.push({
+      key: "unpaid",
+      className: "bg-[var(--itq-color-warning-50)] text-[var(--itq-color-warning-900)]",
+      label: english ? "unpaid" : "غير مدفوع",
+    });
+  } else if (finance.dueStatus === "PAID") {
+    chips.push({
+      key: "paid",
+      className: "bg-[var(--itq-color-success-50)] text-[var(--itq-color-success-800)]",
+      label: english ? "paid" : "مدفوع",
+    });
+  }
+  if (finance.hasPendingReceipt) {
+    chips.push({
+      key: "receipt",
+      className: "bg-[var(--itq-color-info-50)] text-[var(--itq-color-info-950)]",
+      label: english ? "receipt to review" : "إيصال للمراجعة",
+    });
+  }
+  return chips;
+}
+
 function pause(milliseconds: number): Promise<void> {
   return new Promise((resolve) => window.setTimeout(resolve, milliseconds));
 }
@@ -1953,6 +1987,55 @@ export function UnifiedChatWorkspace({
     }
   }
 
+  // Student one-tap request from inside the chat: pick a service, type a title,
+  // it is created and submitted without leaving the conversation.
+  async function createRequestAsStudent(event: React.FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    if (csrfToken === undefined || interactionLocked) return;
+    const formElement = event.currentTarget;
+    const fields = new FormData(formElement);
+    const serviceId = String(fields.get("serviceId") ?? "");
+    const title = String(fields.get("title") ?? "").trim();
+    if (serviceId.length === 0 || title.length < 3) {
+      setNotice(
+        english ? "Pick a service and write a short title." : "اختر خدمة واكتب عنوانًا قصيرًا.",
+      );
+      return;
+    }
+    setPending(true);
+    setNotice(english ? "Creating the request…" : "جارٍ إنشاء الطلب…");
+    try {
+      const body = new URLSearchParams({
+        csrfToken,
+        locale,
+        quick: "true",
+        intent: "submit",
+        acceptedAcademicIntegrity: "true",
+        submissionKey: crypto.randomUUID(),
+        serviceId,
+        title,
+      });
+      const response = await fetch("/api/student/requests", {
+        method: "POST",
+        body,
+        credentials: "same-origin",
+        headers: {
+          "Content-Type": "application/x-www-form-urlencoded",
+          Accept: "application/json",
+        },
+      });
+      if (!response.ok) throw new Error();
+      formElement.reset();
+      setNotice(english ? "Request created." : "تم إنشاء الطلب.");
+      messagePokeRef.current();
+      contactPokeRef.current();
+    } catch {
+      setNotice(english ? "The request could not be created." : "تعذر إنشاء الطلب.");
+    } finally {
+      setPending(false);
+    }
+  }
+
   // Attach a charge to any (non-draft) request straight onto the student's debt
   // ledger, with no accept/reject step.
   async function addRequestCharge(event: React.FormEvent<HTMLFormElement>) {
@@ -2173,34 +2256,33 @@ export function UnifiedChatWorkspace({
                 : `${activeRequestCount} نشط من ${requests.length}`}
             </p>
           </div>
-          <div className="flex items-center gap-1.5">
-            {mode === "student" ? (
-              <Link
-                className="inline-flex min-h-9 items-center gap-1 rounded-xl bg-[var(--itq-color-brand-700)] px-3 text-xs font-black text-white no-underline"
-                href={`/${locale}/student/requests/new`}
-              >
-                <span className="text-base leading-none">+</span>
-                {english ? "New request" : "طلب جديد"}
-              </Link>
-            ) : null}
-            <button
-              aria-label={english ? "Close request panel" : "إغلاق لوحة الطلبات"}
-              className="grid size-10 place-items-center rounded-xl hover:bg-[var(--itq-color-surface-soft)] xl:hidden"
-              onClick={() => closeDetails()}
-              type="button"
-            >
-              <CloseIcon className="size-5" />
-            </button>
-          </div>
+          <button
+            aria-label={english ? "Close request panel" : "إغلاق لوحة الطلبات"}
+            className="grid size-10 place-items-center rounded-xl hover:bg-[var(--itq-color-surface-soft)] xl:hidden"
+            onClick={() => closeDetails()}
+            type="button"
+          >
+            <CloseIcon className="size-5" />
+          </button>
         </header>
         <div className="itq-scroll min-h-0 flex-1 overflow-y-auto overscroll-contain p-3">
-          {mode === "admin" && services.length > 0 ? (
+          {services.length > 0 ? (
             <form
               className="mb-3 rounded-2xl border border-[var(--itq-color-brand-200)] bg-[var(--itq-color-brand-50)] p-3"
-              onSubmit={(event) => void createRequestOnBehalf(event)}
+              onSubmit={(event) =>
+                void (mode === "admin"
+                  ? createRequestOnBehalf(event)
+                  : createRequestAsStudent(event))
+              }
             >
               <p className="mb-2 text-xs font-black text-[var(--itq-color-brand-strong)]">
-                {english ? "Create a request for this student" : "إنشاء طلب لهذا الطالب"}
+                {mode === "admin"
+                  ? english
+                    ? "Create a request for this student"
+                    : "إنشاء طلب لهذا الطالب"
+                  : english
+                    ? "New request"
+                    : "طلب جديد"}
               </p>
               <select
                 aria-label={english ? "Service" : "الخدمة"}
@@ -2233,7 +2315,13 @@ export function UnifiedChatWorkspace({
                   disabled={interactionLocked}
                   type="submit"
                 >
-                  {english ? "Create & assign" : "إنشاء وإسناد"}
+                  {mode === "admin"
+                    ? english
+                      ? "Create & assign"
+                      : "إنشاء وإسناد"
+                    : english
+                      ? "Create"
+                      : "إنشاء"}
                 </button>
               </div>
             </form>
@@ -2292,8 +2380,19 @@ export function UnifiedChatWorkspace({
                       >
                         {request.requestNumber}
                       </bdi>
-                      <span className="mt-2 inline-flex">
+                      <span className="mt-2 flex flex-wrap items-center gap-1.5">
                         <RequestStatusChip locale={locale} status={request.status} />
+                        {(mode === "admin" && request.finance !== undefined
+                          ? financeChips(request.finance, english)
+                          : []
+                        ).map((chip) => (
+                          <span
+                            className={`rounded-full px-2 py-0.5 text-[9px] font-black ${chip.className}`}
+                            key={chip.key}
+                          >
+                            {chip.label}
+                          </span>
+                        ))}
                       </span>
                     </button>
                     <Link

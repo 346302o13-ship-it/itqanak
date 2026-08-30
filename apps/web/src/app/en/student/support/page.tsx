@@ -22,6 +22,7 @@ export default async function EnglishStudentSupportPage({ searchParams }: PagePr
   let conversation;
   let messages;
   let maximumBytes;
+  let services: { readonly id: string; readonly name: string }[] = [];
   try {
     conversation = await runtime.unifiedConversations.getOrCreateOwnConversation(principal);
     messages = await runtime.unifiedConversations.listMessages(principal, conversation.id, {
@@ -29,6 +30,10 @@ export default async function EnglishStudentSupportPage({ searchParams }: PagePr
       pageSize: 100,
     });
     maximumBytes = runtime.config.storage.maxFileBytes;
+    const catalog = await runtime.catalog.listPublicCatalog();
+    services = catalog.flatMap((category) =>
+      category.services.map((service) => ({ id: service.id, name: service.nameEn })),
+    );
   } finally {
     await runtime.close();
   }
@@ -46,6 +51,7 @@ export default async function EnglishStudentSupportPage({ searchParams }: PagePr
         locale="en"
         maximumBytes={maximumBytes}
         mode="student"
+        services={services}
         {...(selectedRequestId === undefined ? {} : { selectedRequestId })}
       />
     </StudentShell>

@@ -417,6 +417,12 @@ export interface UnifiedRequestSummary {
   readonly status: RequestStatus;
   readonly version: number;
   readonly updatedAt: Date;
+  /** Present only in the conversation's own request list (admin panel chips). */
+  readonly finance?: {
+    readonly hasDue: boolean;
+    readonly dueStatus?: "UNPAID" | "PAID" | "VOIDED";
+    readonly hasPendingReceipt: boolean;
+  };
 }
 
 export interface UnifiedMessageAttachment {

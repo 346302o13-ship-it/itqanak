@@ -4,7 +4,11 @@ import { NextResponse } from "next/server";
 
 import { assertProtectedForm, loadWebConfig } from "@/lib/auth-runtime";
 import { createDraftInput } from "@/lib/request-form";
-import { requestFormErrorResponse, requestFormUnauthorizedResponse } from "@/lib/request-http";
+import {
+  acceptsHtml,
+  requestFormErrorResponse,
+  requestFormUnauthorizedResponse,
+} from "@/lib/request-http";
 import { getRequestId } from "@/lib/request-id";
 import { createStudentRequestRuntime } from "@/lib/request-runtime";
 import { principalForRequest } from "@/lib/route-principal";
@@ -72,6 +76,12 @@ export async function POST(request: NextRequest) {
       const detailPath = `/${locale}/student/requests/${encodeURIComponent(result.request.requestNumber)}`;
       const destination = new URL(detailPath, protectedForm.config.publicAppUrl);
       const quick = protectedForm.formData.get("quick") === "true";
+      const wantsJson = !acceptsHtml(request);
+      const chatOk = () =>
+        NextResponse.json(
+          { requestNumber: result.request.requestNumber, requestId: result.request.id },
+          { status: 201, headers: { "Cache-Control": "no-store", "X-Request-ID": requestId } },
+        );
       const chatDestination = () => {
         const chat = new URL(`/${locale}/student/support`, protectedForm.config.publicAppUrl);
         chat.searchParams.set("request", result.request.id);
@@ -82,7 +92,7 @@ export async function POST(request: NextRequest) {
       // one-tap flow that request already exists and is on its way, so send the
       // student to its conversation instead of a "draft already exists" page.
       if (quick && result.idempotentReplay) {
-        return NextResponse.redirect(chatDestination(), 303);
+        return wantsJson ? chatOk() : NextResponse.redirect(chatDestination(), 303);
       }
 
       // "Save & send": create the draft, then submit it in the same request so a
@@ -112,7 +122,7 @@ export async function POST(request: NextRequest) {
           // The one-tap flow gathers the rest of the details in the chat, so
           // land the student in the conversation for the new request rather
           // than on a form-heavy detail page.
-          return NextResponse.redirect(chatDestination(), 303);
+          return wantsJson ? chatOk() : NextResponse.redirect(chatDestination(), 303);
         } catch (submitError: unknown) {
           return requestFormErrorResponse(
             request,

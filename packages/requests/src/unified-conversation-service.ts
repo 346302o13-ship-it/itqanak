@@ -70,6 +70,8 @@ interface RequestSummaryRow {
   readonly status: string;
   readonly version: number | string;
   readonly updated_at: Date | string;
+  readonly due_status?: string | null;
+  readonly has_pending_receipt?: boolean;
 }
 
 interface MessageRow {
@@ -315,13 +317,26 @@ function toJsonObject(value: unknown): JsonObject {
 }
 
 function toRequest(row: RequestSummaryRow): UnifiedRequestSummary {
-  return {
+  const base: UnifiedRequestSummary = {
     id: row.id,
     requestNumber: row.request_number,
     title: row.title,
     status: toRequestStatus(row.status),
     version: toSafeInteger(row.version, "request version"),
     updatedAt: toDate(row.updated_at),
+  };
+  if (row.has_pending_receipt === undefined) return base;
+  const dueStatus =
+    row.due_status === "UNPAID" || row.due_status === "PAID" || row.due_status === "VOIDED"
+      ? row.due_status
+      : undefined;
+  return {
+    ...base,
+    finance: {
+      hasDue: dueStatus !== undefined,
+      hasPendingReceipt: row.has_pending_receipt === true,
+      ...(dueStatus === undefined ? {} : { dueStatus }),
+    },
   };
 }
 
@@ -549,10 +564,26 @@ export class UnifiedConversationService {
     const [summaryRows, requestRows] = await Promise.all([
       this.readConversationRows(this.database, principal.userId, access.row.id),
       this.database<RequestSummaryRow[]>`
-        SELECT id, request_number, title, status, version, updated_at
-        FROM service_requests
-        WHERE student_user_id = ${access.row.student_user_id}
-        ORDER BY updated_at DESC, id DESC
+        SELECT
+          requests.id, requests.request_number, requests.title, requests.status,
+          requests.version, requests.updated_at,
+          due.status AS due_status,
+          EXISTS (
+            SELECT 1
+            FROM finance_payment_submissions AS receipts
+            INNER JOIN finance_dues AS receipt_due ON receipt_due.id = receipts.due_id
+            WHERE receipt_due.request_id = requests.id AND receipts.review_status = 'PENDING'
+          ) AS has_pending_receipt
+        FROM service_requests AS requests
+        LEFT JOIN LATERAL (
+          SELECT status
+          FROM finance_dues
+          WHERE finance_dues.request_id = requests.id
+          ORDER BY created_at DESC, id DESC
+          LIMIT 1
+        ) AS due ON TRUE
+        WHERE requests.student_user_id = ${access.row.student_user_id}
+        ORDER BY requests.updated_at DESC, requests.id DESC
       `,
     ]);
     const summary = summaryRows[0];
