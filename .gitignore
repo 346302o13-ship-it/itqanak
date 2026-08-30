@@ -28,3 +28,7 @@ clamav-data/
 .DS_Store
 *.swp
 .vscode/
+
+# local deploy build logs
+.deploy-build.log
+.pnpm-build.log
