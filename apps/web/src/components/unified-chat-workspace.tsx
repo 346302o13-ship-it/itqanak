@@ -40,6 +40,8 @@ import {
 import { requestStatusLabel } from "@/lib/request-presenters";
 import { playUiSound } from "@/lib/ui-sounds";
 
+import { PaymentReceiptUploader } from "./payment-receipt-uploader";
+
 import {
   ArrowIcon,
   CheckCheckIcon,
@@ -409,11 +411,59 @@ function quoteStatusLabel(status: ServiceQuote["status"], locale: "ar" | "en"): 
   return labels[status][locale];
 }
 
+function PaymentDueCard({
+  metadata,
+  mode,
+  csrfToken,
+  locale,
+  receiptUnderReview,
+}: Readonly<{
+  metadata: UnifiedMessage["metadata"];
+  mode: "student" | "admin";
+  csrfToken: string | undefined;
+  locale: "ar" | "en";
+  receiptUnderReview: boolean;
+}>) {
+  const english = locale === "en";
+  const dueId = typeof metadata.dueId === "string" ? metadata.dueId : undefined;
+  const requestNumber = typeof metadata.requestNumber === "string" ? metadata.requestNumber : "";
+  const currency = typeof metadata.currency === "string" ? metadata.currency : "SAR";
+  const minorUnit = metadata.minorUnit === 3 ? 3 : 2;
+  const amountMinor = typeof metadata.amountMinor === "number" ? metadata.amountMinor : 0;
+  const amount = (amountMinor / 10 ** minorUnit).toLocaleString(english ? "en-US" : "ar-SA", {
+    minimumFractionDigits: minorUnit,
+    maximumFractionDigits: minorUnit,
+  });
+  return (
+    <div className="rounded-2xl border border-[var(--itq-color-warning-200)] bg-[var(--itq-color-warning-50)] p-3.5 shadow-sm">
+      <p className="text-xs font-black text-[var(--itq-color-warning-950)]">
+        {english ? "Payment due" : "مبلغ مستحق"}
+        {requestNumber.length > 0 ? (
+          <bdi className="ms-1 font-bold opacity-70" dir="ltr">
+            · {requestNumber}
+          </bdi>
+        ) : null}
+      </p>
+      <p className="mt-1 text-lg font-black text-[var(--itq-color-warning-950)]" dir="ltr">
+        {amount} {currency}
+      </p>
+      {mode === "admin" ? null : receiptUnderReview ? (
+        <p className="mt-2 rounded-xl border border-[var(--itq-color-info-200)] bg-[var(--itq-color-info-50)] px-3 py-2 text-xs font-bold text-[var(--itq-color-info-950)]">
+          {english ? "Your receipt is under review." : "إيصالك قيد المراجعة."}
+        </p>
+      ) : dueId === undefined ? null : (
+        <PaymentReceiptUploader csrfToken={csrfToken} dueId={dueId} locale={locale} />
+      )}
+    </div>
+  );
+}
+
 function QuoteCard({
   locale,
   mode,
   onRespond,
   onWithdraw,
+  optimisticDecision,
   pending,
   quote,
 }: Readonly<{
@@ -421,15 +471,23 @@ function QuoteCard({
   mode: "student" | "admin";
   onRespond: (quote: ServiceQuote, decision: "ACCEPT" | "REJECT") => void;
   onWithdraw: (quote: ServiceQuote) => void;
+  optimisticDecision?: "ACCEPT" | "REJECT" | undefined;
   pending: boolean;
   quote: ServiceQuote;
 }>) {
   const english = locale === "en";
-  const displayStatus =
-    quote.status === "PENDING" && quote.expiresAt.getTime() <= Date.now()
-      ? "EXPIRED"
+  const rawStatus =
+    quote.status === "PENDING" && optimisticDecision !== undefined
+      ? optimisticDecision === "ACCEPT"
+        ? "ACCEPTED"
+        : "REJECTED"
       : quote.status;
-  const actionable = mode === "student" && displayStatus === "PENDING";
+  const displayStatus =
+    rawStatus === "PENDING" && quote.expiresAt.getTime() <= Date.now() ? "EXPIRED" : rawStatus;
+  // Once the student has answered (locally or on the server) the buttons are gone
+  // for good — a tap must not leave them live.
+  const actionable =
+    mode === "student" && displayStatus === "PENDING" && optimisticDecision === undefined;
   const withdrawable = mode === "admin" && displayStatus === "PENDING";
   const accepted = displayStatus === "ACCEPTED";
   const rejected = displayStatus === "REJECTED" || displayStatus === "WITHDRAWN";
@@ -837,6 +895,15 @@ export function UnifiedChatWorkspace({
   const [editingId, setEditingId] = useState<string>();
   const [editingText, setEditingText] = useState("");
   const [deleteConfirmFor, setDeleteConfirmFor] = useState<string>();
+  // Quotes the student has answered in this session: the card locks its action
+  // buttons at once (WhatsApp-style) and never re-offers them, even if a poll
+  // briefly returns a stale PENDING copy before the response reconciles.
+  const [quoteDecisions, setQuoteDecisions] = useState<ReadonlyMap<string, "ACCEPT" | "REJECT">>(
+    new Map(),
+  );
+  // Admin request card whose pricing / ledger controls are unfolded. One at a
+  // time, collapsed by default, right inside the request's own card.
+  const [expandedRequestId, setExpandedRequestId] = useState<string>();
 
   const closeContacts = useCallback((restoreFocus = true): void => {
     setContactsOpen(false);
@@ -848,8 +915,6 @@ export function UnifiedChatWorkspace({
   }, []);
 
   const selectedRequest = requests.find((request) => request.id === linkedRequestId);
-  const selectedRequestHasPendingQuote =
-    selectedRequest !== undefined && hasPendingQuoteForRequest(messages, selectedRequest.id);
   const activeRequestCount = requests.filter(
     (request) => !["COMPLETED", "CANCELLED", "REJECTED"].includes(request.status),
   ).length;
@@ -1921,7 +1986,10 @@ export function UnifiedChatWorkspace({
 
   async function respondToQuote(quote: ServiceQuote, decision: "ACCEPT" | "REJECT") {
     if (csrfToken === undefined || interactionLocked) return;
+    if (quoteDecisions.has(quote.id)) return;
     setPending(true);
+    // Lock the card immediately; the buttons must not stay tappable after a tap.
+    setQuoteDecisions((current) => new Map(current).set(quote.id, decision));
     setNotice(english ? "Saving your response…" : "جارٍ حفظ ردك…");
     try {
       const form = new URLSearchParams({
@@ -1968,6 +2036,12 @@ export function UnifiedChatWorkspace({
             : "تم رفض العرض وإبلاغ الإدارة.",
       );
     } catch {
+      // The save failed: unlock so the student can try again.
+      setQuoteDecisions((current) => {
+        const next = new Map(current);
+        next.delete(quote.id);
+        return next;
+      });
       setNotice(english ? "Your response could not be saved." : "تعذر حفظ ردك على العرض.");
     } finally {
       setPending(false);
@@ -2455,6 +2529,11 @@ export function UnifiedChatWorkspace({
                   mode === "admin"
                     ? `/${locale}/admin/requests/${encodeURIComponent(request.requestNumber)}`
                     : `/${locale}/student/requests/${encodeURIComponent(request.requestNumber)}`;
+                const cardExpanded = mode === "admin" && expandedRequestId === request.id;
+                const cardHasPendingQuote = hasPendingQuoteForRequest(messages, request.id);
+                const canQuoteCard =
+                  quoteEligibleRequestStatuses.has(request.status) && !cardHasPendingQuote;
+                const canChargeCard = request.status !== "DRAFT";
                 return (
                   <li
                     className={`rounded-2xl border p-3 ${
@@ -2509,6 +2588,138 @@ export function UnifiedChatWorkspace({
                           ? "Request details"
                           : "تفاصيل الطلب"}
                     </Link>
+                    {mode === "admin" && (canQuoteCard || canChargeCard || cardHasPendingQuote) ? (
+                      <>
+                        <button
+                          aria-expanded={cardExpanded}
+                          className="mt-2 flex w-full items-center justify-center gap-1.5 rounded-xl bg-[var(--itq-color-surface-soft)] px-3 py-2 text-[11px] font-black text-[var(--itq-color-muted)]"
+                          onClick={() => {
+                            setExpandedRequestId(cardExpanded ? undefined : request.id);
+                            if (!cardExpanded) setLinkedRequestId(request.id);
+                          }}
+                          type="button"
+                        >
+                          {cardExpanded
+                            ? english
+                              ? "Hide pricing"
+                              : "إخفاء التسعير"
+                            : english
+                              ? "Pricing & ledger"
+                              : "التسعير والمديونية"}
+                          <ChevronIcon
+                            className={`size-3.5 transition ${
+                              cardExpanded ? "-rotate-90" : "rotate-90"
+                            }`}
+                          />
+                        </button>
+                        {cardExpanded ? (
+                          <div className="mt-2 grid gap-2 border-t border-[var(--itq-color-border)] pt-2">
+                            <p className="text-[10px] font-bold text-[var(--itq-color-muted)]">
+                              {english ? "Updated " : "آخر تحديث "}
+                              <time dateTime={request.updatedAt.toISOString()}>
+                                {formatMessageDate(request.updatedAt, locale)}
+                              </time>
+                            </p>
+                            {canQuoteCard ? (
+                              <form
+                                className="rounded-xl border border-[var(--itq-color-info-200)] bg-[var(--itq-color-info-50)] p-3"
+                                onSubmit={(event) => void createQuote(event)}
+                              >
+                                <p className="mb-2 text-[11px] font-black text-[var(--itq-color-info-950)]">
+                                  {english
+                                    ? "Set the price for this request"
+                                    : "حدّد سعر هذا الطلب"}
+                                </p>
+                                <div className="flex items-stretch gap-2">
+                                  <input
+                                    aria-label={english ? "Price" : "السعر"}
+                                    className="h-11 min-w-0 flex-1 rounded-xl border border-[var(--itq-color-info-200)] bg-[var(--itq-color-surface)] px-3 text-sm font-black"
+                                    inputMode="decimal"
+                                    maxLength={13}
+                                    name="amount"
+                                    placeholder={english ? "0.00" : "٠٫٠٠"}
+                                    required
+                                  />
+                                  <select
+                                    aria-label={english ? "Currency" : "العملة"}
+                                    className="h-11 rounded-xl border border-[var(--itq-color-info-200)] bg-[var(--itq-color-surface)] px-2 text-xs font-black"
+                                    defaultValue="SAR"
+                                    name="currency"
+                                  >
+                                    <option value="SAR">SAR</option>
+                                    <option value="AED">AED</option>
+                                    <option value="KWD">KWD</option>
+                                  </select>
+                                  <button
+                                    className="min-h-11 shrink-0 rounded-xl bg-[var(--itq-color-info-950)] px-4 text-sm font-black text-white disabled:opacity-50"
+                                    disabled={interactionLocked}
+                                    type="submit"
+                                  >
+                                    {english ? "Send" : "إرسال"}
+                                  </button>
+                                </div>
+                                <p className="mt-1.5 text-[10px] font-semibold text-[var(--itq-color-muted)]">
+                                  {english
+                                    ? "The student gets an Approve / Reject card in the chat. Valid for 7 days."
+                                    : "يصل الطالب بطاقة موافقة / رفض في المحادثة. صالح 7 أيام."}
+                                </p>
+                              </form>
+                            ) : cardHasPendingQuote ? (
+                              <p className="rounded-xl bg-[var(--itq-color-info-50)] px-3 py-2 text-[10px] font-bold text-[var(--itq-color-info-950)]">
+                                {english
+                                  ? "A price card is already awaiting the student's response."
+                                  : "توجد بطاقة سعر بانتظار رد الطالب بالفعل."}
+                              </p>
+                            ) : null}
+                            {canChargeCard ? (
+                              <form
+                                className="rounded-xl border border-[var(--itq-color-border)] bg-[var(--itq-color-surface-soft)] p-3"
+                                onSubmit={(event) => void addRequestCharge(event)}
+                              >
+                                <p className="mb-2 text-[11px] font-black">
+                                  {english
+                                    ? "Add a charge to the student's ledger (any status)"
+                                    : "إضافة مبلغ إلى مديونية الطالب (أي حالة)"}
+                                </p>
+                                <div className="flex items-stretch gap-2">
+                                  <input
+                                    aria-label={english ? "Amount" : "المبلغ"}
+                                    className="h-11 min-w-0 flex-1 rounded-xl border border-[var(--itq-color-border)] bg-[var(--itq-color-surface)] px-3 text-sm font-black"
+                                    inputMode="decimal"
+                                    maxLength={13}
+                                    name="amount"
+                                    placeholder={english ? "0.00" : "٠٫٠٠"}
+                                    required
+                                  />
+                                  <select
+                                    aria-label={english ? "Currency" : "العملة"}
+                                    className="h-11 rounded-xl border border-[var(--itq-color-border)] bg-[var(--itq-color-surface)] px-2 text-xs font-black"
+                                    defaultValue="SAR"
+                                    name="currency"
+                                  >
+                                    <option value="SAR">SAR</option>
+                                    <option value="AED">AED</option>
+                                    <option value="KWD">KWD</option>
+                                  </select>
+                                  <button
+                                    className="min-h-11 shrink-0 rounded-xl bg-[var(--itq-color-ink-deep)] px-4 text-sm font-black text-white disabled:opacity-50"
+                                    disabled={interactionLocked}
+                                    type="submit"
+                                  >
+                                    {english ? "Add" : "إضافة"}
+                                  </button>
+                                </div>
+                                <p className="mt-1.5 text-[10px] font-semibold text-[var(--itq-color-muted)]">
+                                  {english
+                                    ? "Recorded immediately as an unpaid due on this request — no student approval."
+                                    : "يُسجَّل فورًا كمستحق غير مدفوع على هذا الطلب دون موافقة الطالب."}
+                                </p>
+                              </form>
+                            ) : null}
+                          </div>
+                        ) : null}
+                      </>
+                    ) : null}
                     {mode === "admin" && selected && adminTransitions.length > 0 ? (
                       <form
                         className="mt-2 grid grid-cols-[minmax(0,1fr)_auto] gap-2 border-t border-[var(--itq-color-border)] pt-2"
@@ -2581,101 +2792,6 @@ export function UnifiedChatWorkspace({
               })}
             </ul>
           )}
-
-          {mode === "admin" &&
-          selectedRequest !== undefined &&
-          !selectedRequestHasPendingQuote &&
-          quoteEligibleRequestStatuses.has(selectedRequest.status) ? (
-            <form
-              className="mt-4 rounded-2xl border border-[var(--itq-color-info-200)] bg-[var(--itq-color-info-50)] p-3"
-              onSubmit={(event) => void createQuote(event)}
-            >
-              <p className="mb-2 text-xs font-black text-[var(--itq-color-info-950)]">
-                {english ? "Set the price for this request" : "حدّد سعر هذا الطلب"}
-              </p>
-              <div className="flex items-stretch gap-2">
-                <input
-                  aria-label={english ? "Price" : "السعر"}
-                  className="h-11 min-w-0 flex-1 rounded-xl border border-[var(--itq-color-info-200)] bg-[var(--itq-color-surface)] px-3 text-sm font-black"
-                  inputMode="decimal"
-                  maxLength={13}
-                  name="amount"
-                  placeholder={english ? "0.00" : "٠٫٠٠"}
-                  required
-                />
-                <select
-                  aria-label={english ? "Currency" : "العملة"}
-                  className="h-11 rounded-xl border border-[var(--itq-color-info-200)] bg-[var(--itq-color-surface)] px-2 text-xs font-black"
-                  defaultValue="SAR"
-                  name="currency"
-                >
-                  <option value="SAR">SAR</option>
-                  <option value="AED">AED</option>
-                  <option value="KWD">KWD</option>
-                </select>
-                <button
-                  className="min-h-11 shrink-0 rounded-xl bg-[var(--itq-color-info-950)] px-4 text-sm font-black text-white disabled:opacity-50"
-                  disabled={interactionLocked}
-                  type="submit"
-                >
-                  {english ? "Send" : "إرسال"}
-                </button>
-              </div>
-              <p className="mt-1.5 text-[10px] font-semibold text-[var(--itq-color-muted)]">
-                {english
-                  ? "The student gets an Approve / Reject card in the chat. Valid for 7 days."
-                  : "يصل الطالب بطاقة موافقة / رفض في المحادثة. صالح 7 أيام."}
-              </p>
-            </form>
-          ) : null}
-
-          {mode === "admin" &&
-          selectedRequest !== undefined &&
-          selectedRequest.status !== "DRAFT" ? (
-            <form
-              className="mt-3 rounded-2xl border border-[var(--itq-color-border)] bg-[var(--itq-color-surface-soft)] p-3"
-              onSubmit={(event) => void addRequestCharge(event)}
-            >
-              <p className="mb-2 text-xs font-black">
-                {english
-                  ? "Add a charge to the student's ledger (any status)"
-                  : "إضافة مبلغ إلى مديونية الطالب (أي حالة)"}
-              </p>
-              <div className="flex items-stretch gap-2">
-                <input
-                  aria-label={english ? "Amount" : "المبلغ"}
-                  className="h-11 min-w-0 flex-1 rounded-xl border border-[var(--itq-color-border)] bg-[var(--itq-color-surface)] px-3 text-sm font-black"
-                  inputMode="decimal"
-                  maxLength={13}
-                  name="amount"
-                  placeholder={english ? "0.00" : "٠٫٠٠"}
-                  required
-                />
-                <select
-                  aria-label={english ? "Currency" : "العملة"}
-                  className="h-11 rounded-xl border border-[var(--itq-color-border)] bg-[var(--itq-color-surface)] px-2 text-xs font-black"
-                  defaultValue="SAR"
-                  name="currency"
-                >
-                  <option value="SAR">SAR</option>
-                  <option value="AED">AED</option>
-                  <option value="KWD">KWD</option>
-                </select>
-                <button
-                  className="min-h-11 shrink-0 rounded-xl bg-[var(--itq-color-ink-deep)] px-4 text-sm font-black text-white disabled:opacity-50"
-                  disabled={interactionLocked}
-                  type="submit"
-                >
-                  {english ? "Add" : "إضافة"}
-                </button>
-              </div>
-              <p className="mt-1.5 text-[10px] font-semibold text-[var(--itq-color-muted)]">
-                {english
-                  ? "Recorded immediately as an unpaid due on this request — no student approval."
-                  : "يُسجَّل فورًا كمستحق غير مدفوع على هذا الطلب دون موافقة الطالب."}
-              </p>
-            </form>
-          ) : null}
         </div>
       </div>
     );
@@ -3051,12 +3167,29 @@ export function UnifiedChatWorkspace({
                           mode={mode}
                           onRespond={(quote, decision) => void respondToQuote(quote, decision)}
                           onWithdraw={(quote) => void withdrawQuote(quote)}
+                          optimisticDecision={quoteDecisions.get(message.quote.id)}
                           pending={interactionLocked}
                           quote={message.quote}
                         />
                       </li>
                     ) : system ? (
-                      isImportantSystemMessage(message) ? (
+                      message.body === "PAYMENT_DUE_CREATED" ? (
+                        <li className="mx-auto my-2 w-full max-w-sm">
+                          <PaymentDueCard
+                            csrfToken={csrfToken}
+                            locale={locale}
+                            metadata={message.metadata}
+                            mode={mode}
+                            receiptUnderReview={
+                              requests.find(
+                                (candidate) =>
+                                  candidate.id === message.request?.id ||
+                                  candidate.requestNumber === message.metadata.requestNumber,
+                              )?.finance?.hasPendingReceipt === true
+                            }
+                          />
+                        </li>
+                      ) : isImportantSystemMessage(message) ? (
                         <li className="mx-auto my-1 flex max-w-md items-center gap-1.5 rounded-full bg-[var(--itq-color-surface)]/85 px-3 py-1 text-[10px] font-bold text-[var(--itq-color-muted)] shadow-sm">
                           <bdi className="truncate" dir="auto">
                             {systemMessageLabel(message, locale)}

@@ -482,6 +482,31 @@ export class FinanceService {
         )
         ON CONFLICT (idempotency_key) DO NOTHING
       `;
+      // Drop an "upload the receipt" card into the student's conversation when
+      // one already exists (a student who has never opened chat still gets the
+      // notification above).
+      const conversations = await tx<{ readonly id: string }[]>`
+        SELECT id FROM support_conversations WHERE student_user_id = ${request.student_user_id}
+      `;
+      const conversationId = conversations[0]?.id;
+      if (conversationId !== undefined) {
+        await tx`
+          INSERT INTO support_messages (
+            conversation_id, sender_type, sender_user_id, content_type, body, metadata, request_id
+          ) VALUES (
+            ${conversationId}, 'SYSTEM', NULL, 'ACTION', 'PAYMENT_DUE_CREATED',
+            ${tx.json({
+              dueId: row.id,
+              dueReference: row.reference,
+              requestNumber: fields.requestNumber,
+              amountMinor: fields.amountMinor,
+              currency: fields.currency,
+              minorUnit: fields.minorUnit,
+            })},
+            ${request.id}
+          )
+        `;
+      }
       return toAdminFinanceDue(row);
     });
   }
