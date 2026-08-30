@@ -330,6 +330,9 @@ function systemMessageLabel(message: UnifiedMessage, locale: "ar" | "en"): strin
     QUOTE_CREATED: ["أرسلت الإدارة عرض سعر جديدًا", "The team sent a new quote"],
     QUOTE_ACCEPTED: ["وافق الطالب على عرض السعر", "The student accepted the quote"],
     QUOTE_REJECTED: ["رفض الطالب عرض السعر", "The student declined the quote"],
+    SERVICE_QUOTE_ACCEPTED: ["وافق الطالب على عرض السعر", "The student accepted the quote"],
+    SERVICE_QUOTE_REJECTED: ["رفض الطالب عرض السعر", "The student declined the quote"],
+    SERVICE_QUOTE_WITHDRAWN: ["سحبت الإدارة عرض السعر", "The team withdrew the quote"],
   };
   if (message.body === "REQUEST_STATUS_CHANGED" || message.body === "STUDENT_ACTION_COMPLETED") {
     if (toStatus === undefined) return english ? "Request status updated" : "تم تحديث حالة الطلب";
@@ -349,8 +352,8 @@ function systemMessageLabel(message: UnifiedMessage, locale: "ar" | "en"): strin
     const accepted = message.metadata.decision === "ACCEPT";
     return accepted
       ? english
-        ? "Payment confirmed"
-        : "تم تأكيد الدفع"
+        ? "Payment approved"
+        : "تم اعتماد الدفع"
       : english
         ? "Receipt not accepted"
         : "لم يُقبل إيصال الدفع";
@@ -374,6 +377,9 @@ function isImportantSystemMessage(message: UnifiedMessage): boolean {
       "QUOTE_CREATED",
       "QUOTE_ACCEPTED",
       "QUOTE_REJECTED",
+      "SERVICE_QUOTE_ACCEPTED",
+      "SERVICE_QUOTE_REJECTED",
+      "SERVICE_QUOTE_WITHDRAWN",
       "REQUEST_CANCELLED",
       "PAYMENT_DUE_CREATED",
       "PAYMENT_RECEIPT_SUBMITTED",
@@ -569,8 +575,8 @@ function PaymentReceiptCard({
   const statusLabel =
     reviewState === "ACCEPTED"
       ? english
-        ? "Payment confirmed ✓"
-        : "تم تأكيد الدفع ✓"
+        ? "Payment approved ✓"
+        : "تم اعتماد الدفع ✓"
       : reviewState === "REJECTED"
         ? english
           ? "Receipt not accepted"
@@ -627,7 +633,7 @@ function PaymentReceiptCard({
             onClick={() => submissionId !== undefined && onReview(submissionId, "ACCEPT")}
             type="button"
           >
-            {english ? "Confirm payment" : "قبول الدفع"}
+            {english ? "Approve payment" : "اعتماد الدفع"}
           </button>
         </div>
       ) : (
@@ -703,6 +709,8 @@ function PricingForm({
   locked,
   onCharge,
   onQuote,
+  quoteAmount,
+  quoteCurrency,
 }: Readonly<{
   allowCharge: boolean;
   allowQuote: boolean;
@@ -710,6 +718,9 @@ function PricingForm({
   locked: boolean;
   onCharge: (event: React.FormEvent<HTMLFormElement>) => void;
   onQuote: (event: React.FormEvent<HTMLFormElement>) => void;
+  /** Pre-fills the amount from an already-sent quote so the admin need not retype it. */
+  quoteAmount?: string | undefined;
+  quoteCurrency?: string | undefined;
 }>) {
   const [ledger, setLedger] = useState(!allowQuote);
   const useLedger = ledger || !allowQuote;
@@ -758,17 +769,25 @@ function PricingForm({
       <input
         aria-label={english ? "Amount" : "المبلغ"}
         className="h-11 w-full rounded-xl border border-[var(--itq-color-border)] bg-[var(--itq-color-surface)] px-3 text-sm font-black"
+        defaultValue={quoteAmount ?? ""}
         inputMode="decimal"
+        key={quoteAmount ?? "blank"}
         maxLength={13}
         name="amount"
         placeholder={english ? "0.00" : "٠٫٠٠"}
         required
       />
+      {quoteAmount !== undefined && useLedger ? (
+        <p className="-mt-1 text-[10px] font-bold text-[var(--itq-color-brand-strong)]">
+          {english ? "Pre-filled from the sent quote." : "عُبّئ تلقائيًا من عرض السعر المُرسل."}
+        </p>
+      ) : null}
       <div className="flex gap-2">
         <select
           aria-label={english ? "Currency" : "العملة"}
           className="h-11 w-20 shrink-0 rounded-xl border border-[var(--itq-color-border)] bg-[var(--itq-color-surface)] px-2 text-xs font-black"
-          defaultValue="SAR"
+          defaultValue={quoteCurrency ?? "SAR"}
+          key={quoteCurrency ?? "SAR"}
           name="currency"
         >
           <option value="SAR">SAR</option>
@@ -2723,8 +2742,8 @@ export function UnifiedChatWorkspace({
       setNotice(
         decision === "ACCEPT"
           ? english
-            ? "Payment confirmed."
-            : "تم تأكيد الدفع."
+            ? "Payment approved."
+            : "تم اعتماد الدفع."
           : english
             ? "Receipt rejected."
             : "تم رفض الإيصال.",
@@ -3234,6 +3253,18 @@ export function UnifiedChatWorkspace({
                   quoteEligibleRequestStatuses.has(request.status) &&
                   !cardHasPendingQuote;
                 const canChargeCard = !cardPaid && request.status !== "DRAFT";
+                // Latest quote raised for this request — its amount pre-fills the
+                // "add to ledger" form so the admin does not retype the price.
+                const latestQuote = messages
+                  .filter((entry) => entry.quote?.requestId === request.id)
+                  .map((entry) => entry.quote)
+                  .at(-1);
+                const latestQuoteAmount =
+                  latestQuote === undefined
+                    ? undefined
+                    : (latestQuote.amountMinor / 10 ** latestQuote.minorUnit).toFixed(
+                        latestQuote.minorUnit,
+                      );
                 return (
                   <li
                     className={`rounded-2xl border p-3 ${
@@ -3451,6 +3482,12 @@ export function UnifiedChatWorkspace({
                                 locked={interactionLocked}
                                 onCharge={(event) => void addRequestCharge(event)}
                                 onQuote={(event) => void createQuote(event)}
+                                {...(latestQuoteAmount === undefined
+                                  ? {}
+                                  : {
+                                      quoteAmount: latestQuoteAmount,
+                                      quoteCurrency: latestQuote?.currency,
+                                    })}
                               />
                             ) : null}
                             {cardHasPendingQuote && !canQuoteCard ? (
@@ -3891,7 +3928,7 @@ export function UnifiedChatWorkspace({
                         </time>
                       </li>
                     ) : null}
-                    {message.quote !== undefined ? (
+                    {message.quote !== undefined && message.body === "SERVICE_QUOTE_CREATED" ? (
                       <li className="my-2">
                         {message.request === undefined ? null : (
                           <Link
