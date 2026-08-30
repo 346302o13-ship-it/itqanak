@@ -66,10 +66,12 @@ function notificationUrl(config: WebPushConfig, actionHref: string | null): stri
   const base = config.publicAppUrl.replace(/\/$/u, "");
   if (actionHref === null) return `${base}/ar/student`;
   if (actionHref.startsWith("http")) return actionHref;
+  if (actionHref === "/finance") return `${base}/ar/student/finance`;
   if (actionHref === "/conversation" || actionHref.startsWith("/conversation")) {
     const query = actionHref.startsWith("/conversation?") ? actionHref.slice(13) : "";
     return `${base}/ar/student/support${query}`;
   }
+  if (actionHref.startsWith("/ar/") || actionHref.startsWith("/en/")) return `${base}${actionHref}`;
   if (actionHref.startsWith("/")) return `${base}/ar${actionHref}`;
   return `${base}/ar/student`;
 }

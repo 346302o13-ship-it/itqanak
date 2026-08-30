@@ -223,19 +223,29 @@ function contentTypeForMime(mimeType: string): "IMAGE" | "AUDIO" | "FILE" {
 function financeChips(
   finance: NonNullable<UnifiedRequestSummary["finance"]>,
   english: boolean,
+  mode: "student" | "admin",
 ): readonly { key: string; className: string; label: string }[] {
   const chips: { key: string; className: string; label: string }[] = [];
   if (!finance.hasDue) {
-    chips.push({
-      key: "noprice",
-      className: "bg-[var(--itq-color-surface-soft)] text-[var(--itq-color-muted)]",
-      label: english ? "no price" : "بلا سعر",
-    });
+    if (mode === "admin") {
+      chips.push({
+        key: "noprice",
+        className: "bg-[var(--itq-color-surface-soft)] text-[var(--itq-color-muted)]",
+        label: english ? "no price" : "بلا سعر",
+      });
+    }
   } else if (finance.dueStatus === "UNPAID") {
     chips.push({
       key: "unpaid",
       className: "bg-[var(--itq-color-warning-50)] text-[var(--itq-color-warning-900)]",
-      label: english ? "unpaid" : "غير مدفوع",
+      label:
+        mode === "admin"
+          ? english
+            ? "unpaid"
+            : "غير مدفوع"
+          : english
+            ? "payment due"
+            : "مبلغ مستحق",
     });
   } else if (finance.dueStatus === "PAID") {
     chips.push({
@@ -248,7 +258,14 @@ function financeChips(
     chips.push({
       key: "receipt",
       className: "bg-[var(--itq-color-info-50)] text-[var(--itq-color-info-950)]",
-      label: english ? "receipt to review" : "إيصال للمراجعة",
+      label:
+        mode === "admin"
+          ? english
+            ? "receipt to review"
+            : "إيصال للمراجعة"
+          : english
+            ? "receipt under review"
+            : "إيصالك قيد المراجعة",
     });
   }
   return chips;
@@ -319,7 +336,39 @@ function systemMessageLabel(message: UnifiedMessage, locale: "ar" | "en"): strin
   }
   const label = labels[message.body];
   if (label !== undefined) return english ? label[1] : label[0];
+  if (message.body === "PAYMENT_DUE_CREATED") {
+    return english ? "A payment is due — upload the receipt" : "مبلغ مستحق — ارفع إيصال الدفع";
+  }
   return message.body || (english ? "Conversation updated" : "تم تحديث المحادثة");
+}
+
+// Keep the conversation readable: most status/system events are hidden, only a
+// few milestones show — and those show small.
+function isImportantSystemMessage(message: UnifiedMessage): boolean {
+  const toStatus =
+    typeof message.metadata.toStatus === "string" ? message.metadata.toStatus : undefined;
+  if (
+    [
+      "QUOTE_CREATED",
+      "QUOTE_ACCEPTED",
+      "QUOTE_REJECTED",
+      "REQUEST_CANCELLED",
+      "PAYMENT_DUE_CREATED",
+    ].includes(message.body)
+  ) {
+    return true;
+  }
+  if (message.body === "REQUEST_STATUS_CHANGED" || message.body === "STUDENT_ACTION_COMPLETED") {
+    return [
+      "DELIVERED",
+      "COMPLETED",
+      "REVISION_REQUESTED",
+      "WAITING_FOR_STUDENT",
+      "REJECTED",
+      "CANCELLED",
+    ].includes(toStatus ?? "");
+  }
+  return false;
 }
 
 function Receipt({
@@ -998,7 +1047,10 @@ export function UnifiedChatWorkspace({
     previousLastMessageId.current = latestMessageId;
     if (previous === undefined || previous === latestMessageId) return;
     const mySenderType = mode === "admin" ? "ADMIN" : "STUDENT";
-    if (messages.at(-1)?.senderType !== mySenderType) playUiSound("receive");
+    const last = messages.at(-1);
+    if (last !== undefined && last.senderType !== mySenderType && last.senderType !== "SYSTEM") {
+      playUiSound("receive");
+    }
     if (nearBottom.current) {
       endRef.current?.scrollIntoView({ behavior: "smooth", block: "nearest" });
       setNewMessagesAvailable(false);
@@ -2432,8 +2484,8 @@ export function UnifiedChatWorkspace({
                       </bdi>
                       <span className="mt-2 flex flex-wrap items-center gap-1.5">
                         <RequestStatusChip locale={locale} status={request.status} />
-                        {(mode === "admin" && request.finance !== undefined
-                          ? financeChips(request.finance, english)
+                        {(request.finance !== undefined
+                          ? financeChips(request.finance, english, mode)
                           : []
                         ).map((chip) => (
                           <span
@@ -2967,6 +3019,9 @@ export function UnifiedChatWorkspace({
                   message.senderType === "SYSTEM" ||
                   message.contentType === "SYSTEM" ||
                   message.contentType === "ACTION";
+                if (system && message.quote === undefined && !isImportantSystemMessage(message)) {
+                  return null;
+                }
                 return (
                   <Fragment key={message.id}>
                     {showDate ? (
@@ -3001,34 +3056,19 @@ export function UnifiedChatWorkspace({
                         />
                       </li>
                     ) : system ? (
-                      <li className="mx-auto my-1 w-full max-w-xl">
-                        <article className="rounded-2xl border border-[var(--itq-color-warning-200)] bg-[var(--itq-color-warning-50)] px-4 py-3 text-center shadow-sm">
-                          <p className="text-xs font-black text-[var(--itq-color-warning-950)]">
-                            <bdi dir="auto">{systemMessageLabel(message, locale)}</bdi>
-                          </p>
-                          {message.request === undefined ? null : (
-                            <div className="mt-2 flex flex-wrap items-center justify-center gap-2">
-                              <RequestStatusChip locale={locale} status={message.request.status} />
-                              <Link
-                                className="text-[10px] font-black text-[var(--itq-color-warning-900)] underline"
-                                href={
-                                  mode === "admin"
-                                    ? `/${locale}/admin/requests/${encodeURIComponent(message.request.requestNumber)}`
-                                    : `/${locale}/student/requests/${encodeURIComponent(message.request.requestNumber)}`
-                                }
-                              >
-                                {english ? "Open request" : "فتح الطلب"}
-                              </Link>
-                            </div>
-                          )}
+                      isImportantSystemMessage(message) ? (
+                        <li className="mx-auto my-1 flex max-w-md items-center gap-1.5 rounded-full bg-[var(--itq-color-surface)]/85 px-3 py-1 text-[10px] font-bold text-[var(--itq-color-muted)] shadow-sm">
+                          <bdi className="truncate" dir="auto">
+                            {systemMessageLabel(message, locale)}
+                          </bdi>
                           <time
-                            className="mt-2 block text-[9px] font-bold text-[var(--itq-color-warning-700)]"
+                            className="shrink-0 opacity-70"
                             dateTime={message.sentAt.toISOString()}
                           >
                             {formatMessageTime(message.sentAt, locale)}
                           </time>
-                        </article>
-                      </li>
+                        </li>
+                      ) : null
                     ) : (
                       <li
                         className={`flex ${mine ? "justify-end" : "justify-start"}`}

@@ -467,6 +467,21 @@ export class FinanceService {
           version: 1,
         },
       });
+      // Tell the student a payment is due and point them at the receipt upload.
+      // The user_notifications insert trigger fans this out to Web Push.
+      await tx`
+        INSERT INTO user_notifications (
+          recipient_user_id, kind, request_id, title_ar, title_en,
+          body_ar, body_en, action_href, idempotency_key
+        ) VALUES (
+          ${request.student_user_id}, 'SYSTEM_ANNOUNCEMENT', ${request.id},
+          'مبلغ مستحق', 'Payment due',
+          ${`لديك مبلغ مستحق على الطلب ${fields.requestNumber}. ارفع إيصال الدفع من صفحة المدفوعات.`},
+          ${`You have a payment due on request ${fields.requestNumber}. Upload your receipt on the payments page.`},
+          '/finance', ${`finance-due:${row.id}`}
+        )
+        ON CONFLICT (idempotency_key) DO NOTHING
+      `;
       return toAdminFinanceDue(row);
     });
   }

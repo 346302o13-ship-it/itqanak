@@ -107,6 +107,7 @@ export function localizedNotificationHref(
   if (actionHref === undefined) return `/${locale}/${surface}`;
   if (actionHref === "/conversation") return inbox;
   if (actionHref.startsWith("/conversation?")) return `${inbox}${actionHref.slice(13)}`;
+  if (actionHref === "/finance") return `/${locale}/${surface}/finance`;
   if (surface === "admin" && actionHref === "/verifications") {
     return `/${locale}/admin/approvals?tab=phone`;
   }
