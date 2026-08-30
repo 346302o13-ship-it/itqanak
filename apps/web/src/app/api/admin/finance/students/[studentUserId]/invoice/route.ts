@@ -31,10 +31,24 @@ export async function POST(request: NextRequest, context: RouteContext) {
       if (principal === undefined) {
         return requestFormUnauthorizedResponse(request, requestId, fallback, adminAppUrl);
       }
-      const { count } = await runtime.finance.sendOutstandingInvoice(principal, studentUserId, {
-        ...protectedForm.context,
-        requestId,
-      });
+      const settle = formValue(protectedForm.formData, "action") === "settle";
+      const { count } = settle
+        ? await runtime.finance.markAllDuesPaid(
+            principal,
+            studentUserId,
+            {
+              method: formValue(protectedForm.formData, "method") as
+                | "BANK_TRANSFER"
+                | "CASH"
+                | "OTHER",
+              reference: formValue(protectedForm.formData, "reference") || null,
+            },
+            { ...protectedForm.context, requestId },
+          )
+        : await runtime.finance.sendOutstandingInvoice(principal, studentUserId, {
+            ...protectedForm.context,
+            requestId,
+          });
       if (!acceptsHtml(request)) {
         return NextResponse.json(
           { count },
@@ -42,7 +56,10 @@ export async function POST(request: NextRequest, context: RouteContext) {
         );
       }
       return NextResponse.redirect(
-        new URL(`${fallback}?notice=invoice-sent`, protectedForm.config.adminAppUrl),
+        new URL(
+          `${fallback}?notice=${settle ? "invoice-settled" : "invoice-sent"}`,
+          protectedForm.config.adminAppUrl,
+        ),
         303,
       );
     } finally {

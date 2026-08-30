@@ -1079,30 +1079,49 @@ export class FinanceService {
         LIMIT 1
       `;
       if (students[0] === undefined) throw new FinanceError("DUE_NOT_FOUND");
-      const groups = await tx<
+      const dueRows = await tx<
         {
+          readonly amount_minor: number | string;
           readonly currency: string;
           readonly minor_unit: number | string;
-          readonly total_minor: number | string;
-          readonly due_count: number | string;
+          readonly request_number: string;
+          readonly title: string;
         }[]
       >`
-        SELECT currency, minor_unit,
-               sum(amount_minor)::text AS total_minor,
-               count(*)::text AS due_count
-        FROM finance_dues
-        WHERE student_user_id = ${studentUserId} AND status = 'UNPAID'
-        GROUP BY currency, minor_unit
-        ORDER BY sum(amount_minor) DESC
+        SELECT d.amount_minor, d.currency, d.minor_unit, r.request_number, r.title
+        FROM finance_dues AS d
+        INNER JOIN service_requests AS r ON r.id = d.request_id
+        WHERE d.student_user_id = ${studentUserId} AND d.status = 'UNPAID'
+        ORDER BY d.created_at ASC, d.id ASC
       `;
-      const lines = groups.map((group) => ({
-        currency: group.currency,
-        minorUnit: Number(group.minor_unit) === 3 ? 3 : 2,
-        totalMinor: Number(group.total_minor),
-        count: Number(group.due_count),
+      const items = dueRows.map((row) => ({
+        requestNumber: row.request_number,
+        title: row.title,
+        amountMinor: Number(row.amount_minor),
+        currency: row.currency,
+        minorUnit: (Number(row.minor_unit) === 3 ? 3 : 2) as 2 | 3,
       }));
-      const count = lines.reduce((sum, line) => sum + line.count, 0);
+      const count = items.length;
       if (count === 0) return { count: 0 };
+      const byCurrency = new Map<
+        string,
+        { currency: string; minorUnit: 2 | 3; totalMinor: number }
+      >();
+      for (const item of items) {
+        const entry = byCurrency.get(item.currency) ?? {
+          currency: item.currency,
+          minorUnit: item.minorUnit,
+          totalMinor: 0,
+        };
+        entry.totalMinor += item.amountMinor;
+        byCurrency.set(item.currency, entry);
+      }
+      const lines = [...byCurrency.values()]
+        .map((line) => ({
+          ...line,
+          count: items.filter((i) => i.currency === line.currency).length,
+        }))
+        .sort((a, b) => b.totalMinor - a.totalMinor);
 
       const primary = lines[0];
       const primaryAmount =
@@ -1143,12 +1162,97 @@ export class FinanceService {
             conversation_id, sender_type, sender_user_id, content_type, body, metadata
           ) VALUES (
             ${conversationId}, 'SYSTEM', NULL, 'ACTION', 'INVOICE_SUMMARY',
-            ${tx.json({ lines, count })}
+            ${tx.json({ items, lines, count, studentUserId })}
           )
         `;
       }
       return { count };
     });
+  }
+
+  /**
+   * Settle every UNPAID due a student has in one go (the student paid the whole
+   * consolidated invoice). Each due goes through the normal record-payment path,
+   * so the ledger and its triggers stay authoritative.
+   */
+  public async markAllDuesPaid(
+    principal: AuthenticatedPrincipal,
+    studentUserIdInput: string,
+    input: {
+      readonly method: FinancePaymentMethod;
+      readonly reference?: string | null;
+      readonly note?: string | null;
+    },
+    context: RequestAuditContext = {},
+  ): Promise<{ readonly count: number }> {
+    requireAdminFinancePermission(principal, "admin.finance.manage");
+    const studentUserId = assertFinanceDueId(studentUserIdInput);
+    const method = assertFinancePaymentMethod(input.method);
+    const reference = normalizePaymentReference(input.reference);
+    if (reference === null) throw new FinanceError("INVALID_REFERENCE");
+    const note = normalizePaymentNote(input.note);
+
+    const dues = await this.database<{ readonly id: string; readonly version: number | string }[]>`
+      SELECT id, version FROM finance_dues
+      WHERE student_user_id = ${studentUserId} AND status = 'UNPAID'
+      ORDER BY created_at ASC, id ASC
+    `;
+    let count = 0;
+    for (const due of dues) {
+      await this.recordPayment(
+        principal,
+        due.id,
+        {
+          expectedVersion: Number(due.version),
+          method,
+          reference,
+          ...(note === null ? {} : { note }),
+        },
+        context,
+      );
+      count += 1;
+    }
+    if (count > 0) {
+      await recordAuditEvent(this.database, {
+        ...context,
+        eventType: "finance.invoice_settled",
+        outcome: "SUCCESS",
+        actorUserId: principal.userId,
+        targetUserId: studentUserId,
+        sessionId: principal.sessionId,
+        resourceType: "user",
+        resourceId: studentUserId,
+        metadata: { dueCount: count },
+      });
+      const conversations = await this.database<{ readonly id: string }[]>`
+        SELECT id FROM support_conversations WHERE student_user_id = ${studentUserId}
+      `;
+      const conversationId = conversations[0]?.id;
+      if (conversationId !== undefined) {
+        await this.database`
+          INSERT INTO support_messages (
+            conversation_id, sender_type, sender_user_id, content_type, body, metadata
+          ) VALUES (
+            ${conversationId}, 'SYSTEM', NULL, 'ACTION', 'INVOICE_SETTLED',
+            ${this.database.json({ count })}
+          )
+        `;
+      }
+      await this.database`
+        INSERT INTO user_notifications (
+          recipient_user_id, kind, title_ar, title_en, body_ar, body_en,
+          action_href, idempotency_key
+        ) VALUES (
+          ${studentUserId}, 'SYSTEM_ANNOUNCEMENT',
+          'تم تأكيد الدفع', 'Payment confirmed',
+          ${`تم اعتماد سداد ${count} مستحق. شكرًا لك.`},
+          ${`${count} due(s) have been marked paid. Thank you.`},
+          '/finance', ${`invoice-settled:${studentUserId}:${new Date().toISOString()}`}
+        )
+        ON CONFLICT (idempotency_key) DO NOTHING
+      `;
+    }
+    return { count };
   }
 
   /**

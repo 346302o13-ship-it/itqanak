@@ -362,7 +362,10 @@ function systemMessageLabel(message: UnifiedMessage, locale: "ar" | "en"): strin
     return english ? "Payment reminder sent" : "تم إرسال تذكير بالدفع";
   }
   if (message.body === "INVOICE_SUMMARY") {
-    return english ? "Outstanding invoice sent" : "تم إرسال فاتورة بالمستحقات";
+    return english ? "Payment request sent" : "تم إرسال طلب دفع";
+  }
+  if (message.body === "INVOICE_SETTLED") {
+    return english ? "All dues marked paid" : "تم اعتماد سداد كل المستحقات";
   }
   return message.body || (english ? "Conversation updated" : "تم تحديث المحادثة");
 }
@@ -386,6 +389,7 @@ function isImportantSystemMessage(message: UnifiedMessage): boolean {
       "PAYMENT_REVIEWED",
       "PAYMENT_REMINDER",
       "INVOICE_SUMMARY",
+      "INVOICE_SETTLED",
     ].includes(message.body)
   ) {
     return true;
@@ -515,7 +519,7 @@ function PaymentDueCard({
               onClick={() => onRemind(dueId)}
               type="button"
             >
-              {english ? "Send a reminder" : "تذكير الطالب"}
+              {english ? "Request payment" : "طلب دفع من الطالب"}
             </button>
           ) : null}
         </div>
@@ -645,54 +649,131 @@ function PaymentReceiptCard({
   );
 }
 
-/** "Everything you owe" card: the per-currency totals from a consolidated invoice. */
+/**
+ * "Everything you owe" card: one line per unpaid request (title + amount) then
+ * the total(s). The admin can settle the whole thing in one action.
+ */
 function InvoiceSummaryCard({
   locale,
   metadata,
+  mode,
+  onSettle,
+  settleBusy,
 }: Readonly<{
   locale: "ar" | "en";
   metadata: UnifiedMessage["metadata"];
+  mode: "student" | "admin";
+  onSettle: (studentUserId: string, method: string, reference: string) => void;
+  settleBusy: boolean;
 }>) {
   const english = locale === "en";
-  const rawLines = Array.isArray(metadata.lines) ? metadata.lines : [];
-  const lines = rawLines.flatMap((line) => {
-    if (typeof line !== "object" || line === null) return [];
-    const record = line as Record<string, unknown>;
-    const currency = typeof record.currency === "string" ? record.currency : "SAR";
-    const minorUnit = record.minorUnit === 3 ? 3 : 2;
-    const totalMinor = typeof record.totalMinor === "number" ? record.totalMinor : 0;
-    const count = typeof record.count === "number" ? record.count : 0;
+  const fmt = (minor: number, minorUnit: number) =>
+    (minor / 10 ** minorUnit).toLocaleString(english ? "en-US" : "ar-SA", {
+      minimumFractionDigits: minorUnit,
+      maximumFractionDigits: minorUnit,
+    });
+  const items = (Array.isArray(metadata.items) ? metadata.items : []).flatMap((raw) => {
+    if (typeof raw !== "object" || raw === null) return [];
+    const record = raw as Record<string, unknown>;
     return [
       {
-        currency,
-        count,
-        total: (totalMinor / 10 ** minorUnit).toLocaleString(english ? "en-US" : "ar-SA", {
-          minimumFractionDigits: minorUnit,
-          maximumFractionDigits: minorUnit,
-        }),
+        title: typeof record.title === "string" ? record.title : "",
+        requestNumber: typeof record.requestNumber === "string" ? record.requestNumber : "",
+        currency: typeof record.currency === "string" ? record.currency : "SAR",
+        minorUnit: record.minorUnit === 3 ? 3 : 2,
+        amountMinor: typeof record.amountMinor === "number" ? record.amountMinor : 0,
       },
     ];
   });
+  const lines = (Array.isArray(metadata.lines) ? metadata.lines : []).flatMap((raw) => {
+    if (typeof raw !== "object" || raw === null) return [];
+    const record = raw as Record<string, unknown>;
+    return [
+      {
+        currency: typeof record.currency === "string" ? record.currency : "SAR",
+        minorUnit: record.minorUnit === 3 ? 3 : 2,
+        totalMinor: typeof record.totalMinor === "number" ? record.totalMinor : 0,
+      },
+    ];
+  });
+  const studentUserId =
+    typeof metadata.studentUserId === "string" ? metadata.studentUserId : undefined;
   return (
     <div className="rounded-2xl border border-[var(--itq-color-brand-200)] bg-[var(--itq-color-brand-50)] p-3.5 shadow-sm">
       <p className="text-xs font-black text-[var(--itq-color-brand-strong)]">
-        {english ? "Outstanding invoice" : "فاتورة بكل المستحقات"}
+        {english ? "Payment request" : "طلب دفع"}
       </p>
+      <ul className="mt-2 grid gap-1 border-b border-[var(--itq-color-brand-200)] pb-2">
+        {items.map((item) => (
+          <li
+            className="flex items-baseline justify-between gap-3 text-[11px] font-bold"
+            key={`${item.requestNumber}-${item.title}`}
+          >
+            <bdi className="truncate" dir="auto">
+              {item.title}
+            </bdi>
+            <span className="shrink-0" dir="ltr">
+              {fmt(item.amountMinor, item.minorUnit)} {item.currency}
+            </span>
+          </li>
+        ))}
+      </ul>
       <ul className="mt-2 grid gap-1">
         {lines.map((line) => (
           <li
             className="flex items-baseline justify-between gap-3 text-sm font-black"
             key={line.currency}
           >
+            <span>{english ? "Total" : "الإجمالي"}</span>
             <span dir="ltr">
-              {line.total} {line.currency}
-            </span>
-            <span className="text-[10px] font-bold text-[var(--itq-color-muted)]">
-              {english ? `${line.count} due(s)` : `${line.count} مستحق`}
+              {fmt(line.totalMinor, line.minorUnit)} {line.currency}
             </span>
           </li>
         ))}
       </ul>
+      {mode === "admin" && studentUserId !== undefined ? (
+        <details className="mt-3 rounded-xl border border-[var(--itq-color-success-200)] bg-[var(--itq-color-success-50)] p-2">
+          <summary className="cursor-pointer list-none text-[11px] font-black text-[var(--itq-color-success-900)]">
+            {english ? "Payment received — settle all" : "تم استلام الدفع — اعتمد الكل"}
+          </summary>
+          <form
+            className="mt-2 grid gap-2"
+            onSubmit={(event) => {
+              event.preventDefault();
+              const data = new FormData(event.currentTarget);
+              onSettle(
+                studentUserId,
+                String(data.get("method") ?? "BANK_TRANSFER"),
+                String(data.get("reference") ?? ""),
+              );
+            }}
+          >
+            <select
+              aria-label={english ? "Payment method" : "وسيلة الدفع"}
+              className="h-9 rounded-lg border border-[var(--itq-color-success-200)] bg-[var(--itq-color-surface)] px-2 text-xs font-black"
+              defaultValue="BANK_TRANSFER"
+              name="method"
+            >
+              <option value="BANK_TRANSFER">{english ? "Bank transfer" : "تحويل بنكي"}</option>
+              <option value="CASH">{english ? "Cash" : "نقدًا"}</option>
+              <option value="OTHER">{english ? "Other" : "أخرى"}</option>
+            </select>
+            <input
+              className="h-9 rounded-lg border border-[var(--itq-color-success-200)] bg-[var(--itq-color-surface)] px-2 text-xs"
+              maxLength={120}
+              name="reference"
+              placeholder={english ? "Reference / note" : "المرجع أو ملاحظة"}
+            />
+            <button
+              className="h-9 rounded-lg bg-[var(--itq-color-success-600)] px-3 text-xs font-black text-white disabled:opacity-50"
+              disabled={settleBusy}
+              type="submit"
+            >
+              {english ? "Confirm all paid" : "تأكيد سداد الكل"}
+            </button>
+          </form>
+        </details>
+      ) : null}
     </div>
   );
 }
@@ -914,103 +995,48 @@ function DueActionsPanel({
         onClick={() => onRemind(dueId)}
         type="button"
       >
-        {english ? "Send a reminder" : "تذكير الطالب"}
+        {english ? "Request payment" : "طلب دفع من الطالب"}
       </button>
     </div>
   );
 }
 
 /**
- * One compact form inside an admin request card: pick "price quote" (student
- * approves) or "direct ledger charge", type an amount, send. Stacked so it fits
- * the narrow card — amount on its own row, currency + action below.
+ * One compact form inside an admin request card: type a price and send it to the
+ * student. On approval it becomes the request's due automatically — there is no
+ * separate "add to the ledger" step.
  */
 function PricingForm({
-  allowCharge,
-  allowQuote,
   english,
   locked,
-  onCharge,
   onQuote,
-  quoteAmount,
-  quoteCurrency,
 }: Readonly<{
-  allowCharge: boolean;
-  allowQuote: boolean;
   english: boolean;
   locked: boolean;
-  onCharge: (event: React.FormEvent<HTMLFormElement>) => void;
   onQuote: (event: React.FormEvent<HTMLFormElement>) => void;
-  /** Pre-fills the amount from an already-sent quote so the admin need not retype it. */
-  quoteAmount?: string | undefined;
-  quoteCurrency?: string | undefined;
 }>) {
-  const [ledger, setLedger] = useState(!allowQuote);
-  const useLedger = ledger || !allowQuote;
-  const both = allowQuote && allowCharge;
   return (
     <form
       className="grid gap-2 rounded-xl border border-[var(--itq-color-border)] bg-[var(--itq-color-surface-soft)] p-3"
-      onSubmit={(event) => (useLedger ? onCharge(event) : onQuote(event))}
+      onSubmit={(event) => onQuote(event)}
     >
-      {both ? (
-        <div className="grid grid-cols-2 gap-1 rounded-lg bg-[var(--itq-color-surface)] p-1 text-[11px] font-black">
-          <button
-            className={`rounded-md py-1.5 ${
-              useLedger
-                ? "text-[var(--itq-color-muted)]"
-                : "bg-[var(--itq-color-info-950)] text-white"
-            }`}
-            onClick={() => setLedger(false)}
-            type="button"
-          >
-            {english ? "Price quote" : "عرض سعر"}
-          </button>
-          <button
-            className={`rounded-md py-1.5 ${
-              useLedger
-                ? "bg-[var(--itq-color-ink-deep)] text-white"
-                : "text-[var(--itq-color-muted)]"
-            }`}
-            onClick={() => setLedger(true)}
-            type="button"
-          >
-            {english ? "Direct ledger" : "مديونية مباشرة"}
-          </button>
-        </div>
-      ) : (
-        <p className="text-[11px] font-black">
-          {useLedger
-            ? english
-              ? "Add a charge to the ledger"
-              : "إضافة مبلغ إلى المديونية"
-            : english
-              ? "Set the price for this request"
-              : "حدّد سعر هذا الطلب"}
-        </p>
-      )}
+      <p className="text-[11px] font-black">
+        {english ? "Set the price for this request" : "حدّد سعر هذا الطلب"}
+      </p>
       <input
         aria-label={english ? "Amount" : "المبلغ"}
         className="h-11 w-full rounded-xl border border-[var(--itq-color-border)] bg-[var(--itq-color-surface)] px-3 text-sm font-black"
-        defaultValue={quoteAmount ?? ""}
         inputMode="decimal"
-        key={quoteAmount ?? "blank"}
         maxLength={13}
         name="amount"
         placeholder={english ? "0.00" : "٠٫٠٠"}
         required
       />
-      {quoteAmount !== undefined && useLedger ? (
-        <p className="-mt-1 text-[10px] font-bold text-[var(--itq-color-brand-strong)]">
-          {english ? "Pre-filled from the sent quote." : "عُبّئ تلقائيًا من عرض السعر المُرسل."}
-        </p>
-      ) : null}
       <div className="flex gap-2">
         <select
           aria-label={english ? "Currency" : "العملة"}
           className="h-11 w-20 shrink-0 rounded-xl border border-[var(--itq-color-border)] bg-[var(--itq-color-surface)] px-2 text-xs font-black"
-          defaultValue={quoteCurrency ?? "SAR"}
-          key={quoteCurrency ?? "SAR"}
+          defaultValue="SAR"
           name="currency"
         >
           <option value="SAR">SAR</option>
@@ -1018,119 +1044,19 @@ function PricingForm({
           <option value="KWD">KWD</option>
         </select>
         <button
-          className={`h-11 flex-1 rounded-xl px-4 text-sm font-black text-white disabled:opacity-50 ${
-            useLedger ? "bg-[var(--itq-color-ink-deep)]" : "bg-[var(--itq-color-info-950)]"
-          }`}
+          className="h-11 flex-1 rounded-xl bg-[var(--itq-color-info-950)] px-4 text-sm font-black text-white disabled:opacity-50"
           disabled={locked}
           type="submit"
         >
-          {useLedger ? (english ? "Add" : "إضافة") : english ? "Send" : "إرسال"}
+          {english ? "Send to the student" : "إرسال للطالب"}
         </button>
       </div>
       <p className="text-[10px] font-semibold text-[var(--itq-color-muted)]">
-        {useLedger
-          ? english
-            ? "Recorded now as an unpaid due — no student approval."
-            : "يُسجَّل فورًا كمستحق غير مدفوع دون موافقة الطالب."
-          : english
-            ? "The student gets an Approve / Reject card. Valid 7 days."
-            : "يصل الطالب بطاقة موافقة / رفض. صالحة ٧ أيام."}
+        {english
+          ? "The student approves or declines. On approval it is added to their ledger."
+          : "يوافق الطالب أو يرفض. عند الموافقة يُضاف تلقائيًا إلى مديونيته."}
       </p>
     </form>
-  );
-}
-
-/**
- * Price several un-priced requests at once, then send one consolidated invoice.
- * Each row takes an amount; one currency for the batch.
- */
-function BulkPricePanel({
-  english,
-  locked,
-  onCharge,
-  onInvoice,
-  requests,
-}: Readonly<{
-  english: boolean;
-  locked: boolean;
-  onCharge: (requestNumber: string, amount: string, currency: string) => Promise<boolean>;
-  onInvoice: () => Promise<void>;
-  requests: readonly UnifiedRequestSummary[];
-}>) {
-  const [amounts, setAmounts] = useState<Readonly<Record<string, string>>>({});
-  const [currency, setCurrency] = useState("SAR");
-  const [busy, setBusy] = useState(false);
-  const [done, setDone] = useState<string>();
-
-  async function run(): Promise<void> {
-    setBusy(true);
-    setDone(undefined);
-    let priced = 0;
-    for (const request of requests) {
-      const raw = (amounts[request.id] ?? "").trim();
-      if (!/^\d{1,9}(?:[.,]\d{1,2})?$/u.test(raw)) continue;
-      if (await onCharge(request.requestNumber, raw.replace(",", "."), currency)) priced += 1;
-    }
-    await onInvoice();
-    setDone(
-      english
-        ? `Priced ${priced} request(s) and sent the invoice.`
-        : `تم تسعير ${priced} طلب وإرسال الفاتورة.`,
-    );
-    setBusy(false);
-  }
-
-  return (
-    <div className="mt-2 grid gap-2 rounded-xl border border-[var(--itq-color-border)] bg-[var(--itq-color-surface-soft)] p-3">
-      <div className="flex items-center justify-between gap-2">
-        <p className="text-[11px] font-black">
-          {english ? "Price the un-priced requests" : "سعّر الطلبات غير المسعّرة"}
-        </p>
-        <select
-          aria-label={english ? "Currency" : "العملة"}
-          className="h-8 rounded-lg border border-[var(--itq-color-border)] bg-[var(--itq-color-surface)] px-2 text-[11px] font-black"
-          onChange={(event) => setCurrency(event.currentTarget.value)}
-          value={currency}
-        >
-          <option value="SAR">SAR</option>
-          <option value="AED">AED</option>
-        </select>
-      </div>
-      {requests.map((request) => (
-        <label className="grid grid-cols-[1fr_6.5rem] items-center gap-2" key={request.id}>
-          <bdi className="truncate text-[11px] font-bold" dir="auto">
-            {request.title}
-          </bdi>
-          <input
-            className="h-9 w-full rounded-lg border border-[var(--itq-color-border)] bg-[var(--itq-color-surface)] px-2 text-xs font-black"
-            inputMode="decimal"
-            maxLength={12}
-            onChange={(event) =>
-              setAmounts((current) => ({ ...current, [request.id]: event.currentTarget.value }))
-            }
-            placeholder={english ? "0.00" : "٠٫٠٠"}
-            value={amounts[request.id] ?? ""}
-          />
-        </label>
-      ))}
-      <button
-        className="mt-1 h-10 rounded-xl bg-[var(--itq-color-ink-deep)] px-3 text-xs font-black text-white disabled:opacity-50"
-        disabled={busy || locked}
-        onClick={() => void run()}
-        type="button"
-      >
-        {busy
-          ? english
-            ? "Working…"
-            : "جارٍ التنفيذ…"
-          : english
-            ? "Price all & send invoice"
-            : "سعّر الكل وأرسل فاتورة"}
-      </button>
-      {done === undefined ? null : (
-        <p className="text-[10px] font-bold text-[var(--itq-color-success-800)]">{done}</p>
-      )}
-    </div>
   );
 }
 
@@ -2888,52 +2814,6 @@ export function UnifiedChatWorkspace({
     }
   }
 
-  // Attach a charge to any (non-draft) request straight onto the student's debt
-  // ledger, with no accept/reject step.
-  async function addRequestCharge(event: React.FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-    if (csrfToken === undefined || interactionLocked || selectedRequest === undefined) return;
-    const formElement = event.currentTarget;
-    const fields = new FormData(formElement);
-    const amount = String(fields.get("amount") ?? "").trim();
-    if (!/^[0-9]+([.][0-9]{1,3})?$/u.test(amount) || Number(amount) <= 0) {
-      setNotice(english ? "Enter a valid amount." : "أدخل مبلغًا صحيحًا.");
-      return;
-    }
-    const currencyValue = String(fields.get("currency") ?? "SAR");
-    setPending(true);
-    setNotice(english ? "Adding to the ledger…" : "جارٍ الإضافة للمديونية…");
-    try {
-      const body = new URLSearchParams({
-        csrfToken,
-        locale,
-        requestNumber: selectedRequest.requestNumber,
-        amount,
-        currency: currencyValue === "AED" || currencyValue === "KWD" ? currencyValue : "SAR",
-        titleAr: `مبلغ الطلب ${selectedRequest.requestNumber}`,
-        titleEn: `Charge for ${selectedRequest.requestNumber}`,
-      });
-      const response = await fetch("/api/admin/finance", {
-        method: "POST",
-        body,
-        credentials: "same-origin",
-        headers: {
-          "Content-Type": "application/x-www-form-urlencoded",
-          Accept: "application/json",
-        },
-      });
-      if (!response.ok) throw new Error();
-      formElement.reset();
-      setNotice(english ? "Added to the student's debt ledger." : "أُضيف إلى مديونية الطالب.");
-      messagePokeRef.current();
-      contactPokeRef.current();
-    } catch {
-      setNotice(english ? "The charge could not be added." : "تعذر إضافة المبلغ.");
-    } finally {
-      setPending(false);
-    }
-  }
-
   // Admin confirms or rejects a student's payment receipt straight from the
   // conversation card. The server writes the follow-up PAYMENT_REVIEWED message.
   async function reviewReceipt(submissionId: string, decision: "ACCEPT" | "REJECT") {
@@ -3044,6 +2924,48 @@ export function UnifiedChatWorkspace({
       contactPokeRef.current();
     } catch {
       setNotice(english ? "The invoice could not be sent." : "تعذر إرسال الفاتورة.");
+    } finally {
+      setPending(false);
+    }
+  }
+
+  // Admin: the student paid the whole consolidated invoice — settle every
+  // unpaid due at once.
+  async function settleAllDues(studentUserId: string, method: string, reference: string) {
+    if (csrfToken === undefined || interactionLocked || mode !== "admin") return;
+    setPending(true);
+    setNotice(english ? "Settling all dues…" : "جارٍ اعتماد سداد الكل…");
+    try {
+      const response = await fetch(
+        `/api/admin/finance/students/${encodeURIComponent(studentUserId)}/invoice`,
+        {
+          method: "POST",
+          body: new URLSearchParams({
+            csrfToken,
+            locale,
+            action: "settle",
+            method,
+            reference:
+              reference.trim().length >= 2 ? reference.trim() : "سداد الفاتورة بتأكيد الإدارة",
+          }),
+          credentials: "same-origin",
+          headers: {
+            "Content-Type": "application/x-www-form-urlencoded",
+            Accept: "application/json",
+          },
+        },
+      );
+      const result = (await response.json().catch(() => ({}))) as { count?: number };
+      if (!response.ok) throw new Error();
+      setNotice(
+        english
+          ? `${result.count ?? 0} due(s) marked paid.`
+          : `تم اعتماد سداد ${result.count ?? 0} مستحق.`,
+      );
+      messagePokeRef.current();
+      contactPokeRef.current();
+    } catch {
+      setNotice(english ? "The dues could not be settled." : "تعذر اعتماد السداد.");
     } finally {
       setPending(false);
     }
@@ -3193,30 +3115,6 @@ export function UnifiedChatWorkspace({
     } finally {
       setPending(false);
     }
-  }
-
-  // Attach a price to one request straight onto the ledger (used by the bulk pricer).
-  async function chargeOneRequest(
-    requestNumber: string,
-    amount: string,
-    currency: string,
-  ): Promise<boolean> {
-    if (csrfToken === undefined) return false;
-    const response = await fetch("/api/admin/finance", {
-      method: "POST",
-      body: new URLSearchParams({
-        csrfToken,
-        locale,
-        requestNumber,
-        amount: amount.trim(),
-        currency,
-        titleAr: `مبلغ الطلب ${requestNumber}`,
-        titleEn: `Charge for ${requestNumber}`,
-      }),
-      credentials: "same-origin",
-      headers: { "Content-Type": "application/x-www-form-urlencoded", Accept: "application/json" },
-    });
-    return response.ok;
   }
 
   async function withdrawQuote(quote: ServiceQuote) {
@@ -3405,40 +3303,18 @@ export function UnifiedChatWorkspace({
           </button>
         </header>
         <div className="itq-scroll min-h-0 flex-1 overflow-y-auto overscroll-contain p-3">
-          {mode === "admin" ? (
-            <div className="mb-3 grid gap-2">
-              <button
-                className="w-full rounded-xl border border-[var(--itq-color-brand-200)] bg-[var(--itq-color-surface)] px-3 py-2 text-xs font-black text-[var(--itq-color-brand-strong)] disabled:opacity-50"
-                disabled={interactionLocked || csrfToken === undefined}
-                onClick={() => void sendInvoice()}
-                type="button"
-              >
-                {english ? "Send an invoice for all unpaid dues" : "أرسل فاتورة بكل المستحقات"}
-              </button>
-              {(() => {
-                const unpriced = requests.filter(
-                  (request) => request.status !== "DRAFT" && request.finance?.hasDue !== true,
-                );
-                return unpriced.length === 0 ? null : (
-                  <details className="rounded-xl border border-[var(--itq-color-border)] bg-[var(--itq-color-surface)]">
-                    <summary className="cursor-pointer list-none px-3 py-2 text-xs font-black text-[var(--itq-color-muted)]">
-                      {english
-                        ? `Price ${unpriced.length} un-priced request(s)`
-                        : `تسعير ${unpriced.length} طلب غير مسعّر`}
-                    </summary>
-                    <div className="px-3 pb-3">
-                      <BulkPricePanel
-                        english={english}
-                        locked={interactionLocked}
-                        onCharge={chargeOneRequest}
-                        onInvoice={sendInvoice}
-                        requests={unpriced}
-                      />
-                    </div>
-                  </details>
-                );
-              })()}
-            </div>
+          {mode === "admin" &&
+          requests.some((request) => request.finance?.dueStatus === "UNPAID") ? (
+            <button
+              className="mb-3 w-full rounded-xl border border-[var(--itq-color-brand-200)] bg-[var(--itq-color-surface)] px-3 py-2 text-xs font-black text-[var(--itq-color-brand-strong)] disabled:opacity-50"
+              disabled={interactionLocked || csrfToken === undefined}
+              onClick={() => void sendInvoice()}
+              type="button"
+            >
+              {english
+                ? "Send a payment request for all unpaid requests"
+                : "طلب دفع لكل الطلبات غير المدفوعة"}
+            </button>
           ) : null}
           {services.length > 0 ? (
             <form
@@ -3542,19 +3418,6 @@ export function UnifiedChatWorkspace({
                   !cardPaid &&
                   quoteEligibleRequestStatuses.has(request.status) &&
                   !cardHasPendingQuote;
-                const canChargeCard = !cardHasDue && !cardPaid && request.status !== "DRAFT";
-                // Latest quote raised for this request — its amount pre-fills the
-                // "add to ledger" form so the admin does not retype the price.
-                const latestQuote = messages
-                  .filter((entry) => entry.quote?.requestId === request.id)
-                  .map((entry) => entry.quote)
-                  .at(-1);
-                const latestQuoteAmount =
-                  latestQuote === undefined
-                    ? undefined
-                    : (latestQuote.amountMinor / 10 ** latestQuote.minorUnit).toFixed(
-                        latestQuote.minorUnit,
-                      );
                 return (
                   <li
                     className={`rounded-2xl border p-3 ${
@@ -3624,10 +3487,7 @@ export function UnifiedChatWorkspace({
                         }
                       />
                     ) : null}
-                    {mode === "admin" &&
-                    !cardHasDue &&
-                    !cardPaid &&
-                    (canQuoteCard || canChargeCard || cardHasPendingQuote) ? (
+                    {mode === "admin" && (canQuoteCard || cardHasPendingQuote) ? (
                       <>
                         <button
                           aria-expanded={cardExpanded}
@@ -3643,8 +3503,8 @@ export function UnifiedChatWorkspace({
                               ? "Hide pricing"
                               : "إخفاء التسعير"
                             : english
-                              ? "Pricing & ledger"
-                              : "التسعير والمديونية"}
+                              ? "Set a price"
+                              : "تسعير الطلب"}
                           <ChevronIcon
                             className={`size-3.5 transition ${
                               cardExpanded ? "-rotate-90" : "rotate-90"
@@ -3653,35 +3513,19 @@ export function UnifiedChatWorkspace({
                         </button>
                         {cardExpanded ? (
                           <div className="mt-2 grid gap-2 border-t border-[var(--itq-color-border)] pt-2">
-                            <p className="text-[10px] font-bold text-[var(--itq-color-muted)]">
-                              {english ? "Updated " : "آخر تحديث "}
-                              <time dateTime={request.updatedAt.toISOString()}>
-                                {formatMessageDate(request.updatedAt, locale)}
-                              </time>
-                            </p>
-                            {canQuoteCard || canChargeCard ? (
+                            {canQuoteCard ? (
                               <PricingForm
-                                allowCharge={canChargeCard}
-                                allowQuote={canQuoteCard}
                                 english={english}
                                 locked={interactionLocked}
-                                onCharge={(event) => void addRequestCharge(event)}
                                 onQuote={(event) => void createQuote(event)}
-                                {...(latestQuoteAmount === undefined
-                                  ? {}
-                                  : {
-                                      quoteAmount: latestQuoteAmount,
-                                      quoteCurrency: latestQuote?.currency,
-                                    })}
                               />
-                            ) : null}
-                            {cardHasPendingQuote && !canQuoteCard ? (
+                            ) : (
                               <p className="rounded-xl bg-[var(--itq-color-info-50)] px-3 py-2 text-[10px] font-bold text-[var(--itq-color-info-950)]">
                                 {english
-                                  ? "A price card is already awaiting the student's response."
-                                  : "توجد بطاقة سعر بانتظار رد الطالب بالفعل."}
+                                  ? "A price is already awaiting the student's response."
+                                  : "يوجد سعر بانتظار رد الطالب بالفعل."}
                               </p>
-                            ) : null}
+                            )}
                           </div>
                         ) : null}
                       </>
@@ -4200,7 +4044,15 @@ export function UnifiedChatWorkspace({
                         </li>
                       ) : message.body === "INVOICE_SUMMARY" ? (
                         <li className="mx-auto my-2 w-full max-w-sm">
-                          <InvoiceSummaryCard locale={locale} metadata={message.metadata} />
+                          <InvoiceSummaryCard
+                            locale={locale}
+                            metadata={message.metadata}
+                            mode={mode}
+                            onSettle={(studentUserId, method, reference) =>
+                              void settleAllDues(studentUserId, method, reference)
+                            }
+                            settleBusy={interactionLocked}
+                          />
                         </li>
                       ) : isImportantSystemMessage(message) ? (
                         <li className="mx-auto my-1 flex max-w-md items-center gap-1.5 rounded-full bg-[var(--itq-color-surface)]/85 px-3 py-1 text-[10px] font-bold text-[var(--itq-color-muted)] shadow-sm">
