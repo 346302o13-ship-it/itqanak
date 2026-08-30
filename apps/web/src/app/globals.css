@@ -168,6 +168,121 @@ svg {
   outline-offset: 3px;
 }
 
+/* ---------------------------------------------------------------------------
+   Visitor-page polish: an ambient colour wash behind hero/CTA panels, a gentle
+   float for decorative orbs, a one-shot entrance rise for above-the-fold copy,
+   and a light sheen sweep for primary buttons. Every effect is switched off
+   under prefers-reduced-motion (block further down).
+   --------------------------------------------------------------------------- */
+.itq-aurora {
+  position: relative;
+  isolation: isolate;
+}
+
+.itq-aurora::before {
+  content: "";
+  position: absolute;
+  inset: -34% -12% auto;
+  height: 150%;
+  z-index: -1;
+  pointer-events: none;
+  background:
+    radial-gradient(
+      44rem 30rem at 82% 0%,
+      color-mix(in srgb, var(--itq-color-brand-400) 20%, transparent),
+      transparent 70%
+    ),
+    radial-gradient(
+      40rem 28rem at 6% 20%,
+      color-mix(in srgb, var(--itq-color-accent-300) 26%, transparent),
+      transparent 70%
+    );
+}
+
+.itq-sheen {
+  position: relative;
+  overflow: hidden;
+}
+
+.itq-sheen::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: linear-gradient(115deg, transparent 32%, rgb(255 255 255 / 38%) 50%, transparent 68%);
+  transform: translateX(-130%);
+  transition: transform 750ms ease;
+}
+
+.itq-sheen:hover::after,
+.itq-sheen:focus-visible::after {
+  transform: translateX(130%);
+}
+
+@keyframes itq-float {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+
+  50% {
+    transform: translateY(-14px);
+  }
+}
+
+@keyframes itq-rise {
+  from {
+    opacity: 0;
+    transform: translateY(16px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes itq-halo {
+  0% {
+    transform: scale(0.7);
+    opacity: 0.7;
+  }
+
+  80%,
+  100% {
+    transform: scale(2.6);
+    opacity: 0;
+  }
+}
+
+.itq-rise {
+  animation: itq-rise 620ms cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.itq-rise-2 {
+  animation-delay: 90ms;
+}
+
+.itq-rise-3 {
+  animation-delay: 180ms;
+}
+
+.itq-rise-4 {
+  animation-delay: 270ms;
+}
+
+.itq-float-slow {
+  animation: itq-float 9s ease-in-out infinite;
+}
+
+.itq-float-slower {
+  animation: itq-float 13s ease-in-out infinite;
+}
+
+.itq-halo {
+  animation: itq-halo 2.6s ease-out infinite;
+}
+
 /* "Navigation in progress" hint for nav links (see NavLink). Absolutely
    positioned against the link (which must be `position: relative`) so it never
    shifts layout; only appears if the transition actually takes time. */
@@ -219,5 +334,21 @@ svg {
   .itq-linkhint[data-pending="true"] {
     animation: none;
     opacity: 0.9;
+  }
+
+  .itq-rise,
+  .itq-float-slow,
+  .itq-float-slower,
+  .itq-halo {
+    animation: none !important;
+  }
+
+  .itq-rise {
+    opacity: 1;
+    transform: none;
+  }
+
+  .itq-sheen::after {
+    display: none;
   }
 }

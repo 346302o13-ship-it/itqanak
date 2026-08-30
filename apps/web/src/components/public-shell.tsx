@@ -131,7 +131,7 @@ export function PublicShell({
         {copy.skipLabel}
       </a>
 
-      <header className="sticky top-0 z-50 itq-safe-t border-b border-[var(--itq-color-border)]/80 bg-[var(--itq-color-canvas)]/90 backdrop-blur-xl">
+      <header className="sticky top-0 z-50 itq-safe-t border-b border-[var(--itq-color-border)]/80 bg-[var(--itq-color-canvas)]/90 backdrop-blur-xl after:absolute after:inset-x-0 after:bottom-0 after:h-px after:bg-[linear-gradient(90deg,transparent,color-mix(in_srgb,var(--itq-color-brand-400)_45%,transparent),transparent)]">
         <div className="mx-auto flex min-h-[4.75rem] w-full max-w-[80rem] items-center justify-between gap-4 px-4 sm:px-6 lg:px-8">
           <Link
             aria-current={active === "home" ? "page" : undefined}
@@ -194,7 +194,7 @@ export function PublicShell({
               {copy.languageName}
             </Link>
             <Link
-              className="inline-flex min-h-11 items-center justify-center rounded-xl bg-[var(--itq-color-brand-700)] px-3 py-2 text-xs font-black text-white shadow-sm transition hover:bg-[var(--itq-color-brand-800)] sm:px-5 sm:text-sm"
+              className="itq-sheen inline-flex min-h-11 items-center justify-center rounded-xl bg-[linear-gradient(120deg,var(--itq-color-brand-600),var(--itq-color-brand-800))] px-3 py-2 text-xs font-black text-white shadow-[var(--itq-shadow-sm)] transition hover:-translate-y-0.5 hover:shadow-[var(--itq-shadow-md)] sm:px-5 sm:text-sm"
               href={`${prefix}/auth/login`}
             >
               {copy.loginLabel}
@@ -210,8 +210,8 @@ export function PublicShell({
         {children}
       </main>
 
-      <footer className="border-t border-[var(--itq-color-border)] bg-[var(--itq-color-surface)]">
-        <div className="mx-auto grid w-full max-w-[80rem] gap-10 px-5 py-12 sm:px-8 lg:grid-cols-[minmax(16rem,1.5fr)_repeat(3,minmax(9rem,0.65fr))] lg:py-16">
+      <footer className="relative border-t border-[var(--itq-color-border)] bg-[var(--itq-color-surface)] before:absolute before:inset-x-0 before:top-0 before:h-24 before:bg-[linear-gradient(180deg,color-mix(in_srgb,var(--itq-color-brand-50)_60%,transparent),transparent)]">
+        <div className="relative mx-auto grid w-full max-w-[80rem] gap-10 px-5 py-12 sm:px-8 lg:grid-cols-[minmax(16rem,1.5fr)_repeat(3,minmax(9rem,0.65fr))] lg:py-16">
           <div className="max-w-md">
             <Link className="inline-flex items-center gap-3" href={prefix}>
               <BrandMark label={copy.brandName} />

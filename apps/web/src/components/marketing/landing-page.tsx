@@ -103,7 +103,7 @@ export function LandingPage({
   const prefix = `/${locale}`;
   return (
     <>
-      <section className="relative isolate overflow-hidden rounded-[var(--itq-radius-hero)] border border-[var(--itq-color-border)] bg-[var(--itq-color-canvas-warm)] shadow-[var(--itq-shadow-card)] lg:min-h-[39rem]">
+      <section className="itq-aurora relative isolate overflow-hidden rounded-[var(--itq-radius-hero)] border border-[var(--itq-color-border)] bg-[var(--itq-color-canvas-warm)] shadow-[var(--itq-shadow-card)] lg:min-h-[39rem]">
         <Image
           alt=""
           aria-hidden="true"
@@ -125,21 +125,32 @@ export function LandingPage({
               : "bg-gradient-to-r from-[var(--itq-color-canvas-warm)] via-[var(--itq-color-canvas-warm)]/95 via-45% to-transparent to-75%",
           )}
         />
+        <span
+          aria-hidden="true"
+          className="itq-float-slow pointer-events-none absolute -start-16 top-10 -z-0 size-56 rounded-full bg-[radial-gradient(circle_at_30%_30%,color-mix(in_srgb,var(--itq-color-brand-300)_55%,transparent),transparent_70%)] blur-2xl"
+        />
+        <span
+          aria-hidden="true"
+          className="itq-float-slower pointer-events-none absolute end-24 bottom-8 -z-0 size-64 rounded-full bg-[radial-gradient(circle_at_60%_40%,color-mix(in_srgb,var(--itq-color-accent-300)_50%,transparent),transparent_70%)] blur-2xl"
+        />
         <div className="relative flex min-h-[35rem] items-center px-6 py-10 sm:px-10 lg:w-[58%] lg:px-14 lg:py-16">
-          <div>
+          <div className="itq-rise">
             <div className="flex flex-wrap items-center gap-3">
-              <span className="inline-flex items-center gap-2 rounded-full bg-white/80 px-4 py-2 text-sm font-black text-[var(--itq-color-brand-strong)] shadow-sm backdrop-blur">
+              <span className="inline-flex items-center gap-2 rounded-full border border-white/60 bg-white/80 px-4 py-2 text-sm font-black text-[var(--itq-color-brand-strong)] shadow-[var(--itq-shadow-sm)] backdrop-blur">
                 <MarketingIcon className="size-4" name="sparkles" />
                 {copy.hero.eyebrow}
               </span>
               <span className="inline-flex items-center gap-2 rounded-full bg-[var(--itq-color-success-50)] px-3 py-2 text-xs font-black text-[var(--itq-color-success-700)]">
-                <span aria-hidden="true" className="size-2 rounded-full bg-current" />
+                <span aria-hidden="true" className="relative flex size-2">
+                  <span className="itq-halo absolute inset-0 rounded-full bg-current" />
+                  <span className="relative size-2 rounded-full bg-current" />
+                </span>
                 {copy.hero.status}
               </span>
             </div>
             <h1 className="mt-7 max-w-3xl text-4xl font-black leading-[1.25] tracking-tight text-[var(--itq-color-ink)] sm:text-5xl lg:text-[3.5rem]">
               {copy.hero.title}{" "}
-              <span className="text-[var(--itq-color-brand-strong)]">
+              <span className="bg-[linear-gradient(120deg,var(--itq-color-brand-strong),var(--itq-color-brand-500))] bg-clip-text text-transparent">
                 {copy.hero.highlightedTitle}
               </span>
             </h1>
@@ -148,7 +159,7 @@ export function LandingPage({
             </p>
             <div className="mt-8 flex flex-col gap-3 sm:flex-row">
               <Link
-                className="inline-flex min-h-12 items-center justify-center rounded-xl bg-[var(--itq-color-brand-700)] px-6 py-3 font-black text-white shadow-[var(--itq-shadow-sm)] transition hover:-translate-y-0.5 hover:bg-[var(--itq-color-brand-800)]"
+                className="itq-sheen inline-flex min-h-12 items-center justify-center rounded-xl bg-[linear-gradient(120deg,var(--itq-color-brand-600),var(--itq-color-brand-800))] px-6 py-3 font-black text-white shadow-[var(--itq-shadow-float)] transition hover:-translate-y-0.5 hover:shadow-[var(--itq-shadow-lg)]"
                 href={`${prefix}/services`}
               >
                 {copy.hero.primaryLabel}
@@ -163,10 +174,9 @@ export function LandingPage({
             <div className="mt-8 flex flex-wrap gap-x-5 gap-y-3 text-sm font-bold text-[var(--itq-color-ink-soft)]">
               {copy.trustItems.slice(0, 3).map((item) => (
                 <span className="inline-flex items-center gap-2" key={item.title}>
-                  <MarketingIcon
-                    className="size-4 text-[var(--itq-color-brand-strong)]"
-                    name="check"
-                  />
+                  <span className="inline-flex size-5 items-center justify-center rounded-full bg-[var(--itq-color-brand-50)] text-[var(--itq-color-brand-strong)]">
+                    <MarketingIcon className="size-3" name="check" />
+                  </span>
                   {item.title}
                 </span>
               ))}
@@ -191,12 +201,14 @@ export function LandingPage({
           {copy.trustItems.map((item, index) => (
             <article
               className={classNames(
-                "flex gap-4 p-5 sm:p-6",
+                "itq-rise group flex gap-4 p-5 transition-colors duration-300 hover:bg-[var(--itq-color-brand-50)]/45 sm:p-6",
+                index === 1 && "itq-rise-2",
+                index === 2 && "itq-rise-3",
                 index > 0 && "border-t border-[var(--itq-color-border)] md:border-s md:border-t-0",
               )}
               key={item.title}
             >
-              <span className="inline-flex size-11 shrink-0 items-center justify-center rounded-2xl bg-[var(--itq-color-brand-50)] text-[var(--itq-color-brand-strong)]">
+              <span className="inline-flex size-11 shrink-0 items-center justify-center rounded-2xl bg-[linear-gradient(135deg,var(--itq-color-brand-50),color-mix(in_srgb,var(--itq-color-accent-200)_55%,transparent))] text-[var(--itq-color-brand-strong)] shadow-[var(--itq-shadow-sm)] transition duration-300 group-hover:bg-[linear-gradient(135deg,var(--itq-color-brand-600),var(--itq-color-brand-800))] group-hover:text-white">
                 <MarketingIcon className="size-5" name={item.icon} />
               </span>
               <div>
@@ -221,10 +233,14 @@ export function LandingPage({
             titleId="services-preview-title"
           />
           <Link
-            className="inline-flex min-h-11 w-fit items-center rounded-xl border border-[var(--itq-color-border-strong)] bg-[var(--itq-color-surface)] px-5 py-2 text-sm font-black text-[var(--itq-color-brand-strong)] shadow-sm hover:bg-[var(--itq-color-brand-50)]"
+            className="group inline-flex min-h-11 w-fit items-center gap-2 rounded-xl border border-[var(--itq-color-border-strong)] bg-[var(--itq-color-surface)] px-5 py-2 text-sm font-black text-[var(--itq-color-brand-strong)] shadow-[var(--itq-shadow-sm)] transition hover:-translate-y-0.5 hover:border-[var(--itq-color-brand-300)] hover:bg-[var(--itq-color-brand-50)]"
             href={`${prefix}/services`}
           >
             {copy.services.allCta}
+            <MarketingIcon
+              className="size-4 transition-transform duration-300 group-hover:translate-x-0.5 rtl:-scale-x-100 rtl:group-hover:-translate-x-0.5"
+              name="arrow-right"
+            />
           </Link>
         </div>
         <div className="mt-10 grid gap-5 md:grid-cols-2 xl:grid-cols-3">
@@ -292,7 +308,7 @@ export function LandingPage({
             ))}
           </ul>
           <Link
-            className="mt-8 inline-flex min-h-12 items-center justify-center rounded-xl bg-[var(--itq-color-brand-700)] px-6 py-3 font-black text-white shadow-sm hover:bg-[var(--itq-color-brand-800)]"
+            className="itq-sheen mt-8 inline-flex min-h-12 items-center justify-center rounded-xl bg-[linear-gradient(120deg,var(--itq-color-brand-600),var(--itq-color-brand-800))] px-6 py-3 font-black text-white shadow-[var(--itq-shadow-md)] transition hover:-translate-y-0.5 hover:shadow-[var(--itq-shadow-lg)]"
             href={`${prefix}/auth/login`}
           >
             {copy.portal.cta}
@@ -326,10 +342,18 @@ export function LandingPage({
       </section>
 
       <section className="py-20 sm:py-24">
-        <div className="relative overflow-hidden rounded-[var(--itq-radius-hero)] bg-[var(--itq-color-brand-900)] p-7 text-white shadow-[var(--itq-shadow-card)] sm:p-12">
+        <div className="relative overflow-hidden rounded-[var(--itq-radius-hero)] bg-[linear-gradient(135deg,var(--itq-color-brand-900),var(--itq-color-brand-950))] p-7 text-white shadow-[var(--itq-shadow-card)] sm:p-12">
           <div
             aria-hidden="true"
-            className="absolute -end-20 -top-28 size-80 rounded-full border-[3rem] border-white/[0.04]"
+            className="absolute -end-20 -top-28 size-80 rounded-full border-[3rem] border-white/[0.05]"
+          />
+          <div
+            aria-hidden="true"
+            className="itq-float-slower pointer-events-none absolute -start-10 bottom-[-6rem] size-72 rounded-full bg-[radial-gradient(circle_at_40%_40%,color-mix(in_srgb,var(--itq-color-accent-500)_38%,transparent),transparent_70%)] blur-2xl"
+          />
+          <span
+            aria-hidden="true"
+            className="absolute inset-x-0 top-0 h-1 bg-[linear-gradient(90deg,transparent,color-mix(in_srgb,var(--itq-color-accent-300)_75%,transparent),transparent)]"
           />
           <div className="relative grid gap-8 lg:grid-cols-[auto_minmax(0,1fr)_minmax(17rem,0.6fr)] lg:items-center">
             <span className="inline-flex size-16 items-center justify-center rounded-2xl bg-white/10 text-[var(--itq-color-accent-200)] ring-1 ring-white/15">
@@ -375,13 +399,14 @@ export function LandingPage({
         </div>
       </section>
 
-      <section className="mb-6 overflow-hidden rounded-[var(--itq-radius-hero)] bg-[var(--itq-color-canvas-warm)] p-7 ring-1 ring-[var(--itq-color-accent-200)]/70 sm:p-12">
+      <section className="itq-aurora mb-6 overflow-hidden rounded-[var(--itq-radius-hero)] bg-[var(--itq-color-canvas-warm)] p-7 ring-1 ring-[var(--itq-color-accent-200)]/70 sm:p-12">
         <div className="flex flex-col items-start justify-between gap-8 lg:flex-row lg:items-center">
           <div className="max-w-2xl">
-            <p className="text-sm font-black text-[var(--itq-color-accent-700)]">
+            <p className="inline-flex items-center gap-2 rounded-full border border-[var(--itq-color-accent-200)] bg-[var(--itq-color-accent-50)] px-3.5 py-1.5 text-xs font-black text-[var(--itq-color-accent-700)]">
+              <MarketingIcon className="size-3.5" name="sparkles" />
               {copy.finalCta.eyebrow}
             </p>
-            <h2 className="mt-3 text-3xl font-black leading-10 sm:text-4xl">
+            <h2 className="mt-4 text-3xl font-black leading-10 sm:text-4xl">
               {copy.finalCta.title}
             </h2>
             <p className="mt-4 leading-8 text-[var(--itq-color-muted)]">
@@ -390,7 +415,7 @@ export function LandingPage({
           </div>
           <div className="flex w-full flex-col gap-3 sm:w-auto sm:flex-row">
             <Link
-              className="inline-flex min-h-12 items-center justify-center rounded-xl bg-[var(--itq-color-brand-700)] px-6 py-3 font-black text-white shadow-sm hover:bg-[var(--itq-color-brand-800)]"
+              className="itq-sheen inline-flex min-h-12 items-center justify-center rounded-xl bg-[linear-gradient(120deg,var(--itq-color-brand-600),var(--itq-color-brand-800))] px-6 py-3 font-black text-white shadow-[var(--itq-shadow-md)] transition hover:-translate-y-0.5 hover:shadow-[var(--itq-shadow-lg)]"
               href={`${prefix}/services`}
             >
               {copy.finalCta.primaryLabel}

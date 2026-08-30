@@ -3,6 +3,7 @@ import type { JSX } from "react";
 import { classNames } from "@itqanak/ui";
 
 export type MarketingIconName =
+  | "arrow-right"
   | "check"
   | "code"
   | "compass"
@@ -25,6 +26,8 @@ interface MarketingIconProps {
 
 function IconPath({ name }: Readonly<{ name: MarketingIconName }>): JSX.Element {
   switch (name) {
+    case "arrow-right":
+      return <path d="M4 12h15M13 6l6 6-6 6" />;
     case "check":
       return <path d="m6 12 4 4 8-9" />;
     case "code":
