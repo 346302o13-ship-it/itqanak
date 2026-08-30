@@ -1,13 +1,19 @@
 import "server-only";
 
+import { readFileSync, statfsSync } from "node:fs";
+import { cpus, freemem, loadavg, totalmem } from "node:os";
+
 import { requireAdmin, requirePermission, type AuthenticatedPrincipal } from "@itqanak/auth";
 import type { AppConfig } from "@itqanak/config";
 import type { DatabaseClient } from "@itqanak/db";
 
 import {
   maskOperationalPhone,
+  parseMemInfo,
+  toHostUsage,
   whatsappHealth,
   workerHealth,
+  type HostResourceUsage,
   type MonitoringHealth,
 } from "./admin-monitoring-presenters";
 import {
@@ -59,6 +65,13 @@ export interface AdminMonitoringSnapshot {
     readonly outboxPending: number;
     readonly outboxDeadLetter: number;
     readonly outboxOldestPendingAgeSeconds: number;
+  };
+  /** OS-level disk / memory of the machine this process runs on. */
+  readonly host?: {
+    readonly disk?: HostResourceUsage;
+    readonly memory?: HostResourceUsage;
+    readonly loadAverage1m?: number;
+    readonly cpuCount?: number;
   };
   readonly requestStatuses: readonly {
     readonly status: string;
@@ -116,6 +129,60 @@ interface AutomationProblemRow {
   readonly last_error_code: string | null;
   readonly created_at: Date | string;
   readonly available_at: Date | string;
+}
+
+/**
+ * Best-effort OS disk + memory snapshot. Disk is `statfs` on
+ * `MONITORING_DISK_PATH` (default `/` — inside a container the overlay reports
+ * the backing filesystem, i.e. the host disk). Memory prefers `/proc/meminfo`
+ * `MemAvailable`. Any part that cannot be read is simply omitted.
+ */
+function readHostResources(): AdminMonitoringSnapshot["host"] {
+  const diskPath = process.env.MONITORING_DISK_PATH?.trim() || "/";
+  let disk: HostResourceUsage | undefined;
+  try {
+    const stats = statfsSync(diskPath);
+    disk = toHostUsage(
+      Number(stats.blocks) * Number(stats.bsize),
+      Number(stats.bavail) * Number(stats.bsize),
+    );
+  } catch {
+    disk = undefined;
+  }
+
+  let memory: HostResourceUsage | undefined;
+  try {
+    const parsed = parseMemInfo(readFileSync("/proc/meminfo", "utf8"));
+    if (parsed !== undefined) memory = toHostUsage(parsed.totalBytes, parsed.availableBytes);
+  } catch {
+    memory = undefined;
+  }
+  if (memory === undefined) {
+    try {
+      memory = toHostUsage(totalmem(), freemem());
+    } catch {
+      memory = undefined;
+    }
+  }
+
+  let loadAverage1m: number | undefined;
+  let cpuCount: number | undefined;
+  try {
+    const [oneMinute] = loadavg();
+    if (oneMinute !== undefined && Number.isFinite(oneMinute)) loadAverage1m = oneMinute;
+    const count = cpus().length;
+    if (count > 0) cpuCount = count;
+  } catch {
+    loadAverage1m = undefined;
+  }
+
+  if (disk === undefined && memory === undefined) return undefined;
+  return {
+    ...(disk === undefined ? {} : { disk }),
+    ...(memory === undefined ? {} : { memory }),
+    ...(loadAverage1m === undefined ? {} : { loadAverage1m }),
+    ...(cpuCount === undefined ? {} : { cpuCount }),
+  };
 }
 
 function count(value: number | string, field: string): number {
@@ -309,6 +376,10 @@ export async function loadAdminMonitoringSnapshot(
         "outbox oldest pending age",
       ),
     },
+    ...(() => {
+      const host = readHostResources();
+      return host === undefined ? {} : { host };
+    })(),
     requestStatuses: requestStatusRows.map((statusRow) => ({
       status: statusRow.status,
       count: count(statusRow.count, "request status count"),

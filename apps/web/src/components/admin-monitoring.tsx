@@ -1,6 +1,7 @@
 import Link from "next/link";
 
 import type { AdminMonitoringSnapshot, MonitoringHealth } from "@/lib/admin-monitoring";
+import { hostUsageHealth } from "@/lib/admin-monitoring-presenters";
 import { requestStatusLabel } from "@/lib/request-presenters";
 
 import { AdminShell } from "./admin-shell";
@@ -106,6 +107,15 @@ const copy = {
     deadLetter: "متوقف نهائيًا",
     attempts: "المحاولات",
     error: "رمز الخطأ",
+    server: "موارد الخادم",
+    serverDetail: "مساحة القرص والذاكرة على الجهاز الذي يشغّل المنصة",
+    disk: "مساحة التخزين",
+    memory: "الذاكرة (RAM)",
+    used: "مستخدم",
+    ofTotal: "من",
+    freeLabel: "متاح",
+    load: "متوسط الحمل (دقيقة)",
+    serverUnavailable: "قياس موارد الخادم غير متاح في هذه البيئة.",
   },
   en: {
     eyebrow: "Safe operational monitoring",
@@ -180,8 +190,78 @@ const copy = {
     deadLetter: "Permanently stopped",
     attempts: "Attempts",
     error: "Error code",
+    server: "Server resources",
+    serverDetail: "Disk and memory of the machine running the platform",
+    disk: "Storage",
+    memory: "Memory (RAM)",
+    used: "used",
+    ofTotal: "of",
+    freeLabel: "free",
+    load: "Load average (1m)",
+    serverUnavailable: "Server resource metrics are not available in this environment.",
   },
 } as const;
+
+function formatBytes(bytes: number, locale: "ar" | "en"): string {
+  const units = ["B", "KB", "MB", "GB", "TB"];
+  let value = Math.max(0, bytes);
+  let unit = 0;
+  while (value >= 1024 && unit < units.length - 1) {
+    value /= 1024;
+    unit += 1;
+  }
+  const formatted = new Intl.NumberFormat(locale === "ar" ? "ar-SA" : "en-US", {
+    maximumFractionDigits: value < 10 && unit > 0 ? 1 : 0,
+  }).format(value);
+  return `${formatted} ${units[unit]}`;
+}
+
+function UsageBar({
+  available,
+  health,
+  label,
+  locale,
+  t,
+  total,
+  usedRatio,
+}: Readonly<{
+  available: number;
+  health: MonitoringHealth;
+  label: string;
+  locale: "ar" | "en";
+  t: (typeof copy)["ar"] | (typeof copy)["en"];
+  total: number;
+  usedRatio: number;
+}>) {
+  const percent = Math.round(usedRatio * 1000) / 10;
+  const barTone =
+    health === "CRITICAL"
+      ? "bg-[var(--itq-color-danger-500)]"
+      : health === "WARNING"
+        ? "bg-[var(--itq-color-warning-500)]"
+        : "bg-[var(--itq-color-success-500)]";
+  return (
+    <div className="rounded-2xl border border-[var(--itq-color-border)] bg-[var(--itq-color-surface)] p-4">
+      <div className="flex items-baseline justify-between gap-2">
+        <span className="text-xs font-black text-[var(--itq-color-muted)]">{label}</span>
+        <span className="text-sm font-black" dir="ltr">
+          {percent}%
+        </span>
+      </div>
+      <div className="mt-2 h-2.5 w-full overflow-hidden rounded-full bg-[var(--itq-color-surface-soft)]">
+        <div
+          className={`h-full rounded-full ${barTone}`}
+          style={{ width: `${Math.min(100, Math.max(2, percent))}%` }}
+        />
+      </div>
+      <p className="mt-2 text-xs font-bold text-[var(--itq-color-muted)]" dir="ltr">
+        {formatBytes(total - available, locale)} {t.used} {t.ofTotal} {formatBytes(total, locale)}
+        {" · "}
+        {formatBytes(available, locale)} {t.freeLabel}
+      </p>
+    </div>
+  );
+}
 
 function HealthBadge({ health, label }: Readonly<{ health: MonitoringHealth; label: string }>) {
   return (
@@ -406,6 +486,63 @@ export function AdminMonitoring({
                 {t.fileWarning}
               </p>
             ) : null}
+          </section>
+
+          <section className="rounded-[1.75rem] border border-[var(--itq-color-border)] bg-[var(--itq-color-surface)] p-6 shadow-[var(--itq-shadow-sm)]">
+            <div className="flex items-start gap-3">
+              <span className="grid size-11 shrink-0 place-items-center rounded-2xl bg-[var(--itq-color-brand-50)] text-[var(--itq-color-brand-strong)]">
+                <OperationsIcon className="size-5" />
+              </span>
+              <div>
+                <h2 className="text-xl font-black">{t.server}</h2>
+                <p className="mt-1 text-sm font-bold text-[var(--itq-color-muted)]">
+                  {t.serverDetail}
+                </p>
+              </div>
+            </div>
+            {snapshot.host === undefined ? (
+              <p className="mt-5 rounded-2xl border border-[var(--itq-color-border)] bg-[var(--itq-color-surface-soft)] p-4 text-sm font-bold text-[var(--itq-color-muted)]">
+                {t.serverUnavailable}
+              </p>
+            ) : (
+              <div className="mt-5 grid gap-3">
+                {snapshot.host.disk === undefined ? null : (
+                  <UsageBar
+                    available={snapshot.host.disk.availableBytes}
+                    health={hostUsageHealth(snapshot.host.disk.usedRatio)}
+                    label={t.disk}
+                    locale={locale}
+                    t={t}
+                    total={snapshot.host.disk.totalBytes}
+                    usedRatio={snapshot.host.disk.usedRatio}
+                  />
+                )}
+                {snapshot.host.memory === undefined ? null : (
+                  <UsageBar
+                    available={snapshot.host.memory.availableBytes}
+                    health={hostUsageHealth(snapshot.host.memory.usedRatio)}
+                    label={t.memory}
+                    locale={locale}
+                    t={t}
+                    total={snapshot.host.memory.totalBytes}
+                    usedRatio={snapshot.host.memory.usedRatio}
+                  />
+                )}
+                {snapshot.host.loadAverage1m === undefined ? null : (
+                  <Metric
+                    label={
+                      snapshot.host.cpuCount === undefined
+                        ? t.load
+                        : `${t.load} · ${number.format(snapshot.host.cpuCount)} vCPU`
+                    }
+                    value={new Intl.NumberFormat(locale === "ar" ? "ar-SA" : "en-US", {
+                      minimumFractionDigits: 2,
+                      maximumFractionDigits: 2,
+                    }).format(snapshot.host.loadAverage1m)}
+                  />
+                )}
+              </div>
+            )}
           </section>
         </div>
 

@@ -19,6 +19,55 @@ export function workerHealth(capturedAt: Date, lastSeenAt: Date | undefined): Mo
   return "CRITICAL";
 }
 
+export interface HostResourceUsage {
+  readonly totalBytes: number;
+  readonly usedBytes: number;
+  readonly availableBytes: number;
+  /** 0..1 */
+  readonly usedRatio: number;
+}
+
+/** Traffic-light for a disk / memory fill ratio. */
+export function hostUsageHealth(usedRatio: number): MonitoringHealth {
+  if (!Number.isFinite(usedRatio) || usedRatio < 0) return "UNKNOWN";
+  if (usedRatio >= 0.92) return "CRITICAL";
+  if (usedRatio >= 0.8) return "WARNING";
+  return "HEALTHY";
+}
+
+/** Pulls MemTotal + MemAvailable (bytes) out of a `/proc/meminfo` dump. */
+export function parseMemInfo(
+  raw: string,
+): { readonly totalBytes: number; readonly availableBytes: number } | undefined {
+  const kb = (key: string): number | undefined => {
+    const match = new RegExp(`^${key}:\\s+(\\d+)\\s+kB`, "mu").exec(raw);
+    return match === null ? undefined : Number(match[1]) * 1024;
+  };
+  const totalBytes = kb("MemTotal");
+  const availableBytes = kb("MemAvailable") ?? kb("MemFree");
+  if (
+    totalBytes === undefined ||
+    availableBytes === undefined ||
+    !Number.isFinite(totalBytes) ||
+    totalBytes <= 0
+  ) {
+    return undefined;
+  }
+  return { totalBytes, availableBytes };
+}
+
+export function toHostUsage(
+  totalBytes: number,
+  availableBytes: number,
+): HostResourceUsage | undefined {
+  if (!Number.isFinite(totalBytes) || totalBytes <= 0 || !Number.isFinite(availableBytes)) {
+    return undefined;
+  }
+  const available = Math.max(0, Math.min(totalBytes, availableBytes));
+  const usedBytes = totalBytes - available;
+  return { totalBytes, usedBytes, availableBytes: available, usedRatio: usedBytes / totalBytes };
+}
+
 export function whatsappHealth(input: {
   readonly mode: AppConfig["whatsapp"]["mode"];
   readonly configured: boolean;

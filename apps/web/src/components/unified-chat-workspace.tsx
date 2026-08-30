@@ -458,6 +458,113 @@ function PaymentDueCard({
   );
 }
 
+/**
+ * One compact form inside an admin request card: pick "price quote" (student
+ * approves) or "direct ledger charge", type an amount, send. Stacked so it fits
+ * the narrow card — amount on its own row, currency + action below.
+ */
+function PricingForm({
+  allowCharge,
+  allowQuote,
+  english,
+  locked,
+  onCharge,
+  onQuote,
+}: Readonly<{
+  allowCharge: boolean;
+  allowQuote: boolean;
+  english: boolean;
+  locked: boolean;
+  onCharge: (event: React.FormEvent<HTMLFormElement>) => void;
+  onQuote: (event: React.FormEvent<HTMLFormElement>) => void;
+}>) {
+  const [ledger, setLedger] = useState(!allowQuote);
+  const useLedger = ledger || !allowQuote;
+  const both = allowQuote && allowCharge;
+  return (
+    <form
+      className="grid gap-2 rounded-xl border border-[var(--itq-color-border)] bg-[var(--itq-color-surface-soft)] p-3"
+      onSubmit={(event) => (useLedger ? onCharge(event) : onQuote(event))}
+    >
+      {both ? (
+        <div className="grid grid-cols-2 gap-1 rounded-lg bg-[var(--itq-color-surface)] p-1 text-[11px] font-black">
+          <button
+            className={`rounded-md py-1.5 ${
+              useLedger
+                ? "text-[var(--itq-color-muted)]"
+                : "bg-[var(--itq-color-info-950)] text-white"
+            }`}
+            onClick={() => setLedger(false)}
+            type="button"
+          >
+            {english ? "Price quote" : "عرض سعر"}
+          </button>
+          <button
+            className={`rounded-md py-1.5 ${
+              useLedger
+                ? "bg-[var(--itq-color-ink-deep)] text-white"
+                : "text-[var(--itq-color-muted)]"
+            }`}
+            onClick={() => setLedger(true)}
+            type="button"
+          >
+            {english ? "Direct ledger" : "مديونية مباشرة"}
+          </button>
+        </div>
+      ) : (
+        <p className="text-[11px] font-black">
+          {useLedger
+            ? english
+              ? "Add a charge to the ledger"
+              : "إضافة مبلغ إلى المديونية"
+            : english
+              ? "Set the price for this request"
+              : "حدّد سعر هذا الطلب"}
+        </p>
+      )}
+      <input
+        aria-label={english ? "Amount" : "المبلغ"}
+        className="h-11 w-full rounded-xl border border-[var(--itq-color-border)] bg-[var(--itq-color-surface)] px-3 text-sm font-black"
+        inputMode="decimal"
+        maxLength={13}
+        name="amount"
+        placeholder={english ? "0.00" : "٠٫٠٠"}
+        required
+      />
+      <div className="flex gap-2">
+        <select
+          aria-label={english ? "Currency" : "العملة"}
+          className="h-11 w-20 shrink-0 rounded-xl border border-[var(--itq-color-border)] bg-[var(--itq-color-surface)] px-2 text-xs font-black"
+          defaultValue="SAR"
+          name="currency"
+        >
+          <option value="SAR">SAR</option>
+          <option value="AED">AED</option>
+          <option value="KWD">KWD</option>
+        </select>
+        <button
+          className={`h-11 flex-1 rounded-xl px-4 text-sm font-black text-white disabled:opacity-50 ${
+            useLedger ? "bg-[var(--itq-color-ink-deep)]" : "bg-[var(--itq-color-info-950)]"
+          }`}
+          disabled={locked}
+          type="submit"
+        >
+          {useLedger ? (english ? "Add" : "إضافة") : english ? "Send" : "إرسال"}
+        </button>
+      </div>
+      <p className="text-[10px] font-semibold text-[var(--itq-color-muted)]">
+        {useLedger
+          ? english
+            ? "Recorded now as an unpaid due — no student approval."
+            : "يُسجَّل فورًا كمستحق غير مدفوع دون موافقة الطالب."
+          : english
+            ? "The student gets an Approve / Reject card. Valid 7 days."
+            : "يصل الطالب بطاقة موافقة / رفض. صالحة ٧ أيام."}
+      </p>
+    </form>
+  );
+}
+
 function QuoteCard({
   locale,
   mode,
@@ -2620,101 +2727,22 @@ export function UnifiedChatWorkspace({
                                 {formatMessageDate(request.updatedAt, locale)}
                               </time>
                             </p>
-                            {canQuoteCard ? (
-                              <form
-                                className="rounded-xl border border-[var(--itq-color-info-200)] bg-[var(--itq-color-info-50)] p-3"
-                                onSubmit={(event) => void createQuote(event)}
-                              >
-                                <p className="mb-2 text-[11px] font-black text-[var(--itq-color-info-950)]">
-                                  {english
-                                    ? "Set the price for this request"
-                                    : "حدّد سعر هذا الطلب"}
-                                </p>
-                                <div className="flex items-stretch gap-2">
-                                  <input
-                                    aria-label={english ? "Price" : "السعر"}
-                                    className="h-11 min-w-0 flex-1 rounded-xl border border-[var(--itq-color-info-200)] bg-[var(--itq-color-surface)] px-3 text-sm font-black"
-                                    inputMode="decimal"
-                                    maxLength={13}
-                                    name="amount"
-                                    placeholder={english ? "0.00" : "٠٫٠٠"}
-                                    required
-                                  />
-                                  <select
-                                    aria-label={english ? "Currency" : "العملة"}
-                                    className="h-11 rounded-xl border border-[var(--itq-color-info-200)] bg-[var(--itq-color-surface)] px-2 text-xs font-black"
-                                    defaultValue="SAR"
-                                    name="currency"
-                                  >
-                                    <option value="SAR">SAR</option>
-                                    <option value="AED">AED</option>
-                                    <option value="KWD">KWD</option>
-                                  </select>
-                                  <button
-                                    className="min-h-11 shrink-0 rounded-xl bg-[var(--itq-color-info-950)] px-4 text-sm font-black text-white disabled:opacity-50"
-                                    disabled={interactionLocked}
-                                    type="submit"
-                                  >
-                                    {english ? "Send" : "إرسال"}
-                                  </button>
-                                </div>
-                                <p className="mt-1.5 text-[10px] font-semibold text-[var(--itq-color-muted)]">
-                                  {english
-                                    ? "The student gets an Approve / Reject card in the chat. Valid for 7 days."
-                                    : "يصل الطالب بطاقة موافقة / رفض في المحادثة. صالح 7 أيام."}
-                                </p>
-                              </form>
-                            ) : cardHasPendingQuote ? (
+                            {canQuoteCard || canChargeCard ? (
+                              <PricingForm
+                                allowCharge={canChargeCard}
+                                allowQuote={canQuoteCard}
+                                english={english}
+                                locked={interactionLocked}
+                                onCharge={(event) => void addRequestCharge(event)}
+                                onQuote={(event) => void createQuote(event)}
+                              />
+                            ) : null}
+                            {cardHasPendingQuote && !canQuoteCard ? (
                               <p className="rounded-xl bg-[var(--itq-color-info-50)] px-3 py-2 text-[10px] font-bold text-[var(--itq-color-info-950)]">
                                 {english
                                   ? "A price card is already awaiting the student's response."
                                   : "توجد بطاقة سعر بانتظار رد الطالب بالفعل."}
                               </p>
-                            ) : null}
-                            {canChargeCard ? (
-                              <form
-                                className="rounded-xl border border-[var(--itq-color-border)] bg-[var(--itq-color-surface-soft)] p-3"
-                                onSubmit={(event) => void addRequestCharge(event)}
-                              >
-                                <p className="mb-2 text-[11px] font-black">
-                                  {english
-                                    ? "Add a charge to the student's ledger (any status)"
-                                    : "إضافة مبلغ إلى مديونية الطالب (أي حالة)"}
-                                </p>
-                                <div className="flex items-stretch gap-2">
-                                  <input
-                                    aria-label={english ? "Amount" : "المبلغ"}
-                                    className="h-11 min-w-0 flex-1 rounded-xl border border-[var(--itq-color-border)] bg-[var(--itq-color-surface)] px-3 text-sm font-black"
-                                    inputMode="decimal"
-                                    maxLength={13}
-                                    name="amount"
-                                    placeholder={english ? "0.00" : "٠٫٠٠"}
-                                    required
-                                  />
-                                  <select
-                                    aria-label={english ? "Currency" : "العملة"}
-                                    className="h-11 rounded-xl border border-[var(--itq-color-border)] bg-[var(--itq-color-surface)] px-2 text-xs font-black"
-                                    defaultValue="SAR"
-                                    name="currency"
-                                  >
-                                    <option value="SAR">SAR</option>
-                                    <option value="AED">AED</option>
-                                    <option value="KWD">KWD</option>
-                                  </select>
-                                  <button
-                                    className="min-h-11 shrink-0 rounded-xl bg-[var(--itq-color-ink-deep)] px-4 text-sm font-black text-white disabled:opacity-50"
-                                    disabled={interactionLocked}
-                                    type="submit"
-                                  >
-                                    {english ? "Add" : "إضافة"}
-                                  </button>
-                                </div>
-                                <p className="mt-1.5 text-[10px] font-semibold text-[var(--itq-color-muted)]">
-                                  {english
-                                    ? "Recorded immediately as an unpaid due on this request — no student approval."
-                                    : "يُسجَّل فورًا كمستحق غير مدفوع على هذا الطلب دون موافقة الطالب."}
-                                </p>
-                              </form>
                             ) : null}
                           </div>
                         ) : null}

@@ -1,6 +1,13 @@
 import { describe, expect, it } from "vitest";
 
-import { maskOperationalPhone, whatsappHealth, workerHealth } from "./admin-monitoring-presenters";
+import {
+  hostUsageHealth,
+  maskOperationalPhone,
+  parseMemInfo,
+  toHostUsage,
+  whatsappHealth,
+  workerHealth,
+} from "./admin-monitoring-presenters";
 
 describe("admin monitoring presenters", () => {
   it("masks an operational recipient without exposing the full phone number", () => {
@@ -75,5 +82,37 @@ describe("admin monitoring presenters", () => {
         deadLetter: 0,
       }),
     ).toBe("UNKNOWN");
+  });
+
+  it("grades host disk / memory fill as a traffic light", () => {
+    expect(hostUsageHealth(0.5)).toBe("HEALTHY");
+    expect(hostUsageHealth(0.85)).toBe("WARNING");
+    expect(hostUsageHealth(0.95)).toBe("CRITICAL");
+    expect(hostUsageHealth(Number.NaN)).toBe("UNKNOWN");
+  });
+
+  it("reads MemTotal and MemAvailable out of /proc/meminfo", () => {
+    const raw = [
+      "MemTotal:        3911560 kB",
+      "MemFree: 354620 kB",
+      "MemAvailable:    1564552 kB",
+    ].join("\n");
+    expect(parseMemInfo(raw)).toEqual({
+      totalBytes: 3_911_560 * 1024,
+      availableBytes: 1_564_552 * 1024,
+    });
+    expect(parseMemInfo("MemFree: 500 kB")).toBeUndefined();
+    expect(parseMemInfo("garbage")).toBeUndefined();
+  });
+
+  it("turns totals into a used ratio and clamps availability", () => {
+    expect(toHostUsage(100, 25)).toEqual({
+      totalBytes: 100,
+      usedBytes: 75,
+      availableBytes: 25,
+      usedRatio: 0.75,
+    });
+    expect(toHostUsage(100, 250)?.usedRatio).toBe(0);
+    expect(toHostUsage(0, 0)).toBeUndefined();
   });
 });
