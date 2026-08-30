@@ -14,6 +14,17 @@ self.addEventListener("activate", (event) => {
   event.waitUntil(self.clients.claim());
 });
 
+/*
+ * A fetch handler is required for the app to be installable on Android
+ * (a real WebAPK, not just a shortcut). It caches nothing: only top-level
+ * navigations are served, straight from the network.
+ */
+self.addEventListener("fetch", (event) => {
+  if (event.request.mode === "navigate") {
+    event.respondWith(fetch(event.request));
+  }
+});
+
 self.addEventListener("push", (event) => {
   let payload = {};
   try {

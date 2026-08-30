@@ -41,7 +41,12 @@ export default async function EnglishAdminSupportPage({ searchParams }: PageProp
     incremental: false,
   };
   let maximumBytes;
+  let services: { readonly id: string; readonly name: string }[] = [];
   try {
+    const catalog = await runtime.catalog.listPublicCatalog();
+    services = catalog.flatMap((category) =>
+      category.services.map((service) => ({ id: service.id, name: service.nameEn })),
+    );
     list = await runtime.unifiedConversations.listConversations(principal, {
       pageSize: 100,
       ...(search === undefined || search.length === 0 ? {} : { search }),
@@ -90,6 +95,7 @@ export default async function EnglishAdminSupportPage({ searchParams }: PageProp
         locale="en"
         maximumBytes={maximumBytes}
         mode="admin"
+        services={services}
         {...(conversation === undefined ? {} : { conversation })}
         {...(search === undefined ? {} : { search })}
         {...(selectedRequestId === undefined ? {} : { selectedRequestId })}

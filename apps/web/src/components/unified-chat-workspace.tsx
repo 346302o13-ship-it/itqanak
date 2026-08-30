@@ -67,6 +67,8 @@ interface UnifiedChatWorkspaceProps {
   readonly mode: "student" | "admin";
   readonly search?: string;
   readonly selectedRequestId?: string;
+  /** Active services, so the admin can create a request from the chat panel. */
+  readonly services?: readonly { readonly id: string; readonly name: string }[];
 }
 
 interface MessageListWire {
@@ -681,6 +683,7 @@ export function UnifiedChatWorkspace({
   mode,
   search,
   selectedRequestId,
+  services = [],
 }: UnifiedChatWorkspaceProps) {
   const english = locale === "en";
   const fileInput = useRef<HTMLInputElement>(null);
@@ -1899,6 +1902,57 @@ export function UnifiedChatWorkspace({
     }
   }
 
+  async function createRequestOnBehalf(event: React.FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    if (csrfToken === undefined || interactionLocked || conversation === undefined) return;
+    const formElement = event.currentTarget;
+    const fields = new FormData(formElement);
+    const serviceId = String(fields.get("serviceId") ?? "");
+    const title = String(fields.get("title") ?? "").trim();
+    if (serviceId.length === 0 || title.length < 3) {
+      setNotice(
+        english ? "Pick a service and write a short title." : "اختر خدمة واكتب عنوانًا قصيرًا.",
+      );
+      return;
+    }
+    setPending(true);
+    setNotice(english ? "Creating the request…" : "جارٍ إنشاء الطلب…");
+    try {
+      const body = new URLSearchParams({
+        csrfToken,
+        locale,
+        studentUserId: conversation.studentUserId,
+        serviceId,
+        submissionKey: crypto.randomUUID(),
+        title,
+        description: english
+          ? `${title} — created by the ITQANAK team; details in the chat.`
+          : `${title} — أنشأه فريق إتقانك، والتفاصيل في المحادثة.`,
+        submitImmediately: "true",
+      });
+      const response = await fetch("/api/admin/requests", {
+        method: "POST",
+        body,
+        credentials: "same-origin",
+        headers: {
+          "Content-Type": "application/x-www-form-urlencoded",
+          Accept: "application/json",
+        },
+      });
+      if (!response.ok) throw new Error();
+      formElement.reset();
+      setNotice(
+        english ? "Request created and assigned to the student." : "تم إنشاء الطلب وإسناده للطالب.",
+      );
+      messagePokeRef.current();
+      contactPokeRef.current();
+    } catch {
+      setNotice(english ? "The request could not be created." : "تعذر إنشاء الطلب.");
+    } finally {
+      setPending(false);
+    }
+  }
+
   async function withdrawQuote(quote: ServiceQuote) {
     if (csrfToken === undefined || interactionLocked) return;
     const request = requests.find((item) => item.id === quote.requestId);
@@ -2096,6 +2150,50 @@ export function UnifiedChatWorkspace({
           </div>
         </header>
         <div className="itq-scroll min-h-0 flex-1 overflow-y-auto overscroll-contain p-3">
+          {mode === "admin" && services.length > 0 ? (
+            <form
+              className="mb-3 rounded-2xl border border-[var(--itq-color-brand-200)] bg-[var(--itq-color-brand-50)] p-3"
+              onSubmit={(event) => void createRequestOnBehalf(event)}
+            >
+              <p className="mb-2 text-xs font-black text-[var(--itq-color-brand-strong)]">
+                {english ? "Create a request for this student" : "إنشاء طلب لهذا الطالب"}
+              </p>
+              <select
+                aria-label={english ? "Service" : "الخدمة"}
+                className="h-10 w-full rounded-xl border border-[var(--itq-color-border)] bg-[var(--itq-color-surface)] px-2 text-xs font-black"
+                defaultValue=""
+                name="serviceId"
+                required
+              >
+                <option disabled value="">
+                  {english ? "Choose a service" : "اختر الخدمة"}
+                </option>
+                {services.map((service) => (
+                  <option key={service.id} value={service.id}>
+                    {service.name}
+                  </option>
+                ))}
+              </select>
+              <div className="mt-2 flex items-stretch gap-2">
+                <input
+                  aria-label={english ? "Title" : "العنوان"}
+                  className="h-10 min-w-0 flex-1 rounded-xl border border-[var(--itq-color-border)] bg-[var(--itq-color-surface)] px-3 text-sm"
+                  dir="auto"
+                  maxLength={160}
+                  name="title"
+                  placeholder={english ? "Request title" : "عنوان الطلب"}
+                  required
+                />
+                <button
+                  className="min-h-10 shrink-0 rounded-xl bg-[var(--itq-color-brand-700)] px-3 text-xs font-black text-white disabled:opacity-50"
+                  disabled={interactionLocked}
+                  type="submit"
+                >
+                  {english ? "Create & assign" : "إنشاء وإسناد"}
+                </button>
+              </div>
+            </form>
+          ) : null}
           {requests.length === 0 ? (
             <div className="rounded-2xl bg-[var(--itq-color-surface-soft)] p-5 text-center">
               <RequestsIcon className="mx-auto size-8 text-[var(--itq-color-muted)]" />

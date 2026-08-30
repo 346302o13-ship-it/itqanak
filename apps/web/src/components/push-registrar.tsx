@@ -33,6 +33,10 @@ export function PushRegistrar({ csrfToken }: { readonly csrfToken: string | unde
 
     let cancelled = false;
 
+    // Always register the worker (installability + future pushes); only the
+    // subscription below needs an explicit notification grant.
+    navigator.serviceWorker.register("/sw.js").catch(() => undefined);
+
     const sync = async (): Promise<void> => {
       try {
         if (Notification.permission !== "granted") return;

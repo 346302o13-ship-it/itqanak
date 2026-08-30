@@ -95,6 +95,12 @@ export function InstallAppButton({
         userAgent: navigator.userAgent,
       }) === "ios",
     );
+    // Register the notification/installability service worker as early as
+    // possible: Android needs an active worker with a fetch handler to mint a
+    // real installed app (a WebAPK) rather than a shortcut that disappears.
+    if ("serviceWorker" in navigator) {
+      navigator.serviceWorker.register("/sw.js").catch(() => undefined);
+    }
     const capturePrompt = (event: Event) => {
       event.preventDefault();
       setPromptEvent(event as InstallPromptEvent);
