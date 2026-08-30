@@ -8,6 +8,8 @@ interface PaymentReceiptUploaderProps {
   readonly locale: "ar" | "en";
   /** Already has a pending submission awaiting review. */
   readonly pending?: boolean;
+  /** Fired once the receipt is accepted by the server (e.g. to refresh a chat). */
+  readonly onSubmitted?: () => void;
 }
 
 /**
@@ -19,6 +21,7 @@ export function PaymentReceiptUploader({
   dueId,
   csrfToken,
   locale,
+  onSubmitted,
   pending = false,
 }: PaymentReceiptUploaderProps) {
   const english = locale === "en";
@@ -65,6 +68,7 @@ export function PaymentReceiptUploader({
           ? "Receipt sent. Awaiting the team's review."
           : "تم إرسال الإيصال. بانتظار مراجعة الإدارة.",
       );
+      onSubmitted?.();
     } catch (error: unknown) {
       setState("error");
       setMessage(

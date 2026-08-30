@@ -5,7 +5,7 @@ import { assertProtectedForm, formValue, loadWebConfig } from "@/lib/auth-runtim
 import { financeErrorResponse } from "@/lib/finance-http";
 import { createFinanceRuntime } from "@/lib/finance-runtime";
 import { getRequestId } from "@/lib/request-id";
-import { requestFormUnauthorizedResponse } from "@/lib/request-http";
+import { acceptsHtml, requestFormUnauthorizedResponse } from "@/lib/request-http";
 import { principalForRequest } from "@/lib/route-principal";
 
 interface RouteContext {
@@ -31,12 +31,18 @@ export async function POST(request: NextRequest, context: RouteContext) {
       }
       const decision =
         formValue(protectedForm.formData, "decision") === "REJECT" ? "REJECT" : "ACCEPT";
-      await runtime.finance.reviewPaymentReceipt(
+      const { submission, due } = await runtime.finance.reviewPaymentReceipt(
         principal,
         submissionId,
         { decision, reviewNote: formValue(protectedForm.formData, "reviewNote") || null },
         { ...protectedForm.context, requestId },
       );
+      if (!acceptsHtml(request)) {
+        return NextResponse.json(
+          { reviewStatus: submission.reviewStatus, dueStatus: due?.status ?? null },
+          { status: 200, headers: { "Cache-Control": "no-store", "X-Request-ID": requestId } },
+        );
+      }
       const notice = decision === "ACCEPT" ? "receipt_accepted" : "receipt_rejected";
       return NextResponse.redirect(
         new URL(`${fallback}?notice=${notice}`, protectedForm.config.adminAppUrl),

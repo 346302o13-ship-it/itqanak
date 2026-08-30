@@ -704,10 +704,18 @@ export class FinanceService {
           readonly id: string;
           readonly student_user_id: string;
           readonly status: string;
+          readonly amount_minor: number | string;
+          readonly currency: string;
+          readonly minor_unit: number | string;
+          readonly request_id: string;
+          readonly request_number: string | null;
         }[]
       >`
-        SELECT id, student_user_id, status FROM finance_dues
-        WHERE id = ${dueId} LIMIT 1 FOR SHARE
+        SELECT dues.id, dues.student_user_id, dues.status, dues.amount_minor,
+               dues.currency, dues.minor_unit, dues.request_id, requests.request_number
+        FROM finance_dues AS dues
+        LEFT JOIN service_requests AS requests ON requests.id = dues.request_id
+        WHERE dues.id = ${dueId} LIMIT 1 FOR SHARE OF dues
       `;
       const due = dues[0];
       if (due === undefined || due.student_user_id !== principal.userId) {
@@ -756,6 +764,31 @@ export class FinanceService {
         resourceId: inserted[0].id,
         metadata: { dueId },
       });
+      // Drop a "receipt submitted" card into the conversation so the admin can
+      // accept the payment without leaving the chat.
+      const submitConversations = await tx<{ readonly id: string }[]>`
+        SELECT id FROM support_conversations WHERE student_user_id = ${principal.userId}
+      `;
+      const submitConversationId = submitConversations[0]?.id;
+      if (submitConversationId !== undefined) {
+        await tx`
+          INSERT INTO support_messages (
+            conversation_id, sender_type, sender_user_id, content_type, body, metadata, request_id
+          ) VALUES (
+            ${submitConversationId}, 'SYSTEM', NULL, 'ACTION', 'PAYMENT_RECEIPT_SUBMITTED',
+            ${tx.json({
+              dueId,
+              submissionId: inserted[0].id,
+              attachmentId,
+              requestNumber: due.request_number,
+              amountMinor: Number(due.amount_minor),
+              currency: due.currency,
+              minorUnit: Number(due.minor_unit) === 3 ? 3 : 2,
+            })},
+            ${due.request_id}
+          )
+        `;
+      }
       const rows = await this.readReceipts(tx, { submissionId: inserted[0].id });
       const receipt = rows[0];
       if (receipt === undefined) throw new Error("Payment receipt could not be reloaded.");
@@ -830,11 +863,16 @@ export class FinanceService {
         readonly review_status: string;
         readonly due_version: number | string;
         readonly due_status: string;
+        readonly student_user_id: string;
+        readonly request_id: string;
+        readonly request_number: string | null;
       }[]
     >`
-      SELECT s.id, s.due_id, s.review_status, d.version AS due_version, d.status AS due_status
+      SELECT s.id, s.due_id, s.review_status, d.version AS due_version, d.status AS due_status,
+             d.student_user_id, d.request_id, r.request_number
       FROM finance_payment_submissions AS s
       INNER JOIN finance_dues AS d ON d.id = s.due_id
+      LEFT JOIN service_requests AS r ON r.id = d.request_id
       WHERE s.id = ${submissionId} LIMIT 1
     `;
     const submission = pending[0];
@@ -878,6 +916,53 @@ export class FinanceService {
       resourceId: submissionId,
       metadata: { decision: input.decision, dueId: submission.due_id },
     });
+
+    // Reflect the decision back into the conversation + the student's bell.
+    const accepted = input.decision === "ACCEPT";
+    const label = submission.request_number ?? "";
+    await this.database`
+      INSERT INTO user_notifications (
+        recipient_user_id, kind, request_id, title_ar, title_en,
+        body_ar, body_en, action_href, idempotency_key
+      ) VALUES (
+        ${submission.student_user_id}, 'SYSTEM_ANNOUNCEMENT', ${submission.request_id},
+        ${accepted ? "تم تأكيد الدفع" : "لم يُقبل الإيصال"},
+        ${accepted ? "Payment confirmed" : "Receipt not accepted"},
+        ${
+          accepted
+            ? `تم تأكيد دفعتك${label.length > 0 ? ` للطلب ${label}` : ""}.`
+            : `لم يتم قبول إيصال الدفع${label.length > 0 ? ` للطلب ${label}` : ""}. يمكنك رفع إيصال جديد.`
+        },
+        ${
+          accepted
+            ? `Your payment${label.length > 0 ? ` for request ${label}` : ""} has been confirmed.`
+            : `Your payment receipt${label.length > 0 ? ` for request ${label}` : ""} was not accepted. You can upload a new one.`
+        },
+        '/finance', ${`receipt-review:${submissionId}`}
+      )
+      ON CONFLICT (idempotency_key) DO NOTHING
+    `;
+    const reviewConversations = await this.database<{ readonly id: string }[]>`
+      SELECT id FROM support_conversations WHERE student_user_id = ${submission.student_user_id}
+    `;
+    const reviewConversationId = reviewConversations[0]?.id;
+    if (reviewConversationId !== undefined) {
+      await this.database`
+        INSERT INTO support_messages (
+          conversation_id, sender_type, sender_user_id, content_type, body, metadata, request_id
+        ) VALUES (
+          ${reviewConversationId}, 'SYSTEM', NULL, 'ACTION', 'PAYMENT_REVIEWED',
+          ${this.database.json({
+            decision: input.decision,
+            dueId: submission.due_id,
+            submissionId,
+            requestNumber: submission.request_number,
+          })},
+          ${submission.request_id}
+        )
+      `;
+    }
+
     const rows = await this.readReceipts(this.database, { submissionId });
     const result = rows[0];
     if (result === undefined) throw new Error("Reviewed receipt could not be reloaded.");

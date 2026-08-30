@@ -341,6 +341,19 @@ function systemMessageLabel(message: UnifiedMessage, locale: "ar" | "en"): strin
   if (message.body === "PAYMENT_DUE_CREATED") {
     return english ? "A payment is due — upload the receipt" : "مبلغ مستحق — ارفع إيصال الدفع";
   }
+  if (message.body === "PAYMENT_RECEIPT_SUBMITTED") {
+    return english ? "Payment receipt submitted" : "تم إرسال إيصال الدفع";
+  }
+  if (message.body === "PAYMENT_REVIEWED") {
+    const accepted = message.metadata.decision === "ACCEPT";
+    return accepted
+      ? english
+        ? "Payment confirmed"
+        : "تم تأكيد الدفع"
+      : english
+        ? "Receipt not accepted"
+        : "لم يُقبل إيصال الدفع";
+  }
   return message.body || (english ? "Conversation updated" : "تم تحديث المحادثة");
 }
 
@@ -356,6 +369,8 @@ function isImportantSystemMessage(message: UnifiedMessage): boolean {
       "QUOTE_REJECTED",
       "REQUEST_CANCELLED",
       "PAYMENT_DUE_CREATED",
+      "PAYMENT_RECEIPT_SUBMITTED",
+      "PAYMENT_REVIEWED",
     ].includes(message.body)
   ) {
     return true;
@@ -411,21 +426,10 @@ function quoteStatusLabel(status: ServiceQuote["status"], locale: "ar" | "en"): 
   return labels[status][locale];
 }
 
-function PaymentDueCard({
-  metadata,
-  mode,
-  csrfToken,
-  locale,
-  receiptUnderReview,
-}: Readonly<{
-  metadata: UnifiedMessage["metadata"];
-  mode: "student" | "admin";
-  csrfToken: string | undefined;
-  locale: "ar" | "en";
-  receiptUnderReview: boolean;
-}>) {
-  const english = locale === "en";
-  const dueId = typeof metadata.dueId === "string" ? metadata.dueId : undefined;
+function paymentMetadataAmount(
+  metadata: UnifiedMessage["metadata"],
+  english: boolean,
+): { readonly amount: string; readonly currency: string; readonly requestNumber: string } {
   const requestNumber = typeof metadata.requestNumber === "string" ? metadata.requestNumber : "";
   const currency = typeof metadata.currency === "string" ? metadata.currency : "SAR";
   const minorUnit = metadata.minorUnit === 3 ? 3 : 2;
@@ -434,6 +438,29 @@ function PaymentDueCard({
     minimumFractionDigits: minorUnit,
     maximumFractionDigits: minorUnit,
   });
+  return { amount, currency, requestNumber };
+}
+
+function PaymentDueCard({
+  metadata,
+  mode,
+  csrfToken,
+  duePaid,
+  locale,
+  onSubmitted,
+  receiptUnderReview,
+}: Readonly<{
+  metadata: UnifiedMessage["metadata"];
+  mode: "student" | "admin";
+  csrfToken: string | undefined;
+  duePaid: boolean;
+  locale: "ar" | "en";
+  onSubmitted: () => void;
+  receiptUnderReview: boolean;
+}>) {
+  const english = locale === "en";
+  const dueId = typeof metadata.dueId === "string" ? metadata.dueId : undefined;
+  const { amount, currency, requestNumber } = paymentMetadataAmount(metadata, english);
   return (
     <div className="rounded-2xl border border-[var(--itq-color-warning-200)] bg-[var(--itq-color-warning-50)] p-3.5 shadow-sm">
       <p className="text-xs font-black text-[var(--itq-color-warning-950)]">
@@ -447,12 +474,141 @@ function PaymentDueCard({
       <p className="mt-1 text-lg font-black text-[var(--itq-color-warning-950)]" dir="ltr">
         {amount} {currency}
       </p>
-      {mode === "admin" ? null : receiptUnderReview ? (
+      {duePaid ? (
+        <p className="mt-2 rounded-xl border border-[var(--itq-color-success-200)] bg-[var(--itq-color-success-50)] px-3 py-2 text-xs font-black text-[var(--itq-color-success-950)]">
+          {english ? "Paid ✓" : "تم الدفع ✓"}
+        </p>
+      ) : mode === "admin" ? (
+        <p className="mt-2 text-[10px] font-bold text-[var(--itq-color-warning-900)]">
+          {receiptUnderReview
+            ? english
+              ? "The student sent a receipt — review it below."
+              : "أرسل الطالب إيصالًا — راجعه في البطاقة أدناه."
+            : english
+              ? "Waiting for the student to upload a receipt."
+              : "بانتظار رفع الطالب لإيصال الدفع."}
+        </p>
+      ) : receiptUnderReview ? (
         <p className="mt-2 rounded-xl border border-[var(--itq-color-info-200)] bg-[var(--itq-color-info-50)] px-3 py-2 text-xs font-bold text-[var(--itq-color-info-950)]">
           {english ? "Your receipt is under review." : "إيصالك قيد المراجعة."}
         </p>
       ) : dueId === undefined ? null : (
-        <PaymentReceiptUploader csrfToken={csrfToken} dueId={dueId} locale={locale} />
+        <PaymentReceiptUploader
+          csrfToken={csrfToken}
+          dueId={dueId}
+          locale={locale}
+          onSubmitted={onSubmitted}
+        />
+      )}
+    </div>
+  );
+}
+
+/**
+ * "Receipt submitted" card in the conversation. The admin gets Accept / Reject
+ * right here; the student sees the review state. The receipt image previews via
+ * the host-appropriate route.
+ */
+function PaymentReceiptCard({
+  busy,
+  csrfToken,
+  locale,
+  metadata,
+  mode,
+  onImage,
+  onReview,
+  reviewState,
+}: Readonly<{
+  busy: boolean;
+  csrfToken: string | undefined;
+  locale: "ar" | "en";
+  metadata: UnifiedMessage["metadata"];
+  mode: "student" | "admin";
+  onImage: (source: string, name: string) => void;
+  onReview: (submissionId: string, decision: "ACCEPT" | "REJECT") => void;
+  reviewState: "PENDING" | "ACCEPTED" | "REJECTED";
+}>) {
+  const english = locale === "en";
+  const { amount, currency, requestNumber } = paymentMetadataAmount(metadata, english);
+  const dueId = typeof metadata.dueId === "string" ? metadata.dueId : undefined;
+  const submissionId =
+    typeof metadata.submissionId === "string" ? metadata.submissionId : undefined;
+  const imageSource =
+    submissionId === undefined
+      ? undefined
+      : mode === "admin"
+        ? `/api/admin/finance/receipts/${encodeURIComponent(submissionId)}/image`
+        : dueId === undefined
+          ? undefined
+          : `/api/student/finance/dues/${encodeURIComponent(dueId)}/receipt/image?submissionId=${encodeURIComponent(submissionId)}`;
+  const statusLabel =
+    reviewState === "ACCEPTED"
+      ? english
+        ? "Payment confirmed ✓"
+        : "تم تأكيد الدفع ✓"
+      : reviewState === "REJECTED"
+        ? english
+          ? "Receipt not accepted"
+          : "لم يُقبل الإيصال"
+        : english
+          ? "Under review"
+          : "قيد المراجعة";
+  const statusTone =
+    reviewState === "ACCEPTED"
+      ? "border-[var(--itq-color-success-200)] bg-[var(--itq-color-success-50)] text-[var(--itq-color-success-950)]"
+      : reviewState === "REJECTED"
+        ? "border-[var(--itq-color-danger-200)] bg-[var(--itq-color-danger-50)] text-[var(--itq-color-danger-950)]"
+        : "border-[var(--itq-color-info-200)] bg-[var(--itq-color-info-50)] text-[var(--itq-color-info-950)]";
+  return (
+    <div className="rounded-2xl border border-[var(--itq-color-border)] bg-[var(--itq-color-surface)] p-3.5 shadow-sm">
+      <p className="text-xs font-black">
+        {english ? "Payment receipt" : "إيصال دفع"}
+        {requestNumber.length > 0 ? (
+          <bdi className="ms-1 font-bold text-[var(--itq-color-muted)]" dir="ltr">
+            · {requestNumber}
+          </bdi>
+        ) : null}
+      </p>
+      <p className="mt-1 text-base font-black" dir="ltr">
+        {amount} {currency}
+      </p>
+      {imageSource === undefined ? null : (
+        <button
+          className="mt-2 block w-full overflow-hidden rounded-xl border border-[var(--itq-color-border)]"
+          onClick={() => onImage(imageSource, english ? "Payment receipt" : "إيصال الدفع")}
+          type="button"
+        >
+          <img
+            alt={english ? "Payment receipt" : "إيصال الدفع"}
+            className="max-h-52 w-full object-cover"
+            loading="lazy"
+            src={imageSource}
+          />
+        </button>
+      )}
+      {mode === "admin" && reviewState === "PENDING" ? (
+        <div className="mt-3 grid grid-cols-2 gap-2">
+          <button
+            className="min-h-10 rounded-xl border border-[var(--itq-color-danger-200)] bg-[var(--itq-color-danger-50)] px-3 text-xs font-black text-[var(--itq-color-danger-800)] disabled:opacity-50"
+            disabled={busy || submissionId === undefined || csrfToken === undefined}
+            onClick={() => submissionId !== undefined && onReview(submissionId, "REJECT")}
+            type="button"
+          >
+            {english ? "Reject" : "رفض"}
+          </button>
+          <button
+            className="min-h-10 rounded-xl bg-[var(--itq-color-success-600)] px-3 text-xs font-black text-white disabled:opacity-50"
+            disabled={busy || submissionId === undefined || csrfToken === undefined}
+            onClick={() => submissionId !== undefined && onReview(submissionId, "ACCEPT")}
+            type="button"
+          >
+            {english ? "Confirm payment" : "قبول الدفع"}
+          </button>
+        </div>
+      ) : (
+        <p className={`mt-3 rounded-xl border px-3 py-2 text-xs font-black ${statusTone}`}>
+          {statusLabel}
+        </p>
       )}
     </div>
   );
@@ -2356,8 +2512,56 @@ export function UnifiedChatWorkspace({
       if (!response.ok) throw new Error();
       formElement.reset();
       setNotice(english ? "Added to the student's debt ledger." : "أُضيف إلى مديونية الطالب.");
+      messagePokeRef.current();
+      contactPokeRef.current();
     } catch {
       setNotice(english ? "The charge could not be added." : "تعذر إضافة المبلغ.");
+    } finally {
+      setPending(false);
+    }
+  }
+
+  // Admin confirms or rejects a student's payment receipt straight from the
+  // conversation card. The server writes the follow-up PAYMENT_REVIEWED message.
+  async function reviewReceipt(submissionId: string, decision: "ACCEPT" | "REJECT") {
+    if (csrfToken === undefined || interactionLocked || mode !== "admin") return;
+    setPending(true);
+    setNotice(
+      decision === "ACCEPT"
+        ? english
+          ? "Confirming the payment…"
+          : "جارٍ تأكيد الدفع…"
+        : english
+          ? "Rejecting the receipt…"
+          : "جارٍ رفض الإيصال…",
+    );
+    try {
+      const response = await fetch(
+        `/api/admin/finance/receipts/${encodeURIComponent(submissionId)}/review`,
+        {
+          method: "POST",
+          body: new URLSearchParams({ csrfToken, decision, locale }),
+          credentials: "same-origin",
+          headers: {
+            "Content-Type": "application/x-www-form-urlencoded",
+            Accept: "application/json",
+          },
+        },
+      );
+      if (!response.ok) throw new Error();
+      setNotice(
+        decision === "ACCEPT"
+          ? english
+            ? "Payment confirmed."
+            : "تم تأكيد الدفع."
+          : english
+            ? "Receipt rejected."
+            : "تم رفض الإيصال.",
+      );
+      messagePokeRef.current();
+      contactPokeRef.current();
+    } catch {
+      setNotice(english ? "The receipt could not be reviewed." : "تعذرت مراجعة الإيصال.");
     } finally {
       setPending(false);
     }
@@ -3205,9 +3409,20 @@ export function UnifiedChatWorkspace({
                         <li className="mx-auto my-2 w-full max-w-sm">
                           <PaymentDueCard
                             csrfToken={csrfToken}
+                            duePaid={
+                              requests.find(
+                                (candidate) =>
+                                  candidate.id === message.request?.id ||
+                                  candidate.requestNumber === message.metadata.requestNumber,
+                              )?.finance?.dueStatus === "PAID"
+                            }
                             locale={locale}
                             metadata={message.metadata}
                             mode={mode}
+                            onSubmitted={() => {
+                              messagePokeRef.current();
+                              contactPokeRef.current();
+                            }}
                             receiptUnderReview={
                               requests.find(
                                 (candidate) =>
@@ -3215,6 +3430,32 @@ export function UnifiedChatWorkspace({
                                   candidate.requestNumber === message.metadata.requestNumber,
                               )?.finance?.hasPendingReceipt === true
                             }
+                          />
+                        </li>
+                      ) : message.body === "PAYMENT_RECEIPT_SUBMITTED" ? (
+                        <li className="mx-auto my-2 w-full max-w-sm">
+                          <PaymentReceiptCard
+                            busy={interactionLocked}
+                            csrfToken={csrfToken}
+                            locale={locale}
+                            metadata={message.metadata}
+                            mode={mode}
+                            onImage={(source, name) =>
+                              setLightbox({ download: source, name, src: source })
+                            }
+                            onReview={(submissionId, decision) =>
+                              void reviewReceipt(submissionId, decision)
+                            }
+                            reviewState={(() => {
+                              const finance = requests.find(
+                                (candidate) =>
+                                  candidate.id === message.request?.id ||
+                                  candidate.requestNumber === message.metadata.requestNumber,
+                              )?.finance;
+                              if (finance?.hasPendingReceipt === true) return "PENDING";
+                              if (finance?.dueStatus === "PAID") return "ACCEPTED";
+                              return "REJECTED";
+                            })()}
                           />
                         </li>
                       ) : isImportantSystemMessage(message) ? (
