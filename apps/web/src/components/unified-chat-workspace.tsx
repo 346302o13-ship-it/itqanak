@@ -1953,6 +1953,50 @@ export function UnifiedChatWorkspace({
     }
   }
 
+  // Attach a charge to any (non-draft) request straight onto the student's debt
+  // ledger, with no accept/reject step.
+  async function addRequestCharge(event: React.FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    if (csrfToken === undefined || interactionLocked || selectedRequest === undefined) return;
+    const formElement = event.currentTarget;
+    const fields = new FormData(formElement);
+    const amount = String(fields.get("amount") ?? "").trim();
+    if (!/^[0-9]+([.][0-9]{1,3})?$/u.test(amount) || Number(amount) <= 0) {
+      setNotice(english ? "Enter a valid amount." : "أدخل مبلغًا صحيحًا.");
+      return;
+    }
+    const currencyValue = String(fields.get("currency") ?? "SAR");
+    setPending(true);
+    setNotice(english ? "Adding to the ledger…" : "جارٍ الإضافة للمديونية…");
+    try {
+      const body = new URLSearchParams({
+        csrfToken,
+        locale,
+        requestNumber: selectedRequest.requestNumber,
+        amount,
+        currency: currencyValue === "AED" || currencyValue === "KWD" ? currencyValue : "SAR",
+        titleAr: `مبلغ الطلب ${selectedRequest.requestNumber}`,
+        titleEn: `Charge for ${selectedRequest.requestNumber}`,
+      });
+      const response = await fetch("/api/admin/finance", {
+        method: "POST",
+        body,
+        credentials: "same-origin",
+        headers: {
+          "Content-Type": "application/x-www-form-urlencoded",
+          Accept: "application/json",
+        },
+      });
+      if (!response.ok) throw new Error();
+      formElement.reset();
+      setNotice(english ? "Added to the student's debt ledger." : "أُضيف إلى مديونية الطالب.");
+    } catch {
+      setNotice(english ? "The charge could not be added." : "تعذر إضافة المبلغ.");
+    } finally {
+      setPending(false);
+    }
+  }
+
   async function withdrawQuote(quote: ServiceQuote) {
     if (csrfToken === undefined || interactionLocked) return;
     const request = requests.find((item) => item.id === quote.requestId);
@@ -2380,6 +2424,54 @@ export function UnifiedChatWorkspace({
                 {english
                   ? "The student gets an Approve / Reject card in the chat. Valid for 7 days."
                   : "يصل الطالب بطاقة موافقة / رفض في المحادثة. صالح 7 أيام."}
+              </p>
+            </form>
+          ) : null}
+
+          {mode === "admin" &&
+          selectedRequest !== undefined &&
+          selectedRequest.status !== "DRAFT" ? (
+            <form
+              className="mt-3 rounded-2xl border border-[var(--itq-color-border)] bg-[var(--itq-color-surface-soft)] p-3"
+              onSubmit={(event) => void addRequestCharge(event)}
+            >
+              <p className="mb-2 text-xs font-black">
+                {english
+                  ? "Add a charge to the student's ledger (any status)"
+                  : "إضافة مبلغ إلى مديونية الطالب (أي حالة)"}
+              </p>
+              <div className="flex items-stretch gap-2">
+                <input
+                  aria-label={english ? "Amount" : "المبلغ"}
+                  className="h-11 min-w-0 flex-1 rounded-xl border border-[var(--itq-color-border)] bg-[var(--itq-color-surface)] px-3 text-sm font-black"
+                  inputMode="decimal"
+                  maxLength={13}
+                  name="amount"
+                  placeholder={english ? "0.00" : "٠٫٠٠"}
+                  required
+                />
+                <select
+                  aria-label={english ? "Currency" : "العملة"}
+                  className="h-11 rounded-xl border border-[var(--itq-color-border)] bg-[var(--itq-color-surface)] px-2 text-xs font-black"
+                  defaultValue="SAR"
+                  name="currency"
+                >
+                  <option value="SAR">SAR</option>
+                  <option value="AED">AED</option>
+                  <option value="KWD">KWD</option>
+                </select>
+                <button
+                  className="min-h-11 shrink-0 rounded-xl bg-[var(--itq-color-ink-deep)] px-4 text-sm font-black text-white disabled:opacity-50"
+                  disabled={interactionLocked}
+                  type="submit"
+                >
+                  {english ? "Add" : "إضافة"}
+                </button>
+              </div>
+              <p className="mt-1.5 text-[10px] font-semibold text-[var(--itq-color-muted)]">
+                {english
+                  ? "Recorded immediately as an unpaid due on this request — no student approval."
+                  : "يُسجَّل فورًا كمستحق غير مدفوع على هذا الطلب دون موافقة الطالب."}
               </p>
             </form>
           ) : null}
