@@ -4,6 +4,7 @@ import type { ReactNode } from "react";
 import { BrandMark } from "@itqanak/ui";
 
 import { AnnouncementBanner } from "./announcement-banner";
+import { PushRegistrar } from "./push-registrar";
 import { CsrfInput } from "./auth-shell";
 import { LogOutIcon, ShieldCheckIcon, WhatsAppIcon } from "./icons";
 import { InstallAppButton } from "./install-app-button";
@@ -82,6 +83,7 @@ export function StudentShell({
       </header>
 
       <AnnouncementBanner locale={locale} />
+      <PushRegistrar csrfToken={csrfToken} />
 
       <div
         className={

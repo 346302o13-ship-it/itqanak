@@ -12,17 +12,19 @@
     "test": "vitest run"
   },
   "dependencies": {
-    "@itqanak/config": "workspace:*",
     "@itqanak/auth": "workspace:*",
+    "@itqanak/config": "workspace:*",
     "@itqanak/core": "workspace:*",
     "@itqanak/db": "workspace:*",
     "@itqanak/observability": "workspace:*",
     "@itqanak/operations": "workspace:*",
     "@itqanak/requests": "workspace:*",
     "@itqanak/storage": "workspace:*",
-    "ioredis": "6.0.0"
+    "ioredis": "6.0.0",
+    "web-push": "3.6.7"
   },
   "devDependencies": {
+    "@types/web-push": "3.6.4",
     "tsx": "4.19.3"
   }
 }

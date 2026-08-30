@@ -20,6 +20,7 @@ import { nextBackoffDelay, waitFor } from "./backoff.js";
 import { runPeriodicHeartbeat } from "./heartbeat.js";
 import { OutboxRetentionWorkLoop } from "./outbox.js";
 import { MetaWhatsAppCloudSender, WhatsAppSupportOutboxProcessor } from "./whatsapp.js";
+import { WebPushOutboxProcessor, webPushConfigFromEnv } from "./web-push.js";
 import { shouldProcessAttachmentScans } from "./scan-queue-control.js";
 
 const heartbeatIntervalMs = 15_000;
@@ -62,6 +63,16 @@ async function startWorker(config: AppConfig, logger: Logger, signal: AbortSigna
           logger.child({ workerName }),
           workerName,
           new PlatformMessagingService({ database }),
+        );
+  const webPushConfig = webPushConfigFromEnv(process.env);
+  const webPushNotifications =
+    webPushConfig === undefined
+      ? undefined
+      : new WebPushOutboxProcessor(
+          database,
+          webPushConfig,
+          logger.child({ workerName }),
+          workerName,
         );
   const operations = new PlatformOperationsService({ database });
   const objectStorage = createObjectStorage(config.storage);
@@ -136,6 +147,7 @@ async function startWorker(config: AppConfig, logger: Logger, signal: AbortSigna
       authEmailDeliveryEnabled: authEmailOutbox !== undefined,
       fileScannerMode: config.fileScanning.mode,
       whatsappNotificationMode: config.whatsapp.mode,
+      webPushEnabled: webPushNotifications !== undefined,
     });
 
     let failedAttempts = 0;
@@ -150,6 +162,7 @@ async function startWorker(config: AppConfig, logger: Logger, signal: AbortSigna
       try {
         await outbox.poll();
         await whatsappNotifications?.processBatch(1);
+        await webPushNotifications?.processBatch(3);
         await authEmailOutbox?.processBatch(1);
         const operationalState = await operations.getRuntimeState();
         if (previousScanQueuePaused !== operationalState.fileScanQueuePaused) {
