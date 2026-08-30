@@ -16,11 +16,12 @@ self.addEventListener("activate", (event) => {
 
 /*
  * A fetch handler is required for the app to be installable on Android
- * (a real WebAPK, not just a shortcut). It caches nothing: only top-level
- * navigations are served, straight from the network.
+ * (a real WebAPK, not just a shortcut). It caches nothing and MUST NOT touch
+ * form submissions or their redirects — only plain GET navigations are passed
+ * straight to the network so the handler simply "exists".
  */
 self.addEventListener("fetch", (event) => {
-  if (event.request.mode === "navigate") {
+  if (event.request.method === "GET" && event.request.mode === "navigate") {
     event.respondWith(fetch(event.request));
   }
 });

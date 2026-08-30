@@ -805,7 +805,12 @@ export function UnifiedChatWorkspace({
     (request) => !["COMPLETED", "CANCELLED", "REJECTED"].includes(request.status),
   ).length;
   const interactionLocked = pending || recording || recordingStarting;
-  const studentLastSeen = conversation?.studentLastSeenAt;
+  const [livePresenceAt, setLivePresenceAt] = useState<number>();
+  const studentLastSeenMs = Math.max(
+    conversation?.studentLastSeenAt?.getTime() ?? 0,
+    livePresenceAt ?? 0,
+  );
+  const studentLastSeen = studentLastSeenMs > 0 ? new Date(studentLastSeenMs) : undefined;
   const studentOnline =
     studentLastSeen !== undefined && Date.now() - studentLastSeen.getTime() < 3 * 60_000;
   const studentLastSeenLabel =
@@ -871,6 +876,39 @@ export function UnifiedChatWorkspace({
   useEffect(() => {
     setContactItems([...conversations]);
   }, [conversations]);
+
+  // Keep the student's "online / last seen" fresh while the admin has the
+  // conversation open.
+  useEffect(() => {
+    if (mode !== "admin" || conversation === undefined) return undefined;
+    let active = true;
+    const studentUserId = conversation.studentUserId;
+    const check = async () => {
+      try {
+        const response = await fetch(
+          `/api/admin/conversations/${encodeURIComponent(studentUserId)}/presence`,
+          {
+            cache: "no-store",
+            credentials: "same-origin",
+            headers: { Accept: "application/json" },
+          },
+        );
+        if (!response.ok || !active) return;
+        const payload = (await response.json()) as { lastSeenAt?: string | null };
+        if (active && typeof payload.lastSeenAt === "string") {
+          setLivePresenceAt(new Date(payload.lastSeenAt).getTime());
+        }
+      } catch {
+        // Presence is cosmetic; ignore transient failures.
+      }
+    };
+    void check();
+    const timer = window.setInterval(check, 45_000);
+    return () => {
+      active = false;
+      window.clearInterval(timer);
+    };
+  }, [mode, conversation]);
 
   useEffect(() => {
     if (conversation === undefined || (!contactsOpen && !detailsOpen)) return;
