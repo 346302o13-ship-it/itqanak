@@ -2,6 +2,7 @@ import { hasAdminAccess } from "@itqanak/auth";
 
 import { AccountShell } from "@/components/account-shell";
 import { CsrfInput, FormAlert } from "@/components/auth-shell";
+import { NotificationPreferences } from "@/components/notification-preferences";
 import { SubmitButton } from "@/components/submit-button";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { csrfTokenForPage, createAuthRuntime } from "@/lib/auth-runtime";
@@ -152,6 +153,13 @@ export default async function EnglishAccountPage({ searchParams }: AccountPagePr
         <div className="mt-3">
           <ThemeToggle locale="en" />
         </div>
+      </section>
+      <section className="mt-10 max-w-lg border-t border-[var(--itq-color-border)] pt-6">
+        <h2 className="text-sm font-black">Notifications &amp; app</h2>
+        <p className="mt-1 text-xs leading-6 text-[var(--itq-color-muted)]">
+          Settings for this device.
+        </p>
+        <NotificationPreferences locale="en" />
       </section>
     </AccountShell>
   );

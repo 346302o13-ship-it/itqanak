@@ -183,7 +183,6 @@ export function PublicShell({
           </nav>
 
           <div className="flex items-center gap-1.5 sm:gap-2">
-            <InstallAppButton compact locale={locale} surface="public" />
             <Link
               aria-label={copy.languageLabel}
               className="inline-flex size-11 items-center justify-center rounded-xl border border-[var(--itq-color-border)] bg-[var(--itq-color-surface)] text-xs font-black text-[var(--itq-color-brand-strong)] shadow-sm transition hover:bg-[var(--itq-color-brand-50)]"
@@ -320,7 +319,6 @@ export function PublicShell({
                 {copy.privacyLabel}
               </Link>
             </nav>
-            <InstallAppButton locale={locale} surface="public" />
             <p className="inline-flex items-center gap-1.5">
               <MarketingIcon className="size-3.5" name="shield" />
               <bdi dir="ltr">WA {SUPPORT_WHATSAPP_E164}</bdi>

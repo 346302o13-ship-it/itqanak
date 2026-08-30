@@ -2,6 +2,7 @@ import { hasAdminAccess } from "@itqanak/auth";
 
 import { AccountShell } from "@/components/account-shell";
 import { CsrfInput, FormAlert } from "@/components/auth-shell";
+import { NotificationPreferences } from "@/components/notification-preferences";
 import { SubmitButton } from "@/components/submit-button";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { csrfTokenForPage, createAuthRuntime } from "@/lib/auth-runtime";
@@ -145,6 +146,13 @@ export default async function AccountPage({ searchParams }: AccountPageProps) {
         <div className="mt-3">
           <ThemeToggle locale="ar" />
         </div>
+      </section>
+      <section className="mt-10 max-w-lg border-t border-[var(--itq-color-border)] pt-6">
+        <h2 className="text-sm font-black">التنبيهات والتطبيق</h2>
+        <p className="mt-1 text-xs leading-6 text-[var(--itq-color-muted)]">
+          إعدادات خاصة بهذا الجهاز.
+        </p>
+        <NotificationPreferences locale="ar" />
       </section>
     </AccountShell>
   );

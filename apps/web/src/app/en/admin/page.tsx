@@ -4,6 +4,7 @@ import { FinanceService } from "@itqanak/finance";
 
 import { AdminShell } from "@/components/admin-shell";
 import { FinanceIcon, MessageIcon, RequestsIcon, VerifiedIcon } from "@/components/icons";
+import { LiveRefresh } from "@/components/live-refresh";
 import { RequestStatusChip } from "@/components/request-status-chip";
 import { csrfTokenForPage } from "@/lib/auth-runtime";
 import { requireAdminPagePrincipal } from "@/lib/admin-page";
@@ -73,6 +74,7 @@ export default async function EnglishAdminPage() {
 
   return (
     <AdminShell csrfToken={csrfToken} displayName={principal.displayName} locale="en">
+      <LiveRefresh />
       <div className="flex flex-wrap items-end justify-between gap-4">
         <div>
           <p className="text-sm font-black text-[var(--itq-color-brand-strong)]">
