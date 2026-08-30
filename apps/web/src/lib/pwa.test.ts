@@ -76,7 +76,7 @@ describe("web app manifest helpers", () => {
       display: "standalone",
       name: "إتقانك",
       scope: "/",
-      start_url: "/ar",
+      start_url: "/ar/student",
     });
     expect(adminManifest).toMatchObject({
       display: "standalone",

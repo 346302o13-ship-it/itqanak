@@ -54,12 +54,10 @@ export function webAppManifestForContext(
         : english
           ? "ITQANAK"
           : "إتقانك";
-  const startUrl =
-    surface === "admin"
-      ? `/${locale}/admin`
-      : surface === "student"
-        ? `/${locale}/student`
-        : `/${locale}`;
+  // A visitor who installs the app almost always wants the student portal, not
+  // the marketing page — and an unauthenticated hit on /student redirects to
+  // login, then straight back. Admin installs still open the admin center.
+  const startUrl = surface === "admin" ? `/${locale}/admin` : `/${locale}/student`;
   return {
     id: surface === "admin" ? "/admin" : surface === "student" ? "/student" : "/",
     name,

@@ -1,0 +1,271 @@
+
+> itqanak@0.1.0 build /root/itqanak
+> turbo run build
+
+turbo 2.5.6
+
+• Packages in scope: @itqanak/auth, @itqanak/catalog, @itqanak/config, @itqanak/content, @itqanak/core, @itqanak/db, @itqanak/finance, @itqanak/observability, @itqanak/operations, @itqanak/requests, @itqanak/storage, @itqanak/ui, @itqanak/web, @itqanak/worker
+• Running build in 14 packages
+• Remote caching disabled
+@itqanak/observability:build: cache hit, replaying logs 84f40ccb2f078a50
+@itqanak/observability:build: 
+@itqanak/observability:build: > @itqanak/observability@0.1.0 build /root/itqanak/packages/observability
+@itqanak/observability:build: > tsc -p tsconfig.json
+@itqanak/observability:build: 
+@itqanak/storage:build: cache hit, replaying logs 427385675cc57c82
+@itqanak/storage:build: 
+@itqanak/storage:build: > @itqanak/storage@0.1.0 build /root/itqanak/packages/storage
+@itqanak/storage:build: > tsc -p tsconfig.json
+@itqanak/storage:build: 
+@itqanak/ui:build: cache hit, replaying logs aaad52b06a7d1087
+@itqanak/config:build: cache hit, replaying logs a364b78cbd4d2d05
+@itqanak/config:build: 
+@itqanak/config:build: > @itqanak/config@0.1.0 build /root/itqanak/packages/config
+@itqanak/config:build: > tsc -p tsconfig.json
+@itqanak/config:build: 
+@itqanak/ui:build: 
+@itqanak/ui:build: > @itqanak/ui@0.1.0 build /root/itqanak/packages/ui
+@itqanak/ui:build: > tsc -p tsconfig.json && cp src/styles/tokens.css dist/styles.css
+@itqanak/ui:build: 
+@itqanak/db:build: cache hit, replaying logs 9999efa64af713ec
+@itqanak/db:build: 
+@itqanak/db:build: > @itqanak/db@0.1.0 build /root/itqanak/packages/db
+@itqanak/db:build: > tsc -p tsconfig.json
+@itqanak/db:build: 
+@itqanak/core:build: cache hit, replaying logs 45eb9d8e9cf23ac9
+@itqanak/core:build: 
+@itqanak/core:build: > @itqanak/core@0.1.0 build /root/itqanak/packages/core
+@itqanak/core:build: > tsc -p tsconfig.json
+@itqanak/core:build: 
+@itqanak/catalog:build: cache hit, replaying logs 434959be74a59d97
+@itqanak/catalog:build: 
+@itqanak/catalog:build: > @itqanak/catalog@0.1.0 build /root/itqanak/packages/catalog
+@itqanak/catalog:build: > tsc -p tsconfig.json
+@itqanak/catalog:build: 
+@itqanak/auth:build: cache hit, replaying logs ad76e0ba3208ea7c
+@itqanak/auth:build: 
+@itqanak/auth:build: > @itqanak/auth@0.1.0 build /root/itqanak/packages/auth
+@itqanak/auth:build: > tsc -p tsconfig.json
+@itqanak/auth:build: 
+@itqanak/content:build: cache hit, replaying logs e91c17f7477be5cf
+@itqanak/content:build: 
+@itqanak/content:build: > @itqanak/content@0.1.0 build /root/itqanak/packages/content
+@itqanak/content:build: > tsc -p tsconfig.json
+@itqanak/content:build: 
+@itqanak/operations:build: cache hit, replaying logs 60b035cfb23e3ba4
+@itqanak/operations:build: 
+@itqanak/operations:build: > @itqanak/operations@0.1.0 build /root/itqanak/packages/operations
+@itqanak/operations:build: > tsc -p tsconfig.json
+@itqanak/operations:build: 
+@itqanak/finance:build: cache hit, replaying logs 15da74001c203c67
+@itqanak/finance:build: 
+@itqanak/finance:build: > @itqanak/finance@0.1.0 build /root/itqanak/packages/finance
+@itqanak/finance:build: > tsc -p tsconfig.json
+@itqanak/finance:build: 
+@itqanak/requests:build: cache hit, replaying logs bbc687fd29112c1a
+@itqanak/requests:build: 
+@itqanak/requests:build: > @itqanak/requests@0.1.0 build /root/itqanak/packages/requests
+@itqanak/requests:build: > tsc -p tsconfig.json
+@itqanak/requests:build: 
+@itqanak/web:build: cache miss, executing 1c64d2809196f380
+@itqanak/worker:build: cache hit, replaying logs 5bc79924d80e2b46
+@itqanak/worker:build: 
+@itqanak/worker:build: > @itqanak/worker@0.1.0 build /root/itqanak/apps/worker
+@itqanak/worker:build: > tsc -p tsconfig.json
+@itqanak/worker:build: 
+@itqanak/web:build: 
+@itqanak/web:build: > @itqanak/web@0.1.0 build /root/itqanak/apps/web
+@itqanak/web:build: > next build
+@itqanak/web:build: 
+@itqanak/web:build: ▲ Next.js 16.3.0 (Turbopack)
+@itqanak/web:build: ✓ Running next.config.ts took 239ms
+@itqanak/web:build: - Experiments (use with caution):
+@itqanak/web:build:   ✓ authInterrupts
+@itqanak/web:build: 
+@itqanak/web:build:   Creating an optimized production build ...
+@itqanak/web:build: ✓ Compiled successfully in 22.6s
+@itqanak/web:build:   Running TypeScript ...
+@itqanak/web:build:   Finished TypeScript in 25.9s ...
+@itqanak/web:build:   Collecting page data using 1 worker ...
+@itqanak/web:build:   Generating static pages using 1 worker (0/46) ...
+@itqanak/web:build:   Generating static pages using 1 worker (11/46) 
+@itqanak/web:build:   Generating static pages using 1 worker (22/46) 
+@itqanak/web:build:   Generating static pages using 1 worker (34/46) 
+@itqanak/web:build: ✓ Generating static pages using 1 worker (46/46) in 910ms
+@itqanak/web:build:   Finalizing page optimization ...
+@itqanak/web:build: 
+@itqanak/web:build: Route (app)
+@itqanak/web:build: ┌ ƒ /
+@itqanak/web:build: ├ ƒ /_not-found
+@itqanak/web:build: ├ ƒ /api/account/change-password
+@itqanak/web:build: ├ ƒ /api/account/profile
+@itqanak/web:build: ├ ƒ /api/account/sessions/[sessionId]/revoke
+@itqanak/web:build: ├ ƒ /api/account/sessions/revoke-all
+@itqanak/web:build: ├ ƒ /api/admin/content
+@itqanak/web:build: ├ ƒ /api/admin/content/[blockId]
+@itqanak/web:build: ├ ƒ /api/admin/conversations
+@itqanak/web:build: ├ ƒ /api/admin/conversations/[studentUserId]
+@itqanak/web:build: ├ ƒ /api/admin/conversations/[studentUserId]/attachments
+@itqanak/web:build: ├ ƒ /api/admin/conversations/[studentUserId]/attachments/[attachmentId]/status
+@itqanak/web:build: ├ ƒ /api/admin/conversations/[studentUserId]/messages
+@itqanak/web:build: ├ ƒ /api/admin/conversations/[studentUserId]/messages/[messageId]
+@itqanak/web:build: ├ ƒ /api/admin/conversations/[studentUserId]/messages/[messageId]/attachment
+@itqanak/web:build: ├ ƒ /api/admin/conversations/[studentUserId]/messages/[messageId]/attachment/preview
+@itqanak/web:build: ├ ƒ /api/admin/conversations/[studentUserId]/messages/[messageId]/reactions
+@itqanak/web:build: ├ ƒ /api/admin/conversations/[studentUserId]/messages/read
+@itqanak/web:build: ├ ƒ /api/admin/conversations/stream
+@itqanak/web:build: ├ ƒ /api/admin/conversations/updates
+@itqanak/web:build: ├ ƒ /api/admin/finance
+@itqanak/web:build: ├ ƒ /api/admin/finance/[dueId]
+@itqanak/web:build: ├ ƒ /api/admin/finance/receipts/[submissionId]/image
+@itqanak/web:build: ├ ƒ /api/admin/finance/receipts/[submissionId]/review
+@itqanak/web:build: ├ ƒ /api/admin/messaging/announcement
+@itqanak/web:build: ├ ƒ /api/admin/messaging/contact
+@itqanak/web:build: ├ ƒ /api/admin/notifications
+@itqanak/web:build: ├ ƒ /api/admin/notifications/[notificationId]/read
+@itqanak/web:build: ├ ƒ /api/admin/notifications/read-all
+@itqanak/web:build: ├ ƒ /api/admin/notifications/unread
+@itqanak/web:build: ├ ƒ /api/admin/operations
+@itqanak/web:build: ├ ƒ /api/admin/password-resets/[requestId]/issue
+@itqanak/web:build: ├ ƒ /api/admin/password-resets/[requestId]/reject
+@itqanak/web:build: ├ ƒ /api/admin/quotes
+@itqanak/web:build: ├ ƒ /api/admin/quotes/[quoteId]/withdraw
+@itqanak/web:build: ├ ƒ /api/admin/requests
+@itqanak/web:build: ├ ƒ /api/admin/requests/[requestNumber]/assign
+@itqanak/web:build: ├ ƒ /api/admin/requests/[requestNumber]/details
+@itqanak/web:build: ├ ƒ /api/admin/requests/[requestNumber]/messages
+@itqanak/web:build: ├ ƒ /api/admin/requests/[requestNumber]/messages/read
+@itqanak/web:build: ├ ƒ /api/admin/requests/[requestNumber]/transition
+@itqanak/web:build: ├ ƒ /api/admin/students
+@itqanak/web:build: ├ ƒ /api/admin/support
+@itqanak/web:build: ├ ƒ /api/admin/support/[conversationId]/messages
+@itqanak/web:build: ├ ƒ /api/admin/support/[conversationId]/messages/read
+@itqanak/web:build: ├ ƒ /api/admin/verifications/[userId]/confirm
+@itqanak/web:build: ├ ƒ /api/announcements/active
+@itqanak/web:build: ├ ƒ /api/auth/forgot-password
+@itqanak/web:build: ├ ƒ /api/auth/login
+@itqanak/web:build: ├ ƒ /api/auth/logout
+@itqanak/web:build: ├ ƒ /api/auth/register
+@itqanak/web:build: ├ ƒ /api/auth/resend-verification
+@itqanak/web:build: ├ ƒ /api/auth/reset-password
+@itqanak/web:build: ├ ƒ /api/auth/verify-email
+@itqanak/web:build: ├ ƒ /api/client-error
+@itqanak/web:build: ├ ƒ /api/health/live
+@itqanak/web:build: ├ ƒ /api/health/ready
+@itqanak/web:build: ├ ƒ /api/health/startup
+@itqanak/web:build: ├ ƒ /api/student/conversation
+@itqanak/web:build: ├ ƒ /api/student/conversation/attachments
+@itqanak/web:build: ├ ƒ /api/student/conversation/attachments/[attachmentId]/status
+@itqanak/web:build: ├ ƒ /api/student/conversation/messages
+@itqanak/web:build: ├ ƒ /api/student/conversation/messages/[messageId]
+@itqanak/web:build: ├ ƒ /api/student/conversation/messages/[messageId]/attachment
+@itqanak/web:build: ├ ƒ /api/student/conversation/messages/[messageId]/attachment/preview
+@itqanak/web:build: ├ ƒ /api/student/conversation/messages/[messageId]/reactions
+@itqanak/web:build: ├ ƒ /api/student/conversation/messages/read
+@itqanak/web:build: ├ ƒ /api/student/conversation/stream
+@itqanak/web:build: ├ ƒ /api/student/finance/dues/[dueId]/receipt
+@itqanak/web:build: ├ ƒ /api/student/notifications
+@itqanak/web:build: ├ ƒ /api/student/notifications/[notificationId]/read
+@itqanak/web:build: ├ ƒ /api/student/notifications/read-all
+@itqanak/web:build: ├ ƒ /api/student/notifications/unread
+@itqanak/web:build: ├ ƒ /api/student/quotes/[quoteId]/respond
+@itqanak/web:build: ├ ƒ /api/student/requests
+@itqanak/web:build: ├ ƒ /api/student/requests/[requestNumber]
+@itqanak/web:build: ├ ƒ /api/student/requests/[requestNumber]/attachments
+@itqanak/web:build: ├ ƒ /api/student/requests/[requestNumber]/attachments/[attachmentId]/delete
+@itqanak/web:build: ├ ƒ /api/student/requests/[requestNumber]/attachments/[attachmentId]/download
+@itqanak/web:build: ├ ƒ /api/student/requests/[requestNumber]/attachments/[attachmentId]/preview
+@itqanak/web:build: ├ ƒ /api/student/requests/[requestNumber]/attachments/[attachmentId]/status
+@itqanak/web:build: ├ ƒ /api/student/requests/[requestNumber]/cancel
+@itqanak/web:build: ├ ƒ /api/student/requests/[requestNumber]/messages
+@itqanak/web:build: ├ ƒ /api/student/requests/[requestNumber]/messages/read
+@itqanak/web:build: ├ ƒ /api/student/requests/[requestNumber]/submit
+@itqanak/web:build: ├ ƒ /api/student/requests/[requestNumber]/transition
+@itqanak/web:build: ├ ƒ /api/student/support/messages
+@itqanak/web:build: ├ ƒ /api/student/support/messages/read
+@itqanak/web:build: ├ ○ /apple-icon
+@itqanak/web:build: ├ ƒ /ar
+@itqanak/web:build: ├ ƒ /ar/account
+@itqanak/web:build: ├ ƒ /ar/account/security
+@itqanak/web:build: ├ ƒ /ar/account/sessions
+@itqanak/web:build: ├ ƒ /ar/admin
+@itqanak/web:build: ├ ƒ /ar/admin/approvals
+@itqanak/web:build: ├ ƒ /ar/admin/content
+@itqanak/web:build: ├ ƒ /ar/admin/finance
+@itqanak/web:build: ├ ƒ /ar/admin/messaging
+@itqanak/web:build: ├ ƒ /ar/admin/monitoring
+@itqanak/web:build: ├ ƒ /ar/admin/operations
+@itqanak/web:build: ├ ƒ /ar/admin/password-resets
+@itqanak/web:build: ├ ƒ /ar/admin/password-resets/issued
+@itqanak/web:build: ├ ƒ /ar/admin/requests
+@itqanak/web:build: ├ ƒ /ar/admin/requests/[requestNumber]
+@itqanak/web:build: ├ ƒ /ar/admin/students
+@itqanak/web:build: ├ ƒ /ar/admin/support
+@itqanak/web:build: ├ ƒ /ar/admin/verifications
+@itqanak/web:build: ├ ƒ /ar/auth/forgot-password
+@itqanak/web:build: ├ ƒ /ar/auth/login
+@itqanak/web:build: ├ ƒ /ar/auth/pending-phone-verification
+@itqanak/web:build: ├ ƒ /ar/auth/register
+@itqanak/web:build: ├ ƒ /ar/auth/resend-verification
+@itqanak/web:build: ├ ƒ /ar/auth/reset-password
+@itqanak/web:build: ├ ƒ /ar/auth/verify-email
+@itqanak/web:build: ├ ƒ /ar/privacy
+@itqanak/web:build: ├ ƒ /ar/services
+@itqanak/web:build: ├ ƒ /ar/services/[slug]
+@itqanak/web:build: ├ ƒ /ar/student
+@itqanak/web:build: ├ ƒ /ar/student/finance
+@itqanak/web:build: ├ ƒ /ar/student/requests
+@itqanak/web:build: ├ ƒ /ar/student/requests/[requestNumber]
+@itqanak/web:build: ├ ƒ /ar/student/requests/new
+@itqanak/web:build: ├ ƒ /ar/student/support
+@itqanak/web:build: ├ ƒ /ar/terms
+@itqanak/web:build: ├ ƒ /en
+@itqanak/web:build: ├ ƒ /en/account
+@itqanak/web:build: ├ ƒ /en/account/security
+@itqanak/web:build: ├ ƒ /en/account/sessions
+@itqanak/web:build: ├ ƒ /en/admin
+@itqanak/web:build: ├ ƒ /en/admin/approvals
+@itqanak/web:build: ├ ƒ /en/admin/content
+@itqanak/web:build: ├ ƒ /en/admin/finance
+@itqanak/web:build: ├ ƒ /en/admin/messaging
+@itqanak/web:build: ├ ƒ /en/admin/monitoring
+@itqanak/web:build: ├ ƒ /en/admin/operations
+@itqanak/web:build: ├ ƒ /en/admin/password-resets
+@itqanak/web:build: ├ ƒ /en/admin/password-resets/issued
+@itqanak/web:build: ├ ƒ /en/admin/requests
+@itqanak/web:build: ├ ƒ /en/admin/requests/[requestNumber]
+@itqanak/web:build: ├ ƒ /en/admin/students
+@itqanak/web:build: ├ ƒ /en/admin/support
+@itqanak/web:build: ├ ƒ /en/admin/verifications
+@itqanak/web:build: ├ ƒ /en/auth/forgot-password
+@itqanak/web:build: ├ ƒ /en/auth/login
+@itqanak/web:build: ├ ƒ /en/auth/pending-phone-verification
+@itqanak/web:build: ├ ƒ /en/auth/register
+@itqanak/web:build: ├ ƒ /en/auth/reset-password
+@itqanak/web:build: ├ ƒ /en/privacy
+@itqanak/web:build: ├ ƒ /en/services
+@itqanak/web:build: ├ ƒ /en/services/[slug]
+@itqanak/web:build: ├ ƒ /en/student
+@itqanak/web:build: ├ ƒ /en/student/finance
+@itqanak/web:build: ├ ƒ /en/student/requests
+@itqanak/web:build: ├ ƒ /en/student/requests/[requestNumber]
+@itqanak/web:build: ├ ƒ /en/student/requests/new
+@itqanak/web:build: ├ ƒ /en/student/support
+@itqanak/web:build: ├ ƒ /en/terms
+@itqanak/web:build: ├ ○ /icon
+@itqanak/web:build: ├ ○ /install-icon-192
+@itqanak/web:build: ├ ƒ /manifest.webmanifest
+@itqanak/web:build: ├ ƒ /robots.txt
+@itqanak/web:build: └ ƒ /sitemap.xml
+@itqanak/web:build: 
+@itqanak/web:build: 
+@itqanak/web:build: ƒ Proxy (Middleware)
+@itqanak/web:build: 
+@itqanak/web:build: ○  (Static)   prerendered as static content
+@itqanak/web:build: ƒ  (Dynamic)  server-rendered on demand
+@itqanak/web:build: 
+
+ Tasks:    14 successful, 14 total
+Cached:    13 cached, 14 total
+  Time:    1m1.123s 
+

@@ -1,0 +1,828 @@
+#1 [internal] load local bake definitions
+#1 reading from stdin 1.76kB done
+#1 DONE 0.0s
+
+#2 [worker internal] load build definition from Dockerfile
+#2 transferring dockerfile: 801B 0.0s done
+#2 DONE 0.1s
+
+#3 [web internal] load build definition from Dockerfile
+#3 transferring dockerfile: 1.56kB 0.0s done
+#3 DONE 0.1s
+
+#4 [migrate internal] load build definition from Dockerfile.migrate
+#4 transferring dockerfile: 1.40kB done
+#4 DONE 0.1s
+
+#5 [web internal] load metadata for docker.io/library/node:22.23.1-alpine
+#5 DONE 0.0s
+
+#6 [migrate internal] load .dockerignore
+#6 transferring context: 229B done
+#6 DONE 0.0s
+
+#7 [migrate base 1/3] FROM docker.io/library/node:22.23.1-alpine@sha256:16e22a550f3863206a3f701448c45f7912c6896a62de43add43bb9c86130c3e2
+#7 resolve docker.io/library/node:22.23.1-alpine@sha256:16e22a550f3863206a3f701448c45f7912c6896a62de43add43bb9c86130c3e2 0.0s done
+#7 DONE 0.2s
+
+#8 [migrate base 2/3] WORKDIR /workspace
+#8 ...
+
+#9 [worker runner 2/3] WORKDIR /app
+#9 DONE 0.1s
+
+#8 [worker base 2/3] WORKDIR /workspace
+#8 DONE 0.1s
+
+#10 [migrate internal] load build context
+#10 transferring context: 4.82MB 0.6s done
+#10 DONE 0.7s
+
+#11 [web base 3/3] RUN corepack enable && corepack prepare pnpm@9.15.4 --activate
+#11 ...
+
+#12 [web runner 3/7] RUN addgroup --system --gid 1001 nodejs     && adduser --system --uid 1001 --ingroup nodejs nextjs
+#12 DONE 1.0s
+
+#13 [migrate base 3/3] RUN mkdir -p "/pnpm/corepack"     && corepack enable     && corepack prepare pnpm@9.15.4 --activate     && chmod -R a+rX /pnpm
+#13 1.510 Preparing pnpm@9.15.4 for immediate activation...
+#13 DONE 3.7s
+
+#11 [web base 3/3] RUN corepack enable && corepack prepare pnpm@9.15.4 --activate
+#11 1.567 Preparing pnpm@9.15.4 for immediate activation...
+#11 DONE 4.0s
+
+#14 [migrate runner 1/3] COPY . .
+#14 DONE 0.3s
+
+#15 [web build 1/4] COPY . .
+#15 DONE 0.4s
+
+#16 [worker build 2/4] RUN --mount=type=cache,id=itqanak-pnpm-store,target=/pnpm/store     pnpm install --frozen-lockfile
+#16 1.783 Scope: all 15 workspace projects
+#16 1.992 Lockfile is up to date, resolution step is skipped
+#16 2.185 Progress: resolved 1, reused 0, downloaded 0, added 0
+#16 2.334 Packages: +310
+#16 2.334 ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+#16 2.820 
+#16 2.820    ╭───────────────────────────────────────────────────────────────────╮
+#16 2.820    │                                                                   │
+#16 2.820    │                Update available! 9.15.4 → 11.24.0.                │
+#16 2.820    │   Changelog: https://github.com/pnpm/pnpm/releases/tag/v11.24.0   │
+#16 2.820    │         Run "corepack install -g pnpm@11.24.0" to update.         │
+#16 2.820    │                                                                   │
+#16 2.820    ╰───────────────────────────────────────────────────────────────────╯
+#16 2.820 
+#16 3.189 Progress: resolved 310, reused 0, downloaded 3, added 0
+#16 4.191 Progress: resolved 310, reused 0, downloaded 38, added 22
+#16 5.212 Progress: resolved 310, reused 0, downloaded 85, added 72
+#16 6.222 Progress: resolved 310, reused 0, downloaded 95, added 83
+#16 7.230 Progress: resolved 310, reused 0, downloaded 100, added 86
+#16 8.234 Progress: resolved 310, reused 0, downloaded 123, added 108
+#16 9.237 Progress: resolved 310, reused 0, downloaded 151, added 135
+#16 ...
+
+#17 [migrate runner 2/3] RUN --mount=type=cache,id=itqanak-pnpm-store,target=/pnpm/store     pnpm install --frozen-lockfile
+#17 1.820 Scope: all 15 workspace projects
+#17 2.029 Lockfile is up to date, resolution step is skipped
+#17 2.250 Progress: resolved 1, reused 0, downloaded 0, added 0
+#17 2.431 Packages: +310
+#17 2.431 ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+#17 3.033 
+#17 3.033    ╭───────────────────────────────────────────────────────────────────╮
+#17 3.033    │                                                                   │
+#17 3.033    │                Update available! 9.15.4 → 11.24.0.                │
+#17 3.033    │   Changelog: https://github.com/pnpm/pnpm/releases/tag/v11.24.0   │
+#17 3.033    │         Run "corepack install -g pnpm@11.24.0" to update.         │
+#17 3.033    │                                                                   │
+#17 3.033    ╰───────────────────────────────────────────────────────────────────╯
+#17 3.033 
+#17 3.253 Progress: resolved 310, reused 0, downloaded 5, added 0
+#17 4.259 Progress: resolved 310, reused 0, downloaded 29, added 13
+#17 5.295 Progress: resolved 310, reused 0, downloaded 90, added 80
+#17 6.308 Progress: resolved 310, reused 0, downloaded 104, added 89
+#17 7.312 Progress: resolved 310, reused 0, downloaded 108, added 92
+#17 8.318 Progress: resolved 310, reused 0, downloaded 137, added 121
+#17 9.318 Progress: resolved 310, reused 0, downloaded 160, added 146
+#17 10.32 Progress: resolved 310, reused 0, downloaded 184, added 173
+#17 ...
+
+#16 [worker build 2/4] RUN --mount=type=cache,id=itqanak-pnpm-store,target=/pnpm/store     pnpm install --frozen-lockfile
+#16 10.24 Progress: resolved 310, reused 0, downloaded 177, added 163
+#16 11.30 Progress: resolved 310, reused 0, downloaded 190, added 176
+#16 12.32 Progress: resolved 310, reused 0, downloaded 192, added 178
+#16 16.35 Progress: resolved 310, reused 0, downloaded 193, added 178
+#16 17.35 Progress: resolved 310, reused 0, downloaded 206, added 192
+#16 18.35 Progress: resolved 310, reused 0, downloaded 207, added 192
+#16 19.47 Progress: resolved 310, reused 0, downloaded 208, added 192
+#16 ...
+
+#17 [migrate runner 2/3] RUN --mount=type=cache,id=itqanak-pnpm-store,target=/pnpm/store     pnpm install --frozen-lockfile
+#17 11.32 Progress: resolved 310, reused 0, downloaded 187, added 173
+#17 12.35 Progress: resolved 310, reused 0, downloaded 191, added 176
+#17 16.42 Progress: resolved 310, reused 0, downloaded 192, added 176
+#17 17.42 Progress: resolved 310, reused 0, downloaded 203, added 191
+#17 18.42 Progress: resolved 310, reused 0, downloaded 205, added 191
+#17 19.43 Progress: resolved 310, reused 0, downloaded 206, added 191
+#17 20.67 Progress: resolved 310, reused 0, downloaded 207, added 191
+#17 ...
+
+#16 [worker build 2/4] RUN --mount=type=cache,id=itqanak-pnpm-store,target=/pnpm/store     pnpm install --frozen-lockfile
+#16 21.23 Progress: resolved 310, reused 0, downloaded 208, added 193
+#16 22.23 Progress: resolved 310, reused 0, downloaded 223, added 207
+#16 23.23 Progress: resolved 310, reused 0, downloaded 261, added 247
+#16 24.23 Progress: resolved 310, reused 0, downloaded 285, added 271
+#16 24.93 Progress: resolved 310, reused 0, downloaded 310, added 310, done
+#16 25.52 .../node_modules/@ibm/plex-sans-arabic postinstall$ ibmtelemetry --config=telemetry.yml
+#16 25.52 .../argon2@0.45.1/node_modules/argon2 install$ cross-env ZERO_AR_DATE=1 node-gyp-build
+#16 25.52 .../esbuild@0.25.12/node_modules/esbuild postinstall$ node install.js
+#16 25.53 .../node_modules/@ibm/plex-sans postinstall$ ibmtelemetry --config=telemetry.yml
+#16 25.53 .../esbuild@0.28.1/node_modules/esbuild postinstall$ node install.js
+#16 25.92 .../node_modules/@ibm/plex-sans-arabic postinstall: Done
+#16 26.13 .../node_modules/@ibm/plex-sans postinstall: Done
+#16 26.18 .../esbuild@0.25.12/node_modules/esbuild postinstall: Done
+#16 26.18 .../esbuild@0.28.1/node_modules/esbuild postinstall: Done
+#16 26.46 .../argon2@0.45.1/node_modules/argon2 install: Done
+#16 26.77  WARN  Failed to create bin at /workspace/apps/worker/node_modules/.bin/itqanak-requests. ENOENT: no such file or directory, open '/workspace/packages/requests/dist/cli.js'
+#16 26.77  WARN  Failed to create bin at /workspace/apps/worker/node_modules/.bin/itqanak-db. ENOENT: no such file or directory, open '/workspace/packages/db/dist/cli.js'
+#16 26.77  WARN  Failed to create bin at /workspace/packages/operations/node_modules/.bin/itqanak-db. ENOENT: no such file or directory, open '/workspace/packages/db/dist/cli.js'
+#16 26.77  WARN  Failed to create bin at /workspace/packages/catalog/node_modules/.bin/itqanak-db. ENOENT: no such file or directory, open '/workspace/packages/db/dist/cli.js'
+#16 26.77  WARN  Failed to create bin at /workspace/packages/requests/node_modules/.bin/itqanak-db. ENOENT: no such file or directory, open '/workspace/packages/db/dist/cli.js'
+#16 26.77  WARN  Failed to create bin at /workspace/packages/content/node_modules/.bin/itqanak-db. ENOENT: no such file or directory, open '/workspace/packages/db/dist/cli.js'
+#16 26.78  WARN  Failed to create bin at /workspace/packages/finance/node_modules/.bin/itqanak-db. ENOENT: no such file or directory, open '/workspace/packages/db/dist/cli.js'
+#16 26.78  WARN  Failed to create bin at /workspace/packages/requests/node_modules/.bin/itqanak-catalog. ENOENT: no such file or directory, open '/workspace/packages/catalog/dist/cli.js'
+#16 26.78  WARN  Failed to create bin at /workspace/packages/auth/node_modules/.bin/itqanak-db. ENOENT: no such file or directory, open '/workspace/packages/db/dist/cli.js'
+#16 26.78  WARN  Failed to create bin at /workspace/apps/web/node_modules/.bin/itqanak-catalog. ENOENT: no such file or directory, open '/workspace/packages/catalog/dist/cli.js'
+#16 26.78  WARN  Failed to create bin at /workspace/apps/web/node_modules/.bin/itqanak-db. ENOENT: no such file or directory, open '/workspace/packages/db/dist/cli.js'
+#16 26.78  WARN  Failed to create bin at /workspace/apps/web/node_modules/.bin/itqanak-requests. ENOENT: no such file or directory, open '/workspace/packages/requests/dist/cli.js'
+#16 27.13 
+#16 27.13 devDependencies:
+#16 27.13 + @eslint/js 9.35.0
+#16 27.13 + @playwright/test 1.55.1
+#16 27.13 + @types/node 22.15.3
+#16 27.13 + @types/nodemailer 8.0.1
+#16 27.13 + eslint 9.35.0
+#16 27.13 + eslint-config-prettier 10.1.8
+#16 27.13 + prettier 3.5.3
+#16 27.13 + turbo 2.5.6
+#16 27.13 + typescript 5.9.2
+#16 27.13 + typescript-eslint 8.42.0
+#16 27.13 + vitest 3.2.4
+#16 27.13 
+#16 27.26  WARN  Failed to create bin at /workspace/packages/auth/node_modules/.bin/itqanak-db. ENOENT: no such file or directory, open '/workspace/packages/auth/node_modules/@itqanak/db/dist/cli.js'
+#16 27.26  WARN  Failed to create bin at /workspace/packages/catalog/node_modules/.bin/itqanak-db. ENOENT: no such file or directory, open '/workspace/packages/catalog/node_modules/@itqanak/db/dist/cli.js'
+#16 27.28  WARN  Failed to create bin at /workspace/packages/content/node_modules/.bin/itqanak-db. ENOENT: no such file or directory, open '/workspace/packages/content/node_modules/@itqanak/db/dist/cli.js'
+#16 27.28  WARN  Failed to create bin at /workspace/packages/finance/node_modules/.bin/itqanak-db. ENOENT: no such file or directory, open '/workspace/packages/finance/node_modules/@itqanak/db/dist/cli.js'
+#16 27.29  WARN  Failed to create bin at /workspace/packages/operations/node_modules/.bin/itqanak-db. ENOENT: no such file or directory, open '/workspace/packages/operations/node_modules/@itqanak/db/dist/cli.js'
+#16 27.29  WARN  Failed to create bin at /workspace/packages/requests/node_modules/.bin/itqanak-catalog. ENOENT: no such file or directory, open '/workspace/packages/requests/node_modules/@itqanak/catalog/dist/cli.js'
+#16 27.29  WARN  Failed to create bin at /workspace/packages/requests/node_modules/.bin/itqanak-db. ENOENT: no such file or directory, open '/workspace/packages/requests/node_modules/@itqanak/db/dist/cli.js'
+#16 27.32  WARN  Failed to create bin at /workspace/apps/web/node_modules/.bin/itqanak-catalog. ENOENT: no such file or directory, open '/workspace/apps/web/node_modules/@itqanak/catalog/dist/cli.js'
+#16 27.32  WARN  Failed to create bin at /workspace/apps/web/node_modules/.bin/itqanak-db. ENOENT: no such file or directory, open '/workspace/apps/web/node_modules/@itqanak/db/dist/cli.js'
+#16 27.32  WARN  Failed to create bin at /workspace/apps/web/node_modules/.bin/itqanak-requests. ENOENT: no such file or directory, open '/workspace/apps/web/node_modules/@itqanak/requests/dist/cli.js'
+#16 27.32  WARN  Failed to create bin at /workspace/apps/worker/node_modules/.bin/itqanak-db. ENOENT: no such file or directory, open '/workspace/apps/worker/node_modules/@itqanak/db/dist/cli.js'
+#16 27.32  WARN  Failed to create bin at /workspace/apps/worker/node_modules/.bin/itqanak-requests. ENOENT: no such file or directory, open '/workspace/apps/worker/node_modules/@itqanak/requests/dist/cli.js'
+#16 27.33 Done in 26.6s
+#16 DONE 28.0s
+
+#18 [worker build 3/4] RUN pnpm turbo run build --filter=@itqanak/worker...
+#18 ...
+
+#17 [migrate runner 2/3] RUN --mount=type=cache,id=itqanak-pnpm-store,target=/pnpm/store     pnpm install --frozen-lockfile
+#17 23.36 Progress: resolved 310, reused 0, downloaded 207, added 192
+#17 24.36 Progress: resolved 310, reused 0, downloaded 233, added 218
+#17 25.36 Progress: resolved 310, reused 0, downloaded 276, added 261
+#17 26.36 Progress: resolved 310, reused 0, downloaded 300, added 284
+#17 26.65 Progress: resolved 310, reused 0, downloaded 310, added 310, done
+#17 27.16 .../argon2@0.45.1/node_modules/argon2 install$ cross-env ZERO_AR_DATE=1 node-gyp-build
+#17 27.16 .../esbuild@0.28.1/node_modules/esbuild postinstall$ node install.js
+#17 27.17 .../esbuild@0.25.12/node_modules/esbuild postinstall$ node install.js
+#17 27.17 .../node_modules/@ibm/plex-sans postinstall$ ibmtelemetry --config=telemetry.yml
+#17 27.17 .../node_modules/@ibm/plex-sans-arabic postinstall$ ibmtelemetry --config=telemetry.yml
+#17 27.98 .../node_modules/@ibm/plex-sans-arabic postinstall: Done
+#17 28.06 .../node_modules/@ibm/plex-sans postinstall: Done
+#17 28.22 .../esbuild@0.28.1/node_modules/esbuild postinstall: Done
+#17 28.25 .../esbuild@0.25.12/node_modules/esbuild postinstall: Done
+#17 28.68 .../argon2@0.45.1/node_modules/argon2 install: Done
+#17 29.13  WARN  Failed to create bin at /workspace/apps/worker/node_modules/.bin/itqanak-db. ENOENT: no such file or directory, open '/workspace/packages/db/dist/cli.js'
+#17 29.13  WARN  Failed to create bin at /workspace/apps/worker/node_modules/.bin/itqanak-requests. ENOENT: no such file or directory, open '/workspace/packages/requests/dist/cli.js'
+#17 29.13  WARN  Failed to create bin at /workspace/packages/catalog/node_modules/.bin/itqanak-db. ENOENT: no such file or directory, open '/workspace/packages/db/dist/cli.js'
+#17 29.13  WARN  Failed to create bin at /workspace/packages/content/node_modules/.bin/itqanak-db. ENOENT: no such file or directory, open '/workspace/packages/db/dist/cli.js'
+#17 29.13  WARN  Failed to create bin at /workspace/packages/finance/node_modules/.bin/itqanak-db. ENOENT: no such file or directory, open '/workspace/packages/db/dist/cli.js'
+#17 29.13  WARN  Failed to create bin at /workspace/packages/operations/node_modules/.bin/itqanak-db. ENOENT: no such file or directory, open '/workspace/packages/db/dist/cli.js'
+#17 29.13  WARN  Failed to create bin at /workspace/packages/requests/node_modules/.bin/itqanak-catalog. ENOENT: no such file or directory, open '/workspace/packages/catalog/dist/cli.js'
+#17 29.13  WARN  Failed to create bin at /workspace/packages/requests/node_modules/.bin/itqanak-db. ENOENT: no such file or directory, open '/workspace/packages/db/dist/cli.js'
+#17 29.13  WARN  Failed to create bin at /workspace/apps/web/node_modules/.bin/itqanak-catalog. ENOENT: no such file or directory, open '/workspace/packages/catalog/dist/cli.js'
+#17 29.13  WARN  Failed to create bin at /workspace/apps/web/node_modules/.bin/itqanak-db. ENOENT: no such file or directory, open '/workspace/packages/db/dist/cli.js'
+#17 29.13  WARN  Failed to create bin at /workspace/apps/web/node_modules/.bin/itqanak-requests. ENOENT: no such file or directory, open '/workspace/packages/requests/dist/cli.js'
+#17 29.14  WARN  Failed to create bin at /workspace/packages/auth/node_modules/.bin/itqanak-db. ENOENT: no such file or directory, open '/workspace/packages/db/dist/cli.js'
+#17 29.48 
+#17 29.48 devDependencies:
+#17 29.48 + @eslint/js 9.35.0
+#17 29.48 + @playwright/test 1.55.1
+#17 29.48 + @types/node 22.15.3
+#17 29.48 + @types/nodemailer 8.0.1
+#17 29.48 + eslint 9.35.0
+#17 29.48 + eslint-config-prettier 10.1.8
+#17 29.48 + prettier 3.5.3
+#17 29.48 + turbo 2.5.6
+#17 29.48 + typescript 5.9.2
+#17 29.48 + typescript-eslint 8.42.0
+#17 29.48 + vitest 3.2.4
+#17 29.48 
+#17 29.66  WARN  Failed to create bin at /workspace/packages/auth/node_modules/.bin/itqanak-db. ENOENT: no such file or directory, open '/workspace/packages/auth/node_modules/@itqanak/db/dist/cli.js'
+#17 29.66  WARN  Failed to create bin at /workspace/packages/catalog/node_modules/.bin/itqanak-db. ENOENT: no such file or directory, open '/workspace/packages/catalog/node_modules/@itqanak/db/dist/cli.js'
+#17 29.68  WARN  Failed to create bin at /workspace/packages/content/node_modules/.bin/itqanak-db. ENOENT: no such file or directory, open '/workspace/packages/content/node_modules/@itqanak/db/dist/cli.js'
+#17 29.68  WARN  Failed to create bin at /workspace/packages/finance/node_modules/.bin/itqanak-db. ENOENT: no such file or directory, open '/workspace/packages/finance/node_modules/@itqanak/db/dist/cli.js'
+#17 29.68  WARN  Failed to create bin at /workspace/packages/operations/node_modules/.bin/itqanak-db. ENOENT: no such file or directory, open '/workspace/packages/operations/node_modules/@itqanak/db/dist/cli.js'
+#17 29.69  WARN  Failed to create bin at /workspace/packages/requests/node_modules/.bin/itqanak-catalog. ENOENT: no such file or directory, open '/workspace/packages/requests/node_modules/@itqanak/catalog/dist/cli.js'
+#17 29.69  WARN  Failed to create bin at /workspace/packages/requests/node_modules/.bin/itqanak-db. ENOENT: no such file or directory, open '/workspace/packages/requests/node_modules/@itqanak/db/dist/cli.js'
+#17 29.70  WARN  Failed to create bin at /workspace/apps/web/node_modules/.bin/itqanak-catalog. ENOENT: no such file or directory, open '/workspace/apps/web/node_modules/@itqanak/catalog/dist/cli.js'
+#17 29.71  WARN  Failed to create bin at /workspace/apps/web/node_modules/.bin/itqanak-db. ENOENT: no such file or directory, open '/workspace/apps/web/node_modules/@itqanak/db/dist/cli.js'
+#17 29.71  WARN  Failed to create bin at /workspace/apps/web/node_modules/.bin/itqanak-requests. ENOENT: no such file or directory, open '/workspace/apps/web/node_modules/@itqanak/requests/dist/cli.js'
+#17 29.71  WARN  Failed to create bin at /workspace/apps/worker/node_modules/.bin/itqanak-db. ENOENT: no such file or directory, open '/workspace/apps/worker/node_modules/@itqanak/db/dist/cli.js'
+#17 29.71  WARN  Failed to create bin at /workspace/apps/worker/node_modules/.bin/itqanak-requests. ENOENT: no such file or directory, open '/workspace/apps/worker/node_modules/@itqanak/requests/dist/cli.js'
+#17 29.73 Done in 29.1s
+#17 DONE 30.0s
+
+#19 [migrate runner 3/3] RUN pnpm turbo run build     --filter=@itqanak/auth...     --filter=@itqanak/content...     --filter=@itqanak/finance...     --filter=@itqanak/requests...
+#19 2.637 
+#19 2.637 Attention:
+#19 2.637 Turborepo now collects completely anonymous telemetry regarding usage.
+#19 2.637 This information is used to shape the Turborepo roadmap and prioritize features.
+#19 2.637 You can learn more, including how to opt-out if you'd not like to participate in this anonymous program, by visiting the following URL:
+#19 2.637 https://turborepo.com/docs/telemetry
+#19 2.637 
+#19 2.638 turbo 2.5.6
+#19 2.638 
+#19 2.786 • Packages in scope: @itqanak/auth, @itqanak/catalog, @itqanak/config, @itqanak/content, @itqanak/core, @itqanak/db, @itqanak/finance, @itqanak/observability, @itqanak/requests, @itqanak/storage
+#19 2.787 • Running build in 10 packages
+#19 2.787 • Remote caching disabled
+#19 2.892 @itqanak/storage:build: cache miss, executing 427385675cc57c82
+#19 2.892 @itqanak/core:build: cache miss, executing 45eb9d8e9cf23ac9
+#19 2.907 @itqanak/config:build: cache miss, executing a364b78cbd4d2d05
+#19 2.939 @itqanak/observability:build: cache miss, executing 84f40ccb2f078a50
+#19 ...
+
+#18 [worker build 3/4] RUN pnpm turbo run build --filter=@itqanak/worker...
+#18 3.977 
+#18 3.977 Attention:
+#18 3.977 Turborepo now collects completely anonymous telemetry regarding usage.
+#18 3.977 This information is used to shape the Turborepo roadmap and prioritize features.
+#18 3.977 You can learn more, including how to opt-out if you'd not like to participate in this anonymous program, by visiting the following URL:
+#18 3.977 https://turborepo.com/docs/telemetry
+#18 3.977 
+#18 3.979 turbo 2.5.6
+#18 3.979 
+#18 4.084 • Packages in scope: @itqanak/auth, @itqanak/catalog, @itqanak/config, @itqanak/core, @itqanak/db, @itqanak/observability, @itqanak/operations, @itqanak/requests, @itqanak/storage, @itqanak/worker
+#18 4.084 • Running build in 10 packages
+#18 4.084 • Remote caching disabled
+#18 4.168 @itqanak/observability:build: cache miss, executing 84f40ccb2f078a50
+#18 4.172 @itqanak/config:build: cache miss, executing a364b78cbd4d2d05
+#18 4.184 @itqanak/core:build: cache miss, executing 45eb9d8e9cf23ac9
+#18 4.201 @itqanak/storage:build: cache miss, executing 427385675cc57c82
+#18 9.861 @itqanak/observability:build: 
+#18 9.861 @itqanak/observability:build: > @itqanak/observability@0.1.0 build /workspace/packages/observability
+#18 9.861 @itqanak/observability:build: > tsc -p tsconfig.json
+#18 9.861 @itqanak/observability:build: 
+#18 9.882 @itqanak/core:build: 
+#18 9.882 @itqanak/core:build: > @itqanak/core@0.1.0 build /workspace/packages/core
+#18 9.882 @itqanak/core:build: > tsc -p tsconfig.json
+#18 9.882 @itqanak/core:build: 
+#18 ...
+
+#20 [web build 3/3] RUN pnpm turbo run build --filter=@itqanak/web...
+#20 4.046 
+#20 4.046 Attention:
+#20 4.046 Turborepo now collects completely anonymous telemetry regarding usage.
+#20 4.046 This information is used to shape the Turborepo roadmap and prioritize features.
+#20 4.046 You can learn more, including how to opt-out if you'd not like to participate in this anonymous program, by visiting the following URL:
+#20 4.046 https://turborepo.com/docs/telemetry
+#20 4.046 
+#20 4.048 turbo 2.5.6
+#20 4.048 
+#20 4.131 • Packages in scope: @itqanak/auth, @itqanak/catalog, @itqanak/config, @itqanak/content, @itqanak/core, @itqanak/db, @itqanak/finance, @itqanak/observability, @itqanak/operations, @itqanak/requests, @itqanak/storage, @itqanak/ui, @itqanak/web
+#20 4.131 • Running build in 13 packages
+#20 4.131 • Remote caching disabled
+#20 4.439 @itqanak/config:build: cache miss, executing a364b78cbd4d2d05
+#20 4.445 @itqanak/core:build: cache miss, executing 45eb9d8e9cf23ac9
+#20 4.463 @itqanak/observability:build: cache miss, executing 84f40ccb2f078a50
+#20 4.480 @itqanak/storage:build: cache miss, executing 427385675cc57c82
+#20 4.511 @itqanak/ui:build: cache miss, executing aaad52b06a7d1087
+#20 ...
+
+#18 [worker build 3/4] RUN pnpm turbo run build --filter=@itqanak/worker...
+#18 10.10 @itqanak/config:build: 
+#18 10.10 @itqanak/config:build: > @itqanak/config@0.1.0 build /workspace/packages/config
+#18 10.10 @itqanak/config:build: > tsc -p tsconfig.json
+#18 10.10 @itqanak/config:build: 
+#18 10.11 @itqanak/storage:build: 
+#18 10.11 @itqanak/storage:build: > @itqanak/storage@0.1.0 build /workspace/packages/storage
+#18 10.11 @itqanak/storage:build: > tsc -p tsconfig.json
+#18 10.11 @itqanak/storage:build: 
+#18 ...
+
+#20 [web build 3/3] RUN pnpm turbo run build --filter=@itqanak/web...
+#20 12.31 @itqanak/core:build: 
+#20 12.31 @itqanak/core:build: > @itqanak/core@0.1.0 build /workspace/packages/core
+#20 12.31 @itqanak/core:build: > tsc -p tsconfig.json
+#20 12.31 @itqanak/core:build: 
+#20 12.48 @itqanak/storage:build: 
+#20 12.48 @itqanak/storage:build: > @itqanak/storage@0.1.0 build /workspace/packages/storage
+#20 12.48 @itqanak/storage:build: > tsc -p tsconfig.json
+#20 12.48 @itqanak/storage:build: 
+#20 12.49 @itqanak/observability:build: 
+#20 12.50 @itqanak/observability:build: > @itqanak/observability@0.1.0 build /workspace/packages/observability
+#20 12.50 @itqanak/observability:build: > tsc -p tsconfig.json
+#20 12.50 @itqanak/observability:build: 
+#20 12.89 @itqanak/config:build: 
+#20 12.89 @itqanak/config:build: > @itqanak/config@0.1.0 build /workspace/packages/config
+#20 12.89 @itqanak/config:build: > tsc -p tsconfig.json
+#20 12.89 @itqanak/config:build: 
+#20 13.21 @itqanak/ui:build: 
+#20 13.21 @itqanak/ui:build: > @itqanak/ui@0.1.0 build /workspace/packages/ui
+#20 13.21 @itqanak/ui:build: > tsc -p tsconfig.json && cp src/styles/tokens.css dist/styles.css
+#20 13.21 @itqanak/ui:build: 
+#20 ...
+
+#19 [migrate runner 3/3] RUN pnpm turbo run build     --filter=@itqanak/auth...     --filter=@itqanak/content...     --filter=@itqanak/finance...     --filter=@itqanak/requests...
+#19 9.142 @itqanak/observability:build: 
+#19 9.142 @itqanak/observability:build: > @itqanak/observability@0.1.0 build /workspace/packages/observability
+#19 9.142 @itqanak/observability:build: > tsc -p tsconfig.json
+#19 9.142 @itqanak/observability:build: 
+#19 9.145 @itqanak/storage:build: 
+#19 9.146 @itqanak/storage:build: > @itqanak/storage@0.1.0 build /workspace/packages/storage
+#19 9.146 @itqanak/storage:build: > tsc -p tsconfig.json
+#19 9.147 @itqanak/storage:build: 
+#19 9.346 @itqanak/core:build: 
+#19 9.346 @itqanak/core:build: > @itqanak/core@0.1.0 build /workspace/packages/core
+#19 9.346 @itqanak/core:build: > tsc -p tsconfig.json
+#19 9.346 @itqanak/core:build: 
+#19 9.351 @itqanak/config:build: 
+#19 9.353 @itqanak/config:build: > @itqanak/config@0.1.0 build /workspace/packages/config
+#19 9.355 @itqanak/config:build: > tsc -p tsconfig.json
+#19 9.355 @itqanak/config:build: 
+#19 ...
+
+#18 [worker build 3/4] RUN pnpm turbo run build --filter=@itqanak/worker...
+#18 220.8 @itqanak/db:build: cache miss, executing 9999efa64af713ec
+#18 227.1 @itqanak/db:build: 
+#18 227.1 @itqanak/db:build: > @itqanak/db@0.1.0 build /workspace/packages/db
+#18 227.1 @itqanak/db:build: > tsc -p tsconfig.json
+#18 227.1 @itqanak/db:build: 
+#18 ...
+
+#19 [migrate runner 3/3] RUN pnpm turbo run build     --filter=@itqanak/auth...     --filter=@itqanak/content...     --filter=@itqanak/finance...     --filter=@itqanak/requests...
+#19 219.7 @itqanak/db:build: cache miss, executing 9999efa64af713ec
+#19 226.0 @itqanak/db:build: 
+#19 226.0 @itqanak/db:build: > @itqanak/db@0.1.0 build /workspace/packages/db
+#19 226.0 @itqanak/db:build: > tsc -p tsconfig.json
+#19 226.0 @itqanak/db:build: 
+#19 ...
+
+#20 [web build 3/3] RUN pnpm turbo run build --filter=@itqanak/web...
+#20 242.9 @itqanak/db:build: cache miss, executing 9999efa64af713ec
+#20 ...
+
+#19 [migrate runner 3/3] RUN pnpm turbo run build     --filter=@itqanak/auth...     --filter=@itqanak/content...     --filter=@itqanak/finance...     --filter=@itqanak/requests...
+#19 246.0 @itqanak/catalog:build: cache miss, executing 434959be74a59d97
+#19 246.1 @itqanak/auth:build: cache miss, executing ad76e0ba3208ea7c
+#19 251.3 @itqanak/auth:build: 
+#19 251.3 @itqanak/auth:build: > @itqanak/auth@0.1.0 build /workspace/packages/auth
+#19 251.3 @itqanak/auth:build: > tsc -p tsconfig.json
+#19 251.3 @itqanak/auth:build: 
+#19 251.4 @itqanak/catalog:build: 
+#19 251.4 @itqanak/catalog:build: > @itqanak/catalog@0.1.0 build /workspace/packages/catalog
+#19 251.4 @itqanak/catalog:build: > tsc -p tsconfig.json
+#19 251.4 @itqanak/catalog:build: 
+#19 ...
+
+#18 [worker build 3/4] RUN pnpm turbo run build --filter=@itqanak/worker...
+#18 245.8 @itqanak/catalog:build: cache miss, executing 434959be74a59d97
+#18 245.8 @itqanak/auth:build: cache miss, executing ad76e0ba3208ea7c
+#18 249.3 @itqanak/auth:build: 
+#18 249.3 @itqanak/auth:build: > @itqanak/auth@0.1.0 build /workspace/packages/auth
+#18 249.3 @itqanak/auth:build: > tsc -p tsconfig.json
+#18 249.3 @itqanak/auth:build: 
+#18 250.3 @itqanak/catalog:build: 
+#18 250.3 @itqanak/catalog:build: > @itqanak/catalog@0.1.0 build /workspace/packages/catalog
+#18 250.3 @itqanak/catalog:build: > tsc -p tsconfig.json
+#18 250.3 @itqanak/catalog:build: 
+#18 ...
+
+#20 [web build 3/3] RUN pnpm turbo run build --filter=@itqanak/web...
+#20 249.8 @itqanak/db:build: 
+#20 249.8 @itqanak/db:build: > @itqanak/db@0.1.0 build /workspace/packages/db
+#20 249.8 @itqanak/db:build: > tsc -p tsconfig.json
+#20 249.8 @itqanak/db:build: 
+#20 266.1 @itqanak/catalog:build: cache miss, executing 434959be74a59d97
+#20 266.1 @itqanak/auth:build: cache miss, executing ad76e0ba3208ea7c
+#20 270.1 @itqanak/catalog:build: 
+#20 270.1 @itqanak/catalog:build: > @itqanak/catalog@0.1.0 build /workspace/packages/catalog
+#20 270.1 @itqanak/catalog:build: > tsc -p tsconfig.json
+#20 270.1 @itqanak/catalog:build: 
+#20 270.4 @itqanak/auth:build: 
+#20 270.4 @itqanak/auth:build: > @itqanak/auth@0.1.0 build /workspace/packages/auth
+#20 270.4 @itqanak/auth:build: > tsc -p tsconfig.json
+#20 270.4 @itqanak/auth:build: 
+#20 ...
+
+#18 [worker build 3/4] RUN pnpm turbo run build --filter=@itqanak/worker...
+#18 284.8 @itqanak/operations:build: cache miss, executing 60b035cfb23e3ba4
+#18 284.8 @itqanak/requests:build: cache miss, executing bbc687fd29112c1a
+#18 287.7 @itqanak/operations:build: 
+#18 287.7 @itqanak/operations:build: > @itqanak/operations@0.1.0 build /workspace/packages/operations
+#18 287.7 @itqanak/operations:build: > tsc -p tsconfig.json
+#18 287.7 @itqanak/operations:build: 
+#18 287.7 @itqanak/requests:build: 
+#18 287.7 @itqanak/requests:build: > @itqanak/requests@0.1.0 build /workspace/packages/requests
+#18 287.7 @itqanak/requests:build: > tsc -p tsconfig.json
+#18 287.7 @itqanak/requests:build: 
+#18 ...
+
+#19 [migrate runner 3/3] RUN pnpm turbo run build     --filter=@itqanak/auth...     --filter=@itqanak/content...     --filter=@itqanak/finance...     --filter=@itqanak/requests...
+#19 285.5 @itqanak/content:build: cache miss, executing e91c17f7477be5cf
+#19 285.5 @itqanak/finance:build: cache miss, executing 15da74001c203c67
+#19 285.5 @itqanak/requests:build: cache miss, executing bbc687fd29112c1a
+#19 289.9 @itqanak/requests:build: 
+#19 289.9 @itqanak/requests:build: > @itqanak/requests@0.1.0 build /workspace/packages/requests
+#19 289.9 @itqanak/requests:build: > tsc -p tsconfig.json
+#19 289.9 @itqanak/requests:build: 
+#19 290.0 @itqanak/finance:build: 
+#19 290.0 @itqanak/finance:build: > @itqanak/finance@0.1.0 build /workspace/packages/finance
+#19 290.0 @itqanak/finance:build: > tsc -p tsconfig.json
+#19 290.0 @itqanak/finance:build: 
+#19 290.0 @itqanak/content:build: 
+#19 290.0 @itqanak/content:build: > @itqanak/content@0.1.0 build /workspace/packages/content
+#19 290.0 @itqanak/content:build: > tsc -p tsconfig.json
+#19 290.0 @itqanak/content:build: 
+#19 ...
+
+#20 [web build 3/3] RUN pnpm turbo run build --filter=@itqanak/web...
+#20 300.1 @itqanak/finance:build: cache miss, executing 15da74001c203c67
+#20 300.1 @itqanak/operations:build: cache miss, executing 60b035cfb23e3ba4
+#20 300.2 @itqanak/requests:build: cache miss, executing bbc687fd29112c1a
+#20 300.2 @itqanak/content:build: cache miss, executing e91c17f7477be5cf
+#20 307.4 @itqanak/content:build: 
+#20 307.4 @itqanak/content:build: > @itqanak/content@0.1.0 build /workspace/packages/content
+#20 307.4 @itqanak/content:build: > tsc -p tsconfig.json
+#20 307.4 @itqanak/content:build: 
+#20 307.7 @itqanak/finance:build: 
+#20 307.7 @itqanak/finance:build: > @itqanak/finance@0.1.0 build /workspace/packages/finance
+#20 307.7 @itqanak/finance:build: > tsc -p tsconfig.json
+#20 307.7 @itqanak/finance:build: 
+#20 307.7 @itqanak/operations:build: 
+#20 307.7 @itqanak/operations:build: > @itqanak/operations@0.1.0 build /workspace/packages/operations
+#20 307.7 @itqanak/operations:build: > tsc -p tsconfig.json
+#20 307.7 @itqanak/operations:build: 
+#20 308.2 @itqanak/requests:build: 
+#20 308.2 @itqanak/requests:build: > @itqanak/requests@0.1.0 build /workspace/packages/requests
+#20 308.2 @itqanak/requests:build: > tsc -p tsconfig.json
+#20 308.2 @itqanak/requests:build: 
+#20 ...
+
+#18 [worker build 3/4] RUN pnpm turbo run build --filter=@itqanak/worker...
+#18 328.2 @itqanak/worker:build: cache miss, executing 5bc79924d80e2b46
+#18 330.1 @itqanak/worker:build: 
+#18 330.1 @itqanak/worker:build: > @itqanak/worker@0.1.0 build /workspace/apps/worker
+#18 330.1 @itqanak/worker:build: > tsc -p tsconfig.json
+#18 330.1 @itqanak/worker:build: 
+#18 ...
+
+#19 [migrate runner 3/3] RUN pnpm turbo run build     --filter=@itqanak/auth...     --filter=@itqanak/content...     --filter=@itqanak/finance...     --filter=@itqanak/requests...
+#19 357.4 
+#19 357.4  Tasks:    10 successful, 10 total
+#19 357.4 Cached:    0 cached, 10 total
+#19 357.4   Time:    5m54.715s 
+#19 357.4 
+#19 DONE 358.4s
+
+#18 [worker build 3/4] RUN pnpm turbo run build --filter=@itqanak/worker...
+#18 359.7 
+#18 359.7  Tasks:    10 successful, 10 total
+#18 359.7 Cached:    0 cached, 10 total
+#18 359.7   Time:    5m55.642s 
+#18 359.7 
+#18 DONE 360.7s
+
+#21 [migrate] exporting to image
+#21 exporting layers
+#21 ...
+
+#22 [worker build 4/4] RUN pnpm --filter @itqanak/worker deploy --prod /opt/worker
+#22 3.788 Packages are copied from the content-addressable store to the virtual store.
+#22 3.788   Content-addressable store is at: /pnpm/store/v3
+#22 3.788   Virtual store is at:             ../opt/worker/node_modules/.pnpm
+#22 3.895 Progress: resolved 1, reused 0, downloaded 0, added 0
+#22 4.929 Progress: resolved 9, reused 8, downloaded 1, added 0
+#22 5.951 Progress: resolved 18, reused 8, downloaded 10, added 0
+#22 6.944 Progress: resolved 21, reused 8, downloaded 13, added 0
+#22 7.954 Progress: resolved 50, reused 8, downloaded 32, added 0
+#22 8.965 Progress: resolved 85, reused 8, downloaded 63, added 0
+#22 9.958 Progress: resolved 111, reused 8, downloaded 83, added 0
+#22 10.99 Progress: resolved 129, reused 8, downloaded 87, added 0
+#22 11.99 Progress: resolved 153, reused 8, downloaded 91, added 0
+#22 13.02 Progress: resolved 176, reused 8, downloaded 105, added 0
+#22 14.03 Progress: resolved 176, reused 8, downloaded 117, added 0
+#22 15.03 Progress: resolved 230, reused 8, downloaded 189, added 0
+#22 16.04 Progress: resolved 315, reused 8, downloaded 226, added 0
+#22 ...
+
+#20 [web build 3/3] RUN pnpm turbo run build --filter=@itqanak/web...
+#20 377.1 @itqanak/web:build: cache miss, executing b8712a00c3498e0c
+#20 378.3 @itqanak/web:build: 
+#20 378.3 @itqanak/web:build: > @itqanak/web@0.1.0 build /workspace/apps/web
+#20 378.3 @itqanak/web:build: > next build
+#20 378.3 @itqanak/web:build: 
+#20 ...
+
+#22 [worker build 4/4] RUN pnpm --filter @itqanak/worker deploy --prod /opt/worker
+#22 16.38 .                                        |  +59 ++++++
+#22 17.04 Progress: resolved 318, reused 8, downloaded 230, added 17
+#22 18.01 Progress: resolved 318, reused 8, downloaded 230, added 59, done
+#22 18.11 .../argon2@0.45.1/node_modules/argon2 install$ cross-env ZERO_AR_DATE=1 node-gyp-build
+#22 18.44 .../argon2@0.45.1/node_modules/argon2 install: Done
+#22 DONE 19.0s
+
+#20 [web build 3/3] RUN pnpm turbo run build --filter=@itqanak/web...
+#20 380.2 @itqanak/web:build: ▲ Next.js 16.3.0 (Turbopack)
+#20 380.5 @itqanak/web:build: ✓ Running next.config.ts took 254ms
+#20 380.5 @itqanak/web:build: Attention: Next.js now collects completely anonymous telemetry regarding usage.
+#20 380.5 @itqanak/web:build: This information is used to shape Next.js' roadmap and prioritize features.
+#20 380.5 @itqanak/web:build: You can learn more, including how to opt-out if you'd not like to participate in this anonymous program, by visiting the following URL:
+#20 380.5 @itqanak/web:build: https://nextjs.org/telemetry
+#20 380.5 @itqanak/web:build: 
+#20 380.6 @itqanak/web:build: - Experiments (use with caution):
+#20 380.6 @itqanak/web:build:   ✓ authInterrupts
+#20 380.6 @itqanak/web:build: 
+#20 380.9 @itqanak/web:build:   Creating an optimized production build ...
+#20 ...
+
+#23 [worker runner 3/3] COPY --from=build --chown=node:node /opt/worker ./
+#23 DONE 2.9s
+
+#24 [worker] exporting to image
+#24 exporting layers
+#24 exporting layers 3.0s done
+#24 exporting manifest sha256:04f4b636d788fa9759a6ac11dd15dda04e4e1079224b6f132639ca5db3c4a0f4
+#24 exporting manifest sha256:04f4b636d788fa9759a6ac11dd15dda04e4e1079224b6f132639ca5db3c4a0f4 0.0s done
+#24 exporting config sha256:89cd4678ac0ab0800cbc7fdfeb75cb1741cd85a78eb9a76147b5739aad0b58b1 0.0s done
+#24 exporting attestation manifest sha256:881746ad3f69441cb98440cd453b94221e28e782edbf0e0265f530d93f9fb143 0.0s done
+#24 exporting manifest list sha256:b0db2c4725e4bd10bfbe8e5a7e468f2ca843b6634da2174ef91c43e86b392f75
+#24 exporting manifest list sha256:b0db2c4725e4bd10bfbe8e5a7e468f2ca843b6634da2174ef91c43e86b392f75 0.0s done
+#24 naming to docker.io/library/itqanak-worker:latest 0.0s done
+#24 unpacking to docker.io/library/itqanak-worker:latest
+#24 unpacking to docker.io/library/itqanak-worker:latest 2.4s done
+#24 DONE 5.7s
+
+#20 [web build 3/3] RUN pnpm turbo run build --filter=@itqanak/web...
+#20 ...
+
+#25 [worker] resolving provenance for metadata file
+#25 DONE 0.1s
+
+#20 [web build 3/3] RUN pnpm turbo run build --filter=@itqanak/web...
+#20 ...
+
+#21 [migrate] exporting to image
+#21 exporting layers 83.8s done
+#21 exporting manifest sha256:1e4c05780be8c784bc0ca994401b381deb51bec5131b5428d2c8956af5ca8092 0.0s done
+#21 exporting config sha256:c2281e8f0a949374135b412ed6d1949aa5d225e01b89d82c41deb1a2c5dfb304 0.0s done
+#21 exporting attestation manifest sha256:6f261e57e6c37749c37c7a9c1b1e0f8e1f2fc1be1d6b8e05d42a2a8908082ba5 0.0s done
+#21 exporting manifest list sha256:0c5dfd4ab91a32bd8c878cd6e6371f74bcdecad610cdf3bb5b9e3d8cffea060f 0.0s done
+#21 naming to docker.io/library/itqanak-migrate:latest
+#21 naming to docker.io/library/itqanak-migrate:latest done
+#21 unpacking to docker.io/library/itqanak-migrate:latest
+#21 ...
+
+#20 [web build 3/3] RUN pnpm turbo run build --filter=@itqanak/web...
+#20 461.5 @itqanak/web:build: ✓ Compiled successfully in 79s
+#20 461.6 @itqanak/web:build:   Running TypeScript ...
+#20 ...
+
+#21 [migrate] exporting to image
+#21 unpacking to docker.io/library/itqanak-migrate:latest 21.0s done
+#21 DONE 105.1s
+
+#20 [web build 3/3] RUN pnpm turbo run build --filter=@itqanak/web...
+#20 ...
+
+#26 [migrate] resolving provenance for metadata file
+#26 DONE 0.1s
+
+#20 [web build 3/3] RUN pnpm turbo run build --filter=@itqanak/web...
+#20 476.9 @itqanak/web:build: ✓ Finished writing to filesystem cache in 15.9s
+#20 512.3 @itqanak/web:build:   Finished TypeScript in 51s ...
+#20 512.4 @itqanak/web:build:   Collecting page data using 1 worker ...
+#20 519.3 @itqanak/web:build:   Generating static pages using 1 worker (0/46) ...
+#20 519.6 @itqanak/web:build:   Generating static pages using 1 worker (11/46) 
+#20 519.6 @itqanak/web:build:   Generating static pages using 1 worker (22/46) 
+#20 519.6 @itqanak/web:build:   Generating static pages using 1 worker (34/46) 
+#20 520.6 @itqanak/web:build: ✓ Generating static pages using 1 worker (46/46) in 1282ms
+#20 520.6 @itqanak/web:build:   Finalizing page optimization ...
+#20 522.9 @itqanak/web:build: 
+#20 522.9 @itqanak/web:build: Route (app)
+#20 522.9 @itqanak/web:build: ┌ ƒ /
+#20 522.9 @itqanak/web:build: ├ ƒ /_not-found
+#20 522.9 @itqanak/web:build: ├ ƒ /api/account/change-password
+#20 522.9 @itqanak/web:build: ├ ƒ /api/account/profile
+#20 522.9 @itqanak/web:build: ├ ƒ /api/account/sessions/[sessionId]/revoke
+#20 522.9 @itqanak/web:build: ├ ƒ /api/account/sessions/revoke-all
+#20 522.9 @itqanak/web:build: ├ ƒ /api/admin/content
+#20 522.9 @itqanak/web:build: ├ ƒ /api/admin/content/[blockId]
+#20 522.9 @itqanak/web:build: ├ ƒ /api/admin/conversations
+#20 522.9 @itqanak/web:build: ├ ƒ /api/admin/conversations/[studentUserId]
+#20 522.9 @itqanak/web:build: ├ ƒ /api/admin/conversations/[studentUserId]/attachments
+#20 522.9 @itqanak/web:build: ├ ƒ /api/admin/conversations/[studentUserId]/attachments/[attachmentId]/status
+#20 522.9 @itqanak/web:build: ├ ƒ /api/admin/conversations/[studentUserId]/messages
+#20 522.9 @itqanak/web:build: ├ ƒ /api/admin/conversations/[studentUserId]/messages/[messageId]
+#20 522.9 @itqanak/web:build: ├ ƒ /api/admin/conversations/[studentUserId]/messages/[messageId]/attachment
+#20 522.9 @itqanak/web:build: ├ ƒ /api/admin/conversations/[studentUserId]/messages/[messageId]/attachment/preview
+#20 522.9 @itqanak/web:build: ├ ƒ /api/admin/conversations/[studentUserId]/messages/[messageId]/reactions
+#20 522.9 @itqanak/web:build: ├ ƒ /api/admin/conversations/[studentUserId]/messages/read
+#20 522.9 @itqanak/web:build: ├ ƒ /api/admin/conversations/stream
+#20 522.9 @itqanak/web:build: ├ ƒ /api/admin/conversations/updates
+#20 522.9 @itqanak/web:build: ├ ƒ /api/admin/finance
+#20 522.9 @itqanak/web:build: ├ ƒ /api/admin/finance/[dueId]
+#20 522.9 @itqanak/web:build: ├ ƒ /api/admin/finance/receipts/[submissionId]/image
+#20 522.9 @itqanak/web:build: ├ ƒ /api/admin/finance/receipts/[submissionId]/review
+#20 522.9 @itqanak/web:build: ├ ƒ /api/admin/messaging/announcement
+#20 522.9 @itqanak/web:build: ├ ƒ /api/admin/messaging/contact
+#20 522.9 @itqanak/web:build: ├ ƒ /api/admin/notifications
+#20 522.9 @itqanak/web:build: ├ ƒ /api/admin/notifications/[notificationId]/read
+#20 522.9 @itqanak/web:build: ├ ƒ /api/admin/notifications/read-all
+#20 522.9 @itqanak/web:build: ├ ƒ /api/admin/notifications/unread
+#20 522.9 @itqanak/web:build: ├ ƒ /api/admin/operations
+#20 522.9 @itqanak/web:build: ├ ƒ /api/admin/password-resets/[requestId]/issue
+#20 522.9 @itqanak/web:build: ├ ƒ /api/admin/password-resets/[requestId]/reject
+#20 522.9 @itqanak/web:build: ├ ƒ /api/admin/quotes
+#20 522.9 @itqanak/web:build: ├ ƒ /api/admin/quotes/[quoteId]/withdraw
+#20 522.9 @itqanak/web:build: ├ ƒ /api/admin/requests
+#20 522.9 @itqanak/web:build: ├ ƒ /api/admin/requests/[requestNumber]/assign
+#20 522.9 @itqanak/web:build: ├ ƒ /api/admin/requests/[requestNumber]/details
+#20 522.9 @itqanak/web:build: ├ ƒ /api/admin/requests/[requestNumber]/messages
+#20 522.9 @itqanak/web:build: ├ ƒ /api/admin/requests/[requestNumber]/messages/read
+#20 522.9 @itqanak/web:build: ├ ƒ /api/admin/requests/[requestNumber]/transition
+#20 522.9 @itqanak/web:build: ├ ƒ /api/admin/students
+#20 522.9 @itqanak/web:build: ├ ƒ /api/admin/support
+#20 522.9 @itqanak/web:build: ├ ƒ /api/admin/support/[conversationId]/messages
+#20 522.9 @itqanak/web:build: ├ ƒ /api/admin/support/[conversationId]/messages/read
+#20 522.9 @itqanak/web:build: ├ ƒ /api/admin/verifications/[userId]/confirm
+#20 522.9 @itqanak/web:build: ├ ƒ /api/announcements/active
+#20 522.9 @itqanak/web:build: ├ ƒ /api/auth/forgot-password
+#20 522.9 @itqanak/web:build: ├ ƒ /api/auth/login
+#20 522.9 @itqanak/web:build: ├ ƒ /api/auth/logout
+#20 522.9 @itqanak/web:build: ├ ƒ /api/auth/register
+#20 522.9 @itqanak/web:build: ├ ƒ /api/auth/resend-verification
+#20 522.9 @itqanak/web:build: ├ ƒ /api/auth/reset-password
+#20 522.9 @itqanak/web:build: ├ ƒ /api/auth/verify-email
+#20 522.9 @itqanak/web:build: ├ ƒ /api/client-error
+#20 522.9 @itqanak/web:build: ├ ƒ /api/health/live
+#20 522.9 @itqanak/web:build: ├ ƒ /api/health/ready
+#20 522.9 @itqanak/web:build: ├ ƒ /api/health/startup
+#20 522.9 @itqanak/web:build: ├ ƒ /api/student/conversation
+#20 522.9 @itqanak/web:build: ├ ƒ /api/student/conversation/attachments
+#20 522.9 @itqanak/web:build: ├ ƒ /api/student/conversation/attachments/[attachmentId]/status
+#20 522.9 @itqanak/web:build: ├ ƒ /api/student/conversation/messages
+#20 522.9 @itqanak/web:build: ├ ƒ /api/student/conversation/messages/[messageId]
+#20 522.9 @itqanak/web:build: ├ ƒ /api/student/conversation/messages/[messageId]/attachment
+#20 522.9 @itqanak/web:build: ├ ƒ /api/student/conversation/messages/[messageId]/attachment/preview
+#20 522.9 @itqanak/web:build: ├ ƒ /api/student/conversation/messages/[messageId]/reactions
+#20 522.9 @itqanak/web:build: ├ ƒ /api/student/conversation/messages/read
+#20 522.9 @itqanak/web:build: ├ ƒ /api/student/conversation/stream
+#20 522.9 @itqanak/web:build: ├ ƒ /api/student/finance/dues/[dueId]/receipt
+#20 522.9 @itqanak/web:build: ├ ƒ /api/student/notifications
+#20 522.9 @itqanak/web:build: ├ ƒ /api/student/notifications/[notificationId]/read
+#20 522.9 @itqanak/web:build: ├ ƒ /api/student/notifications/read-all
+#20 522.9 @itqanak/web:build: ├ ƒ /api/student/notifications/unread
+#20 522.9 @itqanak/web:build: ├ ƒ /api/student/quotes/[quoteId]/respond
+#20 522.9 @itqanak/web:build: ├ ƒ /api/student/requests
+#20 522.9 @itqanak/web:build: ├ ƒ /api/student/requests/[requestNumber]
+#20 522.9 @itqanak/web:build: ├ ƒ /api/student/requests/[requestNumber]/attachments
+#20 522.9 @itqanak/web:build: ├ ƒ /api/student/requests/[requestNumber]/attachments/[attachmentId]/delete
+#20 522.9 @itqanak/web:build: ├ ƒ /api/student/requests/[requestNumber]/attachments/[attachmentId]/download
+#20 522.9 @itqanak/web:build: ├ ƒ /api/student/requests/[requestNumber]/attachments/[attachmentId]/preview
+#20 522.9 @itqanak/web:build: ├ ƒ /api/student/requests/[requestNumber]/attachments/[attachmentId]/status
+#20 522.9 @itqanak/web:build: ├ ƒ /api/student/requests/[requestNumber]/cancel
+#20 522.9 @itqanak/web:build: ├ ƒ /api/student/requests/[requestNumber]/messages
+#20 522.9 @itqanak/web:build: ├ ƒ /api/student/requests/[requestNumber]/messages/read
+#20 522.9 @itqanak/web:build: ├ ƒ /api/student/requests/[requestNumber]/submit
+#20 522.9 @itqanak/web:build: ├ ƒ /api/student/requests/[requestNumber]/transition
+#20 522.9 @itqanak/web:build: ├ ƒ /api/student/support/messages
+#20 522.9 @itqanak/web:build: ├ ƒ /api/student/support/messages/read
+#20 522.9 @itqanak/web:build: ├ ○ /apple-icon
+#20 522.9 @itqanak/web:build: ├ ƒ /ar
+#20 522.9 @itqanak/web:build: ├ ƒ /ar/account
+#20 522.9 @itqanak/web:build: ├ ƒ /ar/account/security
+#20 522.9 @itqanak/web:build: ├ ƒ /ar/account/sessions
+#20 522.9 @itqanak/web:build: ├ ƒ /ar/admin
+#20 522.9 @itqanak/web:build: ├ ƒ /ar/admin/approvals
+#20 522.9 @itqanak/web:build: ├ ƒ /ar/admin/content
+#20 522.9 @itqanak/web:build: ├ ƒ /ar/admin/finance
+#20 522.9 @itqanak/web:build: ├ ƒ /ar/admin/messaging
+#20 522.9 @itqanak/web:build: ├ ƒ /ar/admin/monitoring
+#20 522.9 @itqanak/web:build: ├ ƒ /ar/admin/operations
+#20 522.9 @itqanak/web:build: ├ ƒ /ar/admin/password-resets
+#20 522.9 @itqanak/web:build: ├ ƒ /ar/admin/password-resets/issued
+#20 522.9 @itqanak/web:build: ├ ƒ /ar/admin/requests
+#20 522.9 @itqanak/web:build: ├ ƒ /ar/admin/requests/[requestNumber]
+#20 522.9 @itqanak/web:build: ├ ƒ /ar/admin/students
+#20 522.9 @itqanak/web:build: ├ ƒ /ar/admin/support
+#20 522.9 @itqanak/web:build: ├ ƒ /ar/admin/verifications
+#20 522.9 @itqanak/web:build: ├ ƒ /ar/auth/forgot-password
+#20 522.9 @itqanak/web:build: ├ ƒ /ar/auth/login
+#20 522.9 @itqanak/web:build: ├ ƒ /ar/auth/pending-phone-verification
+#20 522.9 @itqanak/web:build: ├ ƒ /ar/auth/register
+#20 522.9 @itqanak/web:build: ├ ƒ /ar/auth/resend-verification
+#20 522.9 @itqanak/web:build: ├ ƒ /ar/auth/reset-password
+#20 522.9 @itqanak/web:build: ├ ƒ /ar/auth/verify-email
+#20 522.9 @itqanak/web:build: ├ ƒ /ar/privacy
+#20 522.9 @itqanak/web:build: ├ ƒ /ar/services
+#20 522.9 @itqanak/web:build: ├ ƒ /ar/services/[slug]
+#20 522.9 @itqanak/web:build: ├ ƒ /ar/student
+#20 522.9 @itqanak/web:build: ├ ƒ /ar/student/finance
+#20 522.9 @itqanak/web:build: ├ ƒ /ar/student/requests
+#20 522.9 @itqanak/web:build: ├ ƒ /ar/student/requests/[requestNumber]
+#20 522.9 @itqanak/web:build: ├ ƒ /ar/student/requests/new
+#20 522.9 @itqanak/web:build: ├ ƒ /ar/student/support
+#20 522.9 @itqanak/web:build: ├ ƒ /ar/terms
+#20 522.9 @itqanak/web:build: ├ ƒ /en
+#20 522.9 @itqanak/web:build: ├ ƒ /en/account
+#20 522.9 @itqanak/web:build: ├ ƒ /en/account/security
+#20 522.9 @itqanak/web:build: ├ ƒ /en/account/sessions
+#20 522.9 @itqanak/web:build: ├ ƒ /en/admin
+#20 522.9 @itqanak/web:build: ├ ƒ /en/admin/approvals
+#20 522.9 @itqanak/web:build: ├ ƒ /en/admin/content
+#20 522.9 @itqanak/web:build: ├ ƒ /en/admin/finance
+#20 522.9 @itqanak/web:build: ├ ƒ /en/admin/messaging
+#20 522.9 @itqanak/web:build: ├ ƒ /en/admin/monitoring
+#20 522.9 @itqanak/web:build: ├ ƒ /en/admin/operations
+#20 522.9 @itqanak/web:build: ├ ƒ /en/admin/password-resets
+#20 522.9 @itqanak/web:build: ├ ƒ /en/admin/password-resets/issued
+#20 522.9 @itqanak/web:build: ├ ƒ /en/admin/requests
+#20 522.9 @itqanak/web:build: ├ ƒ /en/admin/requests/[requestNumber]
+#20 522.9 @itqanak/web:build: ├ ƒ /en/admin/students
+#20 522.9 @itqanak/web:build: ├ ƒ /en/admin/support
+#20 522.9 @itqanak/web:build: ├ ƒ /en/admin/verifications
+#20 522.9 @itqanak/web:build: ├ ƒ /en/auth/forgot-password
+#20 522.9 @itqanak/web:build: ├ ƒ /en/auth/login
+#20 522.9 @itqanak/web:build: ├ ƒ /en/auth/pending-phone-verification
+#20 522.9 @itqanak/web:build: ├ ƒ /en/auth/register
+#20 522.9 @itqanak/web:build: ├ ƒ /en/auth/reset-password
+#20 522.9 @itqanak/web:build: ├ ƒ /en/privacy
+#20 522.9 @itqanak/web:build: ├ ƒ /en/services
+#20 522.9 @itqanak/web:build: ├ ƒ /en/services/[slug]
+#20 522.9 @itqanak/web:build: ├ ƒ /en/student
+#20 522.9 @itqanak/web:build: ├ ƒ /en/student/finance
+#20 522.9 @itqanak/web:build: ├ ƒ /en/student/requests
+#20 522.9 @itqanak/web:build: ├ ƒ /en/student/requests/[requestNumber]
+#20 522.9 @itqanak/web:build: ├ ƒ /en/student/requests/new
+#20 522.9 @itqanak/web:build: ├ ƒ /en/student/support
+#20 522.9 @itqanak/web:build: ├ ƒ /en/terms
+#20 522.9 @itqanak/web:build: ├ ○ /icon
+#20 522.9 @itqanak/web:build: ├ ○ /install-icon-192
+#20 522.9 @itqanak/web:build: ├ ƒ /manifest.webmanifest
+#20 522.9 @itqanak/web:build: ├ ƒ /robots.txt
+#20 522.9 @itqanak/web:build: └ ƒ /sitemap.xml
+#20 522.9 @itqanak/web:build: 
+#20 522.9 @itqanak/web:build: 
+#20 522.9 @itqanak/web:build: ƒ Proxy (Middleware)
+#20 522.9 @itqanak/web:build: 
+#20 522.9 @itqanak/web:build: ○  (Static)   prerendered as static content
+#20 522.9 @itqanak/web:build: ƒ  (Dynamic)  server-rendered on demand
+#20 522.9 @itqanak/web:build: 
+#20 523.4 
+#20 523.4  Tasks:    13 successful, 13 total
+#20 523.4 Cached:    0 cached, 13 total
+#20 523.4   Time:    8m39.331s 
+#20 523.4 
+#20 DONE 526.4s
+
+#27 [web runner 4/7] COPY --from=build --chown=nextjs:nodejs /workspace/apps/web/.next/standalone ./
+#27 DONE 1.3s
+
+#28 [web runner 5/7] COPY --from=build --chown=nextjs:nodejs /workspace/apps/web/.next/static ./apps/web/.next/static
+#28 DONE 0.2s
+
+#29 [web runner 6/7] COPY --from=build --chown=nextjs:nodejs /workspace/apps/web/public ./apps/web/public
+#29 DONE 0.1s
+
+#30 [web runner 7/7] COPY --from=build --chown=nextjs:nodejs /workspace/migrations ./migrations
+#30 DONE 0.1s
+
+#31 [web] exporting to image
+#31 exporting layers
+#31 exporting layers 5.8s done
+#31 exporting manifest sha256:0b863afa3c9f0677424ed6730a5cb25dc537c1bd20b906a4370349ed6714d0d4 0.0s done
+#31 exporting config sha256:75133ef0c3da3cd4fe4f995d5a70467ea59ba2c3788c5030d71ae04eabcebbc7 0.0s done
+#31 exporting attestation manifest sha256:e79ff1878f35af4489b74ee33a57ea23a59331f1e8e94cafe104e1f2bca31568 0.0s done
+#31 exporting manifest list sha256:d527d9ab7fba643818fa4e3c8951d535d66c0fdcfd14d9aac36f580f75eb902d 0.0s done
+#31 naming to docker.io/library/itqanak-web:latest done
+#31 unpacking to docker.io/library/itqanak-web:latest
+#31 unpacking to docker.io/library/itqanak-web:latest 2.2s done
+#31 DONE 8.3s
+
+#32 [web] resolving provenance for metadata file
+#32 DONE 0.1s
+ itqanak-migrate  Built
+ itqanak-web  Built
+ itqanak-worker  Built

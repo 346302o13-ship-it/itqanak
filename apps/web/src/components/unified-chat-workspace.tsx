@@ -759,7 +759,25 @@ export function UnifiedChatWorkspace({
         : `/api/admin/conversations/${encodeURIComponent(conversation.studentUserId)}`;
 
   useEffect(() => {
-    setMessages([...initialMessagePage.items]);
+    // Seed from the on-device cache first so re-opening a conversation shows
+    // history instantly and older-page fetches are not repeated, then fold the
+    // server-fresh page on top.
+    let seeded: UnifiedMessage[] = [...initialMessagePage.items];
+    const cacheKey = conversation === undefined ? undefined : `itqanak.chat.v1.${conversation.id}`;
+    if (cacheKey !== undefined) {
+      try {
+        const raw = window.localStorage.getItem(cacheKey);
+        if (raw !== null) {
+          const cached = JSON.parse(raw) as WireUnifiedMessage[];
+          if (Array.isArray(cached) && cached.length > 0) {
+            seeded = mergeUnifiedMessages(seeded, cached);
+          }
+        }
+      } catch {
+        // Ignore unreadable / disabled storage.
+      }
+    }
+    setMessages(seeded);
     setOutbox([]);
     setLoadedPage(initialMessagePage.page);
     setPageCount(initialMessagePage.pageCount ?? 1);
@@ -769,10 +787,23 @@ export function UnifiedChatWorkspace({
     setDetailsOpen(false);
     setEditingId(undefined);
     setDeleteConfirmFor(undefined);
-    previousLastMessageId.current = initialMessagePage.items.at(-1)?.id;
-    latestMessageIdRef.current = initialMessagePage.items.at(-1)?.id;
+    previousLastMessageId.current = seeded.at(-1)?.id;
+    latestMessageIdRef.current = seeded.at(-1)?.id;
     revisionCursorRef.current = initialMessagePage.revisionCursor;
   }, [conversation, initialMessagePage, selectedRequestId]);
+
+  // Persist the tail of the conversation to the device (best effort, capped).
+  useEffect(() => {
+    if (conversation === undefined || messages.length === 0) return;
+    try {
+      window.localStorage.setItem(
+        `itqanak.chat.v1.${conversation.id}`,
+        JSON.stringify(messages.slice(-250)),
+      );
+    } catch {
+      // Quota / private mode — the network remains the source of truth.
+    }
+  }, [messages, conversation]);
 
   useEffect(() => {
     setContactItems([...conversations]);
@@ -1541,7 +1572,49 @@ export function UnifiedChatWorkspace({
     );
   }
 
-  async function uploadAndSend(file: File, source: "picker" | "recording" = "picker") {
+  // Shrink big photos in the browser before upload, the way a messenger does:
+  // cap the long edge and re-encode as JPEG so a 6 MB camera shot lands as a
+  // few hundred KB. Non-images (and small images) pass through untouched.
+  async function compressImageForUpload(original: File): Promise<File> {
+    if (!/^image\/(jpe?g|png)$/iu.test(original.type)) return original;
+    if (typeof createImageBitmap !== "function") return original;
+    const maxDimension = 1600;
+    let bitmap: ImageBitmap;
+    try {
+      bitmap = await createImageBitmap(original);
+    } catch {
+      return original;
+    }
+    try {
+      const scale = Math.min(1, maxDimension / Math.max(bitmap.width, bitmap.height));
+      if (scale === 1 && original.type === "image/jpeg" && original.size < 500_000) {
+        return original;
+      }
+      const width = Math.max(1, Math.round(bitmap.width * scale));
+      const height = Math.max(1, Math.round(bitmap.height * scale));
+      const canvas = document.createElement("canvas");
+      canvas.width = width;
+      canvas.height = height;
+      const context = canvas.getContext("2d");
+      if (context === null) return original;
+      context.fillStyle = "#ffffff";
+      context.fillRect(0, 0, width, height);
+      context.drawImage(bitmap, 0, 0, width, height);
+      const blob = await new Promise<Blob | null>((resolve) => {
+        canvas.toBlob((value) => resolve(value), "image/jpeg", 0.82);
+      });
+      if (blob === null || blob.size >= original.size) return original;
+      const base = original.name.replace(/\.[^.]+$/u, "") || "image";
+      return new File([blob], `${base}.jpg`, {
+        type: "image/jpeg",
+        lastModified: Date.now(),
+      });
+    } finally {
+      bitmap.close();
+    }
+  }
+
+  async function uploadAndSend(input: File, source: "picker" | "recording" = "picker") {
     if (
       apiBase === undefined ||
       pending ||
@@ -1549,6 +1622,7 @@ export function UnifiedChatWorkspace({
     ) {
       return;
     }
+    const file = source === "picker" ? await compressImageForUpload(input) : input;
     if (file.size < 1 || file.size > maximumBytes) {
       setNotice(
         english
@@ -2314,8 +2388,8 @@ export function UnifiedChatWorkspace({
                   {mode === "admin"
                     ? conversation?.studentDisplayName
                     : english
-                      ? "ITQANAK support"
-                      : "دعم إتقانك"}
+                      ? "ITQANAK administration"
+                      : "إدارة إتقانك"}
                 </bdi>
               </h1>
               <p className="flex items-center gap-1.5 truncate text-[10px] font-bold text-[var(--itq-color-success-700)] sm:text-xs">
@@ -2602,12 +2676,11 @@ export function UnifiedChatWorkspace({
                           {!mine ? (
                             <p className="mb-1 text-[10px] font-black text-[var(--itq-color-brand-strong)]">
                               <bdi dir="auto">
-                                {message.senderDisplayName ??
-                                  (mode === "admin"
-                                    ? conversation?.studentDisplayName
-                                    : english
-                                      ? "ITQANAK support"
-                                      : "دعم إتقانك")}
+                                {mode === "admin"
+                                  ? (message.senderDisplayName ?? conversation?.studentDisplayName)
+                                  : english
+                                    ? "ITQANAK administration"
+                                    : "إدارة إتقانك"}
                               </bdi>
                             </p>
                           ) : null}
