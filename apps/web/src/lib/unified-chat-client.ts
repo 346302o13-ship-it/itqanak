@@ -171,3 +171,11 @@ export function hasPendingQuoteForRequest(
       message.quote.expiresAt.getTime() > now.getTime(),
   );
 }
+
+/** Any quote was ever raised for this request — pending, accepted, expired… */
+export function hasAnyQuoteForRequest(
+  messages: readonly UnifiedMessage[],
+  requestId: string,
+): boolean {
+  return messages.some((message) => message.quote?.requestId === requestId);
+}

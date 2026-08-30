@@ -422,6 +422,12 @@ export interface UnifiedRequestSummary {
     readonly hasDue: boolean;
     readonly dueStatus?: "UNPAID" | "PAID" | "VOIDED";
     readonly hasPendingReceipt: boolean;
+    /** The latest due for the request — set whenever `hasDue` is true. */
+    readonly dueId?: string;
+    readonly dueVersion?: number;
+    readonly dueAmountMinor?: number;
+    readonly dueCurrency?: string;
+    readonly dueMinorUnit?: 2 | 3;
   };
 }
 

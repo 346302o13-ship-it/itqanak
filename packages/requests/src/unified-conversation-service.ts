@@ -72,6 +72,11 @@ interface RequestSummaryRow {
   readonly updated_at: Date | string;
   readonly due_status?: string | null;
   readonly has_pending_receipt?: boolean;
+  readonly due_id?: string | null;
+  readonly due_version?: number | string | null;
+  readonly due_amount_minor?: number | string | null;
+  readonly due_currency?: string | null;
+  readonly due_minor_unit?: number | string | null;
 }
 
 interface MessageRow {
@@ -330,12 +335,22 @@ function toRequest(row: RequestSummaryRow): UnifiedRequestSummary {
     row.due_status === "UNPAID" || row.due_status === "PAID" || row.due_status === "VOIDED"
       ? row.due_status
       : undefined;
+  const dueId = typeof row.due_id === "string" ? row.due_id : undefined;
   return {
     ...base,
     finance: {
       hasDue: dueStatus !== undefined,
       hasPendingReceipt: row.has_pending_receipt === true,
       ...(dueStatus === undefined ? {} : { dueStatus }),
+      ...(dueId === undefined
+        ? {}
+        : {
+            dueId,
+            dueVersion: toSafeInteger(row.due_version ?? 1, "due version"),
+            dueAmountMinor: toSafeInteger(row.due_amount_minor ?? 0, "due amount"),
+            dueCurrency: typeof row.due_currency === "string" ? row.due_currency : "SAR",
+            dueMinorUnit: Number(row.due_minor_unit) === 3 ? 3 : 2,
+          }),
     },
   };
 }
@@ -568,6 +583,9 @@ export class UnifiedConversationService {
           requests.id, requests.request_number, requests.title, requests.status,
           requests.version, requests.updated_at,
           due.status AS due_status,
+          due.id AS due_id, due.version AS due_version,
+          due.amount_minor AS due_amount_minor, due.currency AS due_currency,
+          due.minor_unit AS due_minor_unit,
           EXISTS (
             SELECT 1
             FROM finance_payment_submissions AS receipts
@@ -576,7 +594,7 @@ export class UnifiedConversationService {
           ) AS has_pending_receipt
         FROM service_requests AS requests
         LEFT JOIN LATERAL (
-          SELECT status
+          SELECT id, status, version, amount_minor, currency, minor_unit
           FROM finance_dues
           WHERE finance_dues.request_id = requests.id
           ORDER BY created_at DESC, id DESC

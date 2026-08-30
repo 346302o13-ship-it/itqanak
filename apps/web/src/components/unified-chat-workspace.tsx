@@ -28,6 +28,7 @@ import { getAllowedRequestTransitions, type RequestStatus } from "@itqanak/core"
 import {
   decimalAmountToMinor,
   formatQuoteAmount,
+  hasAnyQuoteForRequest,
   hasPendingQuoteForRequest,
   hydrateUnifiedConversationSummary,
   hydrateUnifiedMessage,
@@ -794,6 +795,100 @@ function PricingForm({
             : "يصل الطالب بطاقة موافقة / رفض. صالحة ٧ أيام."}
       </p>
     </form>
+  );
+}
+
+/**
+ * Price several un-priced requests at once, then send one consolidated invoice.
+ * Each row takes an amount; one currency for the batch.
+ */
+function BulkPricePanel({
+  english,
+  locked,
+  onCharge,
+  onInvoice,
+  requests,
+}: Readonly<{
+  english: boolean;
+  locked: boolean;
+  onCharge: (requestNumber: string, amount: string, currency: string) => Promise<boolean>;
+  onInvoice: () => Promise<void>;
+  requests: readonly UnifiedRequestSummary[];
+}>) {
+  const [amounts, setAmounts] = useState<Readonly<Record<string, string>>>({});
+  const [currency, setCurrency] = useState("SAR");
+  const [busy, setBusy] = useState(false);
+  const [done, setDone] = useState<string>();
+
+  async function run(): Promise<void> {
+    setBusy(true);
+    setDone(undefined);
+    let priced = 0;
+    for (const request of requests) {
+      const raw = (amounts[request.id] ?? "").trim();
+      if (!/^\d{1,9}(?:[.,]\d{1,2})?$/u.test(raw)) continue;
+      if (await onCharge(request.requestNumber, raw.replace(",", "."), currency)) priced += 1;
+    }
+    await onInvoice();
+    setDone(
+      english
+        ? `Priced ${priced} request(s) and sent the invoice.`
+        : `تم تسعير ${priced} طلب وإرسال الفاتورة.`,
+    );
+    setBusy(false);
+  }
+
+  return (
+    <div className="mt-2 grid gap-2 rounded-xl border border-[var(--itq-color-border)] bg-[var(--itq-color-surface-soft)] p-3">
+      <div className="flex items-center justify-between gap-2">
+        <p className="text-[11px] font-black">
+          {english ? "Price the un-priced requests" : "سعّر الطلبات غير المسعّرة"}
+        </p>
+        <select
+          aria-label={english ? "Currency" : "العملة"}
+          className="h-8 rounded-lg border border-[var(--itq-color-border)] bg-[var(--itq-color-surface)] px-2 text-[11px] font-black"
+          onChange={(event) => setCurrency(event.currentTarget.value)}
+          value={currency}
+        >
+          <option value="SAR">SAR</option>
+          <option value="AED">AED</option>
+        </select>
+      </div>
+      {requests.map((request) => (
+        <label className="grid grid-cols-[1fr_6.5rem] items-center gap-2" key={request.id}>
+          <bdi className="truncate text-[11px] font-bold" dir="auto">
+            {request.title}
+          </bdi>
+          <input
+            className="h-9 w-full rounded-lg border border-[var(--itq-color-border)] bg-[var(--itq-color-surface)] px-2 text-xs font-black"
+            inputMode="decimal"
+            maxLength={12}
+            onChange={(event) =>
+              setAmounts((current) => ({ ...current, [request.id]: event.currentTarget.value }))
+            }
+            placeholder={english ? "0.00" : "٠٫٠٠"}
+            value={amounts[request.id] ?? ""}
+          />
+        </label>
+      ))}
+      <button
+        className="mt-1 h-10 rounded-xl bg-[var(--itq-color-ink-deep)] px-3 text-xs font-black text-white disabled:opacity-50"
+        disabled={busy || locked}
+        onClick={() => void run()}
+        type="button"
+      >
+        {busy
+          ? english
+            ? "Working…"
+            : "جارٍ التنفيذ…"
+          : english
+            ? "Price all & send invoice"
+            : "سعّر الكل وأرسل فاتورة"}
+      </button>
+      {done === undefined ? null : (
+        <p className="text-[10px] font-bold text-[var(--itq-color-success-800)]">{done}</p>
+      )}
+    </div>
   );
 }
 
@@ -2712,6 +2807,68 @@ export function UnifiedChatWorkspace({
     }
   }
 
+  // Admin marks a request's due as paid without waiting for a student receipt.
+  async function markRequestPaid(
+    dueId: string,
+    expectedVersion: number,
+    method: string,
+    reference: string,
+  ) {
+    if (csrfToken === undefined || interactionLocked || mode !== "admin") return;
+    setPending(true);
+    setNotice(english ? "Recording the payment…" : "جارٍ تسجيل الدفع…");
+    try {
+      const response = await fetch(`/api/admin/finance/${encodeURIComponent(dueId)}`, {
+        method: "POST",
+        body: new URLSearchParams({
+          csrfToken,
+          locale,
+          action: "record-payment",
+          expectedVersion: String(expectedVersion),
+          method,
+          reference: reference.trim().length >= 2 ? reference.trim() : "تأكيد يدوي من الإدارة",
+        }),
+        credentials: "same-origin",
+        headers: {
+          "Content-Type": "application/x-www-form-urlencoded",
+          Accept: "application/json",
+        },
+      });
+      if (!response.ok) throw new Error();
+      setNotice(english ? "Marked as paid." : "تم وضعه كمدفوع.");
+      messagePokeRef.current();
+      contactPokeRef.current();
+    } catch {
+      setNotice(english ? "The payment could not be recorded." : "تعذر تسجيل الدفع.");
+    } finally {
+      setPending(false);
+    }
+  }
+
+  // Attach a price to one request straight onto the ledger (used by the bulk pricer).
+  async function chargeOneRequest(
+    requestNumber: string,
+    amount: string,
+    currency: string,
+  ): Promise<boolean> {
+    if (csrfToken === undefined) return false;
+    const response = await fetch("/api/admin/finance", {
+      method: "POST",
+      body: new URLSearchParams({
+        csrfToken,
+        locale,
+        requestNumber,
+        amount: amount.trim(),
+        currency,
+        titleAr: `مبلغ الطلب ${requestNumber}`,
+        titleEn: `Charge for ${requestNumber}`,
+      }),
+      credentials: "same-origin",
+      headers: { "Content-Type": "application/x-www-form-urlencoded", Accept: "application/json" },
+    });
+    return response.ok;
+  }
+
   async function withdrawQuote(quote: ServiceQuote) {
     if (csrfToken === undefined || interactionLocked) return;
     const request = requests.find((item) => item.id === quote.requestId);
@@ -2899,14 +3056,39 @@ export function UnifiedChatWorkspace({
         </header>
         <div className="itq-scroll min-h-0 flex-1 overflow-y-auto overscroll-contain p-3">
           {mode === "admin" ? (
-            <button
-              className="mb-3 w-full rounded-xl border border-[var(--itq-color-brand-200)] bg-[var(--itq-color-surface)] px-3 py-2 text-xs font-black text-[var(--itq-color-brand-strong)] disabled:opacity-50"
-              disabled={interactionLocked || csrfToken === undefined}
-              onClick={() => void sendInvoice()}
-              type="button"
-            >
-              {english ? "Send an invoice for all unpaid dues" : "أرسل فاتورة بكل المستحقات"}
-            </button>
+            <div className="mb-3 grid gap-2">
+              <button
+                className="w-full rounded-xl border border-[var(--itq-color-brand-200)] bg-[var(--itq-color-surface)] px-3 py-2 text-xs font-black text-[var(--itq-color-brand-strong)] disabled:opacity-50"
+                disabled={interactionLocked || csrfToken === undefined}
+                onClick={() => void sendInvoice()}
+                type="button"
+              >
+                {english ? "Send an invoice for all unpaid dues" : "أرسل فاتورة بكل المستحقات"}
+              </button>
+              {(() => {
+                const unpriced = requests.filter(
+                  (request) => request.status !== "DRAFT" && request.finance?.hasDue !== true,
+                );
+                return unpriced.length === 0 ? null : (
+                  <details className="rounded-xl border border-[var(--itq-color-border)] bg-[var(--itq-color-surface)]">
+                    <summary className="cursor-pointer list-none px-3 py-2 text-xs font-black text-[var(--itq-color-muted)]">
+                      {english
+                        ? `Price ${unpriced.length} un-priced request(s)`
+                        : `تسعير ${unpriced.length} طلب غير مسعّر`}
+                    </summary>
+                    <div className="px-3 pb-3">
+                      <BulkPricePanel
+                        english={english}
+                        locked={interactionLocked}
+                        onCharge={chargeOneRequest}
+                        onInvoice={sendInvoice}
+                        requests={unpriced}
+                      />
+                    </div>
+                  </details>
+                );
+              })()}
+            </div>
           ) : null}
           {services.length > 0 ? (
             <form
@@ -2997,7 +3179,10 @@ export function UnifiedChatWorkspace({
                     : `/${locale}/student/requests/${encodeURIComponent(request.requestNumber)}`;
                 const cardExpanded = mode === "admin" && expandedRequestId === request.id;
                 const cardHasPendingQuote = hasPendingQuoteForRequest(messages, request.id);
-                const cardPriced = cardHasPendingQuote || request.status === "QUOTED";
+                const cardPriced =
+                  hasAnyQuoteForRequest(messages, request.id) ||
+                  request.status === "QUOTED" ||
+                  request.finance?.hasDue === true;
                 const cardPaid = request.finance?.dueStatus === "PAID";
                 const canQuoteCard =
                   !cardPaid &&
@@ -3059,6 +3244,54 @@ export function UnifiedChatWorkspace({
                       <p className="mt-2 rounded-xl border border-[var(--itq-color-success-200)] bg-[var(--itq-color-success-50)] px-3 py-2 text-[11px] font-black text-[var(--itq-color-success-900)]">
                         {english ? "Paid in full ✓" : "تم السداد بالكامل ✓"}
                       </p>
+                    ) : null}
+                    {mode === "admin" &&
+                    request.finance?.dueStatus === "UNPAID" &&
+                    request.finance.dueId !== undefined ? (
+                      <details className="mt-2 rounded-xl border border-[var(--itq-color-success-200)] bg-[var(--itq-color-success-50)] p-2">
+                        <summary className="cursor-pointer list-none text-[11px] font-black text-[var(--itq-color-success-900)]">
+                          {english ? "Mark as paid" : "وضع كـ مدفوع"}
+                        </summary>
+                        <form
+                          className="mt-2 grid gap-2"
+                          onSubmit={(event) => {
+                            event.preventDefault();
+                            const data = new FormData(event.currentTarget);
+                            void markRequestPaid(
+                              request.finance?.dueId ?? "",
+                              request.finance?.dueVersion ?? 1,
+                              String(data.get("method") ?? "BANK_TRANSFER"),
+                              String(data.get("reference") ?? ""),
+                            );
+                          }}
+                        >
+                          <select
+                            aria-label={english ? "Payment method" : "وسيلة الدفع"}
+                            className="h-9 rounded-lg border border-[var(--itq-color-success-200)] bg-[var(--itq-color-surface)] px-2 text-xs font-black"
+                            defaultValue="BANK_TRANSFER"
+                            name="method"
+                          >
+                            <option value="BANK_TRANSFER">
+                              {english ? "Bank transfer" : "تحويل بنكي"}
+                            </option>
+                            <option value="CASH">{english ? "Cash" : "نقدًا"}</option>
+                            <option value="OTHER">{english ? "Other" : "أخرى"}</option>
+                          </select>
+                          <input
+                            className="h-9 rounded-lg border border-[var(--itq-color-success-200)] bg-[var(--itq-color-surface)] px-2 text-xs"
+                            maxLength={120}
+                            name="reference"
+                            placeholder={english ? "Reference / note" : "المرجع أو ملاحظة"}
+                          />
+                          <button
+                            className="h-9 rounded-lg bg-[var(--itq-color-success-600)] px-3 text-xs font-black text-white disabled:opacity-50"
+                            disabled={interactionLocked}
+                            type="submit"
+                          >
+                            {english ? "Confirm payment" : "تأكيد الدفع"}
+                          </button>
+                        </form>
+                      </details>
                     ) : null}
                     {mode === "admin" &&
                     !cardPaid &&
