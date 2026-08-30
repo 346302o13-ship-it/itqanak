@@ -66,6 +66,27 @@ export async function POST(request: NextRequest, context: FinanceDueRouteContext
             { status: 200, headers: { "Cache-Control": "no-store", "X-Request-ID": requestId } },
           );
         }
+      } else if (action === "split-payment") {
+        const { remainingDue } = await runtime.finance.recordSplitPayment(
+          principal,
+          parameters.dueId,
+          {
+            paidAmount: formValue(protectedForm.formData, "paidAmount"),
+            method: formValue(protectedForm.formData, "method") as
+              | "BANK_TRANSFER"
+              | "CASH"
+              | "OTHER",
+            reference: formValue(protectedForm.formData, "reference") || null,
+            note: formValue(protectedForm.formData, "note") || null,
+          },
+          { ...protectedForm.context, requestId },
+        );
+        if (!acceptsHtml(request)) {
+          return NextResponse.json(
+            { ok: true, remainingReference: remainingDue.reference },
+            { status: 200, headers: { "Cache-Control": "no-store", "X-Request-ID": requestId } },
+          );
+        }
       } else {
         throw new FinanceError("INVALID_TRANSITION");
       }

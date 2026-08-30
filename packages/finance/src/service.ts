@@ -27,6 +27,7 @@ import {
   type VoidFinanceDueInput,
 } from "./types.js";
 import {
+  amountToMinorUnits,
   assertFinanceCurrency,
   assertFinanceDueId,
   assertFinanceDueStatus,
@@ -1147,6 +1148,141 @@ export class FinanceService {
       }
       return { count };
     });
+  }
+
+  /**
+   * Record that a student paid *part* of an UNPAID due. The ledger stays
+   * strictly all-or-nothing (no schema change): the original due is voided and
+   * replaced by two new dues — one for the paid portion (immediately marked
+   * PAID with the given method/reference) and one for the remaining balance
+   * (still UNPAID). Each step reuses an already-validated method and the order
+   * is failure-safe (a mid-way failure never corrupts the ledger).
+   */
+  public async recordSplitPayment(
+    principal: AuthenticatedPrincipal,
+    dueIdInput: string,
+    input: {
+      readonly paidAmount: string;
+      readonly method: FinancePaymentMethod;
+      readonly reference?: string | null;
+      readonly note?: string | null;
+    },
+    context: RequestAuditContext = {},
+  ): Promise<{
+    readonly remainingDue: AdminFinanceDue;
+    readonly paidDue: AdminFinanceDue;
+  }> {
+    requireAdminFinancePermission(principal, "admin.finance.manage");
+    const dueId = assertFinanceDueId(dueIdInput);
+    const method = assertFinancePaymentMethod(input.method);
+    const reference = normalizePaymentReference(input.reference);
+    if (reference === null) throw new FinanceError("INVALID_REFERENCE");
+    const note = normalizePaymentNote(input.note);
+
+    const rows = await this.database<
+      {
+        readonly request_number: string;
+        readonly title_ar: string;
+        readonly title_en: string;
+        readonly description_ar: string | null;
+        readonly description_en: string | null;
+        readonly amount_minor: number | string;
+        readonly currency: string;
+        readonly minor_unit: number | string;
+        readonly status: string;
+        readonly version: number | string;
+      }[]
+    >`
+      SELECT r.request_number, d.title_ar, d.title_en, d.description_ar, d.description_en,
+             d.amount_minor, d.currency, d.minor_unit, d.status, d.version
+      FROM finance_dues AS d
+      INNER JOIN service_requests AS r ON r.id = d.request_id
+      WHERE d.id = ${dueId} LIMIT 1
+    `;
+    const due = rows[0];
+    if (due === undefined) throw new FinanceError("DUE_NOT_FOUND");
+    if (due.status !== "UNPAID") throw new FinanceError("INVALID_TRANSITION");
+
+    const total = Number(due.amount_minor);
+    const minorUnit = Number(due.minor_unit) === 3 ? 3 : 2;
+    const paidMinor = amountToMinorUnits(input.paidAmount, assertFinanceCurrency(due.currency));
+    if (!Number.isSafeInteger(paidMinor) || paidMinor <= 0 || paidMinor >= total) {
+      // Zero / negative / >= the whole due — the caller should use full payment.
+      throw new FinanceError("INVALID_AMOUNT");
+    }
+    const remainingMinor = total - paidMinor;
+    const toDecimal = (minor: number): string => (minor / 10 ** minorUnit).toFixed(minorUnit);
+    const currency = assertFinanceCurrency(due.currency);
+    const descriptions =
+      due.description_ar !== null && due.description_en !== null
+        ? { descriptionAr: due.description_ar, descriptionEn: due.description_en }
+        : {};
+
+    // 1. Remaining balance first — a failure here leaves the original untouched.
+    const remainingDue = await this.createDue(
+      principal,
+      {
+        requestNumber: due.request_number,
+        titleAr: due.title_ar,
+        titleEn: due.title_en,
+        ...descriptions,
+        amount: toDecimal(remainingMinor),
+        currency,
+      },
+      context,
+    );
+    // 2. Void the original, pointing at the replacement.
+    await this.voidDue(
+      principal,
+      dueId,
+      {
+        expectedVersion: Number(due.version),
+        reason: `سداد جزئي: المتبقّي في ${remainingDue.reference}`,
+      },
+      context,
+    );
+    // 3. Paid portion as its own PAID due.
+    const paidDue = await this.createDue(
+      principal,
+      {
+        requestNumber: due.request_number,
+        titleAr: `دفعة مسجّلة — ${due.title_ar}`.slice(0, 160),
+        titleEn: `Recorded payment — ${due.title_en}`.slice(0, 160),
+        ...descriptions,
+        amount: toDecimal(paidMinor),
+        currency,
+      },
+      context,
+    );
+    const paidConfirmed = await this.recordPayment(
+      principal,
+      paidDue.id,
+      {
+        expectedVersion: paidDue.version,
+        method,
+        reference,
+        ...(note === null ? {} : { note }),
+      },
+      context,
+    );
+    await recordAuditEvent(this.database, {
+      ...context,
+      eventType: "finance.split_payment",
+      outcome: "SUCCESS",
+      actorUserId: principal.userId,
+      targetUserId: remainingDue.studentUserId,
+      sessionId: principal.sessionId,
+      resourceType: "finance_due",
+      resourceId: dueId,
+      metadata: {
+        paidMinor,
+        remainingMinor,
+        currency,
+        paidDueId: paidDue.id,
+        remainingDueId: remainingDue.id,
+      },
+    });
+    return { remainingDue, paidDue: paidConfirmed };
   }
 
   private async readReceipts(

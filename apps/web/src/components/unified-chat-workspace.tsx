@@ -2845,6 +2845,51 @@ export function UnifiedChatWorkspace({
     }
   }
 
+  // Admin records a partial payment: the due is split into a paid part + a new
+  // due for the remaining balance (no schema change; the ledger stays exact).
+  async function recordSplitPayment(
+    dueId: string,
+    paidAmount: string,
+    method: string,
+    reference: string,
+  ) {
+    if (csrfToken === undefined || interactionLocked || mode !== "admin") return;
+    setPending(true);
+    setNotice(english ? "Recording the partial payment…" : "جارٍ تسجيل الدفعة الجزئية…");
+    try {
+      const response = await fetch(`/api/admin/finance/${encodeURIComponent(dueId)}`, {
+        method: "POST",
+        body: new URLSearchParams({
+          csrfToken,
+          locale,
+          action: "split-payment",
+          paidAmount: paidAmount.trim(),
+          method,
+          reference: reference.trim().length >= 2 ? reference.trim() : "دفعة جزئية بتأكيد الإدارة",
+        }),
+        credentials: "same-origin",
+        headers: {
+          "Content-Type": "application/x-www-form-urlencoded",
+          Accept: "application/json",
+        },
+      });
+      if (!response.ok) throw new Error();
+      setNotice(
+        english
+          ? "Partial payment recorded; a due for the balance was created."
+          : "سُجّلت الدفعة الجزئية وأُنشئ مستحق بالمبلغ المتبقّي.",
+      );
+      messagePokeRef.current();
+      contactPokeRef.current();
+    } catch {
+      setNotice(
+        english ? "The partial payment could not be recorded." : "تعذر تسجيل الدفعة الجزئية.",
+      );
+    } finally {
+      setPending(false);
+    }
+  }
+
   // Attach a price to one request straight onto the ledger (used by the bulk pricer).
   async function chargeOneRequest(
     requestNumber: string,
@@ -3289,6 +3334,77 @@ export function UnifiedChatWorkspace({
                             type="submit"
                           >
                             {english ? "Confirm payment" : "تأكيد الدفع"}
+                          </button>
+                        </form>
+                      </details>
+                    ) : null}
+                    {mode === "admin" &&
+                    request.finance?.dueStatus === "UNPAID" &&
+                    request.finance.dueId !== undefined ? (
+                      <details className="mt-2 rounded-xl border border-[var(--itq-color-warning-200)] bg-[var(--itq-color-warning-50)] p-2">
+                        <summary className="cursor-pointer list-none text-[11px] font-black text-[var(--itq-color-warning-950)]">
+                          {english ? "Record a partial payment" : "تسجيل دفعة جزئية"}
+                        </summary>
+                        <p className="mt-1 text-[10px] font-bold text-[var(--itq-color-warning-900)]">
+                          {english
+                            ? `Due total: ${(
+                                (request.finance.dueAmountMinor ?? 0) /
+                                10 ** (request.finance.dueMinorUnit ?? 2)
+                              ).toFixed(request.finance.dueMinorUnit ?? 2)} ${
+                                request.finance.dueCurrency ?? ""
+                              }. The rest becomes a new due.`
+                            : `إجمالي المستحق: ${(
+                                (request.finance.dueAmountMinor ?? 0) /
+                                10 ** (request.finance.dueMinorUnit ?? 2)
+                              ).toFixed(request.finance.dueMinorUnit ?? 2)} ${
+                                request.finance.dueCurrency ?? ""
+                              }. يُنشأ مستحق جديد بالمتبقّي.`}
+                        </p>
+                        <form
+                          className="mt-2 grid gap-2"
+                          onSubmit={(event) => {
+                            event.preventDefault();
+                            const data = new FormData(event.currentTarget);
+                            void recordSplitPayment(
+                              request.finance?.dueId ?? "",
+                              String(data.get("paidAmount") ?? ""),
+                              String(data.get("method") ?? "BANK_TRANSFER"),
+                              String(data.get("reference") ?? ""),
+                            );
+                          }}
+                        >
+                          <input
+                            className="h-9 rounded-lg border border-[var(--itq-color-warning-200)] bg-[var(--itq-color-surface)] px-2 text-xs font-black"
+                            inputMode="decimal"
+                            maxLength={12}
+                            name="paidAmount"
+                            placeholder={english ? "Amount paid now" : "المبلغ المدفوع الآن"}
+                            required
+                          />
+                          <select
+                            aria-label={english ? "Payment method" : "وسيلة الدفع"}
+                            className="h-9 rounded-lg border border-[var(--itq-color-warning-200)] bg-[var(--itq-color-surface)] px-2 text-xs font-black"
+                            defaultValue="BANK_TRANSFER"
+                            name="method"
+                          >
+                            <option value="BANK_TRANSFER">
+                              {english ? "Bank transfer" : "تحويل بنكي"}
+                            </option>
+                            <option value="CASH">{english ? "Cash" : "نقدًا"}</option>
+                            <option value="OTHER">{english ? "Other" : "أخرى"}</option>
+                          </select>
+                          <input
+                            className="h-9 rounded-lg border border-[var(--itq-color-warning-200)] bg-[var(--itq-color-surface)] px-2 text-xs"
+                            maxLength={120}
+                            name="reference"
+                            placeholder={english ? "Reference / note" : "المرجع أو ملاحظة"}
+                          />
+                          <button
+                            className="h-9 rounded-lg bg-[var(--itq-color-warning-800)] px-3 text-xs font-black text-white disabled:opacity-50"
+                            disabled={interactionLocked}
+                            type="submit"
+                          >
+                            {english ? "Record partial payment" : "تسجيل الدفعة الجزئية"}
                           </button>
                         </form>
                       </details>
