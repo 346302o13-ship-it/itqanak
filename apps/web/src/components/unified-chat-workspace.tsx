@@ -1,7 +1,17 @@
 "use client";
 
 import Link from "next/link";
-import { Fragment, useCallback, useEffect, useId, useMemo, useRef, useState } from "react";
+import {
+  Fragment,
+  useCallback,
+  useEffect,
+  useId,
+  useMemo,
+  useRef,
+  useState,
+  type MouseEvent as ReactMouseEvent,
+  type PointerEvent as ReactPointerEvent,
+} from "react";
 
 import type {
   ServiceQuote,
@@ -442,12 +452,14 @@ function AttachmentBody({
   contentType,
   locale,
   messageId,
+  onOpenImage,
 }: Readonly<{
   apiBase: string;
   attachment: NonNullable<UnifiedMessage["attachment"]>;
   contentType: UnifiedMessage["contentType"];
   locale: "ar" | "en";
   messageId: string;
+  onOpenImage: (image: { src: string; download: string; name: string }) => void;
 }>) {
   const english = locale === "en";
   const download = `${apiBase}/messages/${encodeURIComponent(messageId)}/attachment`;
@@ -467,11 +479,10 @@ function AttachmentBody({
           <a href={download}>{english ? "Download video" : "تنزيل الفيديو"}</a>
         </video>
       ) : contentType === "IMAGE" ? (
-        <a
-          className="block overflow-hidden rounded-xl bg-black/5"
-          href={download}
-          rel="noreferrer"
-          target="_blank"
+        <button
+          className="block w-full overflow-hidden rounded-xl bg-black/5"
+          onClick={() => onOpenImage({ src: preview, download, name: attachment.originalFilename })}
+          type="button"
         >
           <img
             alt={attachment.originalFilename}
@@ -479,7 +490,7 @@ function AttachmentBody({
             loading="lazy"
             src={preview}
           />
-        </a>
+        </button>
       ) : contentType === "AUDIO" ? (
         <div className="min-w-56 max-w-full">
           <audio className="w-full" controls preload="metadata" src={preview}>
@@ -713,6 +724,12 @@ export function UnifiedChatWorkspace({
   const [reactionPickerFor, setReactionPickerFor] = useState<string>();
   const [reactionPickerFull, setReactionPickerFull] = useState(false);
   const [emojiPanelOpen, setEmojiPanelOpen] = useState(false);
+  const [lightbox, setLightbox] = useState<{
+    readonly src: string;
+    readonly download: string;
+    readonly name: string;
+  }>();
+  const longPressTimer = useRef<number | undefined>(undefined);
   const reactionChoices = chatEmoji.slice(0, 6);
   const [editingId, setEditingId] = useState<string>();
   const [editingText, setEditingText] = useState("");
@@ -882,6 +899,35 @@ export function UnifiedChatWorkspace({
       )
       .map((message) => message.id);
   }, [messages, normalizedSearch]);
+
+  const openReactionMenu = useCallback((id: string) => {
+    setReactionPickerFull(false);
+    setReactionPickerFor(id);
+    if (typeof navigator !== "undefined" && typeof navigator.vibrate === "function") {
+      navigator.vibrate(12);
+    }
+  }, []);
+
+  // Press-and-hold (touch) or right-click (desktop) on a bubble opens its
+  // reaction bar, the way a chat app does.
+  const bubbleHoldHandlers = useCallback(
+    (id: string) => ({
+      onContextMenu: (event: ReactMouseEvent) => {
+        event.preventDefault();
+        openReactionMenu(id);
+      },
+      onPointerDown: (event: ReactPointerEvent) => {
+        if (event.pointerType === "mouse") return;
+        window.clearTimeout(longPressTimer.current);
+        longPressTimer.current = window.setTimeout(() => openReactionMenu(id), 420);
+      },
+      onPointerUp: () => window.clearTimeout(longPressTimer.current),
+      onPointerMove: () => window.clearTimeout(longPressTimer.current),
+      onPointerCancel: () => window.clearTimeout(longPressTimer.current),
+      onPointerLeave: () => window.clearTimeout(longPressTimer.current),
+    }),
+    [openReactionMenu],
+  );
 
   const scrollToMessage = useCallback((id: string) => {
     const node = logRef.current?.querySelector(`[data-mid="${id}"]`);
@@ -2537,6 +2583,9 @@ export function UnifiedChatWorkspace({
                         data-mid={message.id}
                       >
                         <article
+                          {...(message.deletedAt === undefined && editingId !== message.id
+                            ? bubbleHoldHandlers(message.id)
+                            : {})}
                           className={`max-w-[85%] rounded-xl px-2.5 py-1.5 shadow-sm transition sm:max-w-[75%] ${
                             mine
                               ? "rounded-ee-sm bg-[var(--itq-color-bubble-out)] text-[var(--itq-color-bubble-out-ink)]"
@@ -2608,6 +2657,7 @@ export function UnifiedChatWorkspace({
                               contentType={message.contentType}
                               locale={locale}
                               messageId={message.id}
+                              onOpenImage={setLightbox}
                             />
                           )}
                           {message.deletedAt !== undefined ? (
@@ -2960,7 +3010,7 @@ export function UnifiedChatWorkspace({
               ))}
             </div>
           ) : null}
-          <div className="flex items-end gap-1 sm:gap-1.5">
+          <div className="flex items-end gap-1.5 sm:gap-2">
             <input
               accept={acceptedExtensions}
               className="sr-only"
@@ -2972,47 +3022,49 @@ export function UnifiedChatWorkspace({
               ref={fileInput}
               type="file"
             />
-            <button
-              aria-label={english ? "Emoji" : "الرموز"}
-              aria-pressed={emojiPanelOpen}
-              className={`grid size-11 shrink-0 place-items-center rounded-xl transition disabled:opacity-50 ${
-                emojiPanelOpen
-                  ? "bg-[var(--itq-color-brand-50)] text-[var(--itq-color-brand-strong)]"
-                  : "text-[var(--itq-color-muted)] hover:bg-[var(--itq-color-brand-50)]"
-              }`}
-              disabled={interactionLocked}
-              onClick={() => setEmojiPanelOpen((value) => !value)}
-              type="button"
-            >
-              <span className="text-xl leading-none">🙂</span>
-            </button>
-            <button
-              aria-label={english ? "Attach an image or file" : "إرفاق صورة أو ملف"}
-              className="grid size-11 shrink-0 place-items-center rounded-xl text-[var(--itq-color-muted)] transition hover:bg-[var(--itq-color-brand-50)] disabled:opacity-50"
-              disabled={interactionLocked}
-              onClick={() => fileInput.current?.click()}
-              type="button"
-            >
-              <PaperclipIcon className="size-5" />
-            </button>
-            <textarea
-              aria-label={english ? "Message" : "الرسالة"}
-              className="max-h-32 min-h-11 min-w-0 flex-1 resize-none rounded-2xl border border-[var(--itq-color-border)] bg-[var(--itq-color-surface-soft)] px-4 py-2.5 text-sm leading-6 outline-none focus:border-[var(--itq-color-brand-500)] focus:bg-[var(--itq-color-surface)]"
-              dir="auto"
-              disabled={recording || recordingStarting}
-              maxLength={10_000}
-              onChange={(event) => setBody(event.currentTarget.value)}
-              onKeyDown={(event) => {
-                if (event.key === "Enter" && !event.shiftKey) {
-                  event.preventDefault();
-                  void submitText();
-                }
-              }}
-              placeholder={english ? "Type a message" : "اكتب رسالة"}
-              ref={composerRef}
-              rows={1}
-              value={body}
-            />
+            <div className="flex min-w-0 flex-1 items-end gap-1 rounded-[1.6rem] border border-[var(--itq-color-border)] bg-[var(--itq-color-surface)] px-1.5 py-1 shadow-sm focus-within:border-[var(--itq-color-brand-500)]">
+              <button
+                aria-label={english ? "Emoji" : "الرموز"}
+                aria-pressed={emojiPanelOpen}
+                className={`grid size-9 shrink-0 place-items-center rounded-full transition disabled:opacity-50 ${
+                  emojiPanelOpen
+                    ? "bg-[var(--itq-color-brand-50)] text-[var(--itq-color-brand-strong)]"
+                    : "text-[var(--itq-color-muted)] hover:bg-[var(--itq-color-surface-soft)]"
+                }`}
+                disabled={interactionLocked}
+                onClick={() => setEmojiPanelOpen((value) => !value)}
+                type="button"
+              >
+                <span className="text-xl leading-none">🙂</span>
+              </button>
+              <textarea
+                aria-label={english ? "Message" : "الرسالة"}
+                className="max-h-32 min-h-9 min-w-0 flex-1 resize-none bg-transparent py-1.5 text-sm leading-6 outline-none"
+                dir="auto"
+                disabled={recording || recordingStarting}
+                maxLength={10_000}
+                onChange={(event) => setBody(event.currentTarget.value)}
+                onKeyDown={(event) => {
+                  if (event.key === "Enter" && !event.shiftKey) {
+                    event.preventDefault();
+                    void submitText();
+                  }
+                }}
+                placeholder={english ? "Type a message" : "اكتب رسالة"}
+                ref={composerRef}
+                rows={1}
+                value={body}
+              />
+              <button
+                aria-label={english ? "Attach an image or file" : "إرفاق صورة أو ملف"}
+                className="grid size-9 shrink-0 place-items-center rounded-full text-[var(--itq-color-muted)] transition hover:bg-[var(--itq-color-surface-soft)] disabled:opacity-50"
+                disabled={interactionLocked}
+                onClick={() => fileInput.current?.click()}
+                type="button"
+              >
+                <PaperclipIcon className="size-5" />
+              </button>
+            </div>
             {body.trim().length > 0 && !recording ? (
               <button
                 aria-label={english ? "Send message" : "إرسال الرسالة"}
@@ -3083,6 +3135,52 @@ export function UnifiedChatWorkspace({
           </aside>
         </>
       ) : null}
+
+      {lightbox === undefined ? null : (
+        <div
+          aria-label={english ? "Image preview" : "معاينة الصورة"}
+          aria-modal="true"
+          className="fixed inset-0 z-[130] flex flex-col bg-black/95"
+          onClick={() => setLightbox(undefined)}
+          onKeyDown={(event) => {
+            if (event.key === "Escape") setLightbox(undefined);
+          }}
+          role="dialog"
+          tabIndex={-1}
+        >
+          <div className="flex items-center justify-between gap-3 p-3 text-white">
+            <bdi className="min-w-0 truncate text-sm font-bold" dir="auto">
+              {lightbox.name}
+            </bdi>
+            <div className="flex shrink-0 items-center gap-1">
+              <a
+                aria-label={english ? "Download" : "تنزيل"}
+                className="grid size-10 place-items-center rounded-full hover:bg-white/10"
+                href={lightbox.download}
+                onClick={(event) => event.stopPropagation()}
+              >
+                <ArrowIcon className="size-5 rotate-90" />
+              </a>
+              <button
+                aria-label={english ? "Close" : "إغلاق"}
+                className="grid size-10 place-items-center rounded-full hover:bg-white/10"
+                onClick={() => setLightbox(undefined)}
+                type="button"
+              >
+                <CloseIcon className="size-5" />
+              </button>
+            </div>
+          </div>
+          <div className="flex min-h-0 flex-1 items-center justify-center p-2">
+            <img
+              alt={lightbox.name}
+              className="max-h-full max-w-full object-contain"
+              onClick={(event) => event.stopPropagation()}
+              src={lightbox.src}
+            />
+          </div>
+        </div>
+      )}
     </section>
   );
 }

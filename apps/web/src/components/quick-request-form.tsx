@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useRef, useState, type FormEvent } from "react";
+import { useMemo, useRef, useState } from "react";
 
 import { RequestsIcon } from "./icons";
 
@@ -21,6 +21,11 @@ interface QuickRequestFormProps {
  * One-tap request creation: type a word or two (optional), then tap a service.
  * That single tap creates the request, submits it, and drops the student into
  * the conversation — the rest of the details are gathered there, not in a form.
+ *
+ * The service id rides on the tapped button (`name="serviceId"`), so a plain
+ * HTML submit works with no JavaScript at all; the `onSubmit` handler is pure
+ * enhancement that carries the typed phrase into the title/description. If the
+ * fields arrive blank the server derives them from the service name.
  */
 export function QuickRequestForm({
   services,
@@ -31,32 +36,27 @@ export function QuickRequestForm({
   const english = locale === "en";
   const [text, setText] = useState("");
   const [submitting, setSubmitting] = useState(false);
-  const submissionKey = useMemo(() => crypto.randomUUID(), []);
+  const submissionKey = useMemo(
+    () =>
+      typeof crypto !== "undefined" && typeof crypto.randomUUID === "function"
+        ? crypto.randomUUID()
+        : `${Date.now()}-${Math.random().toString(16).slice(2)}`,
+    [],
+  );
   const titleRef = useRef<HTMLInputElement>(null);
   const descriptionRef = useRef<HTMLInputElement>(null);
-  const serviceRef = useRef<HTMLInputElement>(null);
 
-  const byId = useMemo(() => new Map(services.map((service) => [service.id, service])), [services]);
-
-  function handleSubmit(event: FormEvent<HTMLFormElement>): void {
-    const submitter = (event.nativeEvent as SubmitEvent).submitter as HTMLButtonElement | null;
-    const serviceId = submitter?.value ?? "";
-    const service = byId.get(serviceId);
-    if (service === undefined) {
-      event.preventDefault();
-      return;
-    }
+  function handleSubmit(): void {
     const phrase = text.trim();
-    const title = phrase.length >= 3 ? phrase : service.name;
-    const description =
-      phrase.length >= 3
-        ? `${phrase} — ${english ? "I'll add the details in the chat." : "سأوضح التفاصيل في المحادثة."}`
-        : english
-          ? `${service.name} — details to follow in the chat.`
-          : `${service.name} — التفاصيل عبر المحادثة.`;
-    if (titleRef.current) titleRef.current.value = title;
-    if (descriptionRef.current) descriptionRef.current.value = description;
-    if (serviceRef.current) serviceRef.current.value = serviceId;
+    if (phrase.length >= 3) {
+      if (titleRef.current) titleRef.current.value = phrase;
+      if (descriptionRef.current) {
+        descriptionRef.current.value = english
+          ? `${phrase} — I will share the details in the chat.`
+          : `${phrase} — سأوضح التفاصيل في المحادثة.`;
+      }
+    }
+    // Never block the submit: the tapped button already carries the service id.
     setSubmitting(true);
   }
 
@@ -65,7 +65,7 @@ export function QuickRequestForm({
       action="/api/student/requests"
       className="grid gap-5"
       method="post"
-      onSubmit={handleSubmit}
+      onSubmit={() => handleSubmit()}
     >
       <input name="csrfToken" type="hidden" value={csrfToken ?? ""} />
       <input name="locale" type="hidden" value={locale} />
@@ -76,7 +76,6 @@ export function QuickRequestForm({
       <input name="quick" type="hidden" value="true" />
       <input defaultValue="" name="title" ref={titleRef} type="hidden" />
       <input defaultValue="" name="description" ref={descriptionRef} type="hidden" />
-      <input defaultValue="" name="serviceId" ref={serviceRef} type="hidden" />
 
       <label className="block">
         <span className="text-sm font-black">
@@ -103,6 +102,7 @@ export function QuickRequestForm({
               className="flex items-center gap-3 rounded-2xl border border-[var(--itq-color-border)] bg-[var(--itq-color-surface)] p-4 text-start shadow-sm transition active:scale-[0.98] hover:border-[var(--itq-color-brand-300)] hover:bg-[var(--itq-color-brand-50)] disabled:opacity-50"
               disabled={submitting}
               key={service.id}
+              name="serviceId"
               type="submit"
               value={service.id}
             >
