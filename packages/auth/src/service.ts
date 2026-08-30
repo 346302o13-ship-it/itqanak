@@ -1359,6 +1359,87 @@ export class AuthService {
   }
 
   /**
+   * Administrator suspends or reactivates one student account. Suspension is
+   * fully reversible: the row, its conversations, requests and financial records
+   * are untouched — only `users.status` flips and every live session for the
+   * student is revoked so the sign-out is immediate (login already rejects any
+   * non-ACTIVE account). Permission-gated on `admin.users.manage`; an admin
+   * cannot act on their own account or on a non-student.
+   */
+  public async setStudentAccountStatus(
+    admin: AuthenticatedPrincipal,
+    userId: string,
+    action: "SUSPEND" | "REACTIVATE",
+    context: RequestAuditContext = {},
+    reason?: string,
+  ): Promise<{ readonly status: UserStatus; readonly revokedSessions: number }> {
+    requirePermission(requireAdmin(admin), "admin.users.manage");
+    const normalizedUserId = userId.trim().toLowerCase();
+    if (
+      !/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/u.test(
+        normalizedUserId,
+      ) ||
+      normalizedUserId === admin.userId
+    ) {
+      throw new AuthenticationError("ACCOUNT_UNAVAILABLE");
+    }
+    const trimmedReason = reason?.trim().slice(0, 500);
+
+    return this.database.begin(async (transaction) => {
+      const tx = transaction as DatabaseClient;
+      const rows = await tx<{ readonly id: string; readonly status: UserStatus }[]>`
+        SELECT users.id, users.status
+        FROM users
+        INNER JOIN user_roles ON user_roles.user_id = users.id
+          AND user_roles.role_code = 'STUDENT'
+        WHERE users.id = ${normalizedUserId}
+        FOR UPDATE OF users
+      `;
+      const current = rows[0];
+      if (current === undefined) {
+        throw new AuthenticationError("ACCOUNT_UNAVAILABLE");
+      }
+      const nextStatus: UserStatus = action === "SUSPEND" ? "SUSPENDED" : "ACTIVE";
+      const requiredCurrent: UserStatus = action === "SUSPEND" ? "ACTIVE" : "SUSPENDED";
+      if (current.status !== requiredCurrent) {
+        // Already in the target state, or not eligible (e.g. PENDING_VERIFICATION).
+        throw new AuthenticationError("ACCOUNT_UNAVAILABLE");
+      }
+      await tx`
+        UPDATE users SET status = ${nextStatus}, updated_at = now()
+        WHERE id = ${current.id} AND status = ${requiredCurrent}
+      `;
+      let revokedSessions = 0;
+      if (action === "SUSPEND") {
+        const revoked = await tx<{ readonly id: string }[]>`
+          UPDATE user_sessions
+          SET revoked_at = now(), revoked_reason = 'ACCOUNT_SUSPENDED'
+          WHERE user_id = ${current.id} AND revoked_at IS NULL
+          RETURNING id
+        `;
+        revokedSessions = revoked.length;
+      }
+      await recordAuditEvent(tx, {
+        ...context,
+        eventType: action === "SUSPEND" ? "auth.account_suspended" : "auth.account_reactivated",
+        outcome: "SUCCESS",
+        actorUserId: admin.userId,
+        targetUserId: current.id,
+        sessionId: admin.sessionId,
+        metadata: {
+          from_status: current.status,
+          to_status: nextStatus,
+          revoked_sessions: revokedSessions,
+          ...(trimmedReason === undefined || trimmedReason.length === 0
+            ? {}
+            : { reason: trimmedReason }),
+        },
+      });
+      return { status: nextStatus, revokedSessions };
+    });
+  }
+
+  /**
    * Creates an expiring, non-secret reference for the WhatsApp support check.
    * Unknown and ineligible phone numbers receive the same shaped response so
    * this public endpoint cannot be used for account enumeration.

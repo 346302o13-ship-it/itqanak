@@ -25,7 +25,7 @@ export default async function AdminStudentsPage({ searchParams }: PageProps) {
   let catalog;
   try {
     [students, catalog] = await Promise.all([
-      runtime.auth.listStudents(principal, { pageSize: 100, activeOnly: true }),
+      runtime.auth.listStudents(principal, { pageSize: 100, activeOnly: false }),
       runtime.catalog.listPublicCatalog(),
     ]);
   } finally {

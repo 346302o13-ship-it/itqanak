@@ -70,9 +70,17 @@ export function AdminStudentOperations({
       ? english
         ? "Review the submitted fields. The phone may already belong to an account."
         : "راجع البيانات. قد يكون رقم الجوال مرتبطًا بحساب موجود."
-      : english
-        ? "The operation could not be completed. Try again."
-        : "تعذر إكمال العملية. حاول مجددًا.";
+      : notice === "account_suspended"
+        ? english
+          ? "Account suspended. The student is signed out and cannot sign in until reactivated."
+          : "تم تعطيل الحساب. سُجّل خروج الطالب ولن يستطيع الدخول حتى إعادة التفعيل."
+        : notice === "account_reactivated"
+          ? english
+            ? "Account reactivated. The student can sign in again."
+            : "تمت إعادة تفعيل الحساب. يمكن للطالب الدخول مجددًا."
+          : english
+            ? "The operation could not be completed. Try again."
+            : "تعذر إكمال العملية. حاول مجددًا.";
   return (
     <div>
       {notice === undefined ? null : isError ? (
@@ -247,36 +255,119 @@ export function AdminStudentOperations({
               {english ? "Student directory" : "دليل الطلاب"}
             </p>
             <h2 className="mt-1 text-2xl font-black">
-              {english ? "Active verified accounts" : "الحسابات النشطة الموثقة"}
+              {english ? "Accounts & access" : "الحسابات والوصول"}
             </h2>
           </div>
           <span className="rounded-full bg-[var(--itq-color-brand-50)] px-3 py-1 text-xs font-black text-[var(--itq-color-brand-strong)]">
             {students.length}
           </span>
         </div>
+        <p className="mt-3 rounded-xl border border-[var(--itq-color-border)] bg-[var(--itq-color-surface-soft)] px-3 py-2 text-xs font-bold leading-6 text-[var(--itq-color-muted)]">
+          {english
+            ? "Suspending is reversible and needs the admin.users.manage permission: the student is signed out everywhere and blocked from signing in, but every conversation, request and financial record is kept. Reactivate to restore access. Every change is written to the audit log."
+            : "التعطيل قابل للعكس ويتطلب صلاحية admin.users.manage: يُسجَّل خروج الطالب من كل الأجهزة ويُمنع من الدخول، مع الاحتفاظ بكل المحادثات والطلبات والسجلات المالية. أعد التفعيل لاستعادة الوصول. كل تغيير يُسجَّل في سجل التدقيق."}
+        </p>
         <div className="mt-5 grid gap-3 md:grid-cols-2 xl:grid-cols-3">
-          {students.map((student) => (
-            <article
-              className="rounded-2xl border border-[var(--itq-color-border)] p-4"
-              key={student.id}
-            >
-              <p className="font-black">{student.displayName}</p>
-              <p className="mt-1 text-sm font-bold text-[var(--itq-color-muted)]" dir="ltr">
-                {student.phoneE164}
-              </p>
-              <form action="/api/admin/support" className="mt-4" method="post">
-                <CsrfInput token={csrfToken} />
-                <input name="locale" type="hidden" value={locale} />
-                <input name="studentUserId" type="hidden" value={student.id} />
-                <SubmitButton
-                  className="min-h-10 w-full rounded-xl bg-[var(--itq-color-brand-50)] px-3 py-2 text-xs text-[var(--itq-color-brand-strong)] shadow-none"
-                  pendingLabel="…"
-                >
-                  {english ? "Open general support chat" : "فتح محادثة الدعم العام"}
-                </SubmitButton>
-              </form>
-            </article>
-          ))}
+          {students.map((student) => {
+            const suspended = student.status === "SUSPENDED";
+            const eligible = student.status === "ACTIVE" || suspended;
+            return (
+              <article
+                className={`rounded-2xl border p-4 ${
+                  suspended
+                    ? "border-[var(--itq-color-danger-200)] bg-[var(--itq-color-danger-50)]"
+                    : "border-[var(--itq-color-border)]"
+                }`}
+                key={student.id}
+              >
+                <div className="flex items-start justify-between gap-2">
+                  <p className="font-black">{student.displayName}</p>
+                  <span
+                    className={`shrink-0 rounded-full px-2 py-0.5 text-[10px] font-black ${
+                      suspended
+                        ? "bg-[var(--itq-color-danger-100)] text-[var(--itq-color-danger-900)]"
+                        : student.status === "ACTIVE"
+                          ? "bg-[var(--itq-color-success-50)] text-[var(--itq-color-success-800)]"
+                          : "bg-[var(--itq-color-surface-soft)] text-[var(--itq-color-muted)]"
+                    }`}
+                  >
+                    {suspended
+                      ? english
+                        ? "Suspended"
+                        : "معطّل"
+                      : student.status === "ACTIVE"
+                        ? english
+                          ? "Active"
+                          : "نشط"
+                        : english
+                          ? "Pending"
+                          : "قيد التحقق"}
+                  </span>
+                </div>
+                <p className="mt-1 text-sm font-bold text-[var(--itq-color-muted)]" dir="ltr">
+                  {student.phoneE164}
+                </p>
+                <form action="/api/admin/support" className="mt-4" method="post">
+                  <CsrfInput token={csrfToken} />
+                  <input name="locale" type="hidden" value={locale} />
+                  <input name="studentUserId" type="hidden" value={student.id} />
+                  <SubmitButton
+                    className="min-h-10 w-full rounded-xl bg-[var(--itq-color-brand-50)] px-3 py-2 text-xs text-[var(--itq-color-brand-strong)] shadow-none"
+                    pendingLabel="…"
+                  >
+                    {english ? "Open general support chat" : "فتح محادثة الدعم العام"}
+                  </SubmitButton>
+                </form>
+                {!eligible ? null : suspended ? (
+                  <form
+                    action={`/api/admin/students/${encodeURIComponent(student.id)}/status`}
+                    className="mt-2"
+                    method="post"
+                  >
+                    <CsrfInput token={csrfToken} />
+                    <input name="locale" type="hidden" value={locale} />
+                    <input name="action" type="hidden" value="reactivate" />
+                    <SubmitButton
+                      className="min-h-10 w-full rounded-xl bg-[var(--itq-color-success-600)] px-3 py-2 text-xs text-white shadow-none"
+                      pendingLabel="…"
+                    >
+                      {english ? "Reactivate account" : "إعادة تفعيل الحساب"}
+                    </SubmitButton>
+                  </form>
+                ) : (
+                  <details className="mt-2 rounded-xl border border-[var(--itq-color-danger-200)] bg-[var(--itq-color-danger-50)] p-2">
+                    <summary className="cursor-pointer list-none text-xs font-black text-[var(--itq-color-danger-800)]">
+                      {english ? "Suspend account…" : "تعطيل الحساب…"}
+                    </summary>
+                    <form
+                      action={`/api/admin/students/${encodeURIComponent(student.id)}/status`}
+                      className="mt-2 grid gap-2"
+                      method="post"
+                    >
+                      <CsrfInput token={csrfToken} />
+                      <input name="locale" type="hidden" value={locale} />
+                      <input name="action" type="hidden" value="suspend" />
+                      <input name="confirm" type="hidden" value="true" />
+                      <label className="text-[11px] font-black text-[var(--itq-color-danger-900)]">
+                        {english ? "Reason (optional)" : "السبب (اختياري)"}
+                        <input
+                          className="mt-1 w-full rounded-lg border border-[var(--itq-color-danger-200)] bg-[var(--itq-color-surface)] px-2 py-2 text-xs"
+                          maxLength={500}
+                          name="reason"
+                        />
+                      </label>
+                      <SubmitButton
+                        className="min-h-10 w-full rounded-xl bg-[var(--itq-color-danger-600)] px-3 py-2 text-xs text-white shadow-none"
+                        pendingLabel="…"
+                      >
+                        {english ? "Confirm suspend" : "تأكيد التعطيل"}
+                      </SubmitButton>
+                    </form>
+                  </details>
+                )}
+              </article>
+            );
+          })}
         </div>
       </section>
     </div>
