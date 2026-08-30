@@ -929,6 +929,20 @@ export function UnifiedChatWorkspace({
     [openReactionMenu],
   );
 
+  // Tap anywhere outside an open chat menu (reaction bar, emoji tray) closes it.
+  useEffect(() => {
+    if (reactionPickerFor === undefined && !emojiPanelOpen) return undefined;
+    const onOutside = (event: Event) => {
+      const target = event.target as HTMLElement | null;
+      if (target?.closest("[data-chat-menu]")) return;
+      setReactionPickerFor(undefined);
+      setReactionPickerFull(false);
+      setEmojiPanelOpen(false);
+    };
+    document.addEventListener("pointerdown", onOutside, true);
+    return () => document.removeEventListener("pointerdown", onOutside, true);
+  }, [reactionPickerFor, emojiPanelOpen]);
+
   const scrollToMessage = useCallback((id: string) => {
     const node = logRef.current?.querySelector(`[data-mid="${id}"]`);
     if (node === null || node === undefined) return;
@@ -1746,15 +1760,24 @@ export function UnifiedChatWorkspace({
     setPending(true);
     setNotice(english ? "Sending the quote…" : "جارٍ إرسال عرض السعر…");
     try {
+      const rawExpiry = String(fields.get("expiresAt") ?? "").trim();
+      const expiresAt =
+        rawExpiry.length > 0 ? new Date(rawExpiry) : new Date(Date.now() + 7 * 86_400_000);
+      const descriptionAr =
+        String(fields.get("descriptionAr") ?? "").trim() ||
+        `عرض سعر للطلب ${selectedRequest.requestNumber}`;
+      const descriptionEn =
+        String(fields.get("descriptionEn") ?? "").trim() ||
+        `Price quote for ${selectedRequest.requestNumber}`;
       const form = new URLSearchParams({
         csrfToken,
         requestId: selectedRequest.id,
         expectedRequestVersion: String(selectedRequest.version),
         amountMinor: String(amountMinor),
         currency,
-        descriptionAr: String(fields.get("descriptionAr") ?? ""),
-        descriptionEn: String(fields.get("descriptionEn") ?? ""),
-        expiresAt: new Date(String(fields.get("expiresAt") ?? "")).toISOString(),
+        descriptionAr,
+        descriptionEn,
+        expiresAt: expiresAt.toISOString(),
         clientQuoteId: crypto.randomUUID(),
       });
       const response = await fetch("/api/admin/quotes", {
@@ -1961,14 +1984,25 @@ export function UnifiedChatWorkspace({
                 : `${activeRequestCount} نشط من ${requests.length}`}
             </p>
           </div>
-          <button
-            aria-label={english ? "Close request panel" : "إغلاق لوحة الطلبات"}
-            className="grid size-10 place-items-center rounded-xl hover:bg-[var(--itq-color-surface-soft)] xl:hidden"
-            onClick={() => closeDetails()}
-            type="button"
-          >
-            <CloseIcon className="size-5" />
-          </button>
+          <div className="flex items-center gap-1.5">
+            {mode === "student" ? (
+              <Link
+                className="inline-flex min-h-9 items-center gap-1 rounded-xl bg-[var(--itq-color-brand-700)] px-3 text-xs font-black text-white no-underline"
+                href={`/${locale}/student/requests/new`}
+              >
+                <span className="text-base leading-none">+</span>
+                {english ? "New request" : "طلب جديد"}
+              </Link>
+            ) : null}
+            <button
+              aria-label={english ? "Close request panel" : "إغلاق لوحة الطلبات"}
+              className="grid size-10 place-items-center rounded-xl hover:bg-[var(--itq-color-surface-soft)] xl:hidden"
+              onClick={() => closeDetails()}
+              type="button"
+            >
+              <CloseIcon className="size-5" />
+            </button>
+          </div>
         </header>
         <div className="itq-scroll min-h-0 flex-1 overflow-y-auto overscroll-contain p-3">
           {requests.length === 0 ? (
@@ -2118,78 +2152,47 @@ export function UnifiedChatWorkspace({
           selectedRequest !== undefined &&
           !selectedRequestHasPendingQuote &&
           quoteEligibleRequestStatuses.has(selectedRequest.status) ? (
-            <details className="mt-4 overflow-hidden rounded-2xl border border-[var(--itq-color-info-200)] bg-[var(--itq-color-info-50)]">
-              <summary className="cursor-pointer px-4 py-3 text-sm font-black text-[var(--itq-color-info-950)]">
-                {english ? "Send a price quote" : "إرسال عرض سعر"}
-              </summary>
-              <form
-                className="grid gap-3 border-t border-[var(--itq-color-info-200)] p-4"
-                onSubmit={(event) => void createQuote(event)}
-              >
-                <div className="grid grid-cols-[minmax(0,1fr)_5.5rem] gap-2">
-                  <label className="grid gap-1 text-xs font-black">
-                    {english ? "Amount" : "المبلغ"}
-                    <input
-                      className="h-11 min-w-0 rounded-xl border border-[var(--itq-color-info-200)] bg-[var(--itq-color-surface)] px-3"
-                      inputMode="decimal"
-                      maxLength={13}
-                      name="amount"
-                      placeholder={english ? "0.00" : "٠٫٠٠"}
-                      required
-                    />
-                  </label>
-                  <label className="grid gap-1 text-xs font-black">
-                    {english ? "Currency" : "العملة"}
-                    <select
-                      className="h-11 rounded-xl border border-[var(--itq-color-info-200)] bg-[var(--itq-color-surface)] px-2"
-                      defaultValue="SAR"
-                      name="currency"
-                    >
-                      <option value="SAR">SAR</option>
-                      <option value="AED">AED</option>
-                      <option value="KWD">KWD</option>
-                    </select>
-                  </label>
-                </div>
-                <label className="grid gap-1 text-xs font-black">
-                  الوصف بالعربية
-                  <textarea
-                    className="min-h-20 rounded-xl border border-[var(--itq-color-info-200)] bg-[var(--itq-color-surface)] p-3"
-                    maxLength={2000}
-                    minLength={3}
-                    name="descriptionAr"
-                    required
-                  />
-                </label>
-                <label className="grid gap-1 text-xs font-black">
-                  Description in English
-                  <textarea
-                    className="min-h-20 rounded-xl border border-[var(--itq-color-info-200)] bg-[var(--itq-color-surface)] p-3"
-                    dir="ltr"
-                    maxLength={2000}
-                    minLength={3}
-                    name="descriptionEn"
-                    required
-                  />
-                </label>
-                <label className="grid gap-1 text-xs font-black">
-                  {english ? "Valid until" : "صالح حتى"}
-                  <input
-                    className="h-11 rounded-xl border border-[var(--itq-color-info-200)] bg-[var(--itq-color-surface)] px-3"
-                    name="expiresAt"
-                    required
-                    type="datetime-local"
-                  />
-                </label>
+            <form
+              className="mt-4 rounded-2xl border border-[var(--itq-color-info-200)] bg-[var(--itq-color-info-50)] p-3"
+              onSubmit={(event) => void createQuote(event)}
+            >
+              <p className="mb-2 text-xs font-black text-[var(--itq-color-info-950)]">
+                {english ? "Set the price for this request" : "حدّد سعر هذا الطلب"}
+              </p>
+              <div className="flex items-stretch gap-2">
+                <input
+                  aria-label={english ? "Price" : "السعر"}
+                  className="h-11 min-w-0 flex-1 rounded-xl border border-[var(--itq-color-info-200)] bg-[var(--itq-color-surface)] px-3 text-sm font-black"
+                  inputMode="decimal"
+                  maxLength={13}
+                  name="amount"
+                  placeholder={english ? "0.00" : "٠٫٠٠"}
+                  required
+                />
+                <select
+                  aria-label={english ? "Currency" : "العملة"}
+                  className="h-11 rounded-xl border border-[var(--itq-color-info-200)] bg-[var(--itq-color-surface)] px-2 text-xs font-black"
+                  defaultValue="SAR"
+                  name="currency"
+                >
+                  <option value="SAR">SAR</option>
+                  <option value="AED">AED</option>
+                  <option value="KWD">KWD</option>
+                </select>
                 <button
-                  className="min-h-11 rounded-xl bg-[var(--itq-color-info-950)] px-4 text-sm font-black text-white disabled:opacity-50"
+                  className="min-h-11 shrink-0 rounded-xl bg-[var(--itq-color-info-950)] px-4 text-sm font-black text-white disabled:opacity-50"
                   disabled={interactionLocked}
                   type="submit"
                 >
-                  {english ? "Send quote" : "إرسال العرض"}
+                  {english ? "Send" : "إرسال"}
                 </button>
-              </form>
-            </details>
+              </div>
+              <p className="mt-1.5 text-[10px] font-semibold text-[var(--itq-color-muted)]">
+                {english
+                  ? "The student gets an Approve / Reject card in the chat. Valid for 7 days."
+                  : "يصل الطالب بطاقة موافقة / رفض في المحادثة. صالح 7 أيام."}
+              </p>
+            </form>
           ) : null}
         </div>
       </div>
@@ -2753,7 +2756,7 @@ export function UnifiedChatWorkspace({
                                   >
                                     {english ? "Reply" : "رد"}
                                   </button>
-                                  <span className="relative">
+                                  <span className="relative" data-chat-menu>
                                     <button
                                       aria-label={english ? "Add a reaction" : "أضف تفاعلًا"}
                                       className={`rounded-md px-2 py-1 font-black ${"hover:bg-black/5"}`}
@@ -2772,6 +2775,7 @@ export function UnifiedChatWorkspace({
                                         className={`absolute bottom-full z-20 mb-1 rounded-2xl border border-[var(--itq-color-border)] bg-[var(--itq-color-surface)] p-1.5 shadow-xl ${
                                           mine ? "end-0" : "start-0"
                                         } ${reactionPickerFull ? "grid w-[16rem] max-h-52 grid-cols-8 gap-0.5 overflow-y-auto" : "flex items-center gap-0.5"}`}
+                                        data-chat-menu
                                       >
                                         {(reactionPickerFull ? chatEmoji : reactionChoices).map(
                                           (emoji) => (
@@ -2802,7 +2806,7 @@ export function UnifiedChatWorkspace({
                                       </span>
                                     ) : null}
                                   </span>
-                                  {mine && message.contentType === "TEXT" ? (
+                                  {mine || mode === "admin" ? (
                                     deleteConfirmFor === message.id ? (
                                       <>
                                         <span className="font-black">
@@ -2825,7 +2829,9 @@ export function UnifiedChatWorkspace({
                                       </>
                                     ) : (
                                       <>
-                                        {Date.now() - message.sentAt.getTime() < 15 * 60_000 ? (
+                                        {mine &&
+                                        message.contentType === "TEXT" &&
+                                        Date.now() - message.sentAt.getTime() < 15 * 60_000 ? (
                                           <button
                                             className={`rounded-md px-2 py-1 font-black ${"hover:bg-black/5"}`}
                                             onClick={() => {
@@ -2994,7 +3000,10 @@ export function UnifiedChatWorkspace({
             </div>
           ) : null}
           {emojiPanelOpen ? (
-            <div className="mb-2 grid max-h-44 grid-cols-8 gap-0.5 overflow-y-auto rounded-2xl border border-[var(--itq-color-border)] bg-[var(--itq-color-surface)] p-2 shadow-sm sm:grid-cols-12">
+            <div
+              className="mb-2 grid max-h-44 grid-cols-8 gap-0.5 overflow-y-auto rounded-2xl border border-[var(--itq-color-border)] bg-[var(--itq-color-surface)] p-2 shadow-sm sm:grid-cols-12"
+              data-chat-menu
+            >
               {chatEmoji.map((emoji) => (
                 <button
                   className="grid size-9 place-items-center rounded-lg text-xl hover:bg-[var(--itq-color-surface-soft)] active:scale-90"
@@ -3031,6 +3040,7 @@ export function UnifiedChatWorkspace({
                     ? "bg-[var(--itq-color-brand-50)] text-[var(--itq-color-brand-strong)]"
                     : "text-[var(--itq-color-muted)] hover:bg-[var(--itq-color-surface-soft)]"
                 }`}
+                data-chat-menu
                 disabled={interactionLocked}
                 onClick={() => setEmojiPanelOpen((value) => !value)}
                 type="button"

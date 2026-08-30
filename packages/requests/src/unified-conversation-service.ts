@@ -454,7 +454,8 @@ function toMessage(row: MessageRow): UnifiedMessage {
     ...(edited && revisionAt !== undefined ? { editedAt: revisionAt } : {}),
     ...(deleted && revisionAt !== undefined ? { deletedAt: revisionAt } : {}),
     ...(request === undefined || deleted ? {} : { request }),
-    ...(row.attachment_id === null ||
+    ...(deleted ||
+    row.attachment_id === null ||
     row.attachment_source === null ||
     row.attachment_filename === null ||
     row.attachment_mime_type === null ||
@@ -471,7 +472,7 @@ function toMessage(row: MessageRow): UnifiedMessage {
             scanStatus: toScanStatus(row.attachment_scan_status),
           },
         }),
-    ...(quote === undefined ? {} : { quote }),
+    ...(quote === undefined || deleted ? {} : { quote }),
     ...(row.reply_to_message_id === null ||
     row.reply_body === null ||
     row.reply_sender_type === null ||
@@ -977,10 +978,14 @@ export class UnifiedConversationService {
       `;
       const row = target[0];
       if (row === undefined) throw new RequestDomainError("MESSAGE_NOT_FOUND");
-      if (row.sender_user_id === null || row.sender_user_id !== principal.userId) {
+      // The original sender can always remove their own message; an
+      // administrator can remove any message in the conversation (moderation).
+      // Unlike editing, deletion is allowed for attachments too — it only
+      // tombstones the message.
+      const isOwnMessage = row.sender_user_id !== null && row.sender_user_id === principal.userId;
+      if (!isOwnMessage && access.mode !== "ADMIN") {
         throw new RequestDomainError("MESSAGE_EDIT_FORBIDDEN");
       }
-      if (row.content_type !== "TEXT") throw new RequestDomainError("MESSAGE_NOT_EDITABLE");
       const latest = await tx<{ readonly action: string; readonly new_body: string | null }[]>`
         SELECT action, new_body FROM support_message_revisions
         WHERE message_id = ${messageId}
