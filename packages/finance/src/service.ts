@@ -990,14 +990,15 @@ export class FinanceService {
           readonly student_user_id: string;
           readonly status: string;
           readonly request_id: string;
+          readonly reference: string;
           readonly request_number: string | null;
           readonly amount_minor: number | string;
           readonly currency: string;
           readonly minor_unit: number | string;
         }[]
       >`
-        SELECT dues.student_user_id, dues.status, dues.request_id, dues.amount_minor,
-               dues.currency, dues.minor_unit, requests.request_number
+        SELECT dues.student_user_id, dues.status, dues.request_id, dues.reference,
+               dues.amount_minor, dues.currency, dues.minor_unit, requests.request_number
         FROM finance_dues AS dues
         LEFT JOIN service_requests AS requests ON requests.id = dues.request_id
         WHERE dues.id = ${dueId} LIMIT 1 FOR SHARE OF dues
@@ -1015,15 +1016,49 @@ export class FinanceService {
           body_ar, body_en, action_href, idempotency_key
         ) VALUES (
           ${due.student_user_id}, 'SYSTEM_ANNOUNCEMENT', ${due.request_id},
-          'تذكير بمبلغ مستحق', 'Payment reminder',
-          ${`تذكير: لديك مبلغ مستحق ${amount} ${due.currency}${label.length > 0 ? ` على الطلب ${label}` : ""}. يرجى رفع إيصال الدفع.`},
-          ${`Reminder: you have ${amount} ${due.currency} due${label.length > 0 ? ` on request ${label}` : ""}. Please upload your payment receipt.`},
+          'طلب دفع', 'Payment request',
+          ${`لديك مبلغ مستحق ${amount} ${due.currency}${label.length > 0 ? ` على الطلب ${label}` : ""}. ارفع إيصال الدفع من بطاقة الدفع في المحادثة.`},
+          ${`You have ${amount} ${due.currency} due${label.length > 0 ? ` on request ${label}` : ""}. Upload the receipt from the payment card in your chat.`},
           '/finance', ${`due-reminder:${dueId}:${day}`}
         )
         ON CONFLICT (idempotency_key) DO NOTHING
         RETURNING id
       `;
       const reminded = inserted[0] !== undefined;
+
+      const conversations = await tx<{ readonly id: string }[]>`
+        SELECT id FROM support_conversations WHERE student_user_id = ${due.student_user_id}
+      `;
+      const conversationId = conversations[0]?.id;
+      if (conversationId !== undefined) {
+        // Put a real payment card (with the receipt-upload flow) in the chat —
+        // once per due; re-clicking "request payment" just re-sends the nudge.
+        const existingCard = await tx<{ readonly id: string }[]>`
+          SELECT id FROM support_messages
+          WHERE conversation_id = ${conversationId}
+            AND body = 'PAYMENT_DUE_CREATED'
+            AND metadata->>'dueId' = ${dueId}
+          LIMIT 1
+        `;
+        if (existingCard[0] === undefined) {
+          await tx`
+            INSERT INTO support_messages (
+              conversation_id, sender_type, sender_user_id, content_type, body, metadata, request_id
+            ) VALUES (
+              ${conversationId}, 'SYSTEM', NULL, 'ACTION', 'PAYMENT_DUE_CREATED',
+              ${tx.json({
+                dueId,
+                dueReference: due.reference,
+                requestNumber: due.request_number,
+                amountMinor: Number(due.amount_minor),
+                currency: due.currency,
+                minorUnit,
+              })},
+              ${due.request_id}
+            )
+          `;
+        }
+      }
       if (reminded) {
         await recordAuditEvent(tx, {
           ...context,
@@ -1036,21 +1071,6 @@ export class FinanceService {
           resourceId: dueId,
           metadata: { requestId: due.request_id },
         });
-        const conversations = await tx<{ readonly id: string }[]>`
-          SELECT id FROM support_conversations WHERE student_user_id = ${due.student_user_id}
-        `;
-        const conversationId = conversations[0]?.id;
-        if (conversationId !== undefined) {
-          await tx`
-            INSERT INTO support_messages (
-              conversation_id, sender_type, sender_user_id, content_type, body, metadata, request_id
-            ) VALUES (
-              ${conversationId}, 'SYSTEM', NULL, 'ACTION', 'PAYMENT_REMINDER',
-              ${tx.json({ dueId, requestNumber: due.request_number })},
-              ${due.request_id}
-            )
-          `;
-        }
       }
       return { reminded };
     });

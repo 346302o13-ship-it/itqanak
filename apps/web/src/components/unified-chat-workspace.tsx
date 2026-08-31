@@ -466,9 +466,7 @@ function PaymentDueCard({
   csrfToken,
   duePaid,
   locale,
-  onRemind,
   onSubmitted,
-  reminderBusy,
   receiptUnderReview,
 }: Readonly<{
   metadata: UnifiedMessage["metadata"];
@@ -476,9 +474,7 @@ function PaymentDueCard({
   csrfToken: string | undefined;
   duePaid: boolean;
   locale: "ar" | "en";
-  onRemind: (dueId: string) => void;
   onSubmitted: () => void;
-  reminderBusy: boolean;
   receiptUnderReview: boolean;
 }>) {
   const english = locale === "en";
@@ -499,30 +495,18 @@ function PaymentDueCard({
       </p>
       {duePaid ? (
         <p className="mt-2 rounded-xl border border-[var(--itq-color-success-200)] bg-[var(--itq-color-success-50)] px-3 py-2 text-xs font-black text-[var(--itq-color-success-950)]">
-          {english ? "Paid ✓" : "تم الدفع ✓"}
+          {english ? "Payment approved ✓" : "تم اعتماد الدفع ✓"}
         </p>
       ) : mode === "admin" ? (
-        <div className="mt-2">
-          <p className="text-[10px] font-bold text-[var(--itq-color-warning-900)]">
-            {receiptUnderReview
-              ? english
-                ? "The student sent a receipt — review it below."
-                : "أرسل الطالب إيصالًا — راجعه في البطاقة أدناه."
-              : english
-                ? "Waiting for the student to upload a receipt."
-                : "بانتظار رفع الطالب لإيصال الدفع."}
-          </p>
-          {!receiptUnderReview && dueId !== undefined ? (
-            <button
-              className="mt-2 min-h-9 rounded-xl border border-[var(--itq-color-warning-300)] bg-[var(--itq-color-surface)] px-3 text-[11px] font-black text-[var(--itq-color-warning-950)] disabled:opacity-50"
-              disabled={reminderBusy || csrfToken === undefined}
-              onClick={() => onRemind(dueId)}
-              type="button"
-            >
-              {english ? "Request payment" : "طلب دفع من الطالب"}
-            </button>
-          ) : null}
-        </div>
+        <p className="mt-2 text-[10px] font-bold text-[var(--itq-color-warning-900)]">
+          {receiptUnderReview
+            ? english
+              ? "The student sent a receipt — approve it from the card below."
+              : "أرسل الطالب إيصالًا — اعتمد الدفع من البطاقة أدناه."
+            : english
+              ? "Waiting for the student to upload a receipt."
+              : "بانتظار رفع الطالب لإيصال الدفع."}
+        </p>
       ) : receiptUnderReview ? (
         <p className="mt-2 rounded-xl border border-[var(--itq-color-info-200)] bg-[var(--itq-color-info-50)] px-3 py-2 text-xs font-bold text-[var(--itq-color-info-950)]">
           {english ? "Your receipt is under review." : "إيصالك قيد المراجعة."}
@@ -2907,7 +2891,7 @@ export function UnifiedChatWorkspace({
   async function remindDue(dueId: string) {
     if (csrfToken === undefined || interactionLocked || mode !== "admin") return;
     setPending(true);
-    setNotice(english ? "Sending a reminder…" : "جارٍ إرسال التذكير…");
+    setNotice(english ? "Sending the payment request…" : "جارٍ إرسال طلب الدفع…");
     try {
       const response = await fetch(`/api/admin/finance/${encodeURIComponent(dueId)}`, {
         method: "POST",
@@ -2919,10 +2903,12 @@ export function UnifiedChatWorkspace({
         },
       });
       if (!response.ok) throw new Error();
-      setNotice(english ? "Reminder sent." : "تم إرسال التذكير.");
+      setNotice(english ? "Payment request sent to the chat." : "تم إرسال طلب الدفع إلى المحادثة.");
       messagePokeRef.current();
+      contactPokeRef.current();
+      void refreshRequests();
     } catch {
-      setNotice(english ? "The reminder could not be sent." : "تعذر إرسال التذكير.");
+      setNotice(english ? "The payment request could not be sent." : "تعذر إرسال طلب الدفع.");
     } finally {
       setPending(false);
     }
@@ -4057,13 +4043,11 @@ export function UnifiedChatWorkspace({
                             locale={locale}
                             metadata={message.metadata}
                             mode={mode}
-                            onRemind={(dueId) => void remindDue(dueId)}
                             onSubmitted={() => {
                               messagePokeRef.current();
                               contactPokeRef.current();
                               void refreshRequests();
                             }}
-                            reminderBusy={interactionLocked}
                             receiptUnderReview={
                               requests.find(
                                 (candidate) =>

@@ -127,11 +127,13 @@ export function NotificationCenter({ csrfToken, locale = "ar", surface }: Notifi
   const [loading, setLoading] = useState(false);
   const [items, setItems] = useState<readonly NotificationItem[]>([]);
   const [unreadCount, setUnreadCount] = useState(0);
-  const [soundEnabled, setSoundEnabled] = useState(false);
+  // Sound is on by default; the effect below only turns it off if this device
+  // has an explicit opt-out saved.
+  const [soundEnabled, setSoundEnabled] = useState(true);
   const [unavailable, setUnavailable] = useState(false);
   const [markingAllRead, setMarkingAllRead] = useState(false);
   const cursorRef = useRef<NotificationCursor | undefined>(undefined);
-  const soundEnabledRef = useRef(false);
+  const soundEnabledRef = useRef(true);
   const triggerRef = useRef<HTMLButtonElement | null>(null);
   const closeButtonRef = useRef<HTMLButtonElement | null>(null);
 
