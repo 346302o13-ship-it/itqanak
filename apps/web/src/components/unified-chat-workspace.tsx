@@ -789,7 +789,6 @@ function DueActionsPanel({
   locked,
   onAdjust,
   onMarkPaid,
-  onRemind,
   onReverse,
   onSplit,
 }: Readonly<{
@@ -798,7 +797,6 @@ function DueActionsPanel({
   locked: boolean;
   onAdjust: (dueId: string, newAmount: string) => void;
   onMarkPaid: (dueId: string, version: number, method: string, reference: string) => void;
-  onRemind: (dueId: string) => void;
   onReverse: (dueId: string, version: number, reason: string) => void;
   onSplit: (dueId: string, paidAmount: string, method: string, reference: string) => void;
 }>) {
@@ -989,14 +987,6 @@ function DueActionsPanel({
           </button>
         </form>
       </details>
-      <button
-        className="h-9 rounded-xl border border-[var(--itq-color-warning-300)] bg-[var(--itq-color-surface)] px-3 text-[11px] font-black text-[var(--itq-color-warning-950)] disabled:opacity-50"
-        disabled={locked}
-        onClick={() => onRemind(dueId)}
-        type="button"
-      >
-        {english ? "Request payment" : "طلب دفع من الطالب"}
-      </button>
     </div>
   );
 }
@@ -1542,6 +1532,50 @@ export function UnifiedChatWorkspace({
         ? undefined
         : `/api/admin/conversations/${encodeURIComponent(conversation.studentUserId)}`;
 
+  // Re-pull the request list (with its finance state) from the server. The
+  // message-delta poll only carries a sparse per-message request, so finance
+  // changes — priced / paid / receipt — need this to land in the UI.
+  const refreshRequests = useCallback(async (): Promise<void> => {
+    if (apiBase === undefined) return;
+    try {
+      const response = await fetch(apiBase, {
+        cache: "no-store",
+        credentials: "same-origin",
+        headers: { Accept: "application/json" },
+      });
+      if (!response.ok) return;
+      const payload = (await response.json()) as {
+        conversation?: { requests?: readonly (Record<string, unknown> & { updatedAt: string })[] };
+      };
+      const fresh = payload.conversation?.requests;
+      if (!Array.isArray(fresh)) return;
+      setRequests(
+        fresh.map(
+          (entry) => ({ ...entry, updatedAt: new Date(entry.updatedAt) }) as UnifiedRequestSummary,
+        ),
+      );
+    } catch {
+      /* keep the current list on a transient failure */
+    }
+  }, [apiBase]);
+
+  // Keep the request list's finance state fresh while a conversation is open.
+  useEffect(() => {
+    if (apiBase === undefined) return;
+    void refreshRequests();
+    const interval = window.setInterval(() => {
+      if (document.visibilityState === "visible") void refreshRequests();
+    }, 12_000);
+    const onVisible = () => {
+      if (document.visibilityState === "visible") void refreshRequests();
+    };
+    document.addEventListener("visibilitychange", onVisible);
+    return () => {
+      window.clearInterval(interval);
+      document.removeEventListener("visibilitychange", onVisible);
+    };
+  }, [apiBase, refreshRequests]);
+
   useEffect(() => {
     // Seed from the on-device cache first so re-opening a conversation shows
     // history instantly and older-page fetches are not repeated, then fold the
@@ -1680,7 +1714,12 @@ export function UnifiedChatWorkspace({
     if (requestUpdates.size === 0) return;
     setRequests((current) => {
       const byId = new Map(current.map((request) => [request.id, request]));
-      for (const [requestId, request] of requestUpdates) byId.set(requestId, request);
+      for (const [requestId, request] of requestUpdates) {
+        const existing = byId.get(requestId);
+        // Merge, never replace: the per-message request has no `finance`, so a
+        // bare set would wipe the priced / paid / receipt state on every poll.
+        byId.set(requestId, existing === undefined ? request : { ...existing, ...request });
+      }
       return [...byId.values()].sort(
         (left, right) => right.updatedAt.getTime() - left.updatedAt.getTime(),
       );
@@ -2063,6 +2102,7 @@ export function UnifiedChatWorkspace({
         }
         if (mode === "admin") {
           contactPokeRef.current();
+          void refreshRequests();
           if (
             payload.conversationId === conversationIdRef.current &&
             payload.senderType !== "ADMIN"
@@ -2758,6 +2798,7 @@ export function UnifiedChatWorkspace({
       );
       messagePokeRef.current();
       contactPokeRef.current();
+      void refreshRequests();
     } catch {
       setNotice(english ? "The request could not be created." : "تعذر إنشاء الطلب.");
     } finally {
@@ -2807,6 +2848,7 @@ export function UnifiedChatWorkspace({
       setNotice(english ? "Request created." : "تم إنشاء الطلب.");
       messagePokeRef.current();
       contactPokeRef.current();
+      void refreshRequests();
     } catch {
       setNotice(english ? "The request could not be created." : "تعذر إنشاء الطلب.");
     } finally {
@@ -2853,6 +2895,7 @@ export function UnifiedChatWorkspace({
       );
       messagePokeRef.current();
       contactPokeRef.current();
+      void refreshRequests();
     } catch {
       setNotice(english ? "The receipt could not be reviewed." : "تعذرت مراجعة الإيصال.");
     } finally {
@@ -2922,6 +2965,7 @@ export function UnifiedChatWorkspace({
       );
       messagePokeRef.current();
       contactPokeRef.current();
+      void refreshRequests();
     } catch {
       setNotice(english ? "The invoice could not be sent." : "تعذر إرسال الفاتورة.");
     } finally {
@@ -2964,6 +3008,7 @@ export function UnifiedChatWorkspace({
       );
       messagePokeRef.current();
       contactPokeRef.current();
+      void refreshRequests();
     } catch {
       setNotice(english ? "The dues could not be settled." : "تعذر اعتماد السداد.");
     } finally {
@@ -3002,6 +3047,7 @@ export function UnifiedChatWorkspace({
       setNotice(english ? "Marked as paid." : "تم وضعه كمدفوع.");
       messagePokeRef.current();
       contactPokeRef.current();
+      void refreshRequests();
     } catch {
       setNotice(english ? "The payment could not be recorded." : "تعذر تسجيل الدفع.");
     } finally {
@@ -3045,6 +3091,7 @@ export function UnifiedChatWorkspace({
       );
       messagePokeRef.current();
       contactPokeRef.current();
+      void refreshRequests();
     } catch {
       setNotice(
         english ? "The partial payment could not be recorded." : "تعذر تسجيل الدفعة الجزئية.",
@@ -3078,6 +3125,7 @@ export function UnifiedChatWorkspace({
       setNotice(english ? "Amount updated." : "تم تحديث المبلغ.");
       messagePokeRef.current();
       contactPokeRef.current();
+      void refreshRequests();
     } catch {
       setNotice(english ? "The amount could not be updated." : "تعذر تحديث المبلغ.");
     } finally {
@@ -3110,6 +3158,7 @@ export function UnifiedChatWorkspace({
       setNotice(english ? "Payment reversed." : "تم عكس الدفع.");
       messagePokeRef.current();
       contactPokeRef.current();
+      void refreshRequests();
     } catch {
       setNotice(english ? "The payment could not be reversed." : "تعذر عكس الدفع.");
     } finally {
@@ -3469,6 +3518,18 @@ export function UnifiedChatWorkspace({
                           ? "Request details"
                           : "تفاصيل الطلب"}
                     </Link>
+                    {mode === "admin" &&
+                    request.finance?.dueStatus === "UNPAID" &&
+                    request.finance.dueId !== undefined ? (
+                      <button
+                        className="mt-2 min-h-9 w-full rounded-xl bg-[var(--itq-color-warning-800)] px-3 text-[11px] font-black text-white disabled:opacity-50"
+                        disabled={interactionLocked || csrfToken === undefined}
+                        onClick={() => void remindDue(request.finance?.dueId ?? "")}
+                        type="button"
+                      >
+                        {english ? "Request payment" : "طلب دفع من الطالب"}
+                      </button>
+                    ) : null}
                     {mode === "admin" && cardHasDue && request.finance !== undefined ? (
                       <DueActionsPanel
                         english={english}
@@ -3478,7 +3539,6 @@ export function UnifiedChatWorkspace({
                         onMarkPaid={(dueId, version, method, reference) =>
                           void markRequestPaid(dueId, version, method, reference)
                         }
-                        onRemind={(dueId) => void remindDue(dueId)}
                         onReverse={(dueId, version, reason) =>
                           void reverseDuePayment(dueId, version, reason)
                         }
@@ -4001,6 +4061,7 @@ export function UnifiedChatWorkspace({
                             onSubmitted={() => {
                               messagePokeRef.current();
                               contactPokeRef.current();
+                              void refreshRequests();
                             }}
                             reminderBusy={interactionLocked}
                             receiptUnderReview={
