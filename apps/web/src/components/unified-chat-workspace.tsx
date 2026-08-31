@@ -43,6 +43,7 @@ import { playUiSound } from "@/lib/ui-sounds";
 import { setActiveConversation } from "@/lib/active-conversation";
 import { compressImageForUpload } from "@/lib/image-compression";
 
+import { NavLink } from "./nav-link";
 import { PaymentReceiptUploader } from "./payment-receipt-uploader";
 
 import {
@@ -1542,20 +1543,19 @@ function ConversationList({
               {english ? `${conversations.length} students` : `${conversations.length} طالبًا`}
             </p>
           </div>
-          {onClose === undefined ? (
-            <span className="grid size-10 place-items-center rounded-2xl bg-[var(--itq-color-brand-700)] text-white">
-              <MessageIcon className="size-5" />
-            </span>
-          ) : (
+          {onClose === undefined ? null : (
             <button
               aria-label={english ? "Close conversations" : "إغلاق قائمة المحادثات"}
-              className="grid size-10 place-items-center rounded-2xl bg-[var(--itq-color-surface)] text-[var(--itq-color-muted)] shadow-sm"
+              className="grid size-10 place-items-center rounded-2xl bg-[var(--itq-color-surface)] text-[var(--itq-color-muted)] shadow-sm lg:hidden"
               onClick={onClose}
               type="button"
             >
               <CloseIcon className="size-5" />
             </button>
           )}
+          <span className="hidden size-10 place-items-center rounded-2xl bg-[var(--itq-color-brand-700)] text-white lg:grid">
+            <MessageIcon className="size-5" />
+          </span>
         </div>
         <form action={prefix} className="relative mt-4" method="get">
           <SearchIcon className="pointer-events-none absolute start-3 top-1/2 size-4 -translate-y-1/2 text-[var(--itq-color-muted)]" />
@@ -3985,19 +3985,19 @@ export function UnifiedChatWorkspace({
         <>
           <button
             aria-label={english ? "Close conversations" : "إغلاق قائمة المحادثات"}
-            className={`fixed inset-0 z-40 bg-black/35 backdrop-blur-[1px] ${contactsOpen ? "block" : "hidden"}`}
+            className={`fixed inset-0 z-40 bg-black/35 backdrop-blur-[1px] lg:hidden ${contactsOpen ? "block" : "hidden"}`}
             onClick={() => closeContacts()}
             type="button"
           />
           <aside
             aria-label={english ? "Student conversations" : "محادثات الطلاب"}
             aria-modal={contactsOpen ? true : undefined}
-            className={`fixed inset-y-0 start-0 z-50 flex w-[min(88vw,24rem)] min-h-0 flex-col border-e border-[var(--itq-color-border)] bg-[var(--itq-color-surface-soft)] shadow-2xl transition-[transform,visibility] ${
+            className={`fixed inset-y-0 start-0 z-50 flex w-[min(88vw,24rem)] min-h-0 flex-col border-e border-[var(--itq-color-border)] bg-[var(--itq-color-surface-soft)] shadow-2xl transition-[transform,visibility] lg:static lg:z-auto lg:w-[21rem] lg:shrink-0 lg:translate-x-0 lg:shadow-none ${
               contactsOpen
                 ? "visible translate-x-0"
                 : english
-                  ? "invisible -translate-x-full"
-                  : "invisible translate-x-full"
+                  ? "invisible -translate-x-full lg:visible"
+                  : "invisible translate-x-full lg:visible"
             }`}
             id={contactsPanelId}
             ref={contactsPanelRef}
@@ -4018,28 +4018,28 @@ export function UnifiedChatWorkspace({
       <main className="flex min-h-0 min-w-0 flex-1 flex-col bg-[var(--itq-color-surface-soft)]">
         <header className="flex h-[4.65rem] shrink-0 items-center justify-between gap-3 border-b border-[var(--itq-color-border)] bg-[var(--itq-color-surface)] px-3 sm:px-5">
           <div className="flex min-w-0 items-center gap-2 sm:gap-3">
-            <Link
+            <NavLink
               aria-label={
                 english
                   ? mode === "admin"
                     ? "Back to admin center"
-                    : "Back to student dashboard"
+                    : "Back to the student portal"
                   : mode === "admin"
                     ? "العودة إلى مركز الإدارة"
-                    : "العودة إلى لوحة الطالب"
+                    : "العودة إلى بوابة الطالب"
               }
-              className="grid size-10 shrink-0 place-items-center rounded-xl border border-[var(--itq-color-border)] no-underline"
+              className="relative grid size-10 shrink-0 place-items-center rounded-xl border border-[var(--itq-color-border)] text-[var(--itq-color-ink)] no-underline hover:bg-[var(--itq-color-surface-soft)]"
               href={`/${locale}/${mode === "admin" ? "admin" : "student"}`}
             >
-              <ArrowIcon className={`size-5 ${english ? "rotate-180" : ""}`} />
-            </Link>
+              <ArrowIcon className="size-5 rtl:-scale-x-100" />
+            </NavLink>
             {mode === "admin" ? (
               <button
                 aria-controls={contactsPanelId}
                 aria-expanded={contactsOpen}
                 aria-haspopup="dialog"
                 aria-label={english ? "Open conversations" : "فتح قائمة المحادثات"}
-                className="grid size-10 shrink-0 place-items-center rounded-xl border border-[var(--itq-color-border)]"
+                className="grid size-10 shrink-0 place-items-center rounded-xl border border-[var(--itq-color-border)] lg:hidden"
                 onClick={() => {
                   closeDetails(false);
                   setContactsOpen(true);
