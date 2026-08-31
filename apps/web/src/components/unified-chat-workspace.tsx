@@ -40,6 +40,7 @@ import {
 } from "@/lib/unified-chat-client";
 import { requestStatusLabel } from "@/lib/request-presenters";
 import { playUiSound } from "@/lib/ui-sounds";
+import { setActiveConversation } from "@/lib/active-conversation";
 
 import { PaymentReceiptUploader } from "./payment-receipt-uploader";
 
@@ -1880,6 +1881,34 @@ export function UnifiedChatWorkspace({
   }, [contactItems]);
   useEffect(() => {
     conversationIdRef.current = conversation?.id;
+  }, [conversation?.id]);
+
+  // WhatsApp rule: while this exact conversation is open AND the tab is on
+  // screen, an incoming message for it must not chime or raise a notification.
+  // Publish that to the bell + the service worker on a heartbeat, and withdraw
+  // it the instant the tab hides or this view unmounts.
+  useEffect(() => {
+    const id = conversation?.id;
+    if (id === undefined) return undefined;
+    const sync = () => {
+      setActiveConversation(document.visibilityState === "visible" ? id : null);
+    };
+    sync();
+    const heartbeat = window.setInterval(sync, 20_000);
+    document.addEventListener("visibilitychange", sync);
+    // When the worker drops a push because this thread is open, it pings us so
+    // the message still lands here without waiting for the next poll tick.
+    const onWorkerMessage = (event: MessageEvent) => {
+      const data = (event.data ?? {}) as { type?: string; conversationId?: string };
+      if (data.type === "itq-message" && data.conversationId === id) messagePokeRef.current();
+    };
+    navigator.serviceWorker?.addEventListener("message", onWorkerMessage);
+    return () => {
+      window.clearInterval(heartbeat);
+      document.removeEventListener("visibilitychange", sync);
+      navigator.serviceWorker?.removeEventListener("message", onWorkerMessage);
+      setActiveConversation(null);
+    };
   }, [conversation?.id]);
 
   useEffect(() => {

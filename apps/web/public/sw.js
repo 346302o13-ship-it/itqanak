@@ -26,6 +26,47 @@ self.addEventListener("fetch", (event) => {
   }
 });
 
+/*
+ * The open chat tab tells the worker which conversation is on screen right now
+ * (refreshed on a heartbeat). A `push` for that same conversation is then
+ * dropped instead of shown — you do not get pinged for a message you are
+ * already looking at, exactly like WhatsApp.
+ */
+let activeConversation = { id: null, at: 0 };
+
+self.addEventListener("message", (event) => {
+  const data = event.data || {};
+  if (data.type === "itq-active-conversation") {
+    activeConversation = {
+      id: typeof data.conversationId === "string" ? data.conversationId : null,
+      at: typeof data.at === "number" ? data.at : Date.now(),
+    };
+  }
+});
+
+async function isViewingConversation(conversationId) {
+  if (activeConversation.id === conversationId && Date.now() - activeConversation.at < 90000) {
+    return true;
+  }
+  try {
+    const windows = await self.clients.matchAll({ type: "window", includeUncontrolled: true });
+    return windows.some((client) => {
+      if (client.visibilityState !== "visible") return false;
+      try {
+        const url = new URL(client.url);
+        return (
+          url.searchParams.get("conversation") === conversationId &&
+          /\/(student|admin)\/support$/u.test(url.pathname)
+        );
+      } catch (error) {
+        return false;
+      }
+    });
+  } catch (error) {
+    return false;
+  }
+}
+
 self.addEventListener("push", (event) => {
   let payload = {};
   try {
@@ -44,7 +85,24 @@ self.addEventListener("push", (event) => {
     renotify: true,
     data: { url: payload.url || "/ar/student" },
   };
-  event.waitUntil(self.registration.showNotification(title, options));
+  const conversationId = typeof payload.conversationId === "string" ? payload.conversationId : "";
+  event.waitUntil(
+    (async () => {
+      if (payload.kind === "MESSAGE_RECEIVED" && conversationId) {
+        if (await isViewingConversation(conversationId)) {
+          const windows = await self.clients.matchAll({
+            type: "window",
+            includeUncontrolled: true,
+          });
+          for (const client of windows) {
+            client.postMessage({ type: "itq-message", conversationId });
+          }
+          return;
+        }
+      }
+      await self.registration.showNotification(title, options);
+    })(),
+  );
 });
 
 self.addEventListener("notificationclick", (event) => {

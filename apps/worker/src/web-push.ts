@@ -19,6 +19,7 @@ interface NotificationRow {
   readonly body_en: string | null;
   readonly action_href: string | null;
   readonly message_id: string | null;
+  readonly conversation_id: string | null;
 }
 
 interface SubscriptionRow {
@@ -140,7 +141,8 @@ export class WebPushOutboxProcessor {
   private async process(job: ClaimedNotification): Promise<void> {
     const attempt = Number(job.attempt_count) || 1;
     const notifications = await this.database<NotificationRow[]>`
-      SELECT recipient_user_id, kind, title_ar, title_en, body_ar, body_en, action_href, message_id
+      SELECT recipient_user_id, kind, title_ar, title_en, body_ar, body_en,
+             action_href, message_id, conversation_id
       FROM user_notifications WHERE id = ${job.aggregate_id}
     `;
     const notification = notifications[0];
@@ -164,6 +166,12 @@ export class WebPushOutboxProcessor {
       body: notification.body_ar ?? "",
       url: notificationUrl(this.config, notification.action_href),
       tag: `itqanak-${notification.kind}`,
+      kind: notification.kind,
+      // Lets the service worker stay silent when the recipient already has this
+      // exact conversation open on screen (WhatsApp-style).
+      ...(notification.conversation_id === null
+        ? {}
+        : { conversationId: notification.conversation_id }),
     });
 
     let accepted = 0;

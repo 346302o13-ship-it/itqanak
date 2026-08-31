@@ -12,6 +12,7 @@ import {
 } from "../lib/notification-client";
 
 import { playUiSound } from "../lib/ui-sounds";
+import { conversationIdFromActionHref, getActiveConversationId } from "../lib/active-conversation";
 
 import { BellIcon, CheckIcon, CloseIcon } from "./icons";
 
@@ -212,7 +213,15 @@ export function NotificationCenter({ csrfToken, locale = "ar", surface }: Notifi
         setItems(payload.items);
         setUnreadCount(payload.unreadCount);
         setUnavailable(false);
-        if (announce && soundEnabledRef.current) {
+        // Stay silent for a message in the conversation the user is reading
+        // right now — the chat itself is the notification (WhatsApp-style).
+        const activeConversationId = getActiveConversationId();
+        const latestIsOpenConversation =
+          latest !== undefined &&
+          latest.kind === "MESSAGE_RECEIVED" &&
+          activeConversationId !== null &&
+          conversationIdFromActionHref(latest.actionHref) === activeConversationId;
+        if (announce && soundEnabledRef.current && !latestIsOpenConversation) {
           playNotificationTone();
           if (document.visibilityState !== "visible" && "Notification" in window) {
             const localizedLatest = latest === undefined ? undefined : localized(latest, english);
