@@ -31,6 +31,7 @@ export async function POST(request: NextRequest, context: RouteContext) {
         {
           attachmentId: formValue(protectedForm.formData, "attachmentId"),
           note: formValue(protectedForm.formData, "note") || null,
+          invoice: formValue(protectedForm.formData, "invoice") === "true",
         },
         { ...protectedForm.context, requestId },
       );

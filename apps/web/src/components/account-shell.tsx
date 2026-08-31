@@ -40,25 +40,14 @@ export function AccountShell({
             <BrandMark className="size-11" />
             {english ? "ITQANAK" : "إتقانك"}
           </Link>
-          <div className="flex items-center gap-2">
-            <span className="hidden items-center gap-2 rounded-2xl border border-[var(--itq-color-border)] px-3 py-2 sm:flex">
-              <span className="grid size-8 place-items-center rounded-xl bg-[var(--itq-color-brand-700)] text-sm font-black text-white">
-                {initial}
-              </span>
-              <span className="max-w-36 truncate text-xs font-black">{displayName}</span>
+          <span className="flex items-center gap-2 rounded-2xl border border-[var(--itq-color-border)] px-3 py-2">
+            <span className="grid size-8 place-items-center rounded-xl bg-[var(--itq-color-brand-700)] text-sm font-black text-white">
+              {initial}
             </span>
-            <form action="/api/auth/logout" method="post">
-              <CsrfInput token={csrfToken} />
-              <input name="locale" type="hidden" value={locale} />
-              <SubmitButton
-                aria-label={english ? "Sign out" : "تسجيل الخروج"}
-                className="size-11 rounded-2xl border border-[var(--itq-color-border)] bg-[var(--itq-color-surface)] p-0 text-[var(--itq-color-muted)] shadow-none hover:bg-[var(--itq-color-danger-50)] hover:text-[var(--itq-color-danger-700)]"
-                pendingLabel="…"
-              >
-                <LogOutIcon className="size-5" />
-              </SubmitButton>
-            </form>
-          </div>
+            <span className="hidden max-w-36 truncate text-xs font-black sm:block">
+              {displayName}
+            </span>
+          </span>
         </div>
       </header>
       <main className="mx-auto grid max-w-7xl gap-7 px-4 py-7 sm:px-7 lg:grid-cols-[17rem_minmax(0,1fr)] lg:py-10">

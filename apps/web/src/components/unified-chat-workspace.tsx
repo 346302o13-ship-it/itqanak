@@ -41,6 +41,7 @@ import {
 import { requestStatusLabel } from "@/lib/request-presenters";
 import { playUiSound } from "@/lib/ui-sounds";
 import { setActiveConversation } from "@/lib/active-conversation";
+import { compressImageForUpload } from "@/lib/image-compression";
 
 import { PaymentReceiptUploader } from "./payment-receipt-uploader";
 
@@ -50,6 +51,7 @@ import {
   CheckIcon,
   ChevronIcon,
   CloseIcon,
+  DownloadIcon,
   MessageIcon,
   MicIcon,
   PaperclipIcon,
@@ -551,6 +553,7 @@ function PaymentReceiptCard({
 }>) {
   const english = locale === "en";
   const { amount, currency, requestNumber } = paymentMetadataAmount(metadata, english);
+  const isInvoice = metadata.scope === "INVOICE";
   const dueId = typeof metadata.dueId === "string" ? metadata.dueId : undefined;
   const submissionId =
     typeof metadata.submissionId === "string" ? metadata.submissionId : undefined;
@@ -583,8 +586,14 @@ function PaymentReceiptCard({
   return (
     <div className="rounded-xl border border-[var(--itq-color-border)] bg-[var(--itq-color-surface)] p-3 shadow-sm">
       <p className="text-xs font-black">
-        {english ? "Payment receipt" : "إيصال دفع"}
-        {requestNumber.length > 0 ? (
+        {isInvoice
+          ? english
+            ? "Invoice payment receipt"
+            : "إيصال دفع الفاتورة الإجمالية"
+          : english
+            ? "Payment receipt"
+            : "إيصال دفع"}
+        {!isInvoice && requestNumber.length > 0 ? (
           <bdi className="ms-1 font-bold text-[var(--itq-color-muted)]" dir="ltr">
             · {requestNumber}
           </bdi>
@@ -739,6 +748,7 @@ function InvoiceSummaryCard({
           <PaymentReceiptUploader
             csrfToken={csrfToken}
             dueId={firstDueId}
+            invoice
             locale={locale}
             onSubmitted={onSubmitted}
           />
@@ -1338,6 +1348,68 @@ function QuoteCard({
   );
 }
 
+/** Three bouncing dots for the "…is typing" line. */
+function TypingDots() {
+  return (
+    <span aria-hidden="true" className="inline-flex items-end gap-0.5">
+      <span className="size-1.5 animate-bounce rounded-full bg-current [animation-delay:-0.3s]" />
+      <span className="size-1.5 animate-bounce rounded-full bg-current [animation-delay:-0.15s]" />
+      <span className="size-1.5 animate-bounce rounded-full bg-current" />
+    </span>
+  );
+}
+
+/**
+ * WhatsApp-style round download button: fetches the file, spins while it runs,
+ * then hands the blob to the browser as a save. Falls back to a plain
+ * navigation (the route already sends Content-Disposition) if the fetch fails.
+ */
+function DownloadCircle({
+  url,
+  filename,
+  locale,
+  className = "",
+}: Readonly<{ url: string; filename: string; locale: "ar" | "en"; className?: string }>) {
+  const english = locale === "en";
+  const [busy, setBusy] = useState(false);
+  async function run(): Promise<void> {
+    if (busy) return;
+    setBusy(true);
+    try {
+      const response = await fetch(url, { credentials: "same-origin", cache: "no-store" });
+      if (!response.ok) throw new Error("download_failed");
+      const blob = await response.blob();
+      const href = URL.createObjectURL(blob);
+      const anchor = document.createElement("a");
+      anchor.href = href;
+      anchor.download = filename || "download";
+      document.body.appendChild(anchor);
+      anchor.click();
+      anchor.remove();
+      window.setTimeout(() => URL.revokeObjectURL(href), 4000);
+    } catch {
+      window.location.href = url;
+    } finally {
+      setBusy(false);
+    }
+  }
+  return (
+    <button
+      aria-label={english ? "Download" : "تنزيل"}
+      className={`grid size-9 shrink-0 place-items-center rounded-full bg-[var(--itq-color-brand-600)] text-white shadow-sm transition hover:bg-[var(--itq-color-brand-700)] disabled:opacity-60 ${className}`}
+      disabled={busy}
+      onClick={() => void run()}
+      type="button"
+    >
+      {busy ? (
+        <span className="size-4 animate-spin rounded-full border-2 border-white/40 border-t-white" />
+      ) : (
+        <DownloadIcon className="size-4" />
+      )}
+    </button>
+  );
+}
+
 function AttachmentBody({
   apiBase,
   attachment,
@@ -1388,36 +1460,46 @@ function AttachmentBody({
           <a href={download}>{english ? "Download video" : "تنزيل الفيديو"}</a>
         </video>
       ) : contentType === "IMAGE" ? (
-        <button
-          className="block w-full overflow-hidden rounded-xl bg-black/5"
-          onClick={() => onOpenImage({ src: preview, download, name: attachment.originalFilename })}
-          type="button"
-        >
-          <img
-            alt={attachment.originalFilename}
-            className="max-h-[22rem] w-full object-contain"
-            loading="lazy"
-            src={preview}
+        <div className="relative w-full overflow-hidden rounded-xl bg-black/5">
+          <button
+            className="block w-full"
+            onClick={() =>
+              onOpenImage({ src: preview, download, name: attachment.originalFilename })
+            }
+            type="button"
+          >
+            <img
+              alt={attachment.originalFilename}
+              className="max-h-[22rem] w-full object-contain"
+              loading="lazy"
+              src={preview}
+            />
+          </button>
+          <DownloadCircle
+            className="absolute bottom-2 end-2 !bg-black/55 hover:!bg-black/70"
+            filename={attachment.originalFilename}
+            locale={locale}
+            url={download}
           />
-        </button>
+        </div>
       ) : contentType === "AUDIO" ? (
         <div className="min-w-56 max-w-full">
           <audio className="w-full" controls preload="metadata" src={preview}>
             <a href={download}>{english ? "Download voice message" : "تنزيل الرسالة الصوتية"}</a>
           </audio>
-          <a className="mt-2 block truncate text-xs font-black underline" href={download}>
-            <bdi dir="auto">{attachment.originalFilename}</bdi>
-          </a>
+          <div className="mt-2 flex items-center gap-2">
+            <bdi className="min-w-0 flex-1 truncate text-xs font-black" dir="auto">
+              {attachment.originalFilename}
+            </bdi>
+            <DownloadCircle filename={attachment.originalFilename} locale={locale} url={download} />
+          </div>
         </div>
       ) : (
-        <a
-          className="flex min-h-14 items-center gap-3 rounded-xl border border-current/15 bg-[var(--itq-color-surface)]/70 p-3 font-black text-[var(--itq-color-ink)] no-underline"
-          href={download}
-        >
+        <div className="flex min-h-14 items-center gap-3 rounded-xl border border-current/15 bg-[var(--itq-color-surface)] p-3 font-black text-[var(--itq-color-ink)]">
           <span className="grid size-10 shrink-0 place-items-center rounded-xl bg-[var(--itq-color-brand-50)] text-[var(--itq-color-brand-strong)]">
             <PaperclipIcon className="size-5" />
           </span>
-          <span className="min-w-0">
+          <span className="min-w-0 flex-1">
             <bdi className="block truncate text-sm" dir="auto">
               {attachment.originalFilename}
             </bdi>
@@ -1425,10 +1507,11 @@ function AttachmentBody({
               {new Intl.NumberFormat(english ? "en" : "ar-SA", {
                 maximumFractionDigits: 1,
               }).format(attachment.sizeBytes / 1_048_576)}{" "}
-              {english ? "MB · Download" : "م.ب · تنزيل"}
+              {english ? "MB" : "م.ب"}
             </span>
           </span>
-        </a>
+          <DownloadCircle filename={attachment.originalFilename} locale={locale} url={download} />
+        </div>
       )}
     </div>
   );
@@ -1459,21 +1542,20 @@ function ConversationList({
               {english ? `${conversations.length} students` : `${conversations.length} طالبًا`}
             </p>
           </div>
-          {onClose === undefined ? null : (
+          {onClose === undefined ? (
+            <span className="grid size-10 place-items-center rounded-2xl bg-[var(--itq-color-brand-700)] text-white">
+              <MessageIcon className="size-5" />
+            </span>
+          ) : (
             <button
               aria-label={english ? "Close conversations" : "إغلاق قائمة المحادثات"}
-              className="grid size-10 place-items-center rounded-2xl bg-[var(--itq-color-surface)] text-[var(--itq-color-muted)] shadow-sm lg:hidden"
+              className="grid size-10 place-items-center rounded-2xl bg-[var(--itq-color-surface)] text-[var(--itq-color-muted)] shadow-sm"
               onClick={onClose}
               type="button"
             >
               <CloseIcon className="size-5" />
             </button>
           )}
-          <span
-            className={`${onClose === undefined ? "grid" : "hidden lg:grid"} size-10 place-items-center rounded-2xl bg-[var(--itq-color-brand-700)] text-white`}
-          >
-            <MessageIcon className="size-5" />
-          </span>
         </div>
         <form action={prefix} className="relative mt-4" method="get">
           <SearchIcon className="pointer-events-none absolute start-3 top-1/2 size-4 -translate-y-1/2 text-[var(--itq-color-muted)]" />
@@ -1629,6 +1711,9 @@ export function UnifiedChatWorkspace({
   const [searchOpen, setSearchOpen] = useState(false);
   const [createRequestOpen, setCreateRequestOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
+  const [otherTyping, setOtherTyping] = useState(false);
+  const typingClearRef = useRef<number | undefined>(undefined);
+  const typingSentAtRef = useRef(0);
   const [activeMatch, setActiveMatch] = useState(0);
   const [highlightId, setHighlightId] = useState<string>();
   const searchInputRef = useRef<HTMLInputElement>(null);
@@ -1692,6 +1777,27 @@ export function UnifiedChatWorkspace({
       : conversation === undefined
         ? undefined
         : `/api/admin/conversations/${encodeURIComponent(conversation.studentUserId)}`;
+
+  // Tell the other side "…is typing", WhatsApp-style. Throttled to one ping
+  // every 2.5s; the receiver clears the indicator on its own after ~6s.
+  const sendTypingPing = useCallback((): void => {
+    if (csrfToken === undefined || conversation === undefined) return;
+    const now = Date.now();
+    if (now - typingSentAtRef.current < 2500) return;
+    typingSentAtRef.current = now;
+    const url =
+      mode === "admin"
+        ? `/api/admin/conversations/${encodeURIComponent(conversation.studentUserId)}/typing`
+        : "/api/student/conversation/typing";
+    const form = new URLSearchParams({ csrfToken });
+    if (mode === "admin") form.set("conversationId", conversation.id);
+    void fetch(url, {
+      method: "POST",
+      credentials: "same-origin",
+      headers: { "Content-Type": "application/x-www-form-urlencoded" },
+      body: form,
+    }).catch(() => undefined);
+  }, [csrfToken, conversation, mode]);
 
   // Re-pull the request list (with its finance state) from the server. The
   // message-delta poll only carries a sparse per-message request, so finance
@@ -1834,10 +1940,8 @@ export function UnifiedChatWorkspace({
 
   useEffect(() => {
     if (conversation === undefined || (!contactsOpen && !detailsOpen)) return;
-    const mobileDrawer = window.matchMedia(
-      detailsOpen ? "(max-width: 1279px)" : "(max-width: 1023px)",
-    );
-    if (!mobileDrawer.matches) return;
+    // Both side panels are collapsible overlays at every width now, so the
+    // focus trap + Escape-to-close always applies while one is open.
     const panel = detailsOpen ? detailsPanelRef.current : contactsPanelRef.current;
     const frame = window.requestAnimationFrame(() => panel?.focus());
     const handleDrawerKeys = (event: KeyboardEvent) => {
@@ -2294,10 +2398,21 @@ export function UnifiedChatWorkspace({
       if (stopped) return;
       source = new EventSource(url);
       source.onmessage = (event) => {
-        let payload: { conversationId?: string; senderType?: string };
+        let payload: { conversationId?: string; senderType?: string; type?: string; role?: string };
         try {
-          payload = JSON.parse(event.data) as { conversationId?: string; senderType?: string };
+          payload = JSON.parse(event.data) as typeof payload;
         } catch {
+          return;
+        }
+        if (payload.type === "typing") {
+          // The other party is typing. Ignore my own role's pings and, for the
+          // admin, pings for a conversation that is not on screen.
+          const mine = mode === "admin" ? payload.role === "admin" : payload.role === "student";
+          if (mine) return;
+          if (mode === "admin" && payload.conversationId !== conversationIdRef.current) return;
+          setOtherTyping(true);
+          if (typingClearRef.current !== undefined) window.clearTimeout(typingClearRef.current);
+          typingClearRef.current = window.setTimeout(() => setOtherTyping(false), 6000);
           return;
         }
         if (mode === "admin") {
@@ -2308,9 +2423,11 @@ export function UnifiedChatWorkspace({
             payload.senderType !== "ADMIN"
           ) {
             messagePokeRef.current();
+            setOtherTyping(false);
           }
         } else if (payload.senderType !== "STUDENT") {
           messagePokeRef.current();
+          setOtherTyping(false);
         }
       };
       source.onerror = () => {
@@ -2328,6 +2445,7 @@ export function UnifiedChatWorkspace({
     return () => {
       stopped = true;
       if (retryTimer !== undefined) window.clearTimeout(retryTimer);
+      if (typingClearRef.current !== undefined) window.clearTimeout(typingClearRef.current);
       source?.close();
     };
   }, [mode]);
@@ -2633,48 +2751,6 @@ export function UnifiedChatWorkspace({
         ? "The security scan is still running. Try sending the file again after it finishes."
         : "ما زال الفحص الأمني جاريًا. حاول إرسال الملف بعد اكتماله.",
     );
-  }
-
-  // Shrink big photos in the browser before upload, the way a messenger does:
-  // cap the long edge and re-encode as JPEG so a 6 MB camera shot lands as a
-  // few hundred KB. Non-images (and small images) pass through untouched.
-  async function compressImageForUpload(original: File): Promise<File> {
-    if (!/^image\/(jpe?g|png)$/iu.test(original.type)) return original;
-    if (typeof createImageBitmap !== "function") return original;
-    const maxDimension = 1600;
-    let bitmap: ImageBitmap;
-    try {
-      bitmap = await createImageBitmap(original);
-    } catch {
-      return original;
-    }
-    try {
-      const scale = Math.min(1, maxDimension / Math.max(bitmap.width, bitmap.height));
-      if (scale === 1 && original.type === "image/jpeg" && original.size < 500_000) {
-        return original;
-      }
-      const width = Math.max(1, Math.round(bitmap.width * scale));
-      const height = Math.max(1, Math.round(bitmap.height * scale));
-      const canvas = document.createElement("canvas");
-      canvas.width = width;
-      canvas.height = height;
-      const context = canvas.getContext("2d");
-      if (context === null) return original;
-      context.fillStyle = "#ffffff";
-      context.fillRect(0, 0, width, height);
-      context.drawImage(bitmap, 0, 0, width, height);
-      const blob = await new Promise<Blob | null>((resolve) => {
-        canvas.toBlob((value) => resolve(value), "image/jpeg", 0.82);
-      });
-      if (blob === null || blob.size >= original.size) return original;
-      const base = original.name.replace(/\.[^.]+$/u, "") || "image";
-      return new File([blob], `${base}.jpg`, {
-        type: "image/jpeg",
-        lastModified: Date.now(),
-      });
-    } finally {
-      bitmap.close();
-    }
   }
 
   async function uploadAndSend(input: File, source: "picker" | "recording" = "picker") {
@@ -3546,7 +3622,7 @@ export function UnifiedChatWorkspace({
           </div>
           <button
             aria-label={english ? "Close request panel" : "إغلاق لوحة الطلبات"}
-            className="grid size-10 place-items-center rounded-xl hover:bg-[var(--itq-color-surface-soft)] xl:hidden"
+            className="grid size-10 place-items-center rounded-xl hover:bg-[var(--itq-color-surface-soft)]"
             onClick={() => closeDetails()}
             type="button"
           >
@@ -3903,24 +3979,20 @@ export function UnifiedChatWorkspace({
   return (
     <section
       aria-label={english ? "Unified conversation" : "المحادثة الموحدة"}
-      className={`relative grid h-full min-h-0 overflow-hidden border-x border-[var(--itq-color-border)] bg-[var(--itq-color-surface)] ${
-        mode === "admin"
-          ? "lg:grid-cols-[21rem_minmax(0,1fr)] xl:grid-cols-[21rem_minmax(0,1fr)_19rem]"
-          : "xl:grid-cols-[minmax(0,1fr)_20rem]"
-      }`}
+      className="relative flex h-full min-h-0 overflow-hidden border-x border-[var(--itq-color-border)] bg-[var(--itq-color-surface)]"
     >
       {mode === "admin" ? (
         <>
           <button
             aria-label={english ? "Close conversations" : "إغلاق قائمة المحادثات"}
-            className={`fixed inset-0 z-40 bg-black/35 backdrop-blur-[1px] lg:hidden ${contactsOpen ? "block" : "hidden"}`}
+            className={`fixed inset-0 z-40 bg-black/35 backdrop-blur-[1px] ${contactsOpen ? "block" : "hidden"}`}
             onClick={() => closeContacts()}
             type="button"
           />
           <aside
             aria-label={english ? "Student conversations" : "محادثات الطلاب"}
             aria-modal={contactsOpen ? true : undefined}
-            className={`fixed inset-y-0 start-0 z-50 flex w-[min(88vw,22rem)] min-h-0 flex-col border-e border-[var(--itq-color-border)] bg-[var(--itq-color-surface-soft)] shadow-2xl transition-[transform,visibility] lg:static lg:z-auto lg:w-auto lg:visible lg:translate-x-0 lg:shadow-none ${
+            className={`fixed inset-y-0 start-0 z-50 flex w-[min(88vw,24rem)] min-h-0 flex-col border-e border-[var(--itq-color-border)] bg-[var(--itq-color-surface-soft)] shadow-2xl transition-[transform,visibility] ${
               contactsOpen
                 ? "visible translate-x-0"
                 : english
@@ -3943,7 +4015,7 @@ export function UnifiedChatWorkspace({
         </>
       ) : null}
 
-      <main className="flex min-h-0 min-w-0 flex-col bg-[var(--itq-color-surface-soft)]">
+      <main className="flex min-h-0 min-w-0 flex-1 flex-col bg-[var(--itq-color-surface-soft)]">
         <header className="flex h-[4.65rem] shrink-0 items-center justify-between gap-3 border-b border-[var(--itq-color-border)] bg-[var(--itq-color-surface)] px-3 sm:px-5">
           <div className="flex min-w-0 items-center gap-2 sm:gap-3">
             <Link
@@ -3967,7 +4039,7 @@ export function UnifiedChatWorkspace({
                 aria-expanded={contactsOpen}
                 aria-haspopup="dialog"
                 aria-label={english ? "Open conversations" : "فتح قائمة المحادثات"}
-                className="grid size-10 shrink-0 place-items-center rounded-xl border border-[var(--itq-color-border)] lg:hidden"
+                className="grid size-10 shrink-0 place-items-center rounded-xl border border-[var(--itq-color-border)]"
                 onClick={() => {
                   closeDetails(false);
                   setContactsOpen(true);
@@ -3995,7 +4067,18 @@ export function UnifiedChatWorkspace({
                       : "إدارة إتقانك"}
                 </bdi>
               </h1>
-              {mode === "admin" ? (
+              {otherTyping ? (
+                <p className="flex items-center gap-1.5 truncate text-[10px] font-black text-[var(--itq-color-brand-strong)] sm:text-xs">
+                  <TypingDots />
+                  {mode === "admin"
+                    ? english
+                      ? "typing…"
+                      : "يكتب الآن…"
+                    : english
+                      ? "typing…"
+                      : "يكتب الآن…"}
+                </p>
+              ) : mode === "admin" ? (
                 <p
                   className={`flex items-center gap-1.5 truncate text-[10px] font-bold sm:text-xs ${
                     studentOnline
@@ -4066,7 +4149,7 @@ export function UnifiedChatWorkspace({
               aria-expanded={detailsOpen}
               aria-haspopup="dialog"
               aria-label={english ? "Open requests" : "فتح الطلبات"}
-              className="relative grid size-10 place-items-center rounded-xl border border-[var(--itq-color-border)] hover:bg-[var(--itq-color-brand-50)] xl:hidden"
+              className="relative grid size-10 place-items-center rounded-xl border border-[var(--itq-color-border)] hover:bg-[var(--itq-color-brand-50)]"
               onClick={() => {
                 closeContacts(false);
                 setDetailsOpen(true);
@@ -4899,7 +4982,10 @@ export function UnifiedChatWorkspace({
                 dir="auto"
                 disabled={recording || recordingStarting}
                 maxLength={10_000}
-                onChange={(event) => setBody(event.currentTarget.value)}
+                onChange={(event) => {
+                  setBody(event.currentTarget.value);
+                  sendTypingPing();
+                }}
                 onKeyDown={(event) => {
                   if (event.key === "Enter" && !event.shiftKey) {
                     event.preventDefault();
@@ -4968,21 +5054,18 @@ export function UnifiedChatWorkspace({
         </footer>
       </main>
 
-      <aside className="hidden min-h-0 border-s border-[var(--itq-color-border)] xl:block">
-        {detailsPanel}
-      </aside>
       {detailsOpen ? (
         <>
           <button
             aria-label={english ? "Close request panel" : "إغلاق لوحة الطلبات"}
-            className="fixed inset-0 z-40 bg-black/35 backdrop-blur-[1px] xl:hidden"
+            className="fixed inset-0 z-40 bg-black/35 backdrop-blur-[1px]"
             onClick={() => closeDetails()}
             type="button"
           />
           <aside
             aria-label={english ? "Requests panel" : "لوحة الطلبات"}
             aria-modal="true"
-            className="fixed inset-y-0 end-0 z-50 w-[min(92vw,24rem)] border-s border-[var(--itq-color-border)] bg-[var(--itq-color-surface)] shadow-2xl xl:hidden"
+            className="fixed inset-y-0 end-0 z-50 w-[min(92vw,26rem)] border-s border-[var(--itq-color-border)] bg-[var(--itq-color-surface)] shadow-2xl"
             id={detailsPanelId}
             ref={detailsPanelRef}
             role="dialog"

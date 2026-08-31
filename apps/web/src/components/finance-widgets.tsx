@@ -23,9 +23,9 @@ export function FinanceStatusChip({
 }
 
 /**
- * Per-student money table for the admin finance overview: who owes what,
- * broken down by currency, most-owing first. Each row opens that student's
- * dedicated payment view (`?student=<id>`).
+ * Per-student money overview for the admin finance page: one clean row per
+ * student — what they still owe (bold, per currency) and what they've paid —
+ * most-owing first. Each row opens that student's dedicated payment view.
  */
 export function StudentBalanceTable({
   balances,
@@ -42,77 +42,80 @@ export function StudentBalanceTable({
   const amount = (minor: number, currency: string, unit: 2 | 3) =>
     formatFinanceAmount(minor, currency as never, unit, locale);
   return (
-    <div className="overflow-x-auto">
-      <table className="w-full min-w-[36rem] border-separate border-spacing-y-2 text-sm">
-        <thead>
-          <tr className="text-start text-xs font-black text-[var(--itq-color-muted)]">
-            <th className="px-3 py-1 text-start">{english ? "Student" : "الطالب"}</th>
-            <th className="px-3 py-1 text-start">{english ? "Outstanding" : "غير مسدَّد"}</th>
-            <th className="px-3 py-1 text-start">{english ? "Paid" : "مسدَّد"}</th>
-            <th className="px-3 py-1 text-start">{english ? "Last activity" : "آخر حركة"}</th>
-            <th className="px-3 py-1" />
-          </tr>
-        </thead>
-        <tbody>
-          {balances.map((balance) => {
-            const owes = balance.lines.filter((line) => line.unpaidAmountMinor > 0);
-            const paid = balance.lines.filter((line) => line.paidAmountMinor > 0);
-            return (
-              <tr
-                className="bg-[var(--itq-color-surface)] shadow-[var(--itq-shadow-sm)]"
-                key={balance.studentUserId}
-              >
-                <td className="rounded-s-2xl px-3 py-3 align-top font-black" dir="auto">
-                  {balance.studentDisplayName}
-                </td>
-                <td className="px-3 py-3 align-top">
-                  {owes.length === 0 ? (
-                    <span className="text-xs font-black text-[var(--itq-color-success-700)]">
-                      {english ? "Settled" : "لا مديونية"}
-                    </span>
-                  ) : (
-                    <span className="grid gap-0.5 font-black text-[var(--itq-color-warning-900)]">
-                      {owes.map((line) => (
-                        <bdi dir="ltr" key={line.currency}>
-                          {amount(line.unpaidAmountMinor, line.currency, line.minorUnit)}
-                          <span className="ms-1 text-[10px] font-bold text-[var(--itq-color-muted)]">
-                            ×{line.unpaidCount}
-                          </span>
-                        </bdi>
-                      ))}
-                    </span>
-                  )}
-                </td>
-                <td className="px-3 py-3 align-top text-[var(--itq-color-muted)]">
-                  {paid.length === 0 ? (
-                    <span className="text-xs">—</span>
-                  ) : (
-                    <span className="grid gap-0.5">
-                      {paid.map((line) => (
-                        <bdi dir="ltr" key={line.currency}>
-                          {amount(line.paidAmountMinor, line.currency, line.minorUnit)}
-                        </bdi>
-                      ))}
-                    </span>
-                  )}
-                </td>
-                <td className="px-3 py-3 align-top text-xs text-[var(--itq-color-muted)]">
-                  <LocalDateTime locale={locale} value={balance.lastActivityAt.toISOString()} />
-                </td>
-                <td className="rounded-e-2xl px-3 py-3 align-top text-end">
-                  <Link
-                    className="inline-flex min-h-9 items-center rounded-xl bg-[var(--itq-color-brand-700)] px-3 text-xs font-black text-white no-underline"
-                    href={`/${locale}/admin/finance?student=${encodeURIComponent(balance.studentUserId)}`}
-                  >
-                    {english ? "Manage" : "إدارة الدفعات"}
-                  </Link>
-                </td>
-              </tr>
-            );
-          })}
-        </tbody>
-      </table>
-    </div>
+    <ul className="grid gap-2.5">
+      {balances.map((balance) => {
+        const owes = balance.lines.filter((line) => line.unpaidAmountMinor > 0);
+        const paid = balance.lines.filter((line) => line.paidAmountMinor > 0);
+        return (
+          <li
+            className="flex flex-wrap items-center gap-x-4 gap-y-2 rounded-2xl border border-[var(--itq-color-border)] bg-[var(--itq-color-surface)] p-3.5 shadow-[var(--itq-shadow-sm)] sm:p-4"
+            key={balance.studentUserId}
+          >
+            <div className="min-w-40 flex-1">
+              <p className="font-black" dir="auto">
+                {balance.studentDisplayName}
+              </p>
+              <p className="mt-0.5 text-[11px] text-[var(--itq-color-muted)]">
+                {english ? "Last activity " : "آخر حركة "}
+                <LocalDateTime locale={locale} value={balance.lastActivityAt.toISOString()} />
+              </p>
+            </div>
+
+            <div className="text-end">
+              <p className="text-[10px] font-bold text-[var(--itq-color-muted)]">
+                {english ? "Outstanding" : "غير مسدَّد"}
+              </p>
+              {owes.length === 0 ? (
+                <p className="text-sm font-black text-[var(--itq-color-success-700)]">
+                  {english ? "Settled" : "لا مديونية"}
+                </p>
+              ) : (
+                <div className="grid gap-0.5">
+                  {owes.map((line) => (
+                    <bdi
+                      className="text-sm font-black text-[var(--itq-color-warning-900)]"
+                      dir="ltr"
+                      key={line.currency}
+                    >
+                      {amount(line.unpaidAmountMinor, line.currency, line.minorUnit)}
+                      <span className="ms-1 text-[10px] font-bold text-[var(--itq-color-muted)]">
+                        ×{line.unpaidCount}
+                      </span>
+                    </bdi>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            {paid.length > 0 ? (
+              <div className="hidden text-end sm:block">
+                <p className="text-[10px] font-bold text-[var(--itq-color-muted)]">
+                  {english ? "Paid" : "مسدَّد"}
+                </p>
+                <div className="grid gap-0.5">
+                  {paid.map((line) => (
+                    <bdi
+                      className="text-sm font-bold text-[var(--itq-color-muted)]"
+                      dir="ltr"
+                      key={line.currency}
+                    >
+                      {amount(line.paidAmountMinor, line.currency, line.minorUnit)}
+                    </bdi>
+                  ))}
+                </div>
+              </div>
+            ) : null}
+
+            <Link
+              className="inline-flex min-h-10 shrink-0 items-center rounded-xl bg-[var(--itq-color-brand-700)] px-3.5 text-xs font-black text-white no-underline"
+              href={`/${locale}/admin/finance?student=${encodeURIComponent(balance.studentUserId)}`}
+            >
+              {english ? "Manage" : "إدارة الدفعات"}
+            </Link>
+          </li>
+        );
+      })}
+    </ul>
   );
 }
 

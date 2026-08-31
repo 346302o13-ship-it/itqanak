@@ -121,6 +121,15 @@ export function PaperclipIcon(props: IconProps) {
   );
 }
 
+export function DownloadIcon(props: IconProps) {
+  return (
+    <Icon {...props}>
+      <path {...stroke} d="M12 3v12m0 0 4-4m-4 4-4-4" />
+      <path {...stroke} d="M4 17v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-2" />
+    </Icon>
+  );
+}
+
 export function MicIcon(props: IconProps) {
   return (
     <Icon {...props}>

@@ -478,212 +478,185 @@ export function FinanceAdmin({
             {english ? "No matching financial records." : "لا توجد سجلات مالية مطابقة."}
           </p>
         ) : (
-          <ul className="mt-6 grid gap-4">
+          <ul className="mt-5 grid gap-2">
             {dues.items.map((due) => {
               const title = english ? due.titleEn : due.titleAr;
-              const description = english ? due.descriptionEn : due.descriptionAr;
               return (
                 <li
-                  className="rounded-2xl border border-[var(--itq-color-border)] p-5"
+                  className="rounded-xl border border-[var(--itq-color-border)] bg-[var(--itq-color-surface)] p-3 shadow-[var(--itq-shadow-sm)]"
                   key={due.id}
                 >
-                  <div className="flex flex-wrap items-start justify-between gap-4">
-                    <div>
-                      <div className="flex flex-wrap items-center gap-2">
-                        <h2 className="text-lg font-black" dir="auto">
-                          {title}
-                        </h2>
-                        <FinanceStatusChip locale={locale} status={due.status} />
-                      </div>
-                      <p className="mt-2 text-sm font-bold">{due.studentDisplayName}</p>
-                      <p className="mt-1 text-xs text-[var(--itq-color-muted)]">
-                        <bdi dir="ltr">{due.reference}</bdi> ·{" "}
+                  <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
+                    <span className="min-w-40 flex-1">
+                      <span className="block truncate text-sm font-black" dir="auto">
+                        {title}
+                      </span>
+                      <span className="mt-0.5 block truncate text-[11px] text-[var(--itq-color-muted)]">
+                        <bdi dir="auto">{due.studentDisplayName}</bdi> ·{" "}
                         <Link
                           className="font-black underline"
                           href={`/${locale}/admin/requests/${encodeURIComponent(due.requestNumber)}`}
                         >
                           <bdi dir="ltr">{due.requestNumber}</bdi>
                         </Link>
-                      </p>
-                    </div>
+                      </span>
+                    </span>
                     <strong
-                      className="text-xl font-black text-[var(--itq-color-brand-strong)]"
+                      className="shrink-0 text-sm font-black text-[var(--itq-color-brand-strong)]"
                       dir="ltr"
                     >
                       {formatFinanceAmount(due.amountMinor, due.currency, due.minorUnit, locale)}
                     </strong>
+                    <FinanceStatusChip locale={locale} status={due.status} />
                   </div>
-                  {description === undefined ? null : (
-                    <p className="mt-4 whitespace-pre-wrap text-sm leading-7" dir="auto">
-                      {description}
-                    </p>
-                  )}
-                  <dl className="mt-4 flex flex-wrap gap-x-6 gap-y-2 text-xs text-[var(--itq-color-muted)]">
-                    <div>
-                      <dt className="inline font-bold">{english ? "Created: " : "أُنشئ: "}</dt>
-                      <dd className="inline">
-                        <LocalDateTime locale={locale} value={due.createdAt.toISOString()} />
-                      </dd>
-                    </div>
-                    {due.dueAt === undefined ? null : (
-                      <div>
-                        <dt className="inline font-bold">{english ? "Due: " : "الاستحقاق: "}</dt>
-                        <dd className="inline">
-                          <LocalDateTime locale={locale} value={due.dueAt.toISOString()} />
-                        </dd>
-                      </div>
-                    )}
+                  <p className="mt-1 text-[10px] text-[var(--itq-color-muted)]">
+                    <bdi dir="ltr">{due.reference}</bdi> ·{" "}
+                    <LocalDateTime locale={locale} value={due.createdAt.toISOString()} />
                     {due.paidAt === undefined ? null : (
-                      <div>
-                        <dt className="inline font-bold">{english ? "Paid: " : "دُفع: "}</dt>
-                        <dd className="inline">
-                          <LocalDateTime locale={locale} value={due.paidAt.toISOString()} />
-                        </dd>
-                      </div>
-                    )}
-                    {due.latestPaymentMethod === undefined ? null : (
-                      <div>
-                        <dt className="inline font-bold">{english ? "Method: " : "الوسيلة: "}</dt>
-                        <dd className="inline">
-                          {financePaymentMethodLabel(due.latestPaymentMethod, locale)}
-                        </dd>
-                      </div>
+                      <>
+                        {" · "}
+                        {english ? "paid " : "دُفع "}
+                        <LocalDateTime locale={locale} value={due.paidAt.toISOString()} />
+                      </>
                     )}
                     {due.latestPaymentReference === undefined ? null : (
-                      <div>
-                        <dt className="inline font-bold">{english ? "Reference: " : "المرجع: "}</dt>
-                        <dd className="inline" dir="ltr">
-                          {due.latestPaymentReference}
-                        </dd>
-                      </div>
+                      <>
+                        {" · "}
+                        <bdi dir="ltr">{due.latestPaymentReference}</bdi>
+                      </>
                     )}
-                  </dl>
+                  </p>
 
                   {!canManage || due.status === "VOIDED" ? null : (
-                    <div className="mt-5 grid gap-3 border-t border-[var(--itq-color-border)] pt-5 lg:grid-cols-2">
-                      {due.status === "UNPAID" ? (
-                        <form
-                          action={`/api/admin/finance/${encodeURIComponent(due.id)}`}
-                          className="lg:col-span-2"
-                          method="post"
-                        >
-                          <CsrfInput token={csrfToken} />
-                          <input name="locale" type="hidden" value={locale} />
-                          <input name="action" type="hidden" value="remind" />
-                          <SubmitButton
-                            className="w-full sm:w-auto"
-                            pendingLabel={english ? "Sending…" : "جارٍ الإرسال…"}
+                    <details className="mt-2 border-t border-[var(--itq-color-border)] pt-2">
+                      <summary className="cursor-pointer list-none text-xs font-black text-[var(--itq-color-brand-strong)]">
+                        {english ? "Actions" : "الإجراءات"}
+                      </summary>
+                      <div className="mt-2 grid gap-3 lg:grid-cols-2">
+                        {due.status === "UNPAID" ? (
+                          <form
+                            action={`/api/admin/finance/${encodeURIComponent(due.id)}`}
+                            className="lg:col-span-2"
+                            method="post"
                           >
-                            {english ? "Send a payment reminder" : "إرسال تذكير بالدفع"}
-                          </SubmitButton>
-                        </form>
-                      ) : null}
-                      {due.status === "UNPAID" ? (
-                        <form
-                          action={`/api/admin/finance/${encodeURIComponent(due.id)}`}
-                          className="grid gap-3 rounded-2xl bg-[var(--itq-color-success-50)] p-4 sm:grid-cols-2"
-                          method="post"
-                        >
-                          <CsrfInput token={csrfToken} />
-                          <input name="locale" type="hidden" value={locale} />
-                          <input name="action" type="hidden" value="record-payment" />
-                          <input name="expectedVersion" type="hidden" value={due.version} />
-                          <label className="text-xs font-black">
-                            {english ? "Payment method" : "وسيلة الدفع"}
-                            <select className={controlClassName} name="method" required>
-                              {financePaymentMethods.map((method) => (
-                                <option key={method} value={method}>
-                                  {financePaymentMethodLabel(method, locale)}
-                                </option>
-                              ))}
-                            </select>
-                          </label>
-                          <label className="text-xs font-black">
-                            {english ? "Verification reference" : "مرجع التحقق"}
-                            <input
-                              className={controlClassName}
-                              dir="ltr"
-                              maxLength={120}
-                              minLength={2}
-                              name="reference"
-                              required
-                            />
-                          </label>
-                          <label className="text-xs font-black sm:col-span-2">
-                            {english ? "Internal note (optional)" : "ملاحظة داخلية (اختيارية)"}
-                            <textarea
-                              className={controlClassName}
-                              maxLength={500}
-                              name="note"
-                              rows={2}
-                            />
-                          </label>
-                          <SubmitButton
-                            className="sm:col-span-2"
-                            pendingLabel={english ? "Confirming…" : "جارٍ التأكيد…"}
+                            <CsrfInput token={csrfToken} />
+                            <input name="locale" type="hidden" value={locale} />
+                            <input name="action" type="hidden" value="remind" />
+                            <SubmitButton
+                              className="w-full sm:w-auto"
+                              pendingLabel={english ? "Sending…" : "جارٍ الإرسال…"}
+                            >
+                              {english ? "Send a payment reminder" : "إرسال تذكير بالدفع"}
+                            </SubmitButton>
+                          </form>
+                        ) : null}
+                        {due.status === "UNPAID" ? (
+                          <form
+                            action={`/api/admin/finance/${encodeURIComponent(due.id)}`}
+                            className="grid gap-3 rounded-2xl bg-[var(--itq-color-success-50)] p-4 sm:grid-cols-2"
+                            method="post"
                           >
-                            {english ? "Confirm full payment" : "تأكيد دفع المبلغ كاملًا"}
-                          </SubmitButton>
-                        </form>
-                      ) : (
-                        <form
-                          action={`/api/admin/finance/${encodeURIComponent(due.id)}`}
-                          className="grid gap-3 rounded-2xl bg-[var(--itq-color-warning-50)] p-4"
-                          method="post"
-                        >
-                          <CsrfInput token={csrfToken} />
-                          <input name="locale" type="hidden" value={locale} />
-                          <input name="action" type="hidden" value="reverse-payment" />
-                          <input name="expectedVersion" type="hidden" value={due.version} />
-                          <label className="text-xs font-black">
-                            {english ? "Reason for reversal" : "سبب عكس الدفع"}
-                            <textarea
-                              className={controlClassName}
-                              maxLength={500}
-                              minLength={2}
-                              name="reason"
-                              required
-                              rows={2}
-                            />
-                          </label>
-                          <SubmitButton
-                            className="bg-[var(--itq-color-warning-700)]"
-                            pendingLabel={english ? "Reversing…" : "جارٍ العكس…"}
+                            <CsrfInput token={csrfToken} />
+                            <input name="locale" type="hidden" value={locale} />
+                            <input name="action" type="hidden" value="record-payment" />
+                            <input name="expectedVersion" type="hidden" value={due.version} />
+                            <label className="text-xs font-black">
+                              {english ? "Payment method" : "وسيلة الدفع"}
+                              <select className={controlClassName} name="method" required>
+                                {financePaymentMethods.map((method) => (
+                                  <option key={method} value={method}>
+                                    {financePaymentMethodLabel(method, locale)}
+                                  </option>
+                                ))}
+                              </select>
+                            </label>
+                            <label className="text-xs font-black">
+                              {english ? "Verification reference" : "مرجع التحقق"}
+                              <input
+                                className={controlClassName}
+                                dir="ltr"
+                                maxLength={120}
+                                minLength={2}
+                                name="reference"
+                                required
+                              />
+                            </label>
+                            <label className="text-xs font-black sm:col-span-2">
+                              {english ? "Internal note (optional)" : "ملاحظة داخلية (اختيارية)"}
+                              <textarea
+                                className={controlClassName}
+                                maxLength={500}
+                                name="note"
+                                rows={2}
+                              />
+                            </label>
+                            <SubmitButton
+                              className="sm:col-span-2"
+                              pendingLabel={english ? "Confirming…" : "جارٍ التأكيد…"}
+                            >
+                              {english ? "Confirm full payment" : "تأكيد دفع المبلغ كاملًا"}
+                            </SubmitButton>
+                          </form>
+                        ) : (
+                          <form
+                            action={`/api/admin/finance/${encodeURIComponent(due.id)}`}
+                            className="grid gap-3 rounded-2xl bg-[var(--itq-color-warning-50)] p-4"
+                            method="post"
                           >
-                            {english ? "Reverse payment confirmation" : "عكس تأكيد الدفع"}
-                          </SubmitButton>
-                        </form>
-                      )}
-                      {due.status === "UNPAID" ? (
-                        <form
-                          action={`/api/admin/finance/${encodeURIComponent(due.id)}`}
-                          className="grid gap-3 rounded-2xl bg-[var(--itq-color-surface-soft)] p-4"
-                          method="post"
-                        >
-                          <CsrfInput token={csrfToken} />
-                          <input name="locale" type="hidden" value={locale} />
-                          <input name="action" type="hidden" value="void-due" />
-                          <input name="expectedVersion" type="hidden" value={due.version} />
-                          <label className="text-xs font-black">
-                            {english ? "Reason for voiding" : "سبب إلغاء المستحق"}
-                            <textarea
-                              className={controlClassName}
-                              maxLength={500}
-                              minLength={2}
-                              name="reason"
-                              required
-                              rows={2}
-                            />
-                          </label>
-                          <SubmitButton
-                            className="bg-[var(--itq-color-ink-soft)]"
-                            pendingLabel={english ? "Voiding…" : "جارٍ الإلغاء…"}
+                            <CsrfInput token={csrfToken} />
+                            <input name="locale" type="hidden" value={locale} />
+                            <input name="action" type="hidden" value="reverse-payment" />
+                            <input name="expectedVersion" type="hidden" value={due.version} />
+                            <label className="text-xs font-black">
+                              {english ? "Reason for reversal" : "سبب عكس الدفع"}
+                              <textarea
+                                className={controlClassName}
+                                maxLength={500}
+                                minLength={2}
+                                name="reason"
+                                required
+                                rows={2}
+                              />
+                            </label>
+                            <SubmitButton
+                              className="bg-[var(--itq-color-warning-700)]"
+                              pendingLabel={english ? "Reversing…" : "جارٍ العكس…"}
+                            >
+                              {english ? "Reverse payment confirmation" : "عكس تأكيد الدفع"}
+                            </SubmitButton>
+                          </form>
+                        )}
+                        {due.status === "UNPAID" ? (
+                          <form
+                            action={`/api/admin/finance/${encodeURIComponent(due.id)}`}
+                            className="grid gap-3 rounded-2xl bg-[var(--itq-color-surface-soft)] p-4"
+                            method="post"
                           >
-                            {english ? "Void due" : "إلغاء المستحق"}
-                          </SubmitButton>
-                        </form>
-                      ) : null}
-                    </div>
+                            <CsrfInput token={csrfToken} />
+                            <input name="locale" type="hidden" value={locale} />
+                            <input name="action" type="hidden" value="void-due" />
+                            <input name="expectedVersion" type="hidden" value={due.version} />
+                            <label className="text-xs font-black">
+                              {english ? "Reason for voiding" : "سبب إلغاء المستحق"}
+                              <textarea
+                                className={controlClassName}
+                                maxLength={500}
+                                minLength={2}
+                                name="reason"
+                                required
+                                rows={2}
+                              />
+                            </label>
+                            <SubmitButton
+                              className="bg-[var(--itq-color-ink-soft)]"
+                              pendingLabel={english ? "Voiding…" : "جارٍ الإلغاء…"}
+                            >
+                              {english ? "Void due" : "إلغاء المستحق"}
+                            </SubmitButton>
+                          </form>
+                        ) : null}
+                      </div>
+                    </details>
                   )}
                 </li>
               );

@@ -5,12 +5,10 @@ import { BrandMark } from "@itqanak/ui";
 
 import { AnnouncementBanner } from "./announcement-banner";
 import { PushRegistrar } from "./push-registrar";
-import { CsrfInput } from "./auth-shell";
-import { LogOutIcon, ShieldCheckIcon } from "./icons";
+import { ShieldCheckIcon } from "./icons";
 import { InstallAppButton } from "./install-app-button";
 import { AdminMobileNavigation, AdminNavigation } from "./admin-navigation";
 import { NotificationCenter } from "./notification-center";
-import { SubmitButton } from "./submit-button";
 
 interface AdminShellProps {
   readonly displayName: string;
@@ -52,18 +50,6 @@ export function AdminShell({
               <span className="hidden rounded-2xl bg-white/10 px-4 py-3 text-xs font-black sm:inline">
                 {displayName}
               </span>
-              <form action="/api/auth/logout" method="post">
-                <CsrfInput token={csrfToken} />
-                <input name="application" type="hidden" value="admin" />
-                <input name="locale" type="hidden" value={locale} />
-                <SubmitButton
-                  aria-label={english ? "Sign out" : "تسجيل الخروج"}
-                  className="size-11 bg-white/10 p-0 text-white shadow-none hover:bg-[color-mix(in_srgb,var(--itq-color-danger-500)_22%,transparent)]"
-                  pendingLabel="…"
-                >
-                  <LogOutIcon className="size-5" />
-                </SubmitButton>
-              </form>
             </div>
           </div>
         </header>

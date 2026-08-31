@@ -137,6 +137,8 @@ export interface PaymentReceiptSubmission {
 export interface SubmitPaymentReceiptInput {
   readonly attachmentId: string;
   readonly note?: string | null;
+  /** Receipt covers the whole outstanding invoice; accepting it settles every due. */
+  readonly invoice?: boolean;
 }
 
 export interface ReviewPaymentReceiptInput {

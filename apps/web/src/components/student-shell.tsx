@@ -5,13 +5,11 @@ import { BrandMark } from "@itqanak/ui";
 
 import { AnnouncementBanner } from "./announcement-banner";
 import { PushRegistrar } from "./push-registrar";
-import { CsrfInput } from "./auth-shell";
-import { LogOutIcon, ShieldCheckIcon, WhatsAppIcon } from "./icons";
+import { ShieldCheckIcon, WhatsAppIcon } from "./icons";
 import { InstallAppButton } from "./install-app-button";
 import { NotificationCenter } from "./notification-center";
 import { StudentMobileNavigation, StudentNavigation } from "./student-navigation";
 import { StudentSupportFab } from "./student-support-fab";
-import { SubmitButton } from "./submit-button";
 import { supportWhatsAppHref } from "@/lib/support-contact";
 
 interface StudentShellProps {
@@ -68,17 +66,6 @@ export function StudentShell({
                   {displayName}
                 </span>
               </Link>
-              <form action="/api/auth/logout" method="post">
-                <CsrfInput token={csrfToken} />
-                <input name="locale" type="hidden" value={locale} />
-                <SubmitButton
-                  aria-label={english ? "Sign out" : "تسجيل الخروج"}
-                  className="size-11 rounded-2xl border border-[var(--itq-color-border)] bg-[var(--itq-color-surface)] p-0 text-[var(--itq-color-muted)] shadow-none hover:bg-[var(--itq-color-danger-50)] hover:text-[var(--itq-color-danger-700)]"
-                  pendingLabel="…"
-                >
-                  <LogOutIcon className="size-5" />
-                </SubmitButton>
-              </form>
             </div>
           </div>
         </header>

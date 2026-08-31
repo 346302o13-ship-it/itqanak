@@ -97,6 +97,10 @@ export interface FinanceServiceOptions {
   readonly database: DatabaseClient;
 }
 
+/** Note prefix that marks a receipt as covering the whole outstanding invoice:
+ *  accepting it settles every one of the student's UNPAID dues. */
+const INVOICE_RECEIPT_MARKER = "⟪INVOICE⟫";
+
 const dueBaseSelect = `
   dues.id, dues.reference, dues.request_id, requests.request_number,
   dues.student_user_id, dues.title_ar, dues.title_en, dues.description_ar, dues.description_en,
@@ -788,7 +792,11 @@ export class FinanceService {
     requirePermission(requireRole(principal, "STUDENT"), "finance.read.own");
     const dueId = assertFinanceDueId(dueIdInput);
     const attachmentId = assertFinanceDueId(input.attachmentId);
-    const note = normalizePaymentNote(input.note);
+    const studentNote = normalizePaymentNote(input.note);
+    const note =
+      input.invoice === true
+        ? `${INVOICE_RECEIPT_MARKER}${studentNote === null ? "" : ` ${studentNote}`}`.slice(0, 1000)
+        : studentNote;
     return this.database.begin(async (transaction) => {
       const tx = transaction as DatabaseClient;
       const dues = await tx<
@@ -856,6 +864,32 @@ export class FinanceService {
         resourceId: inserted[0].id,
         metadata: { dueId },
       });
+      // For an invoice-total receipt, show the student's whole outstanding
+      // balance on the card, not just this one due.
+      let cardAmountMinor = Number(due.amount_minor);
+      let cardCurrency = due.currency;
+      let cardMinorUnit: 2 | 3 = Number(due.minor_unit) === 3 ? 3 : 2;
+      if (input.invoice === true) {
+        const totals = await tx<
+          {
+            readonly currency: string;
+            readonly minor_unit: number | string;
+            readonly total_minor: string;
+          }[]
+        >`
+          SELECT currency, minor_unit, coalesce(sum(amount_minor), 0)::text AS total_minor
+          FROM finance_dues
+          WHERE student_user_id = ${principal.userId} AND status = 'UNPAID'
+          GROUP BY currency, minor_unit
+          ORDER BY sum(amount_minor) DESC
+        `;
+        const primary = totals[0];
+        if (primary !== undefined) {
+          cardAmountMinor = Number(primary.total_minor);
+          cardCurrency = primary.currency;
+          cardMinorUnit = Number(primary.minor_unit) === 3 ? 3 : 2;
+        }
+      }
       // Drop a "receipt submitted" card into the conversation so the admin can
       // accept the payment without leaving the chat.
       const submitConversations = await tx<{ readonly id: string }[]>`
@@ -872,10 +906,11 @@ export class FinanceService {
               dueId,
               submissionId: inserted[0].id,
               attachmentId,
-              requestNumber: due.request_number,
-              amountMinor: Number(due.amount_minor),
-              currency: due.currency,
-              minorUnit: Number(due.minor_unit) === 3 ? 3 : 2,
+              requestNumber: input.invoice === true ? null : due.request_number,
+              amountMinor: cardAmountMinor,
+              currency: cardCurrency,
+              minorUnit: cardMinorUnit,
+              ...(input.invoice === true ? { scope: "INVOICE" } : {}),
             })},
             ${due.request_id}
           )
@@ -953,6 +988,7 @@ export class FinanceService {
         readonly id: string;
         readonly due_id: string;
         readonly review_status: string;
+        readonly note: string | null;
         readonly due_version: number | string;
         readonly due_status: string;
         readonly student_user_id: string;
@@ -960,7 +996,7 @@ export class FinanceService {
         readonly request_number: string | null;
       }[]
     >`
-      SELECT s.id, s.due_id, s.review_status, d.version AS due_version, d.status AS due_status,
+      SELECT s.id, s.due_id, s.review_status, s.note, d.version AS due_version, d.status AS due_status,
              d.student_user_id, d.request_id, r.request_number
       FROM finance_payment_submissions AS s
       INNER JOIN finance_dues AS d ON d.id = s.due_id
@@ -970,10 +1006,12 @@ export class FinanceService {
     const submission = pending[0];
     if (submission === undefined) throw new FinanceError("RECEIPT_NOT_FOUND");
     if (submission.review_status !== "PENDING") throw new FinanceError("RECEIPT_ALREADY_REVIEWED");
+    const isInvoiceReceipt = (submission.note ?? "").startsWith(INVOICE_RECEIPT_MARKER);
 
     let due: AdminFinanceDue | null = null;
     if (input.decision === "ACCEPT") {
       if (submission.due_status !== "UNPAID") throw new FinanceError("DUE_NOT_PAYABLE");
+      const reference = `RCPT-${submission.id.slice(0, 8).toUpperCase()}`;
       due = await this.changeDue(
         principal,
         submission.due_id,
@@ -982,10 +1020,42 @@ export class FinanceService {
         context,
         {
           method: "BANK_TRANSFER",
-          reference: `RCPT-${submission.id.slice(0, 8).toUpperCase()}`,
+          reference,
           note: reviewNote ?? "Student-submitted payment receipt.",
         },
       );
+      if (isInvoiceReceipt) {
+        // The receipt covered the whole invoice — settle every other UNPAID due
+        // this student has, and clear their other pending receipt submissions.
+        const rest = await this.database<
+          { readonly id: string; readonly version: number | string }[]
+        >`
+          SELECT id, version FROM finance_dues
+          WHERE student_user_id = ${submission.student_user_id} AND status = 'UNPAID'
+          ORDER BY created_at ASC, id ASC
+        `;
+        for (const other of rest) {
+          await this.recordPayment(
+            principal,
+            other.id,
+            {
+              expectedVersion: Number(other.version),
+              method: "BANK_TRANSFER",
+              reference,
+              note: "Settled with the consolidated invoice receipt.",
+            },
+            context,
+          );
+        }
+        await this.database`
+          UPDATE finance_payment_submissions
+          SET review_status = 'ACCEPTED', reviewed_at = now(),
+              reviewed_by_user_id = ${principal.userId},
+              review_note = 'اعتماد ضمن إيصال الفاتورة الإجمالية'
+          WHERE student_user_id = ${submission.student_user_id}
+            AND review_status = 'PENDING' AND id <> ${submissionId}
+        `;
+      }
     }
 
     const updated = await this.database<{ readonly id: string }[]>`

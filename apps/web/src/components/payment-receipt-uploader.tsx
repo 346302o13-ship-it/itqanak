@@ -2,12 +2,16 @@
 
 import { useRef, useState } from "react";
 
+import { compressImageForUpload } from "@/lib/image-compression";
+
 interface PaymentReceiptUploaderProps {
   readonly dueId: string;
   readonly csrfToken: string | undefined;
   readonly locale: "ar" | "en";
   /** Already has a pending submission awaiting review. */
   readonly pending?: boolean;
+  /** Settle the whole outstanding invoice, not just this one due. */
+  readonly invoice?: boolean;
   /** Fired once the receipt is accepted by the server (e.g. to refresh a chat). */
   readonly onSubmitted?: () => void;
 }
@@ -23,17 +27,21 @@ export function PaymentReceiptUploader({
   locale,
   onSubmitted,
   pending = false,
+  invoice = false,
 }: PaymentReceiptUploaderProps) {
   const english = locale === "en";
   const fileRef = useRef<HTMLInputElement>(null);
   const [state, setState] = useState<"idle" | "busy" | "done" | "error">(pending ? "done" : "idle");
   const [message, setMessage] = useState<string>();
 
-  async function onFile(file: File): Promise<void> {
+  async function onFile(rawFile: File): Promise<void> {
     if (csrfToken === undefined) return;
     setState("busy");
     setMessage(english ? "Uploading…" : "جارٍ الرفع…");
     try {
+      // Same treatment as a photo sent in the chat: cap the resolution and
+      // re-encode so a camera receipt lands as a few hundred KB.
+      const file = await compressImageForUpload(rawFile);
       const upload = await fetch("/api/student/conversation/attachments", {
         method: "POST",
         body: file,
@@ -58,7 +66,11 @@ export function PaymentReceiptUploader({
           "Content-Type": "application/x-www-form-urlencoded",
           Accept: "application/json",
         },
-        body: new URLSearchParams({ csrfToken, attachmentId: uploaded.attachment.id }),
+        body: new URLSearchParams({
+          csrfToken,
+          attachmentId: uploaded.attachment.id,
+          ...(invoice ? { invoice: "true" } : {}),
+        }),
       });
       const result = (await submit.json().catch(() => ({}))) as { message?: string };
       if (!submit.ok) throw new Error(result.message ?? "submit_failed");
@@ -114,9 +126,13 @@ export function PaymentReceiptUploader({
       >
         {state === "busy"
           ? (message ?? (english ? "Uploading…" : "جارٍ الرفع…"))
-          : english
-            ? "I paid — upload receipt"
-            : "دفعت — ارفع الإيصال"}
+          : invoice
+            ? english
+              ? "I paid the total — upload receipt"
+              : "دفعت الإجمالي — ارفع الإيصال"
+            : english
+              ? "I paid — upload receipt"
+              : "دفعت — ارفع الإيصال"}
       </button>
       {state === "error" && message !== undefined ? (
         <p className="mt-2 text-xs font-bold text-[var(--itq-color-danger-800)]">{message}</p>
