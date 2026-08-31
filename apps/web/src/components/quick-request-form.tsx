@@ -17,15 +17,34 @@ interface QuickRequestFormProps {
   readonly integrityVersion: string;
 }
 
+/** A UUID-v4-shaped id, so the idempotency key passes server validation even
+ *  where `crypto.randomUUID` is missing (older in-app webviews). */
+function submissionId(): string {
+  if (typeof crypto !== "undefined" && typeof crypto.randomUUID === "function") {
+    return crypto.randomUUID();
+  }
+  const hex = "0123456789abcdef";
+  let out = "";
+  for (let index = 0; index < 36; index += 1) {
+    if (index === 8 || index === 13 || index === 18 || index === 23) out += "-";
+    else if (index === 14) out += "4";
+    else if (index === 19) out += hex[(Math.floor(Math.random() * 4) + 8) % 16];
+    else out += hex[Math.floor(Math.random() * 16)];
+  }
+  return out;
+}
+
 /**
  * One-tap request creation: type a word or two (optional), then tap a service.
- * That single tap creates the request, submits it, and drops the student into
- * the conversation — the rest of the details are gathered there, not in a form.
+ * That single tap creates the request and drops the student into the chat,
+ * where the rest of the details are worked out.
  *
- * The service id rides on the tapped button (`name="serviceId"`), so a plain
- * HTML submit works with no JavaScript at all; the `onSubmit` handler is pure
- * enhancement that carries the typed phrase into the title/description. If the
- * fields arrive blank the server derives them from the service name.
+ * This form works with **no JavaScript**: the service id rides on the tapped
+ * `<button name="serviceId">` and the phrase rides on `name="phrase"`; the
+ * server fills in a title/description from those (or the service name). The
+ * `onSubmit` handler is a thin guard against a double tap — it never disables
+ * the submit button, because a disabled submitter is dropped from the POST and
+ * that was the old "review the fields" error.
  */
 export function QuickRequestForm({
   services,
@@ -36,67 +55,33 @@ export function QuickRequestForm({
   const english = locale === "en";
   const [text, setText] = useState("");
   const [submitting, setSubmitting] = useState(false);
-  const submissionKey = useMemo(
-    () =>
-      typeof crypto !== "undefined" && typeof crypto.randomUUID === "function"
-        ? crypto.randomUUID()
-        : `${Date.now()}-${Math.random().toString(16).slice(2)}`,
-    [],
-  );
-  const titleRef = useRef<HTMLInputElement>(null);
-  const descriptionRef = useRef<HTMLInputElement>(null);
-  const serviceIdRef = useRef<HTMLInputElement>(null);
+  const submittedRef = useRef(false);
+  const key = useMemo(submissionId, []);
 
   function handleSubmit(event: React.FormEvent<HTMLFormElement>): void {
-    // Copy the tapped service into a hidden field *before* anything disables the
-    // button: a disabled <button name="serviceId"> is dropped from the form
-    // payload by the browser, which was surfacing as "review the fields".
-    const submitter = (event.nativeEvent as SubmitEvent).submitter;
-    const picked =
-      submitter instanceof HTMLButtonElement && submitter.value.length > 0
-        ? submitter.value
-        : (serviceIdRef.current?.value ?? "");
-    if (picked.length === 0) {
+    if (submittedRef.current) {
       event.preventDefault();
       return;
     }
-    if (serviceIdRef.current) {
-      serviceIdRef.current.value = picked;
-      // Only claim the field name once it holds a value, so a page whose JS
-      // never hydrated still submits the button's own name="serviceId".
-      serviceIdRef.current.name = "serviceId";
-    }
-    const phrase = text.trim();
-    if (phrase.length >= 3) {
-      if (titleRef.current) titleRef.current.value = phrase;
-      if (descriptionRef.current) {
-        descriptionRef.current.value = english
-          ? `${phrase} — I will share the details in the chat.`
-          : `${phrase} — سأوضح التفاصيل في المحادثة.`;
-      }
-    }
+    submittedRef.current = true;
     setSubmitting(true);
   }
 
   return (
     <form
       action="/api/student/requests"
-      className="grid gap-5"
+      aria-busy={submitting}
+      className="relative grid gap-5"
       method="post"
-      onSubmit={(event) => handleSubmit(event)}
+      onSubmit={handleSubmit}
     >
-      {/* First in the DOM so, once JS names it, form.get("serviceId") reads this
-          over the button; stays nameless (not submitted) until JS fills it. */}
-      <input defaultValue="" ref={serviceIdRef} type="hidden" />
       <input name="csrfToken" type="hidden" value={csrfToken ?? ""} />
       <input name="locale" type="hidden" value={locale} />
-      <input name="submissionKey" type="hidden" value={submissionKey} />
+      <input name="submissionKey" type="hidden" value={key} />
       <input name="intent" type="hidden" value="submit" />
       <input name="acceptedAcademicIntegrity" type="hidden" value="true" />
       <input name="academicIntegrityVersion" type="hidden" value={integrityVersion} />
       <input name="quick" type="hidden" value="true" />
-      <input defaultValue="" name="title" ref={titleRef} type="hidden" />
-      <input defaultValue="" name="description" ref={descriptionRef} type="hidden" />
 
       <label className="block">
         <span className="text-sm font-black">
@@ -107,6 +92,7 @@ export function QuickRequestForm({
           className="mt-2 h-14 w-full rounded-2xl border border-[var(--itq-color-border)] bg-[var(--itq-color-surface)] px-4 text-base shadow-sm outline-none focus:border-[var(--itq-color-brand-500)]"
           dir="auto"
           maxLength={160}
+          name="phrase"
           onChange={(event) => setText(event.currentTarget.value)}
           placeholder={english ? "e.g. graduation research" : "مثال: بحث تخرج"}
           value={text}
@@ -120,8 +106,7 @@ export function QuickRequestForm({
         <div className="grid gap-2.5 sm:grid-cols-2">
           {services.map((service) => (
             <button
-              className="flex items-center gap-3 rounded-2xl border border-[var(--itq-color-border)] bg-[var(--itq-color-surface)] p-4 text-start shadow-sm transition active:scale-[0.98] hover:border-[var(--itq-color-brand-300)] hover:bg-[var(--itq-color-brand-50)] disabled:opacity-50"
-              disabled={submitting}
+              className="flex items-center gap-3 rounded-2xl border border-[var(--itq-color-border)] bg-[var(--itq-color-surface)] p-4 text-start shadow-sm transition hover:border-[var(--itq-color-brand-300)] hover:bg-[var(--itq-color-brand-50)] active:scale-[0.98]"
               key={service.id}
               name="serviceId"
               type="submit"
@@ -151,6 +136,17 @@ export function QuickRequestForm({
           ? `By continuing you confirm this request follows the academic-integrity policy (${integrityVersion}) — the service is for learning and review, not plagiarism or exams.`
           : `بالمتابعة تُقر بأن الطلب يلتزم بسياسة النزاهة الأكاديمية (${integrityVersion})، وأن الخدمة للتعلّم والمراجعة لا للانتحال أو أداء الاختبارات.`}
       </p>
+
+      {submitting ? (
+        <span
+          aria-hidden="true"
+          className="absolute inset-0 z-10 grid place-items-center rounded-2xl bg-[color-mix(in_srgb,var(--itq-color-surface)_60%,transparent)]"
+        >
+          <span className="inline-flex items-center gap-2 rounded-xl bg-[var(--itq-color-brand-700)] px-4 py-2 text-sm font-black text-white shadow-[var(--itq-shadow-md)]">
+            {english ? "Creating…" : "جارٍ الإنشاء…"}
+          </span>
+        </span>
+      ) : null}
     </form>
   );
 }

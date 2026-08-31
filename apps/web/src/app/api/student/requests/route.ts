@@ -23,6 +23,11 @@ async function fillQuickRequestFields(
   const title = String(formData.get("title") ?? "").trim();
   const description = String(formData.get("description") ?? "").trim();
   if (title.length >= 3 && description.length >= 10) return;
+  // The one-tap form only ever sends the picked service + an optional phrase;
+  // everything the draft rules need is derived here so it holds with no JS.
+  const phrase = String(formData.get("phrase") ?? "")
+    .trim()
+    .slice(0, 160);
   const serviceId = String(formData.get("serviceId") ?? "").trim();
   let serviceName = locale === "en" ? "New request" : "طلب جديد";
   if (UUID.test(serviceId)) {
@@ -36,13 +41,14 @@ async function fillQuickRequestFields(
       // Fall back to the generic name; createDraft still validates serviceId.
     }
   }
-  if (title.length < 3) formData.set("title", serviceName);
+  const subject = phrase.length >= 3 ? phrase : serviceName;
+  if (title.length < 3) formData.set("title", subject.slice(0, 160));
   if (description.length < 10) {
     formData.set(
       "description",
       locale === "en"
-        ? `${serviceName} — I will share the details in the chat.`
-        : `${serviceName} — سأوضح التفاصيل في المحادثة.`,
+        ? `${subject} — I will share the details in the chat.`
+        : `${subject} — سأوضح التفاصيل في المحادثة.`,
     );
   }
 }
