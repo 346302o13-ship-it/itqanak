@@ -46,12 +46,7 @@ export function AdminShell({
             </span>
           </Link>
           <div className="flex items-center gap-2">
-            <InstallAppButton
-              className="border-white/15 bg-white/10 text-white shadow-none hover:border-white/25 hover:bg-white/15"
-              compact
-              locale={locale}
-              surface="admin"
-            />
+            <InstallAppButton compact locale={locale} surface="admin" variant="header" />
             <NotificationCenter csrfToken={csrfToken} locale={locale} surface="admin" />
             <span className="hidden rounded-2xl bg-white/10 px-4 py-3 text-xs font-black sm:inline">
               {displayName}

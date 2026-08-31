@@ -35,7 +35,7 @@ export function RequestPreview({
   return (
     <div
       aria-label={copy.label}
-      className="relative rounded-[1.75rem] border border-white/80 bg-white/95 p-4 shadow-[var(--itq-shadow-float)] backdrop-blur sm:p-6"
+      className="relative rounded-[1.75rem] border border-[var(--itq-color-border)] bg-[var(--itq-color-surface)] p-4 shadow-[var(--itq-shadow-float)] sm:p-6"
       role="img"
     >
       <div className="flex items-start justify-between gap-4 border-b border-[var(--itq-color-border)] pb-5">

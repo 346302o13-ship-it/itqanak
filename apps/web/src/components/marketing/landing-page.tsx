@@ -5,6 +5,7 @@ import type { JSX } from "react";
 import type { ContentBlock } from "@itqanak/content";
 import { classNames } from "@itqanak/ui";
 
+import { InstallAppButton } from "../install-app-button";
 import { ManagedContentBlocks } from "../managed-content-blocks";
 
 import { FaqList, type FaqItem } from "./faq-list";
@@ -136,7 +137,7 @@ export function LandingPage({
         <div className="relative flex min-h-[35rem] items-center px-6 py-10 sm:px-10 lg:w-[58%] lg:px-14 lg:py-16">
           <div className="itq-rise">
             <div className="flex flex-wrap items-center gap-3">
-              <span className="inline-flex items-center gap-2 rounded-full border border-white/60 bg-white/80 px-4 py-2 text-sm font-black text-[var(--itq-color-brand-strong)] shadow-[var(--itq-shadow-sm)] backdrop-blur">
+              <span className="inline-flex items-center gap-2 rounded-full border border-[var(--itq-color-border)] bg-[var(--itq-color-surface)] px-4 py-2 text-sm font-black text-[var(--itq-color-brand-strong)] shadow-[var(--itq-shadow-sm)]">
                 <MarketingIcon className="size-4" name="sparkles" />
                 {copy.hero.eyebrow}
               </span>
@@ -157,7 +158,7 @@ export function LandingPage({
             <p className="mt-6 max-w-xl text-lg leading-9 text-[var(--itq-color-muted)]">
               {copy.hero.description}
             </p>
-            <div className="mt-8 flex flex-col gap-3 sm:flex-row">
+            <div className="mt-8 flex flex-col flex-wrap gap-3 sm:flex-row">
               <Link
                 className="itq-sheen inline-flex min-h-12 items-center justify-center rounded-xl bg-[linear-gradient(120deg,var(--itq-color-brand-600),var(--itq-color-brand-800))] px-6 py-3 font-black text-white shadow-[var(--itq-shadow-float)] transition hover:-translate-y-0.5 hover:shadow-[var(--itq-shadow-lg)]"
                 href={`${prefix}/services`}
@@ -170,6 +171,7 @@ export function LandingPage({
                 locale={locale}
                 message={copy.hero.whatsappMessage}
               />
+              <InstallAppButton locale={locale} surface="public" variant="hero" />
             </div>
             <div className="mt-8 flex flex-wrap gap-x-5 gap-y-3 text-sm font-bold text-[var(--itq-color-ink-soft)]">
               {copy.trustItems.slice(0, 3).map((item) => (
@@ -413,7 +415,7 @@ export function LandingPage({
               {copy.finalCta.description}
             </p>
           </div>
-          <div className="flex w-full flex-col gap-3 sm:w-auto sm:flex-row">
+          <div className="flex w-full flex-col flex-wrap gap-3 sm:w-auto sm:flex-row">
             <Link
               className="itq-sheen inline-flex min-h-12 items-center justify-center rounded-xl bg-[linear-gradient(120deg,var(--itq-color-brand-600),var(--itq-color-brand-800))] px-6 py-3 font-black text-white shadow-[var(--itq-shadow-md)] transition hover:-translate-y-0.5 hover:shadow-[var(--itq-shadow-lg)]"
               href={`${prefix}/services`}
@@ -425,6 +427,7 @@ export function LandingPage({
               locale={locale}
               message={copy.hero.whatsappMessage}
             />
+            <InstallAppButton locale={locale} surface="public" variant="hero" />
           </div>
         </div>
       </section>

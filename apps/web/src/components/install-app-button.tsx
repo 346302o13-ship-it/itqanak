@@ -50,11 +50,15 @@ interface InstallAppButtonProps {
   readonly compact?: boolean;
   readonly className?: string;
   /**
-   * "inline" (default) is the small pill used in headers.
-   * "fab" is the floating round pill; it renders nothing once the app is
-   * installed / running standalone, or on a browser that offers no install path.
+   * "inline" (default): a solid brand pill for in-page placement (e.g. the
+   *   account settings card, the student header on its light canvas).
+   * "hero": a large, bold gradient CTA for the visitor landing page; renders
+   *   nothing once the app is installed so it never nags.
+   * "fab": the floating gradient pill; renders nothing once the app is
+   *   installed / running standalone, or on a browser with no install path.
+   * "header": the translucent-on-dark pill for the admin center's dark header.
    */
-  readonly variant?: "inline" | "fab";
+  readonly variant?: "inline" | "hero" | "fab" | "header";
 }
 
 function isStandalone(): boolean {
@@ -183,10 +187,13 @@ export function InstallAppButton({
     }
   }
 
-  // The floating variant is an offer, not a status line: once there is nothing
-  // to offer (already installed / standalone / a browser with no install path)
-  // it disappears entirely.
+  // The floating and hero variants are an offer, not a status line: once there
+  // is nothing to offer (already installed / standalone / a browser with no
+  // install path) they disappear entirely rather than sit there as a label.
   if (variant === "fab" && (installed || !(promptEvent !== undefined || iosDevice))) {
+    return null;
+  }
+  if (variant === "hero" && installed) {
     return null;
   }
 
@@ -195,11 +202,15 @@ export function InstallAppButton({
     ? "cursor-wait opacity-70"
     : installed
       ? "cursor-default opacity-70"
-      : "hover:-translate-y-0.5 hover:border-[var(--itq-color-brand-200)] hover:bg-[var(--itq-color-brand-50)]";
+      : "hover:-translate-y-0.5";
   const baseClass =
-    variant === "fab"
-      ? "inline-flex min-h-14 items-center justify-center gap-3 rounded-full border border-white/25 bg-[var(--itq-color-surface)] px-4 text-sm font-black text-[var(--itq-color-brand-strong)] shadow-[var(--itq-shadow-float)] transition"
-      : "inline-flex min-h-11 items-center justify-center gap-2 rounded-xl border border-[var(--itq-color-border)] bg-[var(--itq-color-surface)] px-3 text-xs font-black text-[var(--itq-color-brand-strong)] shadow-sm transition";
+    variant === "hero"
+      ? "itq-sheen inline-flex min-h-12 items-center justify-center gap-2.5 rounded-xl bg-[linear-gradient(120deg,var(--itq-color-brand-600),var(--itq-color-brand-800))] px-6 py-3 text-sm font-black text-white shadow-[var(--itq-shadow-float)] transition hover:shadow-[var(--itq-shadow-lg)]"
+      : variant === "fab"
+        ? "inline-flex min-h-14 items-center justify-center gap-3 rounded-full border border-white/20 bg-[linear-gradient(120deg,var(--itq-color-brand-600),var(--itq-color-brand-800))] px-5 text-sm font-black text-white shadow-[var(--itq-shadow-float)] transition"
+        : variant === "header"
+          ? "inline-flex min-h-11 items-center justify-center gap-2 rounded-xl border border-white/20 bg-white/10 px-3 text-xs font-black text-white shadow-none transition hover:bg-white/15"
+          : "inline-flex min-h-11 items-center justify-center gap-2 rounded-xl bg-[var(--itq-color-brand-700)] px-4 text-xs font-black text-white shadow-[var(--itq-shadow-sm)] transition hover:bg-[var(--itq-color-brand-800)]";
   return (
     <>
       <button
@@ -214,10 +225,16 @@ export function InstallAppButton({
         ref={triggerRef}
         type="button"
       >
-        <InstallIcon className={variant === "fab" ? "size-5" : "size-4.5"} />
+        <InstallIcon
+          className={variant === "inline" || variant === "header" ? "size-4.5" : "size-5"}
+        />
         <span
           aria-live="polite"
-          className={compact && variant !== "fab" ? "sr-only sm:not-sr-only" : undefined}
+          className={
+            compact && (variant === "inline" || variant === "header")
+              ? "sr-only sm:not-sr-only"
+              : undefined
+          }
         >
           {label}
         </span>
@@ -236,7 +253,7 @@ export function InstallAppButton({
           role="dialog"
         >
           <div
-            className="w-full max-w-md rounded-[1.75rem] border border-white/70 bg-[var(--itq-color-surface)] p-6 text-start shadow-[var(--itq-shadow-float)] outline-none sm:p-7"
+            className="w-full max-w-md rounded-[1.75rem] border border-[var(--itq-color-border)] bg-[var(--itq-color-surface)] p-6 text-start shadow-[var(--itq-shadow-float)] outline-none sm:p-7"
             ref={dialogRef}
             tabIndex={-1}
           >
