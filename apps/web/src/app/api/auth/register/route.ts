@@ -6,6 +6,7 @@ import {
   CsrfError,
   RegistrationError,
   isPhoneCountryCode,
+  passwordSchema,
 } from "@itqanak/auth";
 import type { AppConfig } from "@itqanak/config";
 
@@ -75,7 +76,7 @@ export async function POST(request: NextRequest) {
     values = { displayName, email, phone, countryCode: countryValue };
 
     const password = formValue(formData, "password");
-    if (password.length < 12 || password.length > 128) {
+    if (!passwordSchema.safeParse(password).success) {
       return registerFailure(config, locale, "pw_weak", values);
     }
     if (password !== formValue(formData, "passwordConfirmation")) {

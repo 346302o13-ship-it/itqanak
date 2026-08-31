@@ -51,7 +51,7 @@ export default async function EnglishResetPasswordPage({ searchParams }: ResetPa
             className={inputClassName}
             id="password"
             maxLength={128}
-            minLength={12}
+            minLength={8}
             name="password"
             required
             type="password"
@@ -66,7 +66,7 @@ export default async function EnglishResetPasswordPage({ searchParams }: ResetPa
             className={inputClassName}
             id="passwordConfirmation"
             maxLength={128}
-            minLength={12}
+            minLength={8}
             name="passwordConfirmation"
             required
             type="password"

@@ -6,7 +6,6 @@ import { InstallAppButton } from "@/components/install-app-button";
 import { SubmitButton } from "@/components/submit-button";
 import { csrfTokenForPage } from "@/lib/auth-runtime";
 import { safeNext } from "@/lib/auth-responses";
-import { adminLoginHref } from "@/lib/admin-access";
 import { supportWhatsAppHref } from "@/lib/support-contact";
 
 interface LoginPageProps {
@@ -148,15 +147,6 @@ export default async function LoginPage({ searchParams }: LoginPageProps) {
           </Link>
         </p>
       ) : null}
-      <p className="mt-3 text-center text-sm">
-        أنت مدير؟{" "}
-        <a
-          className="font-bold text-[var(--itq-color-brand-strong)] underline"
-          href={adminLoginHref("ar")}
-        >
-          ادخل إلى مركز الإدارة
-        </a>
-      </p>
       <p className="mt-3 text-center text-sm">
         <Link className="font-bold underline" href="/en/auth/login">
           English

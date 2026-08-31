@@ -6,7 +6,6 @@ import { BrandMark, classNames } from "@itqanak/ui";
 import { EducationalGuide } from "./educational-guide";
 import { InstallAppButton } from "./install-app-button";
 import { MarketingIcon, WhatsAppLink, type MarketingLocale } from "./marketing";
-import { adminLoginHref } from "@/lib/admin-access";
 import { SUPPORT_WHATSAPP_E164 } from "@/lib/support-contact";
 
 export interface PublicShellCopy {
@@ -31,7 +30,6 @@ export interface PublicShellCopy {
   readonly termsLabel: string;
   readonly privacyLabel: string;
   readonly studentPortalLabel: string;
-  readonly adminPortalLabel: string;
   readonly newRequestLabel: string;
   readonly supportAvailability: string;
   readonly rightsLabel: string;
@@ -61,7 +59,6 @@ const copyByLocale: Readonly<Record<MarketingLocale, PublicShellCopy>> = {
     termsLabel: "شروط الاستخدام",
     privacyLabel: "سياسة الخصوصية",
     studentPortalLabel: "بوابة الطالب",
-    adminPortalLabel: "دخول مركز الإدارة",
     newRequestLabel: "إنشاء طلب",
     supportAvailability: "للاستفسار ومساعدتك في اختيار الخدمة المناسبة.",
     rightsLabel: "جميع الحقوق محفوظة لمنصة إتقانك.",
@@ -89,7 +86,6 @@ const copyByLocale: Readonly<Record<MarketingLocale, PublicShellCopy>> = {
     termsLabel: "Terms of Use",
     privacyLabel: "Privacy Policy",
     studentPortalLabel: "Student portal",
-    adminPortalLabel: "Admin center sign-in",
     newRequestLabel: "Create a request",
     supportAvailability: "Ask us for help choosing the service that fits your needs.",
     rightsLabel: "All rights reserved to ITQANAK.",
@@ -262,14 +258,6 @@ export function PublicShell({
                 >
                   {copy.studentPortalLabel}
                 </Link>
-              </li>
-              <li>
-                <a
-                  className="hover:text-[var(--itq-color-brand-strong)]"
-                  href={adminLoginHref(locale)}
-                >
-                  {copy.adminPortalLabel}
-                </a>
               </li>
               <li>
                 <Link

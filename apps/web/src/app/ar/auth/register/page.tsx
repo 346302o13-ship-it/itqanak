@@ -164,7 +164,7 @@ export default async function RegisterPage({ searchParams }: RegisterPageProps) 
             className={fieldClassName(errors.password !== undefined)}
             id="password"
             maxLength={128}
-            minLength={12}
+            minLength={8}
             name="password"
             required
             type="password"
@@ -178,7 +178,8 @@ export default async function RegisterPage({ searchParams }: RegisterPageProps) 
             </p>
           ) : (
             <p className="mt-2 text-xs leading-5 text-[var(--itq-color-muted)]" id="password-help">
-              12 حرفاً على الأقل، وحتى 128 حرفاً. يمكنك استخدام عبارة مرور طويلة.
+              8 أحرف على الأقل، وحتى 128 حرفاً. لا تُشترط رموز أو حروف كبيرة، ولا تكن أرقاماً
+              متسلسلة فقط.
             </p>
           )}
         </div>
@@ -191,7 +192,7 @@ export default async function RegisterPage({ searchParams }: RegisterPageProps) 
             className={fieldClassName(errors.password !== undefined)}
             id="passwordConfirmation"
             maxLength={128}
-            minLength={12}
+            minLength={8}
             name="passwordConfirmation"
             required
             type="password"

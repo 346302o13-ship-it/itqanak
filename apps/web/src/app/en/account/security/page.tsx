@@ -80,13 +80,13 @@ export default async function EnglishSecurityPage({ searchParams }: SecurityPage
             className={inputClassName}
             id="newPassword"
             maxLength={128}
-            minLength={12}
+            minLength={8}
             name="newPassword"
             required
             type="password"
           />
           <p className="mt-2 text-xs text-[var(--itq-color-muted)]" id="new-password-help">
-            Use at least 12 characters; your current password cannot be reused.
+            Use at least 8 characters; your current password cannot be reused.
           </p>
         </div>
         <div>
@@ -98,7 +98,7 @@ export default async function EnglishSecurityPage({ searchParams }: SecurityPage
             className={inputClassName}
             id="passwordConfirmation"
             maxLength={128}
-            minLength={12}
+            minLength={8}
             name="passwordConfirmation"
             required
             type="password"

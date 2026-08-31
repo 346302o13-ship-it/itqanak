@@ -53,9 +53,9 @@ const copy: Record<
       message: "أعد إدخال كلمة المرور نفسها في الحقلين.",
     },
     pw_weak: {
-      summary: "كلمة المرور يجب أن تكون بين 12 و128 حرفاً.",
+      summary: "كلمة المرور يجب أن تكون بين 8 و128 حرفاً، وألا تكون أرقاماً متسلسلة فقط.",
       field: "password",
-      message: "استخدم 12 حرفاً على الأقل، ويفضّل عبارة مرور طويلة.",
+      message: "استخدم 8 أحرف على الأقل. لا تُشترط رموز أو حروف كبيرة.",
     },
     email: {
       summary: "صيغة البريد الإلكتروني غير صحيحة.",
@@ -93,9 +93,9 @@ const copy: Record<
       message: "Enter the same password in both fields.",
     },
     pw_weak: {
-      summary: "The password must be 12 to 128 characters.",
+      summary: "The password must be 8 to 128 characters and not just a run of digits.",
       field: "password",
-      message: "Use at least 12 characters; a long passphrase is best.",
+      message: "Use at least 8 characters. No symbols or capitals are required.",
     },
     email: {
       summary: "That email address is not valid.",

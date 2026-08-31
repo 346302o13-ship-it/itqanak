@@ -165,7 +165,7 @@ export default async function EnglishRegisterPage({ searchParams }: RegisterPage
             className={fieldClassName(errors.password !== undefined)}
             id="password"
             maxLength={128}
-            minLength={12}
+            minLength={8}
             name="password"
             required
             type="password"
@@ -179,7 +179,8 @@ export default async function EnglishRegisterPage({ searchParams }: RegisterPage
             </p>
           ) : (
             <p className="mt-2 text-xs leading-5 text-[var(--itq-color-muted)]" id="password-help">
-              Use at least 12 characters. A long passphrase is recommended.
+              At least 8 characters, up to 128. No symbols or capitals required; not just a run of
+              digits.
             </p>
           )}
         </div>
@@ -192,7 +193,7 @@ export default async function EnglishRegisterPage({ searchParams }: RegisterPage
             className={fieldClassName(errors.password !== undefined)}
             id="passwordConfirmation"
             maxLength={128}
-            minLength={12}
+            minLength={8}
             name="passwordConfirmation"
             required
             type="password"
