@@ -39,56 +39,58 @@ export function StudentShell({
       dir={english ? "ltr" : "rtl"}
       lang={locale}
     >
-      <header className="sticky top-0 z-30 itq-safe-t border-b border-[var(--itq-color-border)]/80 bg-[var(--itq-color-canvas)]/90 backdrop-blur-xl">
-        <div className="mx-auto flex h-[4.75rem] max-w-[92rem] items-center justify-between gap-4 px-4 sm:px-7 lg:px-10">
-          <Link
-            className="inline-flex items-center gap-3 text-lg font-black"
-            href={`${prefix}/student`}
-          >
-            <BrandMark className="size-11" />
-            <span className="hidden sm:inline">{english ? "ITQANAK" : "إتقانك"}</span>
-            <span className="hidden rounded-full bg-[var(--itq-color-success-50)] px-2.5 py-1 text-[10px] font-black text-[var(--itq-color-success-800)] md:inline">
-              {english ? "STUDENT PORTAL" : "بوابة الطالب"}
-            </span>
-          </Link>
-          <div className="flex items-center gap-2 sm:gap-3">
-            <InstallAppButton compact locale={locale} surface="student" />
-            <div className="text-[var(--itq-color-muted)]">
-              <NotificationCenter csrfToken={csrfToken} locale={locale} surface="student" />
-            </div>
+      {workspace ? null : (
+        <header className="sticky top-0 z-30 itq-safe-t border-b border-[var(--itq-color-border)]/80 bg-[var(--itq-color-canvas)]/90 backdrop-blur-xl">
+          <div className="mx-auto flex h-[4.75rem] max-w-[92rem] items-center justify-between gap-4 px-4 sm:px-7 lg:px-10">
             <Link
-              className="flex min-h-11 items-center gap-2 rounded-2xl border border-[var(--itq-color-border)] bg-[var(--itq-color-surface)] px-2 pe-3"
-              href={`${prefix}/account`}
+              className="inline-flex items-center gap-3 text-lg font-black"
+              href={`${prefix}/student`}
             >
-              <span className="grid size-8 place-items-center rounded-xl bg-[var(--itq-color-brand-700)] text-sm font-black text-white">
-                {initial}
-              </span>
-              <span className="hidden max-w-36 truncate text-xs font-extrabold sm:block">
-                {displayName}
+              <BrandMark className="size-11" />
+              <span className="hidden sm:inline">{english ? "ITQANAK" : "إتقانك"}</span>
+              <span className="hidden rounded-full bg-[var(--itq-color-success-50)] px-2.5 py-1 text-[10px] font-black text-[var(--itq-color-success-800)] md:inline">
+                {english ? "STUDENT PORTAL" : "بوابة الطالب"}
               </span>
             </Link>
-            <form action="/api/auth/logout" method="post">
-              <CsrfInput token={csrfToken} />
-              <input name="locale" type="hidden" value={locale} />
-              <SubmitButton
-                aria-label={english ? "Sign out" : "تسجيل الخروج"}
-                className="size-11 rounded-2xl border border-[var(--itq-color-border)] bg-[var(--itq-color-surface)] p-0 text-[var(--itq-color-muted)] shadow-none hover:bg-[var(--itq-color-danger-50)] hover:text-[var(--itq-color-danger-700)]"
-                pendingLabel="…"
+            <div className="flex items-center gap-2 sm:gap-3">
+              <InstallAppButton compact locale={locale} surface="student" />
+              <div className="text-[var(--itq-color-muted)]">
+                <NotificationCenter csrfToken={csrfToken} locale={locale} surface="student" />
+              </div>
+              <Link
+                className="flex min-h-11 items-center gap-2 rounded-2xl border border-[var(--itq-color-border)] bg-[var(--itq-color-surface)] px-2 pe-3"
+                href={`${prefix}/account`}
               >
-                <LogOutIcon className="size-5" />
-              </SubmitButton>
-            </form>
+                <span className="grid size-8 place-items-center rounded-xl bg-[var(--itq-color-brand-700)] text-sm font-black text-white">
+                  {initial}
+                </span>
+                <span className="hidden max-w-36 truncate text-xs font-extrabold sm:block">
+                  {displayName}
+                </span>
+              </Link>
+              <form action="/api/auth/logout" method="post">
+                <CsrfInput token={csrfToken} />
+                <input name="locale" type="hidden" value={locale} />
+                <SubmitButton
+                  aria-label={english ? "Sign out" : "تسجيل الخروج"}
+                  className="size-11 rounded-2xl border border-[var(--itq-color-border)] bg-[var(--itq-color-surface)] p-0 text-[var(--itq-color-muted)] shadow-none hover:bg-[var(--itq-color-danger-50)] hover:text-[var(--itq-color-danger-700)]"
+                  pendingLabel="…"
+                >
+                  <LogOutIcon className="size-5" />
+                </SubmitButton>
+              </form>
+            </div>
           </div>
-        </div>
-      </header>
+        </header>
+      )}
 
-      <AnnouncementBanner locale={locale} />
+      {workspace ? null : <AnnouncementBanner locale={locale} />}
       <PushRegistrar csrfToken={csrfToken} />
 
       <div
         className={
           workspace
-            ? "mx-auto h-[calc(100svh-4.75rem)] max-w-[120rem] overflow-hidden lg:h-[calc(100dvh-4.75rem-env(safe-area-inset-top))]"
+            ? "itq-safe-t mx-auto h-[100svh] max-w-[120rem] overflow-hidden lg:h-[100dvh]"
             : "mx-auto grid max-w-[92rem] gap-7 px-4 pb-28 pt-6 sm:px-7 lg:grid-cols-[17.5rem_minmax(0,1fr)] lg:px-10 lg:pb-12 lg:pt-8"
         }
       >

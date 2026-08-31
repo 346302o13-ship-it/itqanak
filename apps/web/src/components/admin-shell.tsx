@@ -36,42 +36,44 @@ export function AdminShell({
       dir={english ? "ltr" : "rtl"}
       lang={locale}
     >
-      <header className="sticky top-0 z-30 itq-safe-t border-b border-[var(--itq-color-border)] bg-[var(--itq-color-ink-deep)]/95 text-white backdrop-blur-xl">
-        <div className="mx-auto flex h-[4.75rem] max-w-[96rem] items-center justify-between gap-4 px-4 sm:px-7 lg:px-10">
-          <Link className="inline-flex items-center gap-3 font-black" href={`${prefix}/admin`}>
-            <BrandMark className="size-11 bg-[var(--itq-color-surface)] text-[var(--itq-color-brand-strong)]" />
-            <span className="hidden sm:inline">{english ? "ITQANAK" : "إتقانك"}</span>
-            <span className="hidden rounded-full bg-white/10 px-2.5 py-1 text-[10px] md:inline">
-              {english ? "ADMIN CENTER" : "مركز الإدارة"}
-            </span>
-          </Link>
-          <div className="flex items-center gap-2">
-            <InstallAppButton compact locale={locale} surface="admin" variant="header" />
-            <NotificationCenter csrfToken={csrfToken} locale={locale} surface="admin" />
-            <span className="hidden rounded-2xl bg-white/10 px-4 py-3 text-xs font-black sm:inline">
-              {displayName}
-            </span>
-            <form action="/api/auth/logout" method="post">
-              <CsrfInput token={csrfToken} />
-              <input name="application" type="hidden" value="admin" />
-              <input name="locale" type="hidden" value={locale} />
-              <SubmitButton
-                aria-label={english ? "Sign out" : "تسجيل الخروج"}
-                className="size-11 bg-white/10 p-0 text-white shadow-none hover:bg-[color-mix(in_srgb,var(--itq-color-danger-500)_22%,transparent)]"
-                pendingLabel="…"
-              >
-                <LogOutIcon className="size-5" />
-              </SubmitButton>
-            </form>
+      {workspace ? null : (
+        <header className="sticky top-0 z-30 itq-safe-t border-b border-[var(--itq-color-border)] bg-[var(--itq-color-ink-deep)]/95 text-white backdrop-blur-xl">
+          <div className="mx-auto flex h-[4.75rem] max-w-[96rem] items-center justify-between gap-4 px-4 sm:px-7 lg:px-10">
+            <Link className="inline-flex items-center gap-3 font-black" href={`${prefix}/admin`}>
+              <BrandMark className="size-11 bg-[var(--itq-color-surface)] text-[var(--itq-color-brand-strong)]" />
+              <span className="hidden sm:inline">{english ? "ITQANAK" : "إتقانك"}</span>
+              <span className="hidden rounded-full bg-white/10 px-2.5 py-1 text-[10px] md:inline">
+                {english ? "ADMIN CENTER" : "مركز الإدارة"}
+              </span>
+            </Link>
+            <div className="flex items-center gap-2">
+              <InstallAppButton compact locale={locale} surface="admin" variant="header" />
+              <NotificationCenter csrfToken={csrfToken} locale={locale} surface="admin" />
+              <span className="hidden rounded-2xl bg-white/10 px-4 py-3 text-xs font-black sm:inline">
+                {displayName}
+              </span>
+              <form action="/api/auth/logout" method="post">
+                <CsrfInput token={csrfToken} />
+                <input name="application" type="hidden" value="admin" />
+                <input name="locale" type="hidden" value={locale} />
+                <SubmitButton
+                  aria-label={english ? "Sign out" : "تسجيل الخروج"}
+                  className="size-11 bg-white/10 p-0 text-white shadow-none hover:bg-[color-mix(in_srgb,var(--itq-color-danger-500)_22%,transparent)]"
+                  pendingLabel="…"
+                >
+                  <LogOutIcon className="size-5" />
+                </SubmitButton>
+              </form>
+            </div>
           </div>
-        </div>
-      </header>
-      <AnnouncementBanner locale={locale} />
+        </header>
+      )}
+      {workspace ? null : <AnnouncementBanner locale={locale} />}
       <PushRegistrar csrfToken={csrfToken} />
       <div
         className={
           workspace
-            ? "mx-auto h-[calc(100dvh-4.75rem-env(safe-area-inset-top))] max-w-[120rem] overflow-hidden"
+            ? "itq-safe-t mx-auto h-[100svh] max-w-[120rem] overflow-hidden lg:h-[100dvh]"
             : "mx-auto grid max-w-[96rem] gap-7 px-4 pb-28 pt-7 sm:px-7 lg:grid-cols-[17rem_minmax(0,1fr)] lg:px-10 lg:pb-12"
         }
       >

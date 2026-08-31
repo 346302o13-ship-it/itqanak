@@ -483,7 +483,7 @@ function PaymentDueCard({
   const dueId = typeof metadata.dueId === "string" ? metadata.dueId : undefined;
   const { amount, currency, requestNumber } = paymentMetadataAmount(metadata, english);
   return (
-    <div className="rounded-2xl border border-[var(--itq-color-warning-200)] bg-[var(--itq-color-warning-50)] p-3.5 shadow-sm">
+    <div className="rounded-xl border border-[var(--itq-color-warning-200)] bg-[var(--itq-color-warning-50)] p-3 shadow-sm">
       <p className="text-xs font-black text-[var(--itq-color-warning-950)]">
         {english ? "Payment due" : "مبلغ مستحق"}
         {requestNumber.length > 0 ? (
@@ -492,7 +492,7 @@ function PaymentDueCard({
           </bdi>
         ) : null}
       </p>
-      <p className="mt-1 text-lg font-black text-[var(--itq-color-warning-950)]" dir="ltr">
+      <p className="mt-1 text-base font-black text-[var(--itq-color-warning-950)]" dir="ltr">
         {amount} {currency}
       </p>
       {duePaid ? (
@@ -581,7 +581,7 @@ function PaymentReceiptCard({
         ? "border-[var(--itq-color-danger-200)] bg-[var(--itq-color-danger-50)] text-[var(--itq-color-danger-950)]"
         : "border-[var(--itq-color-info-200)] bg-[var(--itq-color-info-50)] text-[var(--itq-color-info-950)]";
   return (
-    <div className="rounded-2xl border border-[var(--itq-color-border)] bg-[var(--itq-color-surface)] p-3.5 shadow-sm">
+    <div className="rounded-xl border border-[var(--itq-color-border)] bg-[var(--itq-color-surface)] p-3 shadow-sm">
       <p className="text-xs font-black">
         {english ? "Payment receipt" : "إيصال دفع"}
         {requestNumber.length > 0 ? (
@@ -590,7 +590,7 @@ function PaymentReceiptCard({
           </bdi>
         ) : null}
       </p>
-      <p className="mt-1 text-base font-black" dir="ltr">
+      <p className="mt-1 text-sm font-black" dir="ltr">
         {amount} {currency}
       </p>
       {imageSource === undefined ? null : (
@@ -601,7 +601,7 @@ function PaymentReceiptCard({
         >
           <img
             alt={english ? "Payment receipt" : "إيصال الدفع"}
-            className="max-h-52 w-full object-cover"
+            className="max-h-40 w-full object-cover"
             loading="lazy"
             src={imageSource}
           />
@@ -694,7 +694,7 @@ function InvoiceSummaryCard({
   const studentUserId =
     typeof metadata.studentUserId === "string" ? metadata.studentUserId : undefined;
   return (
-    <div className="rounded-2xl border border-[var(--itq-color-brand-200)] bg-[var(--itq-color-brand-50)] p-3.5 shadow-sm">
+    <div className="rounded-xl border border-[var(--itq-color-brand-200)] bg-[var(--itq-color-brand-50)] p-3 shadow-sm">
       <p className="text-xs font-black text-[var(--itq-color-brand-strong)]">
         {english ? "Payment request" : "طلب دفع"}
       </p>
@@ -819,7 +819,7 @@ function RequestCreatedCard({
   const title = request?.title ?? fallbackTitle ?? (english ? "New request" : "طلب جديد");
   const number = request?.requestNumber ?? requestNumber;
   return (
-    <div className="rounded-2xl border border-[var(--itq-color-brand-200)] bg-[var(--itq-color-brand-50)] p-3.5 shadow-sm">
+    <div className="rounded-xl border border-[var(--itq-color-brand-200)] bg-[var(--itq-color-brand-50)] p-3 shadow-sm">
       <p className="flex items-center gap-1.5 text-xs font-black text-[var(--itq-color-brand-strong)]">
         <RequestsIcon className="size-3.5" />
         {english ? "New request created" : "تم إنشاء طلب جديد"}
@@ -3945,7 +3945,22 @@ export function UnifiedChatWorkspace({
 
       <main className="flex min-h-0 min-w-0 flex-col bg-[var(--itq-color-surface-soft)]">
         <header className="flex h-[4.65rem] shrink-0 items-center justify-between gap-3 border-b border-[var(--itq-color-border)] bg-[var(--itq-color-surface)] px-3 sm:px-5">
-          <div className="flex min-w-0 items-center gap-3">
+          <div className="flex min-w-0 items-center gap-2 sm:gap-3">
+            <Link
+              aria-label={
+                english
+                  ? mode === "admin"
+                    ? "Back to admin center"
+                    : "Back to student dashboard"
+                  : mode === "admin"
+                    ? "العودة إلى مركز الإدارة"
+                    : "العودة إلى لوحة الطالب"
+              }
+              className="grid size-10 shrink-0 place-items-center rounded-xl border border-[var(--itq-color-border)] no-underline"
+              href={`/${locale}/${mode === "admin" ? "admin" : "student"}`}
+            >
+              <ArrowIcon className={`size-5 ${english ? "rotate-180" : ""}`} />
+            </Link>
             {mode === "admin" ? (
               <button
                 aria-controls={contactsPanelId}
@@ -3962,15 +3977,7 @@ export function UnifiedChatWorkspace({
               >
                 <MessageIcon className="size-5" />
               </button>
-            ) : (
-              <Link
-                aria-label={english ? "Back to student dashboard" : "العودة إلى لوحة الطالب"}
-                className="grid size-10 shrink-0 place-items-center rounded-xl border border-[var(--itq-color-border)] no-underline"
-                href={`/${locale}/student`}
-              >
-                <ArrowIcon className={`size-5 ${english ? "rotate-180" : ""}`} />
-              </Link>
-            )}
+            ) : null}
             <span className="grid size-11 shrink-0 place-items-center rounded-full bg-[var(--itq-color-ink-deep)] text-sm font-black text-white">
               {mode === "admin"
                 ? initials(conversation?.studentDisplayName ?? "")
@@ -4311,7 +4318,7 @@ export function UnifiedChatWorkspace({
                       </li>
                     ) : system ? (
                       message.body === "PAYMENT_DUE_CREATED" ? (
-                        <li className="mx-auto my-2 w-full max-w-sm">
+                        <li className="mx-auto my-1.5 w-full max-w-xs">
                           <PaymentDueCard
                             csrfToken={csrfToken}
                             duePaid={
@@ -4339,7 +4346,7 @@ export function UnifiedChatWorkspace({
                           />
                         </li>
                       ) : message.body === "PAYMENT_RECEIPT_SUBMITTED" ? (
-                        <li className="mx-auto my-2 w-full max-w-sm">
+                        <li className="mx-auto my-1.5 w-full max-w-xs">
                           <PaymentReceiptCard
                             busy={interactionLocked}
                             csrfToken={csrfToken}
@@ -4369,7 +4376,7 @@ export function UnifiedChatWorkspace({
                           />
                         </li>
                       ) : message.body === "INVOICE_SUMMARY" ? (
-                        <li className="mx-auto my-2 w-full max-w-sm">
+                        <li className="mx-auto my-1.5 w-full max-w-xs">
                           <InvoiceSummaryCard
                             allPaid={
                               requests.length > 0 &&
@@ -4394,7 +4401,7 @@ export function UnifiedChatWorkspace({
                           />
                         </li>
                       ) : message.body === "REQUEST_CREATED" ? (
-                        <li className="mx-auto my-2 w-full max-w-sm">
+                        <li className="mx-auto my-1.5 w-full max-w-xs">
                           <RequestCreatedCard
                             fallbackTitle={message.request?.title}
                             locale={locale}

@@ -75,6 +75,19 @@ export function AccountShell({
             </p>
           </div>
           <AccountNavigation locale={locale} surface={surface} />
+          <div className="mx-2 my-3 h-px bg-[var(--itq-color-border)]" />
+          <form action="/api/auth/logout" method="post">
+            <CsrfInput token={csrfToken} />
+            {surface === "admin" ? <input name="application" type="hidden" value="admin" /> : null}
+            <input name="locale" type="hidden" value={locale} />
+            <SubmitButton
+              className="flex min-h-12 w-full items-center justify-center gap-2 rounded-2xl border border-[var(--itq-color-danger-200)] bg-[var(--itq-color-danger-50)] px-3.5 text-sm font-extrabold text-[var(--itq-color-danger-700)] shadow-none hover:bg-[var(--itq-color-danger-100)]"
+              pendingLabel={english ? "Signing out…" : "جارٍ تسجيل الخروج…"}
+            >
+              <LogOutIcon className="size-5" />
+              {english ? "Sign out" : "تسجيل الخروج"}
+            </SubmitButton>
+          </form>
         </aside>
         <section className="min-w-0 rounded-[1.75rem] border border-[var(--itq-color-border)] bg-[var(--itq-color-surface)] p-5 shadow-[var(--itq-shadow-sm)] sm:p-8 lg:p-9">
           {children}
