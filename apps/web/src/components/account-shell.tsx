@@ -6,6 +6,7 @@ import { BrandMark } from "@itqanak/ui";
 import { AccountNavigation } from "./account-navigation";
 import { CsrfInput } from "./auth-shell";
 import { LogOutIcon, ShieldCheckIcon } from "./icons";
+import { PushRegistrar } from "./push-registrar";
 import { SubmitButton } from "./submit-button";
 
 interface AccountShellProps {
@@ -79,6 +80,7 @@ export function AccountShell({
           {children}
         </section>
       </main>
+      <PushRegistrar csrfToken={csrfToken} />
     </div>
   );
 }

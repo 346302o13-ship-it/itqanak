@@ -12,11 +12,19 @@ function urlBase64ToArrayBuffer(base64: string): ArrayBuffer {
   return buffer;
 }
 
+const autoPromptKey = "itqanak.push.autoprompt.v1";
+
 /**
  * Registers the notification service worker and keeps a Web Push subscription
  * on file for this browser whenever the visitor has granted notifications, so
  * platform notifications reach the phone's tray even when the app is closed —
  * like a messaging app. Silent no-op when unsupported or not configured.
+ *
+ * Device notifications are treated as on by default: on the first load of a
+ * session the OS permission prompt is raised automatically (once), so a
+ * signed-in user does not have to discover a setting. Browsers still forbid a
+ * site from granting itself the permission, and Safari needs a gesture — there
+ * the /account toggle and the bell's sound switch remain the fallback.
  */
 export function PushRegistrar({ csrfToken }: { readonly csrfToken: string | undefined }) {
   useEffect(() => {
@@ -82,6 +90,32 @@ export function PushRegistrar({ csrfToken }: { readonly csrfToken: string | unde
       }
     };
 
+    let alreadyPrompted = true;
+    try {
+      alreadyPrompted = window.sessionStorage.getItem(autoPromptKey) === "1";
+    } catch {
+      alreadyPrompted = false;
+    }
+
+    const promptThenSync = async (): Promise<void> => {
+      if (Notification.permission === "default" && !alreadyPrompted) {
+        try {
+          window.sessionStorage.setItem(autoPromptKey, "1");
+        } catch {
+          /* private mode — we just re-ask next navigation, which is acceptable */
+        }
+        try {
+          await Notification.requestPermission();
+        } catch {
+          // Safari (no gesture) / older callback-only engines: the /account
+          // toggle is the fallback. The in-app bell stays authoritative.
+        }
+      }
+      await sync();
+    };
+
+    // A short beat so the prompt does not land on top of first paint.
+    const promptTimer = window.setTimeout(() => void promptThenSync(), 2000);
     void sync();
     const onVisible = () => {
       if (document.visibilityState === "visible") void sync();
@@ -89,6 +123,7 @@ export function PushRegistrar({ csrfToken }: { readonly csrfToken: string | unde
     document.addEventListener("visibilitychange", onVisible);
     return () => {
       cancelled = true;
+      window.clearTimeout(promptTimer);
       document.removeEventListener("visibilitychange", onVisible);
     };
   }, [csrfToken]);
