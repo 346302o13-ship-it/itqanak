@@ -55,6 +55,26 @@ export interface FinanceListInput {
   readonly search?: string;
   readonly status?: FinanceDueStatus;
   readonly currency?: FinanceCurrency;
+  /** Restrict the list to one student's dues (the per-student finance view). */
+  readonly studentUserId?: string;
+}
+
+/** Per-currency money owed / paid for one student, for the finance overview table. */
+export interface StudentBalanceLine {
+  readonly currency: FinanceCurrency;
+  readonly minorUnit: 2 | 3;
+  readonly unpaidCount: number;
+  readonly unpaidAmountMinor: number;
+  readonly paidCount: number;
+  readonly paidAmountMinor: number;
+}
+
+export interface StudentFinanceBalance {
+  readonly studentUserId: string;
+  readonly studentDisplayName: string;
+  readonly lines: readonly StudentBalanceLine[];
+  readonly totalUnpaidCount: number;
+  readonly lastActivityAt: Date;
 }
 
 export interface FinanceListResult<TDue extends FinanceDue = FinanceDue> {

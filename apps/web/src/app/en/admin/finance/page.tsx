@@ -24,9 +24,17 @@ export default async function EnglishAdminFinancePage({ searchParams }: FinanceP
   let dues;
   let report;
   let pendingReceipts;
+  let studentBalances;
+  let selectedStudentName: string | undefined;
   try {
     dues = await runtime.finance.listAdminDues(principal, filters);
     pendingReceipts = await runtime.finance.listPendingReceipts(principal);
+    studentBalances = await runtime.finance.listStudentBalances(principal);
+    if (filters.studentUserId !== undefined) {
+      selectedStudentName =
+        studentBalances.find((balance) => balance.studentUserId === filters.studentUserId)
+          ?.studentDisplayName ?? dues.items[0]?.studentDisplayName;
+    }
     if (hasPermission(principal, "admin.finance.reports.read")) {
       report = await runtime.finance.getAdminReport(principal);
     }
@@ -42,6 +50,8 @@ export default async function EnglishAdminFinancePage({ searchParams }: FinanceP
       filters={filters}
       locale="en"
       pendingReceipts={pendingReceipts}
+      studentBalances={studentBalances}
+      {...(selectedStudentName === undefined ? {} : { selectedStudentName })}
       {...(report === undefined ? {} : { report })}
       {...(typeof query.notice === "string" ? { notice: query.notice } : {})}
     />

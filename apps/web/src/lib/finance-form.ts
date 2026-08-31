@@ -77,10 +77,13 @@ export function parseFinanceListQuery(
   } catch {
     currency = undefined;
   }
+  const uuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/iu;
+  const studentValue = typeof query.student === "string" ? query.student.trim() : "";
   return {
     ...(Number.isSafeInteger(pageValue) && pageValue >= 1 ? { page: pageValue } : {}),
     ...(typeof query.q === "string" ? { search: query.q.trim().slice(0, 100) } : {}),
     ...(status === undefined ? {} : { status }),
     ...(currency === undefined ? {} : { currency }),
+    ...(uuid.test(studentValue) ? { studentUserId: studentValue.toLowerCase() } : {}),
   };
 }

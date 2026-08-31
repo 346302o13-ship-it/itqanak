@@ -417,6 +417,10 @@ export interface UnifiedRequestSummary {
   readonly status: RequestStatus;
   readonly version: number;
   readonly updatedAt: Date;
+  /** Name of the service the request is for (conversation request list only). */
+  readonly serviceName?: string;
+  /** Short request description, for the "request created" chat card. */
+  readonly summary?: string;
   /** Present only in the conversation's own request list (admin panel chips). */
   readonly finance?: {
     /** True once a live (UNPAID/PAID) due exists — the request is then locked from re-pricing. */
@@ -638,10 +642,19 @@ export interface UnifiedConversationSummary {
   readonly createdAt: Date;
 }
 
+export interface ConversationOutstandingLine {
+  readonly currency: string;
+  readonly minorUnit: 2 | 3;
+  readonly amountMinor: number;
+  readonly dueCount: number;
+}
+
 export interface UnifiedConversationDetail extends UnifiedConversationSummary {
   readonly requests: readonly UnifiedRequestSummary[];
   /** Most recent activity on any live session of the student (admin view only). */
   readonly studentLastSeenAt?: Date;
+  /** What the student still owes, per currency — shown at the top of the chat. */
+  readonly outstanding: readonly ConversationOutstandingLine[];
 }
 
 export interface UnifiedConversationListInput {

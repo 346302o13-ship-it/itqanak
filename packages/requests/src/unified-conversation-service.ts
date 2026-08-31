@@ -70,6 +70,8 @@ interface RequestSummaryRow {
   readonly status: string;
   readonly version: number | string;
   readonly updated_at: Date | string;
+  readonly service_name?: string | null;
+  readonly summary?: string | null;
   readonly due_status?: string | null;
   readonly has_pending_receipt?: boolean;
   readonly due_id?: string | null;
@@ -331,6 +333,12 @@ function toRequest(row: RequestSummaryRow): UnifiedRequestSummary {
     status: toRequestStatus(row.status),
     version: toSafeInteger(row.version, "request version"),
     updatedAt: toDate(row.updated_at),
+    ...(typeof row.service_name === "string" && row.service_name.length > 0
+      ? { serviceName: row.service_name }
+      : {}),
+    ...(typeof row.summary === "string" && row.summary.trim().length > 0
+      ? { summary: row.summary.trim().slice(0, 280) }
+      : {}),
   };
   if (row.has_pending_receipt === undefined) return base;
   // Only a live (UNPAID / PAID) due counts as "priced & in the ledger"; a due
@@ -588,12 +596,14 @@ export class UnifiedConversationService {
     context: RequestAuditContext = {},
   ): Promise<UnifiedConversationDetail> {
     const access = await this.resolveConversation(this.database, principal, conversationId, "read");
-    const [summaryRows, requestRows, presenceRows] = await Promise.all([
+    const [summaryRows, requestRows, outstandingRows, presenceRows] = await Promise.all([
       this.readConversationRows(this.database, principal.userId, access.row.id),
       this.database<RequestSummaryRow[]>`
         SELECT
           requests.id, requests.request_number, requests.title, requests.status,
           requests.version, requests.updated_at,
+          services.name_ar AS service_name,
+          requests.description AS summary,
           due.status AS due_status,
           due.id AS due_id, due.version AS due_version,
           due.amount_minor AS due_amount_minor, due.currency AS due_currency,
@@ -617,6 +627,7 @@ export class UnifiedConversationService {
             LIMIT 1
           ) AS latest_receipt_status
         FROM service_requests AS requests
+        LEFT JOIN services ON services.id = requests.service_id
         LEFT JOIN LATERAL (
           SELECT id, status, version, amount_minor, currency, minor_unit
           FROM finance_dues
@@ -629,6 +640,22 @@ export class UnifiedConversationService {
         ) AS due ON TRUE
         WHERE requests.student_user_id = ${access.row.student_user_id}
         ORDER BY requests.updated_at DESC, requests.id DESC
+      `,
+      this.database<
+        {
+          readonly currency: string;
+          readonly minor_unit: number | string;
+          readonly amount_minor: string;
+          readonly due_count: string;
+        }[]
+      >`
+        SELECT currency, minor_unit,
+               coalesce(sum(amount_minor), 0)::text AS amount_minor,
+               count(*)::text AS due_count
+        FROM finance_dues
+        WHERE student_user_id = ${access.row.student_user_id} AND status = 'UNPAID'
+        GROUP BY currency, minor_unit
+        ORDER BY sum(amount_minor) DESC
       `,
       this.database<{ readonly last_seen: Date | string | null }[]>`
         SELECT max(last_seen_at) AS last_seen
@@ -655,6 +682,12 @@ export class UnifiedConversationService {
     return {
       ...toConversation(summary),
       requests: requestRows.map(toRequest),
+      outstanding: outstandingRows.map((row) => ({
+        currency: row.currency,
+        minorUnit: Number(row.minor_unit) === 3 ? 3 : 2,
+        amountMinor: toSafeInteger(row.amount_minor, "outstanding amount"),
+        dueCount: toSafeInteger(row.due_count, "outstanding due count"),
+      })),
       ...(studentLastSeenRaw === null ? {} : { studentLastSeenAt: toDate(studentLastSeenRaw) }),
     };
   }

@@ -142,6 +142,7 @@ export {
   type ServiceQuote,
   type ServiceQuoteCurrency,
   type ServiceQuoteStatus,
+  type ConversationOutstandingLine,
   type UnifiedConversationAttachment,
   type UnifiedConversationDetail,
   type UnifiedConversationListInput,

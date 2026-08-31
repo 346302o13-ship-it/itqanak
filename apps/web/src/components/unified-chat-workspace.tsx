@@ -378,6 +378,7 @@ function isImportantSystemMessage(message: UnifiedMessage): boolean {
     typeof message.metadata.toStatus === "string" ? message.metadata.toStatus : undefined;
   if (
     [
+      "REQUEST_CREATED",
       "QUOTE_CREATED",
       "QUOTE_ACCEPTED",
       "QUOTE_REJECTED",
@@ -644,14 +645,23 @@ function InvoiceSummaryCard({
   mode,
   onSettle,
   settleBusy,
+  csrfToken,
+  hasPendingReceipt,
+  allPaid,
+  onSubmitted,
 }: Readonly<{
   locale: "ar" | "en";
   metadata: UnifiedMessage["metadata"];
   mode: "student" | "admin";
   onSettle: (studentUserId: string, method: string, reference: string) => void;
   settleBusy: boolean;
+  csrfToken: string | undefined;
+  hasPendingReceipt: boolean;
+  allPaid: boolean;
+  onSubmitted: () => void;
 }>) {
   const english = locale === "en";
+  const firstDueId = typeof metadata.firstDueId === "string" ? metadata.firstDueId : undefined;
   const fmt = (minor: number, minorUnit: number) =>
     (minor / 10 ** minorUnit).toLocaleString(english ? "en-US" : "ar-SA", {
       minimumFractionDigits: minorUnit,
@@ -716,10 +726,34 @@ function InvoiceSummaryCard({
           </li>
         ))}
       </ul>
-      {mode === "admin" && studentUserId !== undefined ? (
+      {allPaid ? (
+        <p className="mt-3 rounded-xl border border-[var(--itq-color-success-200)] bg-[var(--itq-color-success-50)] px-3 py-2 text-xs font-black text-[var(--itq-color-success-950)]">
+          {english ? "All dues settled ✓" : "تم اعتماد سداد كل المستحقات ✓"}
+        </p>
+      ) : mode === "student" ? (
+        hasPendingReceipt ? (
+          <p className="mt-3 rounded-xl border border-[var(--itq-color-info-200)] bg-[var(--itq-color-info-50)] px-3 py-2 text-xs font-bold text-[var(--itq-color-info-950)]">
+            {english ? "Your invoice receipt is under review." : "إيصال الفاتورة قيد المراجعة."}
+          </p>
+        ) : firstDueId === undefined ? null : (
+          <PaymentReceiptUploader
+            csrfToken={csrfToken}
+            dueId={firstDueId}
+            locale={locale}
+            onSubmitted={onSubmitted}
+          />
+        )
+      ) : null}
+      {mode === "admin" && studentUserId !== undefined && !allPaid ? (
         <details className="mt-3 rounded-xl border border-[var(--itq-color-success-200)] bg-[var(--itq-color-success-50)] p-2">
           <summary className="cursor-pointer list-none text-[11px] font-black text-[var(--itq-color-success-900)]">
-            {english ? "Payment received — settle all" : "تم استلام الدفع — اعتمد الكل"}
+            {hasPendingReceipt
+              ? english
+                ? "Student sent a receipt — settle all"
+                : "أرسل الطالب إيصالًا — اعتمد الكل"
+              : english
+                ? "Payment received — settle all"
+                : "تم استلام الدفع — اعتمد الكل"}
           </summary>
           <form
             className="mt-2 grid gap-2"
@@ -759,6 +793,144 @@ function InvoiceSummaryCard({
           </form>
         </details>
       ) : null}
+    </div>
+  );
+}
+
+/**
+ * "A new request was created" card in the conversation — shows the service, the
+ * title and a short description so both sides immediately see what was asked
+ * for, with a link into the request.
+ */
+function RequestCreatedCard({
+  request,
+  fallbackTitle,
+  requestNumber,
+  locale,
+  mode,
+}: Readonly<{
+  request: UnifiedRequestSummary | undefined;
+  fallbackTitle: string | undefined;
+  requestNumber: string | undefined;
+  locale: "ar" | "en";
+  mode: "student" | "admin";
+}>) {
+  const english = locale === "en";
+  const title = request?.title ?? fallbackTitle ?? (english ? "New request" : "طلب جديد");
+  const number = request?.requestNumber ?? requestNumber;
+  return (
+    <div className="rounded-2xl border border-[var(--itq-color-brand-200)] bg-[var(--itq-color-brand-50)] p-3.5 shadow-sm">
+      <p className="flex items-center gap-1.5 text-xs font-black text-[var(--itq-color-brand-strong)]">
+        <RequestsIcon className="size-3.5" />
+        {english ? "New request created" : "تم إنشاء طلب جديد"}
+        {number !== undefined ? (
+          <bdi className="ms-1 font-bold opacity-70" dir="ltr">
+            · {number}
+          </bdi>
+        ) : null}
+      </p>
+      {request?.serviceName !== undefined ? (
+        <p className="mt-2 text-[11px] font-black text-[var(--itq-color-ink-soft)]" dir="auto">
+          {request.serviceName}
+        </p>
+      ) : null}
+      <p className="mt-1 text-sm font-black" dir="auto">
+        {title}
+      </p>
+      {request?.summary !== undefined ? (
+        <p className="mt-1 line-clamp-3 text-xs leading-6 text-[var(--itq-color-muted)]" dir="auto">
+          {request.summary}
+        </p>
+      ) : null}
+      <div className="mt-2 flex items-center justify-between gap-2">
+        {request !== undefined ? (
+          <RequestStatusChip locale={locale} status={request.status} />
+        ) : (
+          <span />
+        )}
+        {number !== undefined ? (
+          <Link
+            className="text-[11px] font-black text-[var(--itq-color-brand-strong)] underline"
+            href={
+              mode === "admin"
+                ? `/${locale}/admin/requests/${encodeURIComponent(number)}`
+                : `/${locale}/student/requests/${encodeURIComponent(number)}`
+            }
+          >
+            {mode === "admin"
+              ? english
+                ? "Manage request"
+                : "إدارة الطلب"
+              : english
+                ? "Request details"
+                : "تفاصيل الطلب"}
+          </Link>
+        ) : null}
+      </div>
+    </div>
+  );
+}
+
+/**
+ * A thin, pinned strip at the top of the conversation: how much the student
+ * still owes plus a quick tally of their requests, so both the admin and the
+ * student see where things stand without opening the requests panel.
+ */
+function ConversationStatsBar({
+  requests,
+  outstanding,
+  locale,
+}: Readonly<{
+  requests: readonly UnifiedRequestSummary[];
+  outstanding: readonly { currency: string; minorUnit: number; amountMinor: number }[];
+  locale: "ar" | "en";
+}>) {
+  const english = locale === "en";
+  const debt = outstanding.filter((line) => line.amountMinor > 0);
+  const active = requests.filter(
+    (request) => !["COMPLETED", "CANCELLED", "REJECTED"].includes(request.status),
+  ).length;
+  const completed = requests.filter((request) => request.status === "COMPLETED").length;
+  const unpaid = requests.filter((request) => request.finance?.dueStatus === "UNPAID").length;
+  const paid = requests.filter((request) => request.finance?.dueStatus === "PAID").length;
+  if (debt.length === 0 && requests.length === 0) return null;
+  const money = (minor: number, minorUnit: number, currency: string) =>
+    `${(minor / 10 ** minorUnit).toLocaleString(english ? "en-US" : "ar-SA", {
+      minimumFractionDigits: minorUnit,
+      maximumFractionDigits: minorUnit,
+    })} ${currency}`;
+  const chip = (tone: "warn" | "muted" | "ok", text: string) => (
+    <span
+      className={`inline-flex shrink-0 items-center gap-1 rounded-full px-2.5 py-1 text-[10px] font-black ${
+        tone === "warn"
+          ? "bg-[var(--itq-color-warning-50)] text-[var(--itq-color-warning-900)] ring-1 ring-[var(--itq-color-warning-200)]"
+          : tone === "ok"
+            ? "bg-[var(--itq-color-success-50)] text-[var(--itq-color-success-900)]"
+            : "bg-[var(--itq-color-surface-soft)] text-[var(--itq-color-ink-soft)]"
+      }`}
+      key={text}
+    >
+      {text}
+    </span>
+  );
+  return (
+    <div className="flex shrink-0 items-center gap-2 overflow-x-auto border-b border-[var(--itq-color-border)] bg-[var(--itq-color-surface)] px-3 py-1.5 sm:px-5">
+      {debt.length > 0
+        ? debt.map((line) =>
+            chip(
+              "warn",
+              `${english ? "Owed" : "المديونية"} ${money(line.amountMinor, line.minorUnit, line.currency)}`,
+            ),
+          )
+        : requests.length > 0
+          ? chip("ok", english ? "No dues" : "لا مديونية")
+          : null}
+      {active > 0 ? chip("muted", `${active} ${english ? "in progress" : "قيد التنفيذ"}`) : null}
+      {unpaid > 0
+        ? chip("warn", `${unpaid} ${english ? "awaiting payment" : "بانتظار السداد"}`)
+        : null}
+      {paid > 0 ? chip("ok", `${paid} ${english ? "paid" : "مدفوع"}`) : null}
+      {completed > 0 ? chip("muted", `${completed} ${english ? "completed" : "مكتمل"}`) : null}
     </div>
   );
 }
@@ -1438,6 +1610,9 @@ export function UnifiedChatWorkspace({
   const [requests, setRequests] = useState<UnifiedRequestSummary[]>([
     ...(conversation?.requests ?? []),
   ]);
+  const [outstanding, setOutstanding] = useState<
+    readonly { currency: string; minorUnit: number; amountMinor: number; dueCount: number }[]
+  >([...(conversation?.outstanding ?? [])]);
   const [loadedPage, setLoadedPage] = useState(initialMessagePage.page);
   const [pageCount, setPageCount] = useState(initialMessagePage.pageCount ?? 1);
   const [linkedRequestId, setLinkedRequestId] = useState(selectedRequestId);
@@ -1452,6 +1627,7 @@ export function UnifiedChatWorkspace({
   const [contactsOpen, setContactsOpen] = useState(conversation === undefined);
   const [detailsOpen, setDetailsOpen] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
+  const [createRequestOpen, setCreateRequestOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
   const [activeMatch, setActiveMatch] = useState(0);
   const [highlightId, setHighlightId] = useState<string>();
@@ -1530,7 +1706,15 @@ export function UnifiedChatWorkspace({
       });
       if (!response.ok) return;
       const payload = (await response.json()) as {
-        conversation?: { requests?: readonly (Record<string, unknown> & { updatedAt: string })[] };
+        conversation?: {
+          requests?: readonly (Record<string, unknown> & { updatedAt: string })[];
+          outstanding?: readonly {
+            currency: string;
+            minorUnit: number;
+            amountMinor: number;
+            dueCount: number;
+          }[];
+        };
       };
       const fresh = payload.conversation?.requests;
       if (!Array.isArray(fresh)) return;
@@ -1539,6 +1723,9 @@ export function UnifiedChatWorkspace({
           (entry) => ({ ...entry, updatedAt: new Date(entry.updatedAt) }) as UnifiedRequestSummary,
         ),
       );
+      if (Array.isArray(payload.conversation?.outstanding)) {
+        setOutstanding(payload.conversation.outstanding);
+      }
     } catch {
       /* keep the current list on a transient failure */
     }
@@ -3830,6 +4017,27 @@ export function UnifiedChatWorkspace({
             <span className="hidden items-center gap-1.5 rounded-full bg-[var(--itq-color-success-50)] px-3 py-1.5 text-[10px] font-black text-[var(--itq-color-success-800)] sm:inline-flex">
               <ShieldCheckIcon className="size-3.5" /> {english ? "Secure" : "آمنة"}
             </span>
+            {mode === "admin" && services.length > 0 ? (
+              <button
+                aria-expanded={createRequestOpen}
+                aria-label={english ? "Create a request for this student" : "إنشاء طلب لهذا الطالب"}
+                className={`relative grid size-10 place-items-center rounded-xl border border-[var(--itq-color-border)] hover:bg-[var(--itq-color-brand-50)] ${
+                  createRequestOpen
+                    ? "bg-[var(--itq-color-brand-50)] text-[var(--itq-color-brand-strong)]"
+                    : ""
+                }`}
+                onClick={() => {
+                  setSearchOpen(false);
+                  setCreateRequestOpen((value) => !value);
+                }}
+                type="button"
+              >
+                <RequestsIcon className="size-5" />
+                <span className="absolute -end-1 -top-1 grid size-4 place-items-center rounded-full bg-[var(--itq-color-brand-700)] text-[10px] font-black leading-none text-white">
+                  +
+                </span>
+              </button>
+            ) : null}
             <button
               aria-expanded={searchOpen}
               aria-label={english ? "Search this conversation" : "البحث في المحادثة"}
@@ -3868,6 +4076,50 @@ export function UnifiedChatWorkspace({
             </button>
           </div>
         </header>
+
+        <ConversationStatsBar locale={locale} outstanding={outstanding} requests={requests} />
+
+        {createRequestOpen && mode === "admin" && services.length > 0 ? (
+          <form
+            className="flex shrink-0 flex-wrap items-center gap-2 border-b border-[var(--itq-color-border)] bg-[var(--itq-color-brand-50)] px-3 py-2 sm:px-5"
+            onSubmit={(event) =>
+              void createRequestOnBehalf(event).then(() => setCreateRequestOpen(false))
+            }
+          >
+            <select
+              aria-label={english ? "Service" : "الخدمة"}
+              className="h-9 min-w-40 flex-1 rounded-xl border border-[var(--itq-color-border)] bg-[var(--itq-color-surface)] px-2 text-xs font-black"
+              defaultValue=""
+              name="serviceId"
+              required
+            >
+              <option disabled value="">
+                {english ? "Choose a service" : "اختر الخدمة"}
+              </option>
+              {services.map((service) => (
+                <option key={service.id} value={service.id}>
+                  {service.name}
+                </option>
+              ))}
+            </select>
+            <input
+              aria-label={english ? "Title" : "العنوان"}
+              className="h-9 min-w-40 flex-[2] rounded-xl border border-[var(--itq-color-border)] bg-[var(--itq-color-surface)] px-3 text-sm"
+              dir="auto"
+              maxLength={160}
+              name="title"
+              placeholder={english ? "Request title" : "عنوان الطلب"}
+              required
+            />
+            <button
+              className="h-9 shrink-0 rounded-xl bg-[var(--itq-color-brand-700)] px-3 text-xs font-black text-white disabled:opacity-50"
+              disabled={interactionLocked}
+              type="submit"
+            >
+              {english ? "Create & assign" : "إنشاء وإسناد"}
+            </button>
+          </form>
+        ) : null}
 
         {searchOpen ? (
           <div className="flex shrink-0 items-center gap-2 border-b border-[var(--itq-color-border)] bg-[var(--itq-color-surface)] px-3 py-2 sm:px-5">
@@ -4119,13 +4371,40 @@ export function UnifiedChatWorkspace({
                       ) : message.body === "INVOICE_SUMMARY" ? (
                         <li className="mx-auto my-2 w-full max-w-sm">
                           <InvoiceSummaryCard
+                            allPaid={
+                              requests.length > 0 &&
+                              !requests.some((r) => r.finance?.dueStatus === "UNPAID")
+                            }
+                            csrfToken={csrfToken}
+                            hasPendingReceipt={requests.some(
+                              (r) => r.finance?.hasPendingReceipt === true,
+                            )}
                             locale={locale}
                             metadata={message.metadata}
                             mode={mode}
                             onSettle={(studentUserId, method, reference) =>
                               void settleAllDues(studentUserId, method, reference)
                             }
+                            onSubmitted={() => {
+                              messagePokeRef.current();
+                              contactPokeRef.current();
+                              void refreshRequests();
+                            }}
                             settleBusy={interactionLocked}
+                          />
+                        </li>
+                      ) : message.body === "REQUEST_CREATED" ? (
+                        <li className="mx-auto my-2 w-full max-w-sm">
+                          <RequestCreatedCard
+                            fallbackTitle={message.request?.title}
+                            locale={locale}
+                            mode={mode}
+                            request={requests.find(
+                              (candidate) =>
+                                candidate.id === message.request?.id ||
+                                candidate.requestNumber === message.request?.requestNumber,
+                            )}
+                            requestNumber={message.request?.requestNumber}
                           />
                         </li>
                       ) : isImportantSystemMessage(message) ? (

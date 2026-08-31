@@ -50,6 +50,11 @@ export function assertFinanceDueId(value: string): string {
   return normalized;
 }
 
+/** True for a well-formed UUID; used for optional id filters. */
+export function isFinanceUuid(value: string): boolean {
+  return uuidPattern.test(value.trim().toLowerCase());
+}
+
 export function assertFinanceVersion(value: number): number {
   if (!Number.isSafeInteger(value) || value < 1) throw new FinanceError("INVALID_VERSION");
   return value;

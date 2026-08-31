@@ -23,6 +23,8 @@ import {
   type RecordFinancePaymentInput,
   type ReverseFinancePaymentInput,
   type ReviewPaymentReceiptInput,
+  type StudentBalanceLine,
+  type StudentFinanceBalance,
   type SubmitPaymentReceiptInput,
   type VoidFinanceDueInput,
 } from "./types.js";
@@ -33,6 +35,7 @@ import {
   assertFinanceDueStatus,
   assertFinancePaymentMethod,
   assertFinanceVersion,
+  isFinanceUuid,
   minorUnitForCurrency,
   normalizeCreateFinanceDue,
   normalizeFinanceReason,
@@ -340,6 +343,10 @@ export class FinanceService {
   ): Promise<FinanceListResult<AdminFinanceDue>> {
     requireAdminFinancePermission(principal, "admin.finance.read");
     const normalized = normalizedList(input, 100);
+    const studentUserId =
+      typeof input.studentUserId === "string" && isFinanceUuid(input.studentUserId)
+        ? input.studentUserId.trim().toLowerCase()
+        : null;
     const predicate = `
       ($1::text IS NULL OR dues.reference ILIKE $1 ESCAPE E'\\\\'
         OR requests.request_number ILIKE $1 ESCAPE E'\\\\'
@@ -348,8 +355,14 @@ export class FinanceService {
         OR dues.title_en ILIKE $1 ESCAPE E'\\\\')
       AND ($2::text IS NULL OR dues.status = $2)
       AND ($3::text IS NULL OR dues.currency = $3)
+      AND ($4::uuid IS NULL OR dues.student_user_id = $4)
     `;
-    const parameters = [normalized.searchPattern, normalized.status, normalized.currency];
+    const parameters = [
+      normalized.searchPattern,
+      normalized.status,
+      normalized.currency,
+      studentUserId,
+    ];
     const [counts, rows] = await Promise.all([
       this.database.unsafe<CountRow[]>(
         `SELECT count(*)::text AS count
@@ -365,7 +378,7 @@ export class FinanceService {
          ${dueJoins}
          WHERE ${predicate}
          ORDER BY dues.created_at DESC, dues.id DESC
-         LIMIT $4 OFFSET $5`,
+         LIMIT $5 OFFSET $6`,
         [...parameters, normalized.pageSize, normalized.offset],
       ),
     ]);
@@ -404,6 +417,83 @@ export class FinanceService {
       metadata: { currencyCount: rows.length },
     });
     return toReport(rows);
+  }
+
+  /**
+   * One row per student that has at least one live (non-voided) due, with the
+   * amount owed / paid broken down by currency. Powers the per-student table in
+   * the admin finance page; ordered by who owes the most.
+   */
+  public async listStudentBalances(
+    principal: AuthenticatedPrincipal,
+  ): Promise<readonly StudentFinanceBalance[]> {
+    requireAdminFinancePermission(principal, "admin.finance.read");
+    const rows = await this.database<
+      {
+        readonly student_user_id: string;
+        readonly student_display_name: string | null;
+        readonly currency: string;
+        readonly minor_unit: number | string;
+        readonly unpaid_count: number | string;
+        readonly unpaid_amount_minor: number | string;
+        readonly paid_count: number | string;
+        readonly paid_amount_minor: number | string;
+        readonly last_activity_at: Date | string;
+      }[]
+    >`
+      SELECT dues.student_user_id,
+             students.display_name AS student_display_name,
+             dues.currency, dues.minor_unit,
+             count(*) FILTER (WHERE dues.status = 'UNPAID')::text AS unpaid_count,
+             coalesce(sum(dues.amount_minor) FILTER (WHERE dues.status = 'UNPAID'), 0)::text
+               AS unpaid_amount_minor,
+             count(*) FILTER (WHERE dues.status = 'PAID')::text AS paid_count,
+             coalesce(sum(dues.amount_minor) FILTER (WHERE dues.status = 'PAID'), 0)::text
+               AS paid_amount_minor,
+             max(dues.updated_at) AS last_activity_at
+      FROM finance_dues AS dues
+      INNER JOIN users AS students ON students.id = dues.student_user_id
+      WHERE dues.status <> 'VOIDED'
+      GROUP BY dues.student_user_id, students.display_name, dues.currency, dues.minor_unit
+    `;
+    const byStudent = new Map<string, StudentFinanceBalance & { lines: StudentBalanceLine[] }>();
+    for (const row of rows) {
+      const existing = byStudent.get(row.student_user_id);
+      const line: StudentBalanceLine = {
+        currency: toCurrency(row.currency),
+        minorUnit: toMinorUnit(row.minor_unit),
+        unpaidCount: toSafeInteger(row.unpaid_count, "unpaid_count"),
+        unpaidAmountMinor: toSignedSafeInteger(row.unpaid_amount_minor, "unpaid_amount_minor"),
+        paidCount: toSafeInteger(row.paid_count, "paid_count"),
+        paidAmountMinor: toSignedSafeInteger(row.paid_amount_minor, "paid_amount_minor"),
+      };
+      const activity =
+        row.last_activity_at instanceof Date
+          ? row.last_activity_at
+          : new Date(row.last_activity_at);
+      if (existing === undefined) {
+        byStudent.set(row.student_user_id, {
+          studentUserId: row.student_user_id,
+          studentDisplayName: row.student_display_name ?? "—",
+          lines: [line],
+          totalUnpaidCount: line.unpaidCount,
+          lastActivityAt: activity,
+        });
+      } else {
+        existing.lines.push(line);
+        (existing as { totalUnpaidCount: number }).totalUnpaidCount += line.unpaidCount;
+        if (activity > existing.lastActivityAt) {
+          (existing as { lastActivityAt: Date }).lastActivityAt = activity;
+        }
+      }
+    }
+    const outstandingMinor = (balance: StudentFinanceBalance): number =>
+      balance.lines.reduce((sum, item) => sum + item.unpaidAmountMinor, 0);
+    return [...byStudent.values()].sort(
+      (left, right) =>
+        outstandingMinor(right) - outstandingMinor(left) ||
+        right.lastActivityAt.getTime() - left.lastActivityAt.getTime(),
+    );
   }
 
   public async createDue(
@@ -1085,7 +1175,7 @@ export class FinanceService {
     principal: AuthenticatedPrincipal,
     studentUserIdInput: string,
     context: RequestAuditContext = {},
-  ): Promise<{ readonly count: number }> {
+  ): Promise<{ readonly count: number; readonly firstDueId?: string }> {
     requireAdminFinancePermission(principal, "admin.finance.manage");
     const studentUserId = assertFinanceDueId(studentUserIdInput);
     return this.database.begin(async (transaction) => {
@@ -1101,6 +1191,7 @@ export class FinanceService {
       if (students[0] === undefined) throw new FinanceError("DUE_NOT_FOUND");
       const dueRows = await tx<
         {
+          readonly id: string;
           readonly amount_minor: number | string;
           readonly currency: string;
           readonly minor_unit: number | string;
@@ -1108,12 +1199,14 @@ export class FinanceService {
           readonly title: string;
         }[]
       >`
-        SELECT d.amount_minor, d.currency, d.minor_unit, r.request_number, r.title
+        SELECT d.id, d.amount_minor, d.currency, d.minor_unit, r.request_number, r.title
         FROM finance_dues AS d
         INNER JOIN service_requests AS r ON r.id = d.request_id
         WHERE d.student_user_id = ${studentUserId} AND d.status = 'UNPAID'
         ORDER BY d.created_at ASC, d.id ASC
       `;
+      const dueIds = dueRows.map((row) => row.id);
+      const firstDueId = dueIds[0];
       const items = dueRows.map((row) => ({
         requestNumber: row.request_number,
         title: row.title,
@@ -1182,11 +1275,18 @@ export class FinanceService {
             conversation_id, sender_type, sender_user_id, content_type, body, metadata
           ) VALUES (
             ${conversationId}, 'SYSTEM', NULL, 'ACTION', 'INVOICE_SUMMARY',
-            ${tx.json({ items, lines, count, studentUserId })}
+            ${tx.json({
+              items,
+              lines,
+              count,
+              studentUserId,
+              dueIds,
+              ...(firstDueId === undefined ? {} : { firstDueId }),
+            })}
           )
         `;
       }
-      return { count };
+      return { count, ...(firstDueId === undefined ? {} : { firstDueId }) };
     });
   }
 
@@ -1232,6 +1332,16 @@ export class FinanceService {
       );
       count += 1;
     }
+    // Any receipt the student uploaded against this consolidated invoice is now
+    // resolved — clear the pending review so the chat card stops saying
+    // "under review" and flips to accepted.
+    await this.database`
+      UPDATE finance_payment_submissions
+      SET review_status = 'ACCEPTED', reviewed_at = now(),
+          reviewed_by_user_id = ${principal.userId},
+          review_note = 'اعتماد سداد إجمالي عبر الفاتورة'
+      WHERE student_user_id = ${studentUserId} AND review_status = 'PENDING'
+    `;
     if (count > 0) {
       await recordAuditEvent(this.database, {
         ...context,

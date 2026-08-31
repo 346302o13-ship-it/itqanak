@@ -22,6 +22,8 @@ export {
   type RecordFinancePaymentInput,
   type ReviewPaymentReceiptInput,
   type ReverseFinancePaymentInput,
+  type StudentBalanceLine,
+  type StudentFinanceBalance,
   type SubmitPaymentReceiptInput,
   type VoidFinanceDueInput,
 } from "./types.js";

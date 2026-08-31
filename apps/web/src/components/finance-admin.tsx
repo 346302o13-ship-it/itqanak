@@ -9,6 +9,7 @@ import {
   type FinanceListResult,
   type FinanceReport,
   type PaymentReceiptSubmission,
+  type StudentFinanceBalance,
 } from "@itqanak/finance";
 
 import { financePaymentMethodLabel, formatFinanceAmount } from "@/lib/finance-presenters";
@@ -17,7 +18,7 @@ import { AdminShell } from "./admin-shell";
 import { CsrfInput } from "./auth-shell";
 import { FilterDisclosure } from "./filter-disclosure";
 import { FinanceFlash } from "./finance-flash";
-import { FinanceReportCards, FinanceStatusChip } from "./finance-widgets";
+import { FinanceReportCards, FinanceStatusChip, StudentBalanceTable } from "./finance-widgets";
 import { LiveRefresh } from "./live-refresh";
 import { LocalDateTime } from "./local-date-time";
 import { SubmitButton } from "./submit-button";
@@ -32,6 +33,10 @@ interface FinanceAdminProps {
   readonly locale: "ar" | "en";
   readonly notice?: string;
   readonly pendingReceipts?: readonly PaymentReceiptSubmission[];
+  /** All students with dues — shown as the overview table when no filter is on. */
+  readonly studentBalances?: readonly StudentFinanceBalance[];
+  /** Display name of the student the `?student=` view is scoped to. */
+  readonly selectedStudentName?: string;
 }
 
 const controlClassName =
@@ -42,6 +47,7 @@ function pageHref(locale: "ar" | "en", filters: FinanceListInput, page: number):
   if (filters.search !== undefined && filters.search.length > 0) query.set("q", filters.search);
   if (filters.status !== undefined) query.set("status", filters.status);
   if (filters.currency !== undefined) query.set("currency", filters.currency);
+  if (filters.studentUserId !== undefined) query.set("student", filters.studentUserId);
   query.set("page", String(page));
   return `/${locale}/admin/finance?${query.toString()}`;
 }
@@ -56,10 +62,20 @@ export function FinanceAdmin({
   locale,
   notice,
   pendingReceipts,
+  studentBalances,
+  selectedStudentName,
 }: FinanceAdminProps) {
   const english = locale === "en";
   const numberFormat = new Intl.NumberFormat(english ? "en-US" : "ar-SA");
   const receipts = pendingReceipts ?? [];
+  const studentId = filters.studentUserId;
+  const hasListFilter =
+    (filters.search !== undefined && filters.search.length > 0) ||
+    filters.status !== undefined ||
+    filters.currency !== undefined;
+  // Default view = the per-student overview table. The flat due list shows once
+  // a student is picked or a text/status/currency filter is applied.
+  const showStudentTable = studentId === undefined && !hasListFilter;
   return (
     <AdminShell csrfToken={csrfToken} displayName={displayName} locale={locale}>
       <LiveRefresh />
@@ -71,21 +87,87 @@ export function FinanceAdmin({
             <p className="text-sm font-black text-[var(--itq-color-brand-strong)]">
               {english ? "Internal financial ledger" : "السجل المالي الداخلي"}
             </p>
-            <h1 className="mt-1 text-3xl font-black">
-              {english ? "Payments & dues" : "المدفوعات والمستحقات"}
+            <h1 className="mt-1 text-3xl font-black" dir="auto">
+              {studentId !== undefined && selectedStudentName !== undefined
+                ? selectedStudentName
+                : english
+                  ? "Payments & dues"
+                  : "المدفوعات والمستحقات"}
             </h1>
-            <p className="mt-2 max-w-3xl text-sm leading-7 text-[var(--itq-color-muted)]">
-              {english
-                ? "Create request-linked dues and manually confirm a payment. No external payment gateway or card data is used."
-                : "أنشئ مستحقات مرتبطة بطلب فعلي وأكّد الدفع يدويًا. لا توجد بوابة دفع خارجية ولا تُحفظ بيانات بطاقات."}
-            </p>
+            {studentId !== undefined ? (
+              <Link
+                className="mt-2 inline-flex items-center gap-1 text-sm font-black text-[var(--itq-color-brand-strong)] underline"
+                href={`/${locale}/admin/finance`}
+              >
+                {english ? "‹ All students" : "› كل الطلاب"}
+              </Link>
+            ) : (
+              <p className="mt-2 max-w-3xl text-sm leading-7 text-[var(--itq-color-muted)]">
+                {english
+                  ? "Pick a student to see and manage every payment they owe. Payments are confirmed manually — no external gateway or card data."
+                  : "اختر طالبًا لعرض وإدارة كل مستحقاته ودفعاته. يُؤكَّد الدفع يدويًا، دون بوابة خارجية أو بيانات بطاقات."}
+              </p>
+            )}
           </div>
           <span className="rounded-full bg-[var(--itq-color-brand-50)] px-4 py-2 text-sm font-black text-[var(--itq-color-brand-strong)]">
-            {numberFormat.format(dues.total)} {english ? "records" : "سجل"}
+            {studentId !== undefined
+              ? `${numberFormat.format(dues.total)} ${english ? "records" : "سجل"}`
+              : `${numberFormat.format((studentBalances ?? []).length)} ${english ? "students" : "طالب"}`}
           </span>
         </div>
 
-        {report === undefined ? null : (
+        {studentId !== undefined && canManage ? (
+          <div className="mt-6 grid gap-3 border-t border-[var(--itq-color-border)] pt-6 sm:grid-cols-2">
+            <form
+              action={`/api/admin/finance/students/${encodeURIComponent(studentId)}/invoice`}
+              method="post"
+            >
+              <CsrfInput token={csrfToken} />
+              <input name="locale" type="hidden" value={locale} />
+              <SubmitButton
+                className="w-full"
+                pendingLabel={english ? "Sending…" : "جارٍ الإرسال…"}
+              >
+                {english ? "Send a payment request for all dues" : "طلب دفع بكل المستحقات"}
+              </SubmitButton>
+            </form>
+            <details className="rounded-xl bg-[var(--itq-color-success-50)] p-3">
+              <summary className="cursor-pointer list-none text-sm font-black text-[var(--itq-color-success-900)]">
+                {english ? "Payment received — settle all" : "تم استلام الدفع — اعتمد الكل"}
+              </summary>
+              <form
+                action={`/api/admin/finance/students/${encodeURIComponent(studentId)}/invoice`}
+                className="mt-3 grid gap-2"
+                method="post"
+              >
+                <CsrfInput token={csrfToken} />
+                <input name="locale" type="hidden" value={locale} />
+                <input name="action" type="hidden" value="settle" />
+                <select className={controlClassName} name="method" required>
+                  {financePaymentMethods.map((method) => (
+                    <option key={method} value={method}>
+                      {financePaymentMethodLabel(method, locale)}
+                    </option>
+                  ))}
+                </select>
+                <input
+                  className={controlClassName}
+                  dir="ltr"
+                  maxLength={120}
+                  minLength={2}
+                  name="reference"
+                  placeholder={english ? "Verification reference" : "مرجع التحقق"}
+                  required
+                />
+                <SubmitButton pendingLabel={english ? "Settling…" : "جارٍ الاعتماد…"}>
+                  {english ? "Mark every due paid" : "اعتماد سداد كل المستحقات"}
+                </SubmitButton>
+              </form>
+            </details>
+          </div>
+        ) : null}
+
+        {report === undefined || studentId !== undefined ? null : (
           <div className="mt-7">
             <FinanceReportCards locale={locale} report={report} />
           </div>
@@ -297,7 +379,28 @@ export function FinanceAdmin({
         </section>
       ) : null}
 
-      <section className="mt-6 rounded-[1.75rem] border border-[var(--itq-color-border)] bg-[var(--itq-color-surface)] p-5 shadow-[var(--itq-shadow-sm)] sm:p-7">
+      {showStudentTable ? (
+        <section className="mt-6 rounded-[1.75rem] border border-[var(--itq-color-border)] bg-[var(--itq-color-surface)] p-5 shadow-[var(--itq-shadow-sm)] sm:p-7">
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <h2 className="text-lg font-black">{english ? "By student" : "المستحقات لكل طالب"}</h2>
+            <Link
+              className="text-xs font-black text-[var(--itq-color-brand-strong)] underline"
+              href={`/${locale}/admin/finance?status=UNPAID`}
+            >
+              {english ? "See all unpaid dues" : "عرض كل المستحقات غير المدفوعة"}
+            </Link>
+          </div>
+          <div className="mt-4">
+            <StudentBalanceTable balances={studentBalances ?? []} locale={locale} />
+          </div>
+        </section>
+      ) : null}
+
+      <section
+        className={`mt-6 rounded-[1.75rem] border border-[var(--itq-color-border)] bg-[var(--itq-color-surface)] p-5 shadow-[var(--itq-shadow-sm)] sm:p-7 ${
+          showStudentTable ? "hidden" : ""
+        }`}
+      >
         <FilterDisclosure
           activeCount={
             [filters.search && filters.search.length > 0, filters.status, filters.currency].filter(
