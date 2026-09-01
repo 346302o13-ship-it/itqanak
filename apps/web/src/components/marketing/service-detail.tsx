@@ -119,9 +119,7 @@ export function ServiceDetailView({
                     name="sparkles"
                   />
                   <div>
-                    <dt className="text-white/60">
-                      {locale === "en" ? "Starting price" : "سعر البداية"}
-                    </dt>
+                    <dt className="text-white/60">{locale === "en" ? "Price" : "السعر"}</dt>
                     <dd className="mt-1 font-black">{service.priceLabel}</dd>
                   </div>
                 </div>

@@ -9,6 +9,9 @@ export function startingPriceLabel(
   currency: string | null,
   locale: "ar" | "en",
 ): string | undefined {
+  if (pricingModel === "QUOTE_REQUIRED") {
+    return locale === "ar" ? "السعر بالاستفسار" : "Price on request";
+  }
   if (
     (pricingModel !== "STARTING_FROM" && pricingModel !== "FIXED") ||
     basePrice === null ||

@@ -178,7 +178,7 @@ const landingCopy = {
       {
         question: "Are service prices shown publicly?",
         answer:
-          'Yes — every service shows an approximate starting price ("from …") so you can gauge fit before you order. The final price is set after we review your request\'s scope, files and timing, and you can ask us on WhatsApp first.',
+          "Yes — most services show an approximate starting price (“from …”), and a few are priced after a quick chat. The final price is set once we review the request scope, files and timing.",
       },
       {
         question: "Can I attach files?",
