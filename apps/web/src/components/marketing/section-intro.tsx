@@ -26,7 +26,7 @@ export function SectionIntro({
       {eyebrow === undefined ? null : (
         <p
           className={classNames(
-            "inline-flex items-center gap-2 rounded-full border border-[var(--itq-color-brand-200)] bg-[var(--itq-color-brand-50)] px-3.5 py-1.5 text-xs font-black tracking-wide text-[var(--itq-color-brand-strong)]",
+            "inline-flex items-center gap-2 rounded-full border border-[var(--itq-color-brand-200)] bg-[var(--itq-color-brand-50)] px-3.5 py-1.5 text-[0.7rem] font-black uppercase tracking-[0.08em] text-[var(--itq-color-brand-strong)]",
             align === "center" && "mx-auto",
           )}
         >
@@ -38,7 +38,7 @@ export function SectionIntro({
         </p>
       )}
       <h2
-        className="mt-4 text-3xl font-black leading-[1.35] tracking-tight text-[var(--itq-color-ink)] sm:text-4xl"
+        className="mt-4 text-3xl font-black leading-[1.18] tracking-[-0.015em] text-[var(--itq-color-ink)] sm:text-[2.5rem]"
         id={titleId}
       >
         {title}

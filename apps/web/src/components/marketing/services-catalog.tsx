@@ -64,19 +64,25 @@ export function ServicesCatalogView({
   const prefix = `/${locale}`;
   return (
     <>
-      <section className="relative overflow-hidden rounded-[var(--itq-radius-hero)] border border-[var(--itq-color-border)] bg-[var(--itq-color-brand-900)] px-6 py-10 text-white shadow-[var(--itq-shadow-card)] sm:px-10 sm:py-14 lg:px-14">
+      <section className="relative overflow-hidden rounded-[var(--itq-radius-hero)] border border-[var(--itq-color-border)] bg-[linear-gradient(135deg,var(--itq-color-brand-900),var(--itq-color-brand-950))] px-6 py-12 text-white shadow-[var(--itq-shadow-card)] sm:px-10 sm:py-16 lg:px-14">
         <div
           aria-hidden="true"
-          className="absolute -end-24 -top-24 size-80 rounded-full border-[3rem] border-white/[0.035]"
+          className="absolute -end-24 -top-24 size-80 rounded-full border-[3rem] border-white/[0.04]"
         />
         <div
           aria-hidden="true"
-          className="absolute -bottom-40 start-1/3 size-72 rounded-full bg-[var(--itq-color-brand-600)]/20 blur-3xl"
+          className="absolute -bottom-40 start-1/3 size-72 rounded-full bg-[var(--itq-color-brand-600)]/25 blur-3xl"
+        />
+        <span
+          aria-hidden="true"
+          className="absolute inset-x-0 top-0 h-1 bg-[linear-gradient(90deg,transparent,color-mix(in_srgb,var(--itq-color-accent-300)_75%,transparent),transparent)]"
         />
         <div className="relative grid items-end gap-8 lg:grid-cols-[minmax(0,1fr)_20rem]">
           <div className="max-w-3xl">
-            <p className="text-sm font-black text-[var(--itq-color-accent-200)]">{copy.eyebrow}</p>
-            <h1 className="mt-4 text-4xl font-black leading-[1.3] tracking-tight sm:text-5xl">
+            <p className="text-xs font-black uppercase tracking-wide text-[var(--itq-color-accent-200)]">
+              {copy.eyebrow}
+            </p>
+            <h1 className="mt-4 text-[2.5rem] font-black leading-[1.12] tracking-[-0.02em] sm:text-[3.25rem]">
               {copy.title}
             </h1>
             <p className="mt-5 max-w-2xl text-lg leading-8 text-white/75">{copy.description}</p>
@@ -106,11 +112,11 @@ export function ServicesCatalogView({
         <>
           <nav
             aria-label={copy.categoryNavLabel}
-            className="mt-8 flex gap-2 overflow-x-auto pb-2 [scrollbar-width:thin]"
+            className="sticky top-[4.75rem] z-30 -mx-4 mt-8 flex gap-2 overflow-x-auto border-b border-[var(--itq-color-border)] bg-[var(--itq-color-canvas)]/90 px-4 py-3 backdrop-blur-md [scrollbar-width:thin] sm:-mx-6 sm:px-6"
           >
             {categories.map((category) => (
               <a
-                className="shrink-0 rounded-full border border-[var(--itq-color-border)] bg-[var(--itq-color-surface)] px-4 py-2.5 text-sm font-black text-[var(--itq-color-ink-soft)] shadow-sm transition hover:border-[var(--itq-color-brand-200)] hover:bg-[var(--itq-color-brand-50)]"
+                className="shrink-0 rounded-full border border-[var(--itq-color-border)] bg-[var(--itq-color-surface)] px-4 py-2 text-sm font-black text-[var(--itq-color-ink-soft)] shadow-sm transition hover:border-[var(--itq-color-brand-300)] hover:bg-[var(--itq-color-brand-50)] hover:text-[var(--itq-color-brand-strong)]"
                 href={`#category-${category.slug}`}
                 key={category.id}
               >
@@ -119,7 +125,7 @@ export function ServicesCatalogView({
             ))}
           </nav>
 
-          <section aria-labelledby="catalog-title" className="py-16 sm:py-20">
+          <section aria-labelledby="catalog-title" className="itq-section">
             <SectionIntro
               description={copy.description}
               eyebrow={copy.catalogEyebrow}
@@ -129,17 +135,17 @@ export function ServicesCatalogView({
             <div className="mt-9 grid items-start gap-5 md:grid-cols-2 xl:grid-cols-3">
               {categories.map((category, categoryIndex) => (
                 <article
-                  className="group scroll-mt-28 overflow-hidden rounded-3xl border border-[var(--itq-color-border)] bg-[var(--itq-color-surface)] shadow-[var(--itq-shadow-sm)] transition duration-300 hover:-translate-y-1 hover:border-[var(--itq-color-brand-200)] hover:shadow-[var(--itq-shadow-card)]"
+                  className="group relative scroll-mt-36 overflow-hidden rounded-3xl border border-[var(--itq-color-border)] bg-[var(--itq-color-surface)] shadow-[var(--itq-shadow-sm)] transition duration-300 before:absolute before:inset-x-0 before:top-0 before:h-1 before:origin-center before:scale-x-0 before:bg-[linear-gradient(90deg,var(--itq-color-brand-500),color-mix(in_srgb,var(--itq-color-accent-500)_80%,transparent))] before:transition-transform before:duration-300 hover:-translate-y-1 hover:border-[var(--itq-color-brand-200)] hover:shadow-[var(--itq-shadow-card)] hover:before:scale-x-100"
                   id={`category-${category.slug}`}
                   key={category.id}
                 >
                   <div className="border-b border-[var(--itq-color-border)] bg-[var(--itq-color-surface-soft)] p-6">
-                    <span className="inline-flex size-12 items-center justify-center rounded-2xl bg-[var(--itq-color-surface)] text-[var(--itq-color-brand-strong)] shadow-sm">
+                    <span className="inline-flex size-12 items-center justify-center rounded-2xl bg-[linear-gradient(135deg,var(--itq-color-brand-50),color-mix(in_srgb,var(--itq-color-accent-200)_55%,transparent))] text-[var(--itq-color-brand-strong)] shadow-sm transition duration-300 group-hover:bg-[linear-gradient(135deg,var(--itq-color-brand-600),var(--itq-color-brand-800))] group-hover:text-white">
                       <MarketingIcon
                         name={categoryIcons[categoryIndex % categoryIcons.length] ?? "sparkles"}
                       />
                     </span>
-                    <h2 className="mt-5 text-2xl font-black">{category.name}</h2>
+                    <h2 className="mt-5 text-2xl font-black tracking-tight">{category.name}</h2>
                     <p className="mt-2 min-h-14 leading-7 text-[var(--itq-color-muted)]">
                       {category.description}
                     </p>

@@ -1,11 +1,11 @@
 import Link from "next/link";
 import type { JSX, ReactNode } from "react";
 
-import { BrandMark, classNames } from "@itqanak/ui";
+import { BrandMark } from "@itqanak/ui";
 
 import { EducationalGuide } from "./educational-guide";
 import { InstallAppButton } from "./install-app-button";
-import { MarketingIcon, WhatsAppLink, type MarketingLocale } from "./marketing";
+import { MarketingIcon, PublicHeader, WhatsAppLink, type MarketingLocale } from "./marketing";
 import { SUPPORT_WHATSAPP_E164 } from "@/lib/support-contact";
 
 export interface PublicShellCopy {
@@ -127,99 +127,70 @@ export function PublicShell({
         {copy.skipLabel}
       </a>
 
-      <header className="sticky top-0 z-50 itq-safe-t border-b border-[var(--itq-color-border)]/80 bg-[var(--itq-color-canvas)]/90 backdrop-blur-xl after:absolute after:inset-x-0 after:bottom-0 after:h-px after:bg-[linear-gradient(90deg,transparent,color-mix(in_srgb,var(--itq-color-brand-400)_45%,transparent),transparent)]">
-        <div className="mx-auto flex min-h-[4.75rem] w-full max-w-[80rem] items-center justify-between gap-4 px-4 sm:px-6 lg:px-8">
-          <Link
-            aria-current={active === "home" ? "page" : undefined}
-            className="inline-flex shrink-0 items-center gap-3 rounded-xl"
-            href={prefix}
-          >
-            <BrandMark label={copy.brandName} />
-            <span>
-              <span className="block text-lg font-black leading-5">{copy.brandName}</span>
-              <span className="mt-1 hidden text-[0.65rem] font-bold text-[var(--itq-color-muted)] sm:block">
-                {copy.brandDescriptor}
-              </span>
-            </span>
-          </Link>
-
-          <nav
-            aria-label={copy.navigationLabel}
-            className="hidden items-center gap-1 text-sm font-black lg:flex"
-          >
-            <Link
-              aria-current={active === "services" ? "page" : undefined}
-              className={classNames(
-                "rounded-xl px-4 py-3 transition hover:bg-[var(--itq-color-surface)]",
-                active === "services" &&
-                  "bg-[var(--itq-color-surface)] text-[var(--itq-color-brand-strong)] shadow-[var(--itq-shadow-sm)]",
-              )}
-              href={`${prefix}/services`}
-            >
-              {copy.servicesLabel}
-            </Link>
-            <Link
-              className="rounded-xl px-4 py-3 transition hover:bg-[var(--itq-color-surface)]"
-              href={`${prefix}#how-it-works`}
-            >
-              {copy.processLabel}
-            </Link>
-            <Link
-              className="rounded-xl px-4 py-3 transition hover:bg-[var(--itq-color-surface)]"
-              href={`${prefix}#why-itqanak`}
-            >
-              {copy.whyLabel}
-            </Link>
-            <Link
-              className="rounded-xl px-4 py-3 transition hover:bg-[var(--itq-color-surface)]"
-              href={`${prefix}#faq`}
-            >
-              {copy.faqLabel}
-            </Link>
-          </nav>
-
-          <div className="flex items-center gap-1.5 sm:gap-2">
-            <Link
-              aria-label={copy.languageLabel}
-              className="inline-flex size-11 items-center justify-center rounded-xl border border-[var(--itq-color-border)] bg-[var(--itq-color-surface)] text-xs font-black text-[var(--itq-color-brand-strong)] shadow-sm transition hover:bg-[var(--itq-color-brand-50)]"
-              href={oppositeHref}
-              hrefLang={oppositeLocale}
-              lang={oppositeLocale}
-            >
-              {copy.languageName}
-            </Link>
-            <Link
-              className="itq-sheen inline-flex min-h-11 items-center justify-center rounded-xl bg-[linear-gradient(120deg,var(--itq-color-brand-600),var(--itq-color-brand-800))] px-3 py-2 text-xs font-black text-white shadow-[var(--itq-shadow-sm)] transition hover:-translate-y-0.5 hover:shadow-[var(--itq-shadow-md)] sm:px-5 sm:text-sm"
-              href={`${prefix}/auth/login`}
-            >
-              {copy.loginLabel}
-            </Link>
-          </div>
-        </div>
-      </header>
+      <PublicHeader
+        brandDescriptor={copy.brandDescriptor}
+        brandName={copy.brandName}
+        homeHref={prefix}
+        items={[
+          {
+            href: `${prefix}/services`,
+            label: copy.servicesLabel,
+            current: active === "services",
+          },
+          { href: `${prefix}#how-it-works`, label: copy.processLabel },
+          { href: `${prefix}#why-itqanak`, label: copy.whyLabel },
+          { href: `${prefix}#faq`, label: copy.faqLabel },
+        ]}
+        languageLabel={copy.languageLabel}
+        languageName={copy.languageName}
+        locale={locale}
+        loginHref={`${prefix}/auth/login`}
+        loginLabel={copy.loginLabel}
+        navigationLabel={copy.navigationLabel}
+        oppositeHref={oppositeHref}
+        oppositeLocale={oppositeLocale}
+      />
 
       <main
-        className="mx-auto w-full max-w-[80rem] px-4 pb-24 pt-5 sm:px-6 sm:pt-7 lg:px-8 lg:pb-28"
+        className="mx-auto w-full max-w-[80rem] px-4 pb-24 pt-6 sm:px-6 sm:pt-10 lg:px-8 lg:pb-28"
         id="main-content"
       >
         {children}
       </main>
 
-      <footer className="relative border-t border-[var(--itq-color-border)] bg-[var(--itq-color-surface)] before:absolute before:inset-x-0 before:top-0 before:h-24 before:bg-[linear-gradient(180deg,color-mix(in_srgb,var(--itq-color-brand-50)_60%,transparent),transparent)]">
-        <div className="relative mx-auto grid w-full max-w-[80rem] gap-10 px-5 py-12 sm:px-8 lg:grid-cols-[minmax(16rem,1.5fr)_repeat(3,minmax(9rem,0.65fr))] lg:py-16">
+      <footer className="relative mt-10 border-t border-[var(--itq-color-border)] bg-[var(--itq-color-surface)] before:absolute before:inset-x-0 before:top-0 before:h-24 before:bg-[linear-gradient(180deg,color-mix(in_srgb,var(--itq-color-brand-50)_55%,transparent),transparent)]">
+        <div className="relative mx-auto grid w-full max-w-[80rem] gap-x-8 gap-y-12 px-5 py-14 sm:px-8 lg:grid-cols-[minmax(18rem,1.4fr)_repeat(2,minmax(8rem,0.55fr))_minmax(16rem,0.9fr)] lg:py-20">
           <div className="max-w-md">
             <Link className="inline-flex items-center gap-3" href={prefix}>
               <BrandMark label={copy.brandName} />
               <span className="text-xl font-black">{copy.brandName}</span>
             </Link>
             <p className="mt-5 leading-8 text-[var(--itq-color-muted)]">{copy.footerDescription}</p>
+            <ul className="mt-6 grid gap-2 text-xs font-bold text-[var(--itq-color-muted)]">
+              {[
+                locale === "en" ? "Secure connection" : "اتصال آمن",
+                locale === "en" ? "Private files" : "ملفات خاصة",
+                locale === "en" ? "Academic-integrity commitment" : "التزام بالنزاهة الأكاديمية",
+              ].map((line) => (
+                <li className="inline-flex items-center gap-2" key={line}>
+                  <MarketingIcon
+                    className="size-3.5 text-[var(--itq-color-brand-strong)]"
+                    name="check"
+                  />
+                  {line}
+                </li>
+              ))}
+            </ul>
           </div>
+
           <nav aria-label={copy.footerExploreTitle}>
-            <h2 className="font-black">{copy.footerExploreTitle}</h2>
+            <h2 className="text-sm font-black uppercase tracking-wide text-[var(--itq-color-ink-soft)]">
+              {copy.footerExploreTitle}
+            </h2>
             <ul className="mt-4 grid gap-3 text-sm font-bold text-[var(--itq-color-muted)]">
               <li>
                 <Link
-                  className="hover:text-[var(--itq-color-brand-strong)]"
+                  className="transition hover:text-[var(--itq-color-brand-strong)]"
                   href={`${prefix}/services`}
                 >
                   {copy.servicesLabel}
@@ -227,25 +198,47 @@ export function PublicShell({
               </li>
               <li>
                 <Link
-                  className="hover:text-[var(--itq-color-brand-strong)]"
+                  className="transition hover:text-[var(--itq-color-brand-strong)]"
                   href={`${prefix}#how-it-works`}
                 >
                   {copy.processLabel}
                 </Link>
               </li>
               <li>
-                <Link className="hover:text-[var(--itq-color-brand-strong)]" href={`${prefix}#faq`}>
+                <Link
+                  className="transition hover:text-[var(--itq-color-brand-strong)]"
+                  href={`${prefix}#faq`}
+                >
                   {copy.faqLabel}
+                </Link>
+              </li>
+              <li>
+                <Link
+                  className="transition hover:text-[var(--itq-color-brand-strong)]"
+                  href={`${prefix}/terms`}
+                >
+                  {copy.termsLabel}
+                </Link>
+              </li>
+              <li>
+                <Link
+                  className="transition hover:text-[var(--itq-color-brand-strong)]"
+                  href={`${prefix}/privacy`}
+                >
+                  {copy.privacyLabel}
                 </Link>
               </li>
             </ul>
           </nav>
+
           <nav aria-label={copy.footerAccountTitle}>
-            <h2 className="font-black">{copy.footerAccountTitle}</h2>
+            <h2 className="text-sm font-black uppercase tracking-wide text-[var(--itq-color-ink-soft)]">
+              {copy.footerAccountTitle}
+            </h2>
             <ul className="mt-4 grid gap-3 text-sm font-bold text-[var(--itq-color-muted)]">
               <li>
                 <Link
-                  className="hover:text-[var(--itq-color-brand-strong)]"
+                  className="transition hover:text-[var(--itq-color-brand-strong)]"
                   href={`${prefix}/auth/login`}
                 >
                   {copy.loginLabel}
@@ -253,7 +246,7 @@ export function PublicShell({
               </li>
               <li>
                 <Link
-                  className="hover:text-[var(--itq-color-brand-strong)]"
+                  className="transition hover:text-[var(--itq-color-brand-strong)]"
                   href={`${prefix}/student`}
                 >
                   {copy.studentPortalLabel}
@@ -261,7 +254,7 @@ export function PublicShell({
               </li>
               <li>
                 <Link
-                  className="hover:text-[var(--itq-color-brand-strong)]"
+                  className="transition hover:text-[var(--itq-color-brand-strong)]"
                   href={`${prefix}/student/requests/new`}
                 >
                   {copy.newRequestLabel}
@@ -269,48 +262,45 @@ export function PublicShell({
               </li>
             </ul>
           </nav>
-          <div>
-            <h2 className="font-black">{copy.footerSupportTitle}</h2>
-            <p className="mt-4 text-sm leading-7 text-[var(--itq-color-muted)]">
+
+          <div className="rounded-2xl border border-[var(--itq-color-border)] bg-[var(--itq-color-surface-soft)] p-5">
+            <h2 className="text-sm font-black uppercase tracking-wide text-[var(--itq-color-ink-soft)]">
+              {copy.footerSupportTitle}
+            </h2>
+            <p className="mt-3 text-sm leading-7 text-[var(--itq-color-muted)]">
               {copy.supportAvailability}
             </p>
             <bdi
-              className="mt-3 block text-sm font-black text-[var(--itq-color-ink-soft)]"
+              className="mt-3 block text-base font-black text-[var(--itq-color-ink-soft)]"
               dir="ltr"
             >
               +966 56 420 2263
             </bdi>
             <WhatsAppLink
-              className="mt-4 min-h-11 px-4 py-2"
+              className="mt-4 w-full"
               label={copy.whatsappLabel}
               locale={locale}
               message={copy.whatsappMessage}
             />
           </div>
         </div>
+
         <div className="border-t border-[var(--itq-color-border)]">
-          <div className="mx-auto flex w-full max-w-[80rem] flex-col gap-3 px-5 py-5 text-xs font-bold text-[var(--itq-color-muted)] sm:px-8 lg:flex-row lg:items-center lg:justify-between">
+          <div className="mx-auto flex w-full max-w-[80rem] flex-col gap-3 px-5 py-6 text-xs font-bold text-[var(--itq-color-muted)] sm:px-8 lg:flex-row lg:items-center lg:justify-between">
             <p>
               © {new Date().getUTCFullYear()} {copy.rightsLabel}
             </p>
-            <nav aria-label={copy.footerLegalTitle} className="flex flex-wrap items-center gap-4">
-              <Link
-                className="underline-offset-4 hover:text-[var(--itq-color-brand-strong)] hover:underline"
-                href={`${prefix}/terms`}
-              >
-                {copy.termsLabel}
-              </Link>
-              <Link
-                className="underline-offset-4 hover:text-[var(--itq-color-brand-strong)] hover:underline"
-                href={`${prefix}/privacy`}
-              >
-                {copy.privacyLabel}
-              </Link>
-            </nav>
             <p className="inline-flex items-center gap-1.5">
               <MarketingIcon className="size-3.5" name="shield" />
-              <bdi dir="ltr">WA {SUPPORT_WHATSAPP_E164}</bdi>
+              <bdi dir="ltr">WhatsApp {SUPPORT_WHATSAPP_E164}</bdi>
             </p>
+            <a
+              className="inline-flex items-center gap-1.5 transition hover:text-[var(--itq-color-brand-strong)]"
+              href="#main-content"
+            >
+              {locale === "en" ? "Back to top" : "العودة للأعلى"}
+              <span aria-hidden="true">↑</span>
+            </a>
           </div>
         </div>
       </footer>

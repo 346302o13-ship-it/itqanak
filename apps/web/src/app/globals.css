@@ -188,15 +188,38 @@ svg {
   pointer-events: none;
   background:
     radial-gradient(
-      44rem 30rem at 82% 0%,
-      color-mix(in srgb, var(--itq-color-brand-400) 20%, transparent),
+      46rem 32rem at 84% -4%,
+      color-mix(in srgb, var(--itq-color-brand-400) 15%, transparent),
       transparent 70%
     ),
     radial-gradient(
-      40rem 28rem at 6% 20%,
-      color-mix(in srgb, var(--itq-color-accent-300) 26%, transparent),
+      42rem 30rem at 4% 18%,
+      color-mix(in srgb, var(--itq-color-accent-300) 18%, transparent),
       transparent 70%
     );
+}
+
+/* Consistent vertical rhythm for the visitor-page sections. */
+.itq-section {
+  padding-block: 4.5rem;
+}
+
+@media (min-width: 640px) {
+  .itq-section {
+    padding-block: 6.5rem;
+  }
+}
+
+/* A faint full-bleed hairline to separate stacked sections. */
+.itq-divider {
+  height: 1px;
+  border: 0;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    color-mix(in srgb, var(--itq-color-brand-400) 40%, transparent),
+    transparent
+  );
 }
 
 .itq-sheen {

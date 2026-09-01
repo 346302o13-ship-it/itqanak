@@ -78,17 +78,21 @@ export function ServiceDetailView({
         </Link>
       </nav>
 
-      <section className="relative overflow-hidden rounded-[var(--itq-radius-hero)] border border-[var(--itq-color-border)] bg-[var(--itq-color-brand-900)] p-6 text-white shadow-[var(--itq-shadow-card)] sm:p-10 lg:p-12">
+      <section className="relative overflow-hidden rounded-[var(--itq-radius-hero)] border border-[var(--itq-color-border)] bg-[linear-gradient(135deg,var(--itq-color-brand-900),var(--itq-color-brand-950))] p-6 text-white shadow-[var(--itq-shadow-card)] sm:p-10 lg:p-14">
         <div
           aria-hidden="true"
           className="absolute -end-20 -top-24 size-80 rounded-full border-[3rem] border-white/[0.04]"
         />
+        <span
+          aria-hidden="true"
+          className="absolute inset-x-0 top-0 h-1 bg-[linear-gradient(90deg,transparent,color-mix(in_srgb,var(--itq-color-accent-300)_75%,transparent),transparent)]"
+        />
         <div className="relative grid gap-9 lg:grid-cols-[minmax(0,1fr)_20rem] lg:items-end">
           <div>
-            <span className="inline-flex rounded-full border border-white/15 bg-white/10 px-4 py-2 text-sm font-black text-[var(--itq-color-accent-200)]">
+            <span className="inline-flex rounded-full border border-white/15 bg-white/10 px-4 py-2 text-xs font-black uppercase tracking-wide text-[var(--itq-color-accent-200)]">
               {service.categoryName}
             </span>
-            <h1 className="mt-6 max-w-3xl text-4xl font-black leading-[1.3] tracking-tight sm:text-5xl">
+            <h1 className="mt-6 max-w-3xl text-[2.5rem] font-black leading-[1.12] tracking-[-0.02em] sm:text-[3.25rem]">
               {service.name}
             </h1>
             <p className="mt-5 max-w-3xl text-lg leading-9 text-white/75">{service.description}</p>
