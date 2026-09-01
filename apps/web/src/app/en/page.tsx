@@ -178,7 +178,7 @@ const landingCopy = {
       {
         question: "Are service prices shown publicly?",
         answer:
-          "No. Each request can differ in scope, files and timing. Share your requirements through a private request or ask us on WhatsApp.",
+          'Yes — every service shows an approximate starting price ("from …") so you can gauge fit before you order. The final price is set after we review your request\'s scope, files and timing, and you can ask us on WhatsApp first.',
       },
       {
         question: "Can I attach files?",

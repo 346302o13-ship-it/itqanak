@@ -2,6 +2,7 @@ import Link from "next/link";
 
 import { AuthShell, FormAlert } from "@/components/auth-shell";
 import { FragmentTokenForm } from "@/components/fragment-token-form";
+import { PasswordField } from "@/components/password-field";
 import { csrfTokenForPage } from "@/lib/auth-runtime";
 
 interface ResetPageProps {
@@ -46,30 +47,30 @@ export default async function ResetPasswordPage({ searchParams }: ResetPageProps
           <label className="text-sm font-bold" htmlFor="password">
             كلمة المرور الجديدة
           </label>
-          <input
+          <PasswordField
             autoComplete="new-password"
             className={inputClassName}
             id="password"
+            locale="ar"
             maxLength={128}
             minLength={8}
             name="password"
             required
-            type="password"
           />
         </div>
         <div>
           <label className="text-sm font-bold" htmlFor="passwordConfirmation">
             تأكيد كلمة المرور الجديدة
           </label>
-          <input
+          <PasswordField
             autoComplete="new-password"
             className={inputClassName}
             id="passwordConfirmation"
+            locale="ar"
             maxLength={128}
             minLength={8}
             name="passwordConfirmation"
             required
-            type="password"
           />
         </div>
       </FragmentTokenForm>

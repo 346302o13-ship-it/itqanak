@@ -2,6 +2,7 @@ import Link from "next/link";
 
 import { AuthShell, CsrfInput } from "@/components/auth-shell";
 import { FormErrorSummary } from "@/components/form-error-summary";
+import { PasswordField } from "@/components/password-field";
 import { SubmitButton } from "@/components/submit-button";
 import { csrfTokenForPage, loadWebConfig } from "@/lib/auth-runtime";
 import { firstErroredField, registerFieldMessages } from "@/lib/register-form-errors";
@@ -156,18 +157,18 @@ export default async function RegisterPage({ searchParams }: RegisterPageProps) 
           <label className="text-sm font-bold" htmlFor="password">
             كلمة المرور
           </label>
-          <input
+          <PasswordField
             aria-describedby="password-help"
             aria-invalid={errors.password !== undefined || undefined}
             autoComplete="new-password"
             autoFocus={focus === "password"}
             className={fieldClassName(errors.password !== undefined)}
             id="password"
+            locale="ar"
             maxLength={128}
             minLength={8}
             name="password"
             required
-            type="password"
           />
           {errors.password ? (
             <p
@@ -187,15 +188,15 @@ export default async function RegisterPage({ searchParams }: RegisterPageProps) 
           <label className="text-sm font-bold" htmlFor="passwordConfirmation">
             تأكيد كلمة المرور
           </label>
-          <input
+          <PasswordField
             autoComplete="new-password"
             className={fieldClassName(errors.password !== undefined)}
             id="passwordConfirmation"
+            locale="ar"
             maxLength={128}
             minLength={8}
             name="passwordConfirmation"
             required
-            type="password"
           />
         </div>
         <div className="grid gap-3">

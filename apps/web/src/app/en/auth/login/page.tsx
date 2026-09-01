@@ -3,6 +3,7 @@ import { headers } from "next/headers";
 
 import { AuthShell, CsrfInput, FormAlert } from "@/components/auth-shell";
 import { InstallAppButton } from "@/components/install-app-button";
+import { PasswordField } from "@/components/password-field";
 import { SubmitButton } from "@/components/submit-button";
 import { csrfTokenForPage } from "@/lib/auth-runtime";
 import { safeNext } from "@/lib/auth-responses";
@@ -32,6 +33,8 @@ export default async function EnglishLoginPage({ searchParams }: LoginPageProps)
   const identity = typeof query.id === "string" ? query.id : undefined;
   const badCredentials = status === "failed" || status === "invalid";
   const requestedNext = safeNext(typeof query.next === "string" ? query.next : undefined);
+  const cameFromGuard =
+    status === undefined && typeof query.next === "string" && query.next.length > 0;
   const host = requestHeaders.get("x-forwarded-host") ?? requestHeaders.get("host") ?? "";
   const admin =
     host.split(":")[0]?.toLowerCase().startsWith("admin.") === true ||
@@ -48,6 +51,11 @@ export default async function EnglishLoginPage({ searchParams }: LoginPageProps)
       title={admin ? "Admin center sign-in" : "Sign in"}
     >
       {admin ? <InstallAppButton className="mb-5 w-full" locale="en" surface="admin" /> : null}
+      {cameFromGuard ? (
+        <FormAlert>
+          🔐 Please sign in to continue to the {admin ? "admin center" : "student portal"}.
+        </FormAlert>
+      ) : null}
       {status === "pending_verification" || status === "account_created" ? (
         <FormAlert>
           Your account is waiting for mobile verification.{" "}
@@ -81,7 +89,7 @@ export default async function EnglishLoginPage({ searchParams }: LoginPageProps)
         <input name="locale" type="hidden" value="en" />
         <div>
           <label className="text-sm font-bold" htmlFor="identity">
-            E.164 mobile number or email
+            Mobile number or email
           </label>
           <input
             autoComplete="username"
@@ -108,14 +116,14 @@ export default async function EnglishLoginPage({ searchParams }: LoginPageProps)
               Trouble signing in?
             </Link>
           </div>
-          <input
+          <PasswordField
             autoComplete="current-password"
             autoFocus={badCredentials}
             className={fieldClassName}
             id="password"
+            locale="en"
             name="password"
             required
-            type="password"
           />
         </div>
         <SubmitButton className="w-full" pendingLabel="Checking…">

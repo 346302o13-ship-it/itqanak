@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 
 import { ServicesCatalogView, type ServicesCatalogCopy } from "@/components/marketing";
 import { PublicShell } from "@/components/public-shell";
+import { startingPriceLabel } from "@/lib/catalog-presenters";
 import { createCatalogRuntime } from "@/lib/catalog-runtime";
 
 export const dynamic = "force-dynamic";
@@ -57,13 +58,22 @@ export default async function ServicesPage() {
     slug: category.slug,
     name: category.nameAr,
     description: category.descriptionAr,
-    services: category.services.map((service) => ({
-      id: service.id,
-      slug: service.slug,
-      name: service.nameAr,
-      shortDescription: service.shortDescriptionAr,
-      acceptsFiles: service.acceptsFiles,
-    })),
+    services: category.services.map((service) => {
+      const priceLabel = startingPriceLabel(
+        service.pricingModel,
+        service.basePrice,
+        service.currency,
+        "ar",
+      );
+      return {
+        id: service.id,
+        slug: service.slug,
+        name: service.nameAr,
+        shortDescription: service.shortDescriptionAr,
+        acceptsFiles: service.acceptsFiles,
+        ...(priceLabel === undefined ? {} : { priceLabel }),
+      };
+    }),
   }));
 
   return (

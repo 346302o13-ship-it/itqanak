@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 
 import { ServiceDetailView, type ServiceDetailCopy } from "@/components/marketing";
 import { PublicShell } from "@/components/public-shell";
+import { startingPriceLabel } from "@/lib/catalog-presenters";
 import { createCatalogRuntime } from "@/lib/catalog-runtime";
 
 interface ServicePageProps {
@@ -122,6 +123,12 @@ export default async function ServicePage({ params }: ServicePageProps) {
     notFound();
   }
 
+  const priceLabel = startingPriceLabel(
+    service.pricingModel,
+    service.basePrice,
+    service.currency,
+    "ar",
+  );
   return (
     <PublicShell active="services" locale="ar">
       <ServiceDetailView
@@ -135,6 +142,7 @@ export default async function ServicePage({ params }: ServicePageProps) {
           acceptsFiles: service.acceptsFiles,
           maximumFiles: service.maxFiles,
           defaultDeadlineHours: service.defaultDeadlineHours,
+          ...(priceLabel === undefined ? {} : { priceLabel }),
         }}
       />
     </PublicShell>

@@ -11,6 +11,8 @@ export interface PublicCatalogService {
   readonly name: string;
   readonly shortDescription: string;
   readonly acceptsFiles: boolean;
+  /** e.g. "يبدأ من ٢٥ ر.س." — omitted for quote-only services. */
+  readonly priceLabel?: string;
 }
 
 export interface PublicCatalogCategory {
@@ -145,7 +147,14 @@ export function ServicesCatalogView({
                   <div className="divide-y divide-[var(--itq-color-border)]">
                     {category.services.map((service) => (
                       <div className="p-6" key={service.id}>
-                        <h3 className="text-lg font-black">{service.name}</h3>
+                        <div className="flex flex-wrap items-start justify-between gap-2">
+                          <h3 className="text-lg font-black">{service.name}</h3>
+                          {service.priceLabel === undefined ? null : (
+                            <span className="shrink-0 rounded-full bg-[var(--itq-color-brand-50)] px-3 py-1 text-xs font-black text-[var(--itq-color-brand-strong)]">
+                              {service.priceLabel}
+                            </span>
+                          )}
+                        </div>
                         <p className="mt-2 min-h-14 text-sm leading-7 text-[var(--itq-color-muted)]">
                           {service.shortDescription}
                         </p>

@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 
 import { ServicesCatalogView, type ServicesCatalogCopy } from "@/components/marketing";
 import { PublicShell } from "@/components/public-shell";
+import { startingPriceLabel } from "@/lib/catalog-presenters";
 import { createCatalogRuntime } from "@/lib/catalog-runtime";
 
 export const dynamic = "force-dynamic";
@@ -61,13 +62,22 @@ export default async function EnglishServicesPage() {
           slug: category.slug,
           name: category.nameEn,
           description: category.descriptionEn,
-          services: category.services.map((service) => ({
-            id: service.id,
-            slug: service.slug,
-            name: service.nameEn,
-            shortDescription: service.shortDescriptionEn,
-            acceptsFiles: service.acceptsFiles,
-          })),
+          services: category.services.map((service) => {
+            const priceLabel = startingPriceLabel(
+              service.pricingModel,
+              service.basePrice,
+              service.currency,
+              "en",
+            );
+            return {
+              id: service.id,
+              slug: service.slug,
+              name: service.nameEn,
+              shortDescription: service.shortDescriptionEn,
+              acceptsFiles: service.acceptsFiles,
+              ...(priceLabel === undefined ? {} : { priceLabel }),
+            };
+          }),
         }))}
         copy={catalogCopy}
         locale="en"

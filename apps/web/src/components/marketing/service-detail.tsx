@@ -15,6 +15,8 @@ export interface PublicServiceDetail {
   readonly acceptsFiles: boolean;
   readonly maximumFiles: number;
   readonly defaultDeadlineHours: number | null;
+  /** "يبدأ من ٢٥ ر.س." — omitted for quote-only services. */
+  readonly priceLabel?: string;
 }
 
 export interface ServiceDetailCopy {
@@ -110,6 +112,20 @@ export function ServiceDetailView({
               {copy.overviewLabel}
             </p>
             <dl className="mt-4 grid gap-4 text-sm">
+              {service.priceLabel === undefined ? null : (
+                <div className="flex items-start gap-3">
+                  <MarketingIcon
+                    className="mt-0.5 size-5 shrink-0 text-[var(--itq-color-accent-200)]"
+                    name="sparkles"
+                  />
+                  <div>
+                    <dt className="text-white/60">
+                      {locale === "en" ? "Starting price" : "سعر البداية"}
+                    </dt>
+                    <dd className="mt-1 font-black">{service.priceLabel}</dd>
+                  </div>
+                </div>
+              )}
               <div className="flex items-start gap-3">
                 <MarketingIcon
                   className="mt-0.5 size-5 shrink-0 text-[var(--itq-color-accent-200)]"
