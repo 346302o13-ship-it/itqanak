@@ -204,6 +204,7 @@ async function startWorker(config: AppConfig, logger: Logger, signal: AbortSigna
           let messagesSwept = 0;
           try {
             const retention = await retentionSettings.getRuntimeRetention();
+            await unifiedAttachmentRetention.warnUpcomingDeletions(50);
             swept = await unifiedAttachmentRetention.processBatch(
               retention.attachmentUndownloadedRetentionDays,
               50,

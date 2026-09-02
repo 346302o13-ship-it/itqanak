@@ -7,6 +7,7 @@ export {
 export { RequestService, type RequestServiceOptions } from "./service.js";
 export { AdminRequestService, type AdminRequestServiceOptions } from "./admin-service.js";
 export { StorageAdminService, type StorageAdminServiceOptions } from "./storage-admin.js";
+export { recordOutboxLifecycleEvent } from "./outbox-record.js";
 export {
   canArchivePendingRequest,
   isStalePendingStatus,

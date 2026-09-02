@@ -22,6 +22,7 @@ import {
 import { resolveNewAttachmentScanStatus } from "./attachment-scan-policy.js";
 import { isUuid } from "./chat-validation.js";
 import { RequestDomainError } from "./errors.js";
+import { recordOutboxLifecycleEvent } from "./outbox-record.js";
 import type { AttachmentAccessPolicy, AuthorizedAttachmentDownload } from "./attachments.js";
 import type { UnifiedConversationAttachment } from "./types.js";
 
@@ -510,14 +511,23 @@ export class UnifiedConversationAttachmentService {
         INSERT INTO unified_attachment_downloads (attachment_id, downloader_user_id)
         VALUES (${conversationAttachmentId}, ${downloaderUserId})
       `;
-      await tx`
+      const updated = await tx<{ readonly download_count: number | string }[]>`
         UPDATE unified_conversation_attachments
         SET download_count = download_count + 1,
             last_downloaded_at = now(),
             delete_after = now() + (${graceDays} * interval '1 day'),
             updated_at = now()
         WHERE id = ${conversationAttachmentId} AND storage_status = 'STORED'
+        RETURNING download_count
       `;
+      const count = Number(updated[0]?.download_count ?? 0);
+      await recordOutboxLifecycleEvent(tx, {
+        eventType: "FILE_DOWNLOADED",
+        aggregateType: "SUPPORT_CONVERSATION_ATTACHMENT",
+        aggregateId: conversationAttachmentId,
+        idempotencyKey: `file-downloaded:${conversationAttachmentId}:${count}`,
+        payload: { attachmentId: conversationAttachmentId, downloadCount: count, graceDays },
+      });
     });
   }
 

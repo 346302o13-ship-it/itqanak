@@ -87,6 +87,13 @@ const itemsByLocale = {
       system: true,
     },
     {
+      href: "/ar/admin/monitoring/autobox",
+      label: "صندوق الأحداث",
+      mobileLabel: "الأحداث",
+      Icon: BellIcon,
+      system: true,
+    },
+    {
       href: "/ar/account",
       label: "حسابي وإعدادات الأمان",
       mobileLabel: "حسابي",
@@ -162,6 +169,13 @@ const itemsByLocale = {
       system: true,
     },
     {
+      href: "/en/admin/monitoring/autobox",
+      label: "AutoBox events",
+      mobileLabel: "Events",
+      Icon: BellIcon,
+      system: true,
+    },
+    {
       href: "/en/account",
       label: "My account & security",
       mobileLabel: "Account",
@@ -176,6 +190,10 @@ function adminNavActive(pathname: string, href: string): boolean {
   // the request-inbox item through the legacy "/admin/requests" prefix below.
   if (/^\/(?:ar|en)\/admin\/requests\/pending(?:\/|$)/u.test(pathname)) {
     return href === "/ar/admin/requests/pending" || href === "/en/admin/requests/pending";
+  }
+  // The AutoBox page sits under /admin/monitoring but is its own nav item.
+  if (/^\/(?:ar|en)\/admin\/monitoring\/autobox(?:\/|$)/u.test(pathname)) {
+    return href === "/ar/admin/monitoring/autobox" || href === "/en/admin/monitoring/autobox";
   }
   if (pathname.startsWith(href)) return true;
   // The request inbox now lives under /admin/support; phone verification and

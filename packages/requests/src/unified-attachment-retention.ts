@@ -2,6 +2,8 @@ import type { DatabaseClient } from "@itqanak/db";
 import type { Logger } from "@itqanak/observability";
 import type { ObjectStorage } from "@itqanak/storage";
 
+import { recordOutboxLifecycleEvent } from "./outbox-record.js";
+
 interface ExpiryCandidate {
   readonly id: string;
   readonly storage_key: string | null;
@@ -22,6 +24,45 @@ export interface UnifiedAttachmentRetentionSweeperOptions {
  */
 export class UnifiedAttachmentRetentionSweeper {
   public constructor(private readonly options: UnifiedAttachmentRetentionSweeperOptions) {}
+
+  /**
+   * Emits one FILE_DELETION_WARNING record per file whose object is scheduled to
+   * be purged within the next three days (and has not already been warned for
+   * that deadline). The idempotency key carries the deadline so an admin
+   * extension re-warns. Purely informational — visible in the AutoBox monitor.
+   */
+  public async warnUpcomingDeletions(limit = 50): Promise<number> {
+    const bounded = Math.max(1, Math.min(200, Math.trunc(limit)));
+    const rows = await this.options.database<
+      { readonly id: string; readonly delete_after: Date | string }[]
+    >`
+      SELECT id, delete_after
+      FROM unified_conversation_attachments
+      WHERE storage_status = 'STORED'
+        AND deleted_at IS NULL
+        AND delete_after IS NOT NULL
+        AND delete_after > now()
+        AND delete_after <= now() + interval '3 days'
+      ORDER BY delete_after ASC
+      LIMIT ${bounded}
+    `;
+    for (const row of rows) {
+      const deadlineSec = Math.floor(
+        (row.delete_after instanceof Date
+          ? row.delete_after
+          : new Date(row.delete_after)
+        ).getTime() / 1000,
+      );
+      await recordOutboxLifecycleEvent(this.options.database, {
+        eventType: "FILE_DELETION_WARNING",
+        aggregateType: "SUPPORT_CONVERSATION_ATTACHMENT",
+        aggregateId: row.id,
+        idempotencyKey: `file-deletion-warning:${row.id}:${deadlineSec}`,
+        payload: { attachmentId: row.id, deleteAfter: new Date(deadlineSec * 1000).toISOString() },
+      });
+    }
+    return rows.length;
+  }
 
   public async processBatch(undownloadedRetentionDays: number, limit = 20): Promise<number> {
     const days = Math.max(1, Math.min(3650, Math.trunc(undownloadedRetentionDays)));
@@ -68,7 +109,16 @@ export class UnifiedAttachmentRetentionSweeper {
         WHERE id = ${candidate.id} AND storage_status = 'STORED'
         RETURNING id
       `;
-      if (updated[0] !== undefined) expired += 1;
+      if (updated[0] !== undefined) {
+        expired += 1;
+        await recordOutboxLifecycleEvent(this.options.database, {
+          eventType: "FILE_EXPIRED",
+          aggregateType: "SUPPORT_CONVERSATION_ATTACHMENT",
+          aggregateId: candidate.id,
+          idempotencyKey: `file-expired:${candidate.id}`,
+          payload: { attachmentId: candidate.id, reason: "retention_sweep" },
+        });
+      }
     }
     if (expired > 0) {
       this.options.logger.info("unified_attachment_retention_expired", {

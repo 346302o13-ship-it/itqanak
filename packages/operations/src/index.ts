@@ -5,6 +5,13 @@ export {
   type PlatformRetentionServiceOptions,
 } from "./retention-service.js";
 export {
+  OutboxMonitorService,
+  type OutboxMonitorFilter,
+  type OutboxMonitorReport,
+  type OutboxEventRow,
+  type OutboxMonitorServiceOptions,
+} from "./outbox-monitor-service.js";
+export {
   OperationalControlError,
   operationalControlErrorCodes,
   fileScannerObservedStates,

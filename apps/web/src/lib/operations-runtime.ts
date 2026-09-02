@@ -1,6 +1,10 @@
 import "server-only";
 
-import { PlatformOperationsService, PlatformRetentionService } from "@itqanak/operations";
+import {
+  OutboxMonitorService,
+  PlatformOperationsService,
+  PlatformRetentionService,
+} from "@itqanak/operations";
 
 import { createAuthRuntime } from "./auth-runtime";
 
@@ -10,6 +14,7 @@ export async function createOperationsRuntime() {
     ...runtime,
     operations: new PlatformOperationsService({ database: runtime.database }),
     retention: new PlatformRetentionService({ database: runtime.database }),
+    outboxMonitor: new OutboxMonitorService({ database: runtime.database }),
   };
 }
 

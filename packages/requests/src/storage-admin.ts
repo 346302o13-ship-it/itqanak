@@ -12,6 +12,7 @@ import type { ObjectStorage } from "@itqanak/storage";
 
 import { isUuid, normalizeBoundedPage } from "./chat-validation.js";
 import { RequestDomainError } from "./errors.js";
+import { recordOutboxLifecycleEvent } from "./outbox-record.js";
 import type {
   RetentionSweepPreview,
   StorageAdminAttachment,
@@ -247,6 +248,13 @@ export class StorageAdminService {
       resourceId: attachmentId,
       metadata: { days: boundedDays },
     });
+    await recordOutboxLifecycleEvent(this.database, {
+      eventType: "FILE_RETENTION_EXTENDED",
+      aggregateType: "SUPPORT_CONVERSATION_ATTACHMENT",
+      aggregateId: attachmentId,
+      idempotencyKey: `file-retention-extended:${attachmentId}:${Date.now()}`,
+      payload: { attachmentId, days: boundedDays, actorUserId: principal.userId },
+    });
   }
 
   public async purgeNow(
@@ -288,6 +296,13 @@ export class StorageAdminService {
       resourceType: "support_conversation_attachment",
       resourceId: attachmentId,
       metadata: {},
+    });
+    await recordOutboxLifecycleEvent(this.database, {
+      eventType: "FILE_PURGED",
+      aggregateType: "SUPPORT_CONVERSATION_ATTACHMENT",
+      aggregateId: attachmentId,
+      idempotencyKey: `file-purged:${attachmentId}`,
+      payload: { attachmentId, reason: "admin_purge", actorUserId: principal.userId },
     });
     this.logger?.info("unified_attachment_admin_purged", { attachmentId });
   }

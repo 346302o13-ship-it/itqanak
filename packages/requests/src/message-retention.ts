@@ -1,6 +1,8 @@
 import type { DatabaseClient } from "@itqanak/db";
 import type { Logger } from "@itqanak/observability";
 
+import { recordOutboxLifecycleEvent } from "./outbox-record.js";
+
 export const ARCHIVED_MESSAGE_MARKER = "__ARCHIVED__";
 
 interface ArchiveCandidate {
@@ -73,7 +75,15 @@ export class MessageRetentionSweeper {
           WHERE id = ${candidate.id} AND archived_at IS NULL
           RETURNING id
         `;
-        return updated[0] !== undefined;
+        if (updated[0] === undefined) return false;
+        await recordOutboxLifecycleEvent(tx, {
+          eventType: "MESSAGE_ARCHIVED",
+          aggregateType: "SUPPORT_MESSAGE",
+          aggregateId: candidate.id,
+          idempotencyKey: `message-archived:${candidate.id}`,
+          payload: { messageId: candidate.id, conversationId: candidate.conversation_id },
+        });
+        return true;
       });
       if (done) archived += 1;
     }
