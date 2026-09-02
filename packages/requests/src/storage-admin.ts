@@ -128,23 +128,23 @@ export class StorageAdminService {
     const predicate = `
       attachments.storage_status <> 'PENDING_UPLOAD'
       AND attachments.storage_status <> 'UPLOAD_FAILED'
-      AND ($2::uuid IS NULL OR conversations.student_user_id = $2::uuid)
+      AND ($1::uuid IS NULL OR conversations.student_user_id = $1::uuid)
       AND (
-        $3::text IS NULL
-        OR ($3 = 'PENDING_DELETION'
+        $2::text IS NULL
+        OR ($2 = 'PENDING_DELETION'
             AND attachments.storage_status = 'STORED'
             AND attachments.delete_after IS NOT NULL
             AND attachments.delete_after > now())
-        OR ($3 <> 'PENDING_DELETION' AND attachments.storage_status = $3)
+        OR ($2 <> 'PENDING_DELETION' AND attachments.storage_status = $2)
       )
       AND (
-        $4::text IS NULL
-        OR attachments.original_filename ILIKE $4
-        OR students.display_name ILIKE $4
-        OR requests.request_number ILIKE $4
+        $3::text IS NULL
+        OR attachments.original_filename ILIKE $3
+        OR students.display_name ILIKE $3
+        OR requests.request_number ILIKE $3
       )
     `;
-    const params = [null, studentUserId, status, pattern];
+    const params = [studentUserId, status, pattern];
 
     const baseFrom = `
       FROM unified_conversation_attachments AS attachments
@@ -196,7 +196,7 @@ export class StorageAdminService {
          ${baseFrom}
          WHERE ${predicate}
          ORDER BY attachments.created_at DESC, attachments.id DESC
-         LIMIT $5 OFFSET $6`,
+         LIMIT $4 OFFSET $5`,
         [...params, pageSize, offset],
       ),
     ]);
