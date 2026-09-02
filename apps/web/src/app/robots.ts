@@ -11,7 +11,7 @@ export default function robots(): MetadataRoute.Robots {
   return {
     rules: {
       userAgent: "*",
-      allow: ["/ar", "/ar/services"],
+      allow: ["/ar", "/ar/services", "/ar/install", "/en/install"],
       disallow: [
         "/ar/auth",
         "/ar/account",

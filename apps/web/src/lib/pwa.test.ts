@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { installInstructionKind, isStandaloneApp } from "./pwa-install";
+import { installInstructionKind, isInAppBrowserUserAgent, isStandaloneApp } from "./pwa-install";
 import {
   isAdminManifestHost,
   normalizeManifestHostname,
@@ -48,6 +48,37 @@ describe("install app helpers", () => {
         userAgent: "Mozilla/5.0 (Linux; Android 15)",
       }),
     ).toBe("browser");
+  });
+
+  it("detects social-app embedded web views", () => {
+    expect(
+      isInAppBrowserUserAgent(
+        "Mozilla/5.0 (iPhone; CPU iPhone OS 17_5 like Mac OS X) AppleWebKit/605.1.15 Instagram 300.0.0.0",
+      ),
+    ).toBe(true);
+    expect(
+      isInAppBrowserUserAgent(
+        "Mozilla/5.0 (iPhone; CPU iPhone OS 17_5 like Mac OS X) AppleWebKit/605.1.15 [FBAN/FBIOS;FBAV/400.0]",
+      ),
+    ).toBe(true);
+    expect(
+      isInAppBrowserUserAgent(
+        "Mozilla/5.0 (Linux; Android 14; Pixel 8; wv) AppleWebKit/537.36 (KHTML, like Gecko) Version/4.0 Chrome/126.0 Mobile Safari/537.36",
+      ),
+    ).toBe(true);
+  });
+
+  it("does not flag a normal Safari or Chrome user agent", () => {
+    expect(
+      isInAppBrowserUserAgent(
+        "Mozilla/5.0 (iPhone; CPU iPhone OS 17_5 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.5 Mobile/15E148 Safari/604.1",
+      ),
+    ).toBe(false);
+    expect(
+      isInAppBrowserUserAgent(
+        "Mozilla/5.0 (Linux; Android 14; Pixel 8) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Mobile Safari/537.36",
+      ),
+    ).toBe(false);
   });
 });
 
