@@ -19,6 +19,7 @@ import type { Logger } from "@itqanak/observability";
 
 import { isUuid, normalizeBoundedPage } from "./chat-validation.js";
 import { RequestDomainError } from "./errors.js";
+import { isStalePendingStatus, stalePendingRequestReason } from "./pending-requests.js";
 import type {
   AcademicLevel,
   AdminCreateRequestInput,
@@ -37,6 +38,9 @@ import type {
   RequestEventSummary,
   RequestLanguageCode,
   RequestUrgency,
+  StalePendingRequestFilter,
+  StalePendingRequestItem,
+  StalePendingRequestReport,
 } from "./types.js";
 import {
   assertRequestFieldsSubmittable,
@@ -84,6 +88,29 @@ interface AdminRequestRow {
 
 interface CountRow {
   readonly count: number | string;
+}
+
+interface StalePendingStatRow {
+  readonly total: string;
+  readonly draft: string;
+  readonly submitted: string;
+  readonly under_review: string;
+  readonly quoted: string;
+  readonly filtered_total: string;
+}
+
+interface StalePendingRow {
+  readonly id: string;
+  readonly request_number: string;
+  readonly status: string;
+  readonly title: string;
+  readonly student_user_id: string;
+  readonly student_display_name: string;
+  readonly service_name_ar: string;
+  readonly created_at: Date | string;
+  readonly updated_at: Date | string;
+  readonly days_pending: number | string;
+  readonly has_financial_record: boolean;
 }
 
 interface RequestEventRow {
@@ -594,6 +621,119 @@ export class AdminRequestService {
       pageSize,
       total,
       pageCount: Math.max(1, Math.ceil(total / pageSize)),
+    };
+  }
+
+  /**
+   * Read-only review of non-terminal requests that have gone idle long enough
+   * to warrant follow-up or removal (DRAFT > 7d, SUBMITTED/UNDER_REVIEW/QUOTED >
+   * 30d without an update). Requests with a financial due are surfaced but
+   * flagged as never-deletable.
+   */
+  public async listStalePendingRequests(
+    principal: AuthenticatedPrincipal,
+    filter: StalePendingRequestFilter = {},
+  ): Promise<StalePendingRequestReport> {
+    requirePermission(requireRole(principal, "ADMIN"), "admin.requests.read");
+    const { page, pageSize, offset } = normalizeBoundedPage(filter.page, filter.pageSize, 100);
+    const status =
+      filter.status !== undefined && isStalePendingStatus(filter.status) ? filter.status : null;
+    const studentUserId =
+      filter.studentUserId !== undefined && isUuid(filter.studentUserId)
+        ? filter.studentUserId
+        : null;
+    const minDaysPending =
+      typeof filter.minDaysPending === "number" &&
+      Number.isSafeInteger(filter.minDaysPending) &&
+      filter.minDaysPending > 0
+        ? Math.min(filter.minDaysPending, 100_000)
+        : null;
+
+    const staleCte = `
+      stale AS (
+        SELECT requests.id, requests.request_number, requests.status, requests.title,
+               requests.student_user_id, students.display_name AS student_display_name,
+               services.name_ar AS service_name_ar,
+               requests.created_at, requests.updated_at,
+               GREATEST(0, EXTRACT(DAY FROM (now() - requests.updated_at))::int) AS days_pending,
+               EXISTS (
+                 SELECT 1 FROM finance_dues AS dues WHERE dues.request_id = requests.id
+               ) AS has_financial_record
+        FROM service_requests AS requests
+        INNER JOIN users AS students ON students.id = requests.student_user_id
+        INNER JOIN services ON services.id = requests.service_id
+        WHERE requests.status IN ('DRAFT', 'SUBMITTED', 'UNDER_REVIEW', 'QUOTED')
+          AND (
+            (requests.status = 'DRAFT' AND requests.updated_at < now() - interval '7 days')
+            OR (requests.status <> 'DRAFT' AND requests.updated_at < now() - interval '30 days')
+          )
+          AND ($2::uuid IS NULL OR requests.student_user_id = $2::uuid)
+          AND (
+            $3::int IS NULL
+            OR EXTRACT(DAY FROM (now() - requests.updated_at))::int >= $3::int
+          )
+      )
+    `;
+
+    const [statRows, pageRows] = await Promise.all([
+      this.database.unsafe<StalePendingStatRow[]>(
+        `WITH ${staleCte}
+         SELECT count(*)::text AS total,
+                count(*) FILTER (WHERE status = 'DRAFT')::text AS draft,
+                count(*) FILTER (WHERE status = 'SUBMITTED')::text AS submitted,
+                count(*) FILTER (WHERE status = 'UNDER_REVIEW')::text AS under_review,
+                count(*) FILTER (WHERE status = 'QUOTED')::text AS quoted,
+                count(*) FILTER (WHERE $1::text IS NULL OR status = $1::text)::text
+                  AS filtered_total
+         FROM stale`,
+        [status, studentUserId, minDaysPending],
+      ),
+      this.database.unsafe<StalePendingRow[]>(
+        `WITH ${staleCte}
+         SELECT id, request_number, status, title, student_user_id, student_display_name,
+                service_name_ar, created_at, updated_at, days_pending, has_financial_record
+         FROM stale
+         WHERE ($1::text IS NULL OR status = $1::text)
+         ORDER BY days_pending DESC, request_number ASC
+         LIMIT $4 OFFSET $5`,
+        [status, studentUserId, minDaysPending, pageSize, offset],
+      ),
+    ]);
+
+    const stat = statRows[0];
+    const filteredTotal = toSafeInteger(stat?.filtered_total ?? "0", "filtered_total");
+    const items: StalePendingRequestItem[] = pageRows.map((row) => {
+      const rowStatus = isStalePendingStatus(row.status) ? row.status : "SUBMITTED";
+      const daysPending = toSafeInteger(row.days_pending, "days_pending");
+      return {
+        id: row.id,
+        requestNumber: row.request_number,
+        status: rowStatus,
+        title: row.title,
+        studentUserId: row.student_user_id,
+        studentDisplayName: row.student_display_name,
+        serviceNameAr: row.service_name_ar,
+        createdAt: row.created_at instanceof Date ? row.created_at : new Date(row.created_at),
+        updatedAt: row.updated_at instanceof Date ? row.updated_at : new Date(row.updated_at),
+        daysPending,
+        reason: stalePendingRequestReason(rowStatus, daysPending) ?? "معلّق",
+        hasFinancialRecord: row.has_financial_record === true,
+      };
+    });
+
+    return {
+      items,
+      page,
+      pageSize,
+      total: filteredTotal,
+      pageCount: Math.max(1, Math.ceil(filteredTotal / pageSize)),
+      stats: {
+        total: toSafeInteger(stat?.total ?? "0", "total"),
+        draft: toSafeInteger(stat?.draft ?? "0", "draft"),
+        submitted: toSafeInteger(stat?.submitted ?? "0", "submitted"),
+        underReview: toSafeInteger(stat?.under_review ?? "0", "under_review"),
+        quoted: toSafeInteger(stat?.quoted ?? "0", "quoted"),
+      },
     };
   }
 

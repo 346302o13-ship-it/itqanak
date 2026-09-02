@@ -229,6 +229,48 @@ export interface AdminRequestTransitionInput {
   readonly toStatus: RequestStatus;
 }
 
+export interface StalePendingRequestFilter {
+  /** Restrict to a single non-terminal status. */
+  readonly status?: "DRAFT" | "SUBMITTED" | "UNDER_REVIEW" | "QUOTED";
+  /** Restrict to a single student. */
+  readonly studentUserId?: string;
+  /** Only requests idle at least this many days (on top of the per-status floor). */
+  readonly minDaysPending?: number;
+  readonly page?: number;
+  readonly pageSize?: number;
+}
+
+export interface StalePendingRequestItem {
+  readonly id: string;
+  readonly requestNumber: string;
+  readonly status: "DRAFT" | "SUBMITTED" | "UNDER_REVIEW" | "QUOTED";
+  readonly title: string;
+  readonly studentUserId: string;
+  readonly studentDisplayName: string;
+  readonly serviceNameAr: string;
+  readonly createdAt: Date;
+  readonly updatedAt: Date;
+  readonly daysPending: number;
+  readonly reason: string;
+  /** True when a financial due is attached — such a request is never deletable. */
+  readonly hasFinancialRecord: boolean;
+}
+
+export interface StalePendingRequestReport {
+  readonly items: readonly StalePendingRequestItem[];
+  readonly page: number;
+  readonly pageSize: number;
+  readonly total: number;
+  readonly pageCount: number;
+  readonly stats: {
+    readonly total: number;
+    readonly draft: number;
+    readonly submitted: number;
+    readonly underReview: number;
+    readonly quoted: number;
+  };
+}
+
 export interface AdminRequestEditInput {
   readonly expectedVersion: number;
   readonly title: string;

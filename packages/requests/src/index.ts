@@ -6,6 +6,13 @@ export {
 } from "./validation.js";
 export { RequestService, type RequestServiceOptions } from "./service.js";
 export { AdminRequestService, type AdminRequestServiceOptions } from "./admin-service.js";
+export {
+  isStalePendingStatus,
+  stalePendingRequestReason,
+  STALE_PENDING_STATUSES,
+  STALE_PENDING_THRESHOLD_DAYS,
+  type StalePendingStatus,
+} from "./pending-requests.js";
 export { ChatService, type ChatServiceOptions } from "./chat-service.js";
 export { SupportService, type SupportServiceOptions } from "./support-service.js";
 export {
@@ -121,6 +128,9 @@ export {
   type SendSupportMessageInput,
   type SendSupportMessageResult,
   type SubmitRequestInput,
+  type StalePendingRequestFilter,
+  type StalePendingRequestItem,
+  type StalePendingRequestReport,
   type StudentRequestTransitionInput,
   type UpdateDraftRequestInput,
   notificationKinds,

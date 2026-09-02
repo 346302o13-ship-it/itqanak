@@ -10,6 +10,7 @@ import {
   FinanceIcon,
   MessageIcon,
   OperationsIcon,
+  RequestsIcon,
   ServicesIcon,
   UserIcon,
   VerifiedIcon,
@@ -54,6 +55,13 @@ const itemsByLocale = {
       label: "التشغيل والصيانة",
       mobileLabel: "التشغيل",
       Icon: OperationsIcon,
+      system: true,
+    },
+    {
+      href: "/ar/admin/requests/pending",
+      label: "الطلبات المعلّقة",
+      mobileLabel: "المعلّقة",
+      Icon: RequestsIcon,
       system: true,
     },
     {
@@ -118,6 +126,13 @@ const itemsByLocale = {
       system: true,
     },
     {
+      href: "/en/admin/requests/pending",
+      label: "Stale requests",
+      mobileLabel: "Stale",
+      Icon: RequestsIcon,
+      system: true,
+    },
+    {
       href: "/en/admin/messaging",
       label: "Messaging & alerts",
       mobileLabel: "Messaging",
@@ -142,6 +157,11 @@ const itemsByLocale = {
 
 function adminNavActive(pathname: string, href: string): boolean {
   if (href === "/ar/admin" || href === "/en/admin") return pathname === href;
+  // The stale-requests page is its own item; without this it would also light
+  // the request-inbox item through the legacy "/admin/requests" prefix below.
+  if (/^\/(?:ar|en)\/admin\/requests\/pending(?:\/|$)/u.test(pathname)) {
+    return href === "/ar/admin/requests/pending" || href === "/en/admin/requests/pending";
+  }
   if (pathname.startsWith(href)) return true;
   // The request inbox now lives under /admin/support; phone verification and
   // password recovery now live under /admin/approvals. Keep the item lit on the
