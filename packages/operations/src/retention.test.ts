@@ -6,6 +6,8 @@ import { OperationalControlError } from "./types.js";
 const base = {
   messageArchivalEnabled: false,
   messageRetentionDays: 30,
+  attachmentUndownloadedRetentionDays: 30,
+  attachmentDownloadedRetentionDays: 1,
   expectedVersion: 1,
   confirmedCriticalAction: false,
 } as const;
@@ -35,6 +37,25 @@ describe("normalizeRetentionUpdate", () => {
     expect(() => normalizeRetentionUpdate({ ...base, messageRetentionDays: 6 })).toThrow();
     expect(() => normalizeRetentionUpdate({ ...base, messageRetentionDays: 4000 })).toThrow();
     expect(() => normalizeRetentionUpdate({ ...base, messageRetentionDays: 30.5 })).toThrow();
+  });
+
+  it("bounds the attachment windows to 1..3650 days", () => {
+    expect(() =>
+      normalizeRetentionUpdate({ ...base, attachmentUndownloadedRetentionDays: 0 }),
+    ).toThrow();
+    expect(() =>
+      normalizeRetentionUpdate({ ...base, attachmentDownloadedRetentionDays: 5000 }),
+    ).toThrow();
+    expect(
+      normalizeRetentionUpdate({
+        ...base,
+        attachmentUndownloadedRetentionDays: 14,
+        attachmentDownloadedRetentionDays: 3,
+      }),
+    ).toMatchObject({
+      attachmentUndownloadedRetentionDays: 14,
+      attachmentDownloadedRetentionDays: 3,
+    });
   });
 
   it("rejects a non-positive expected version", () => {

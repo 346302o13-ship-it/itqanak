@@ -30,14 +30,28 @@ export async function POST(request: NextRequest) {
     if (!/^\d{1,9}$/u.test(rawVersion)) {
       throw new OperationalControlError("INVALID_VERSION");
     }
-    const rawDays = formValue(protectedForm.formData, "messageRetentionDays");
-    if (!/^\d{1,4}$/u.test(rawDays)) {
-      throw new OperationalControlError("INVALID_STATE");
+    const days = {
+      messageRetentionDays: formValue(protectedForm.formData, "messageRetentionDays"),
+      attachmentUndownloadedRetentionDays: formValue(
+        protectedForm.formData,
+        "attachmentUndownloadedRetentionDays",
+      ),
+      attachmentDownloadedRetentionDays: formValue(
+        protectedForm.formData,
+        "attachmentDownloadedRetentionDays",
+      ),
+    };
+    for (const value of Object.values(days)) {
+      if (!/^\d{1,4}$/u.test(value)) {
+        throw new OperationalControlError("INVALID_STATE");
+      }
     }
     const input = {
       messageArchivalEnabled:
         formValue(protectedForm.formData, "messageArchivalEnabled") === "true",
-      messageRetentionDays: Number(rawDays),
+      messageRetentionDays: Number(days.messageRetentionDays),
+      attachmentUndownloadedRetentionDays: Number(days.attachmentUndownloadedRetentionDays),
+      attachmentDownloadedRetentionDays: Number(days.attachmentDownloadedRetentionDays),
       expectedVersion: Number(rawVersion),
       confirmedCriticalAction:
         formValue(protectedForm.formData, "confirmCriticalAction") === "true",

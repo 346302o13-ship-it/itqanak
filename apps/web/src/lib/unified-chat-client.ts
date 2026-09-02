@@ -3,11 +3,16 @@ import type {
   ServiceQuoteCurrency,
   UnifiedConversationSummary,
   UnifiedMessage,
+  UnifiedMessageAttachment,
   UnifiedRequestSummary,
 } from "@itqanak/requests";
 
 type WireRequest = Omit<UnifiedRequestSummary, "updatedAt"> & {
   readonly updatedAt: Date | string;
+};
+
+type WireAttachment = Omit<UnifiedMessageAttachment, "deleteAfter"> & {
+  readonly deleteAfter?: Date | string;
 };
 
 type WireQuote = Omit<ServiceQuote, "createdAt" | "expiresAt" | "respondedAt" | "updatedAt"> & {
@@ -19,10 +24,11 @@ type WireQuote = Omit<ServiceQuote, "createdAt" | "expiresAt" | "respondedAt" | 
 
 export type WireUnifiedMessage = Omit<
   UnifiedMessage,
-  "quote" | "request" | "sentAt" | "editedAt" | "deletedAt"
+  "quote" | "request" | "attachment" | "sentAt" | "editedAt" | "deletedAt"
 > & {
   readonly quote?: WireQuote;
   readonly request?: WireRequest;
+  readonly attachment?: WireAttachment;
   readonly sentAt: Date | string;
   readonly editedAt?: Date | string;
   readonly deletedAt?: Date | string;
@@ -72,12 +78,21 @@ function hydrateQuote(quote: WireQuote): ServiceQuote {
   };
 }
 
+function hydrateAttachment(attachment: WireAttachment): UnifiedMessageAttachment {
+  const { deleteAfter, ...rest } = attachment;
+  return {
+    ...rest,
+    ...(deleteAfter === undefined ? {} : { deleteAfter: validDate(deleteAfter) }),
+  };
+}
+
 export function hydrateUnifiedMessage(message: WireUnifiedMessage): UnifiedMessage {
-  const { quote, request, editedAt, deletedAt, ...messageWithoutRelations } = message;
+  const { quote, request, attachment, editedAt, deletedAt, ...messageWithoutRelations } = message;
   return {
     ...messageWithoutRelations,
     ...(request === undefined ? {} : { request: hydrateRequest(request) }),
     ...(quote === undefined ? {} : { quote: hydrateQuote(quote) }),
+    ...(attachment === undefined ? {} : { attachment: hydrateAttachment(attachment) }),
     ...(editedAt === undefined ? {} : { editedAt: validDate(editedAt) }),
     ...(deletedAt === undefined ? {} : { deletedAt: validDate(deletedAt) }),
     sentAt: validDate(message.sentAt),

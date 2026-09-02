@@ -200,10 +200,14 @@ async function startWorker(config: AppConfig, logger: Logger, signal: AbortSigna
         await attachmentStorageReconciliation.processBatch(1);
         await unifiedAttachmentStorageReconciliation.processBatch(1);
         if (Date.now() >= nextRetentionSweepAt) {
-          const swept = await unifiedAttachmentRetention.processBatch(50);
+          let swept = 0;
           let messagesSwept = 0;
           try {
             const retention = await retentionSettings.getRuntimeRetention();
+            swept = await unifiedAttachmentRetention.processBatch(
+              retention.attachmentUndownloadedRetentionDays,
+              50,
+            );
             if (retention.messageArchivalEnabled) {
               messagesSwept = await messageRetention.processBatch(
                 retention.messageRetentionDays,

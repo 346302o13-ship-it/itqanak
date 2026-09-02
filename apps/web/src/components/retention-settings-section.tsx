@@ -23,6 +23,12 @@ const copy = {
     enableLabel: "تفعيل أرشفة الرسائل تلقائيًا",
     daysLabel: "مدة الاحتفاظ (بالأيام)",
     daysHint: "بين ٧ و٣٦٥٠ يومًا. الموصى به: ٣٠.",
+    filesTitle: "احتفاظ ملفات المحادثات",
+    filesDescription:
+      "الملف يبقى على السيرفر حتى ينزّله المستقبِل، ثم يُحذف كائنه بعد مدة قصيرة (يبقى اسمه في الشات). الملف الذي لم يُنزَّل أبدًا يُحذف بعد المدة الطويلة. إيصالات الدفع لا تُحذف أبدًا.",
+    undownloadedLabel: "حذف الملف غير المنزَّل بعد (أيام)",
+    downloadedLabel: "حذف الملف بعد تنزيله بـ (أيام)",
+    filesHint: "بين ١ و٣٦٥٠ يومًا. الموصى به: ٣٠ للملف غير المنزَّل، و١ بعد التنزيل.",
     confirm:
       "أفهم أن التفعيل يزيل نص الرسائل الأقدم من المدة من الجدول الرئيسي (تبقى نسخة في الأرشيف) وأن ذلك تدريجي وغير قابل للتراجع التلقائي.",
     save: "حفظ سياسة الاحتفاظ",
@@ -50,6 +56,12 @@ const copy = {
     enableLabel: "Automatically archive old messages",
     daysLabel: "Retention window (days)",
     daysHint: "Between 7 and 3650. Recommended: 30.",
+    filesTitle: "Conversation file retention",
+    filesDescription:
+      "A file stays on the server until the recipient downloads it, then its object is purged after a short window (the name stays in the chat). A file that is never downloaded is purged after the long window. Payment receipts are never purged.",
+    undownloadedLabel: "Purge an undownloaded file after (days)",
+    downloadedLabel: "Purge a file this many days after download",
+    filesHint: "Between 1 and 3650. Recommended: 30 undownloaded, 1 after download.",
     confirm:
       "I understand that enabling this removes the text of messages older than the window from the hot table (a copy stays in the archive), that it applies progressively, and that it does not auto-reverse.",
     save: "Save retention policy",
@@ -149,6 +161,40 @@ export function RetentionSettingsSection({
             {text.daysHint}
           </span>
         </label>
+
+        <fieldset className="rounded-2xl border border-[var(--itq-color-border)] p-4">
+          <legend className="px-1 text-sm font-black">{text.filesTitle}</legend>
+          <p className="text-xs leading-6 text-[var(--itq-color-muted)]">{text.filesDescription}</p>
+          <div className="mt-3 flex flex-wrap gap-4">
+            <label className="text-sm font-black">
+              {text.undownloadedLabel}
+              <input
+                className="mt-2 block w-40 rounded-xl border border-[var(--itq-color-border-strong)] bg-[var(--itq-color-surface)] px-3.5 py-2 text-sm outline-none focus:border-[var(--itq-color-brand-500)]"
+                defaultValue={retention.attachmentUndownloadedRetentionDays}
+                inputMode="numeric"
+                max={3650}
+                min={1}
+                name="attachmentUndownloadedRetentionDays"
+                type="number"
+              />
+            </label>
+            <label className="text-sm font-black">
+              {text.downloadedLabel}
+              <input
+                className="mt-2 block w-40 rounded-xl border border-[var(--itq-color-border-strong)] bg-[var(--itq-color-surface)] px-3.5 py-2 text-sm outline-none focus:border-[var(--itq-color-brand-500)]"
+                defaultValue={retention.attachmentDownloadedRetentionDays}
+                inputMode="numeric"
+                max={3650}
+                min={1}
+                name="attachmentDownloadedRetentionDays"
+                type="number"
+              />
+            </label>
+          </div>
+          <span className="mt-2 block text-xs font-semibold text-[var(--itq-color-muted)]">
+            {text.filesHint}
+          </span>
+        </fieldset>
 
         <label className="flex cursor-pointer items-start gap-3 rounded-2xl border border-[var(--itq-color-warning-200)] bg-[var(--itq-color-warning-50)] p-4 text-sm font-black leading-7 text-[var(--itq-color-warning-950)]">
           <input

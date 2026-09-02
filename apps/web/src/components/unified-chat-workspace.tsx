@@ -41,6 +41,7 @@ import {
 import { requestStatusLabel } from "@/lib/request-presenters";
 import { playUiSound } from "@/lib/ui-sounds";
 import { setActiveConversation } from "@/lib/active-conversation";
+import { cacheAttachment, readCachedAttachment } from "@/lib/attachment-cache";
 import { compressImageForUpload } from "@/lib/image-compression";
 
 import { PaymentReceiptUploader } from "./payment-receipt-uploader";
@@ -1411,7 +1412,16 @@ function DownloadCircle({
   filename,
   locale,
   className = "",
-}: Readonly<{ url: string; filename: string; locale: "ar" | "en"; className?: string }>) {
+  attachmentId,
+  mimeType,
+}: Readonly<{
+  url: string;
+  filename: string;
+  locale: "ar" | "en";
+  className?: string;
+  attachmentId?: string;
+  mimeType?: string;
+}>) {
   const english = locale === "en";
   const [busy, setBusy] = useState(false);
   async function run(): Promise<void> {
@@ -1421,6 +1431,11 @@ function DownloadCircle({
       const response = await fetch(url, { credentials: "same-origin", cache: "no-store" });
       if (!response.ok) throw new Error("download_failed");
       const blob = await response.blob();
+      // Keep a per-device copy so the file can still be reopened after the
+      // server purges it under retention.
+      if (attachmentId !== undefined) {
+        void cacheAttachment(attachmentId, blob, filename || "download", mimeType ?? blob.type);
+      }
       const href = URL.createObjectURL(blob);
       const anchor = document.createElement("a");
       anchor.href = href;
@@ -1452,6 +1467,98 @@ function DownloadCircle({
   );
 }
 
+/** Localised "days until deletion" hint shown under a not-yet-expired file. */
+function AttachmentRetentionHint({
+  attachment,
+  locale,
+}: Readonly<{
+  attachment: NonNullable<UnifiedMessage["attachment"]>;
+  locale: "ar" | "en";
+}>) {
+  const english = locale === "en";
+  if (attachment.source !== "CONVERSATION" || attachment.storageStatus !== "STORED") return null;
+  const dayMs = 86_400_000;
+  if (attachment.deleteAfter !== undefined) {
+    const days = Math.max(0, Math.ceil((attachment.deleteAfter.getTime() - Date.now()) / dayMs));
+    return (
+      <span className="mt-1 block text-[10px] font-bold text-[var(--itq-color-bubble-meta)]">
+        {english
+          ? `Downloaded — removed from the server in ~${days} day${days === 1 ? "" : "s"}`
+          : `تم التنزيل — يُحذف من السيرفر خلال ~${days} يوم`}
+      </span>
+    );
+  }
+  return null;
+}
+
+/** The "open from my device" fallback shown once the server object is gone. */
+function ExpiredAttachment({
+  attachment,
+  locale,
+}: Readonly<{
+  attachment: NonNullable<UnifiedMessage["attachment"]>;
+  locale: "ar" | "en";
+}>) {
+  const english = locale === "en";
+  const [cached, setCached] = useState<
+    { blob: Blob; filename: string; mimeType: string } | undefined
+  >(undefined);
+  const [checked, setChecked] = useState(false);
+  useEffect(() => {
+    let active = true;
+    void readCachedAttachment(attachment.id).then((value) => {
+      if (active) {
+        setCached(value);
+        setChecked(true);
+      }
+    });
+    return () => {
+      active = false;
+    };
+  }, [attachment.id]);
+
+  function openLocal(): void {
+    if (cached === undefined) return;
+    const href = URL.createObjectURL(cached.blob);
+    const anchor = document.createElement("a");
+    anchor.href = href;
+    anchor.download = cached.filename || attachment.originalFilename || "download";
+    document.body.appendChild(anchor);
+    anchor.click();
+    anchor.remove();
+    window.setTimeout(() => URL.revokeObjectURL(href), 4000);
+  }
+
+  return (
+    <div className="flex min-h-12 items-center gap-2.5 rounded-xl border border-dashed border-current/25 px-3 py-2 text-xs font-bold text-[var(--itq-color-bubble-meta)]">
+      <PaperclipIcon className="size-4 shrink-0" />
+      <span className="min-w-0 flex-1">
+        <bdi className="block truncate" dir="auto">
+          {attachment.originalFilename}
+        </bdi>
+        <span className="mt-0.5 block">
+          {checked && cached !== undefined
+            ? english
+              ? "Removed from the server — saved on this device"
+              : "حُذف من السيرفر — محفوظ على هذا الجهاز"
+            : english
+              ? "No longer available (removed from the server)"
+              : "لم يعد هذا الملف متوفراً"}
+        </span>
+      </span>
+      {checked && cached !== undefined ? (
+        <button
+          className="shrink-0 rounded-lg bg-[var(--itq-color-brand-600)] px-2.5 py-1 text-[11px] font-black text-white transition hover:bg-[var(--itq-color-brand-700)]"
+          onClick={openLocal}
+          type="button"
+        >
+          {english ? "Open from my device" : "افتح من جهازي"}
+        </button>
+      ) : null}
+    </div>
+  );
+}
+
 function AttachmentBody({
   apiBase,
   attachment,
@@ -1475,19 +1582,7 @@ function AttachmentBody({
   const expired = attachment.storageStatus === "EXPIRED";
 
   if (expired) {
-    return (
-      <div className="flex min-h-12 items-center gap-2.5 rounded-xl border border-dashed border-current/25 px-3 py-2 text-xs font-bold text-[var(--itq-color-bubble-meta)]">
-        <PaperclipIcon className="size-4 shrink-0" />
-        <span className="min-w-0">
-          <bdi className="block truncate" dir="auto">
-            {attachment.originalFilename}
-          </bdi>
-          <span className="mt-0.5 block">
-            {english ? "No longer available (removed from the server)" : "لم يعد هذا الملف متوفراً"}
-          </span>
-        </span>
-      </div>
-    );
+    return <ExpiredAttachment attachment={attachment} locale={locale} />;
   }
 
   return (
@@ -1518,9 +1613,11 @@ function AttachmentBody({
             />
           </button>
           <DownloadCircle
+            attachmentId={attachment.id}
             className="absolute bottom-2 end-2 !bg-black/55 hover:!bg-black/70"
             filename={attachment.originalFilename}
             locale={locale}
+            mimeType={attachment.mimeType}
             url={download}
           />
         </div>
@@ -1533,7 +1630,13 @@ function AttachmentBody({
             <bdi className="min-w-0 flex-1 truncate text-xs font-black" dir="auto">
               {attachment.originalFilename}
             </bdi>
-            <DownloadCircle filename={attachment.originalFilename} locale={locale} url={download} />
+            <DownloadCircle
+              attachmentId={attachment.id}
+              filename={attachment.originalFilename}
+              locale={locale}
+              mimeType={attachment.mimeType}
+              url={download}
+            />
           </div>
         </div>
       ) : (
@@ -1552,9 +1655,16 @@ function AttachmentBody({
               {english ? "MB" : "م.ب"}
             </span>
           </span>
-          <DownloadCircle filename={attachment.originalFilename} locale={locale} url={download} />
+          <DownloadCircle
+            attachmentId={attachment.id}
+            filename={attachment.originalFilename}
+            locale={locale}
+            mimeType={attachment.mimeType}
+            url={download}
+          />
         </div>
       )}
+      <AttachmentRetentionHint attachment={attachment} locale={locale} />
     </div>
   );
 }

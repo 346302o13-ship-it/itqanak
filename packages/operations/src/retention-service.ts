@@ -17,6 +17,8 @@ import { assertOperationalVersion } from "./validation.js";
 interface PlatformRetentionStateRow {
   readonly message_archival_enabled: boolean;
   readonly message_retention_days: number | string;
+  readonly attachment_undownloaded_retention_days: number | string;
+  readonly attachment_downloaded_retention_days: number | string;
   readonly version: number | string;
   readonly updated_at: Date | string;
 }
@@ -33,14 +35,25 @@ function toState(row: PlatformRetentionStateRow): PlatformRetentionState {
   return {
     messageArchivalEnabled: row.message_archival_enabled,
     messageRetentionDays: Number(row.message_retention_days),
+    attachmentUndownloadedRetentionDays: Number(row.attachment_undownloaded_retention_days),
+    attachmentDownloadedRetentionDays: Number(row.attachment_downloaded_retention_days),
     version: Number(row.version),
     updatedAt: toDate(row.updated_at),
   };
 }
 
 const RETENTION_SELECT = `
-  message_archival_enabled, message_retention_days, version, updated_at
+  message_archival_enabled, message_retention_days,
+  attachment_undownloaded_retention_days, attachment_downloaded_retention_days,
+  version, updated_at
 `;
+
+function boundedDays(value: number, min: number, max: number): number {
+  if (!Number.isSafeInteger(value) || value < min || value > max) {
+    throw new OperationalControlError("INVALID_STATE");
+  }
+  return value;
+}
 
 async function readState(database: DatabaseClient): Promise<PlatformRetentionState> {
   const rows = await database.unsafe<PlatformRetentionStateRow[]>(
@@ -56,12 +69,8 @@ export function normalizeRetentionUpdate(
 ): UpdatePlatformRetentionStateInput {
   if (
     typeof input.messageArchivalEnabled !== "boolean" ||
-    typeof input.confirmedCriticalAction !== "boolean" ||
-    !Number.isSafeInteger(input.messageRetentionDays)
+    typeof input.confirmedCriticalAction !== "boolean"
   ) {
-    throw new OperationalControlError("INVALID_STATE");
-  }
-  if (input.messageRetentionDays < 7 || input.messageRetentionDays > 3650) {
     throw new OperationalControlError("INVALID_STATE");
   }
   if (input.messageArchivalEnabled && !input.confirmedCriticalAction) {
@@ -69,7 +78,17 @@ export function normalizeRetentionUpdate(
   }
   return {
     messageArchivalEnabled: input.messageArchivalEnabled,
-    messageRetentionDays: input.messageRetentionDays,
+    messageRetentionDays: boundedDays(input.messageRetentionDays, 7, 3650),
+    attachmentUndownloadedRetentionDays: boundedDays(
+      input.attachmentUndownloadedRetentionDays,
+      1,
+      3650,
+    ),
+    attachmentDownloadedRetentionDays: boundedDays(
+      input.attachmentDownloadedRetentionDays,
+      1,
+      3650,
+    ),
     expectedVersion: assertOperationalVersion(input.expectedVersion),
     confirmedCriticalAction: input.confirmedCriticalAction,
   };
@@ -111,10 +130,16 @@ export class PlatformRetentionService {
         UPDATE platform_retention_settings
         SET message_archival_enabled = ${normalized.messageArchivalEnabled},
             message_retention_days = ${normalized.messageRetentionDays},
+            attachment_undownloaded_retention_days =
+              ${normalized.attachmentUndownloadedRetentionDays},
+            attachment_downloaded_retention_days =
+              ${normalized.attachmentDownloadedRetentionDays},
             version = version + 1,
             updated_by_user_id = ${principal.userId}
         WHERE singleton_key = 'platform' AND version = ${normalized.expectedVersion}
-        RETURNING message_archival_enabled, message_retention_days, version, updated_at
+        RETURNING message_archival_enabled, message_retention_days,
+                  attachment_undownloaded_retention_days, attachment_downloaded_retention_days,
+                  version, updated_at
       `;
       const row = rows[0];
       if (row === undefined) {
@@ -135,6 +160,8 @@ export class PlatformRetentionService {
         metadata: {
           messageArchivalEnabled: state.messageArchivalEnabled,
           messageRetentionDays: state.messageRetentionDays,
+          attachmentUndownloadedRetentionDays: state.attachmentUndownloadedRetentionDays,
+          attachmentDownloadedRetentionDays: state.attachmentDownloadedRetentionDays,
           version: state.version,
         },
       });

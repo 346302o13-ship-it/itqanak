@@ -509,6 +509,10 @@ export interface UnifiedMessageAttachment {
   readonly scanStatus: AttachmentScanStatus | "SCAN_SKIPPED_BY_ADMIN";
   /** "EXPIRED" once the object has been purged for retention. */
   readonly storageStatus: AttachmentStorageStatus;
+  /** Times the recipient has downloaded this file (0 = never). CONVERSATION only. */
+  readonly downloadCount: number;
+  /** When the object is scheduled to be purged (set once downloaded). */
+  readonly deleteAfter?: Date;
 }
 
 export interface ServiceQuote {

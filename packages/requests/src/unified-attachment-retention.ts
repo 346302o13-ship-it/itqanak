@@ -11,39 +11,41 @@ export interface UnifiedAttachmentRetentionSweeperOptions {
   readonly database: DatabaseClient;
   readonly storage: ObjectStorage;
   readonly logger: Logger;
-  /** Days a stored conversation attachment object is kept before purge. */
-  readonly retentionDays?: number;
 }
 
 /**
- * Deletes the object behind conversation attachments older than the retention
- * window and flips the row to `EXPIRED`. The row (file name, size, type) stays
- * so the chat still shows it; the download path then reports it as gone.
+ * Option-B retention. Purges the object behind a stored conversation attachment
+ * (flipping the row to `EXPIRED`, keeping the file name) when EITHER:
+ *   - it has never been downloaded and is older than `undownloadedRetentionDays`, OR
+ *   - its post-download deadline (`delete_after`, set on download) has passed.
+ * Payment-receipt attachments are financial records and are never swept.
  */
 export class UnifiedAttachmentRetentionSweeper {
-  private readonly retentionDays: number;
+  public constructor(private readonly options: UnifiedAttachmentRetentionSweeperOptions) {}
 
-  public constructor(private readonly options: UnifiedAttachmentRetentionSweeperOptions) {
-    this.retentionDays = options.retentionDays ?? 4;
-    if (!Number.isInteger(this.retentionDays) || this.retentionDays < 1) {
-      throw new Error("Attachment retention days must be a positive integer.");
-    }
-  }
-
-  public async processBatch(limit = 20): Promise<number> {
+  public async processBatch(undownloadedRetentionDays: number, limit = 20): Promise<number> {
+    const days = Math.max(1, Math.min(3650, Math.trunc(undownloadedRetentionDays)));
     const bounded = Math.max(1, Math.min(100, Math.trunc(limit)));
     // A single worker runs this; the guarded UPDATE below makes a concurrent
-    // sweep a harmless no-op, so no row lock is needed here. Payment-receipt
-    // attachments are financial records and are never swept.
+    // sweep a harmless no-op, so no row lock is needed here.
     const candidates = await this.options.database<ExpiryCandidate[]>`
       SELECT attachments.id, attachments.storage_key
       FROM unified_conversation_attachments AS attachments
       WHERE attachments.storage_status = 'STORED'
         AND attachments.deleted_at IS NULL
-        AND attachments.created_at < now() - (${this.retentionDays} * interval '1 day')
         AND NOT EXISTS (
           SELECT 1 FROM finance_payment_submissions AS receipts
           WHERE receipts.attachment_id = attachments.id
+        )
+        AND (
+          (
+            attachments.download_count = 0
+            AND attachments.created_at < now() - (${days} * interval '1 day')
+          )
+          OR (
+            attachments.delete_after IS NOT NULL
+            AND attachments.delete_after < now()
+          )
         )
       ORDER BY attachments.created_at ASC, attachments.id ASC
       LIMIT ${bounded}
@@ -70,7 +72,7 @@ export class UnifiedAttachmentRetentionSweeper {
     if (expired > 0) {
       this.options.logger.info("unified_attachment_retention_expired", {
         count: expired,
-        retentionDays: this.retentionDays,
+        undownloadedRetentionDays: days,
       });
     }
     return expired;

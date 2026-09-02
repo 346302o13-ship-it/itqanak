@@ -141,6 +141,9 @@ export async function unifiedMessageAttachmentRoute(
               allowUnscannedInlineMedia: true,
             }
           : {},
+        // Only an explicit download (not an inline preview) delivers the file
+        // to the recipient and starts the post-download retention clock.
+        !preview,
       );
       if (
         preview &&

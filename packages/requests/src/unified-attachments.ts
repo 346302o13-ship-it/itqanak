@@ -43,6 +43,8 @@ interface AttachmentRow {
   readonly scan_status: string;
   readonly storage_key: string | null;
   readonly created_at: Date | string;
+  /** Non-null only when this is a native conversation attachment (not a legacy one). */
+  readonly conversation_attachment_id?: string | null;
 }
 
 interface AggregateRow {
@@ -299,7 +301,8 @@ export class UnifiedConversationAttachmentService {
              attachments.uploaded_by_user_id, attachments.original_filename,
              attachments.detected_mime_type, attachments.declared_mime_type,
              attachments.size_bytes, attachments.storage_status, attachments.scan_status,
-             attachments.storage_key, attachments.created_at
+             attachments.storage_key, attachments.created_at,
+             attachments.id AS conversation_attachment_id
       FROM unified_conversation_attachments AS attachments
       INNER JOIN support_conversations AS conversations
         ON conversations.id = attachments.conversation_id
@@ -350,6 +353,7 @@ export class UnifiedConversationAttachmentService {
     messageId: string,
     context: RequestAuditContext = {},
     policy: AttachmentAccessPolicy = {},
+    countAsDownload = false,
   ): Promise<AuthorizedAttachmentDownload> {
     this.requireReadPermission(principal);
     if (!isUuid(conversationId) || !isUuid(messageId)) {
@@ -359,6 +363,7 @@ export class UnifiedConversationAttachmentService {
     const rows = await this.database.unsafe<AttachmentRow[]>(
       `SELECT
          COALESCE(conversation_attachments.id, legacy_attachments.id) AS id,
+         conversation_attachments.id AS conversation_attachment_id,
          messages.conversation_id,
          messages.request_id,
          COALESCE(
@@ -404,7 +409,9 @@ export class UnifiedConversationAttachmentService {
     );
     const attachment = rows[0];
     if (attachment === undefined) throw new RequestDomainError("ATTACHMENT_NOT_FOUND");
-    return this.openAuthorizedAttachment(principal, attachment, context, policy);
+    return this.openAuthorizedAttachment(principal, attachment, context, policy, {
+      countAsDownload,
+    });
   }
 
   private async openAuthorizedAttachment(
@@ -412,6 +419,7 @@ export class UnifiedConversationAttachmentService {
     attachment: AttachmentRow,
     context: RequestAuditContext,
     policy: AttachmentAccessPolicy,
+    options: { readonly countAsDownload?: boolean } = {},
   ): Promise<AuthorizedAttachmentDownload> {
     if (attachment.storage_status === "EXPIRED") {
       throw new RequestDomainError("ATTACHMENT_EXPIRED");
@@ -459,6 +467,23 @@ export class UnifiedConversationAttachmentService {
       resourceId: attachment.conversation_id,
       metadata: { attachmentId: attachment.id, scanStatus: attachment.scan_status },
     });
+
+    const conversationAttachmentId = attachment.conversation_attachment_id ?? null;
+    if (
+      options.countAsDownload === true &&
+      conversationAttachmentId !== null &&
+      attachment.uploaded_by_user_id !== principal.userId
+    ) {
+      // The recipient has now received this file: record it and start the
+      // short post-download retention clock. A tracking failure must never
+      // block the download the caller is already streaming.
+      await this.recordRecipientDownload(conversationAttachmentId, principal.userId).catch(() => {
+        this.logger?.error("unified_attachment_download_tracking_failed", {
+          attachmentId: conversationAttachmentId,
+        });
+      });
+    }
+
     return {
       body,
       filename: attachment.original_filename,
@@ -466,6 +491,34 @@ export class UnifiedConversationAttachmentService {
       contentLength: integer(attachment.size_bytes, "size"),
       scanStatus: attachment.scan_status as AuthorizedAttachmentDownload["scanStatus"],
     };
+  }
+
+  private async recordRecipientDownload(
+    conversationAttachmentId: string,
+    downloaderUserId: string,
+  ): Promise<void> {
+    const rows = await this.database<{ readonly days: number | string }[]>`
+      SELECT attachment_downloaded_retention_days AS days
+      FROM platform_retention_settings
+      WHERE singleton_key = 'platform'
+      LIMIT 1
+    `;
+    const graceDays = Math.max(1, Math.min(3650, Math.trunc(Number(rows[0]?.days ?? 1)) || 1));
+    await this.database.begin(async (transaction) => {
+      const tx = transaction as DatabaseClient;
+      await tx`
+        INSERT INTO unified_attachment_downloads (attachment_id, downloader_user_id)
+        VALUES (${conversationAttachmentId}, ${downloaderUserId})
+      `;
+      await tx`
+        UPDATE unified_conversation_attachments
+        SET download_count = download_count + 1,
+            last_downloaded_at = now(),
+            delete_after = now() + (${graceDays} * interval '1 day'),
+            updated_at = now()
+        WHERE id = ${conversationAttachmentId} AND storage_status = 'STORED'
+      `;
+    });
   }
 
   private requireSendPermission(principal: AuthenticatedPrincipal): void {

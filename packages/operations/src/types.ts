@@ -33,6 +33,10 @@ export interface UpdatePlatformOperationalStateInput {
 export interface PlatformRetentionState {
   readonly messageArchivalEnabled: boolean;
   readonly messageRetentionDays: number;
+  /** Days a never-downloaded conversation file is kept before its object is purged. */
+  readonly attachmentUndownloadedRetentionDays: number;
+  /** Days a downloaded conversation file is kept after the last download. */
+  readonly attachmentDownloadedRetentionDays: number;
   readonly version: number;
   readonly updatedAt: Date;
 }
@@ -40,8 +44,10 @@ export interface PlatformRetentionState {
 export interface UpdatePlatformRetentionStateInput {
   readonly messageArchivalEnabled: boolean;
   readonly messageRetentionDays: number;
+  readonly attachmentUndownloadedRetentionDays: number;
+  readonly attachmentDownloadedRetentionDays: number;
   readonly expectedVersion: number;
-  /** Required to switch archival ON (it removes message text from the hot table). */
+  /** Required to switch message archival ON (it removes message text from the hot table). */
   readonly confirmedCriticalAction: boolean;
 }
 

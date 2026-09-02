@@ -119,6 +119,8 @@ interface MessageRow {
   readonly attachment_size_bytes: number | string | null;
   readonly attachment_scan_status: string | null;
   readonly attachment_storage_status: string | null;
+  readonly attachment_download_count: number | string | null;
+  readonly attachment_delete_after: Date | string | null;
   readonly quote_id: string | null;
   readonly quote_conversation_id: string | null;
   readonly quote_request_id: string | null;
@@ -213,6 +215,8 @@ const messageSelect = `
     AS attachment_scan_status,
   COALESCE(conversation_attachments.storage_status, legacy_attachments.storage_status)
     AS attachment_storage_status,
+  COALESCE(conversation_attachments.download_count, 0) AS attachment_download_count,
+  conversation_attachments.delete_after AS attachment_delete_after,
   quotes.id AS quote_id, quotes.conversation_id AS quote_conversation_id,
   quotes.request_id AS quote_request_id, quotes.student_user_id AS quote_student_user_id,
   quotes.amount_minor AS quote_amount_minor, quotes.currency AS quote_currency,
@@ -535,6 +539,18 @@ function toMessage(row: MessageRow): UnifiedMessage {
             sizeBytes: toSafeInteger(row.attachment_size_bytes, "attachment size"),
             scanStatus: toScanStatus(row.attachment_scan_status),
             storageStatus: toStorageStatus(row.attachment_storage_status),
+            downloadCount: toSafeInteger(
+              row.attachment_download_count ?? 0,
+              "attachment downloads",
+            ),
+            ...(row.attachment_delete_after === null
+              ? {}
+              : {
+                  deleteAfter:
+                    row.attachment_delete_after instanceof Date
+                      ? row.attachment_delete_after
+                      : new Date(row.attachment_delete_after),
+                }),
           },
         }),
     ...(quote === undefined || suppressed ? {} : { quote }),
