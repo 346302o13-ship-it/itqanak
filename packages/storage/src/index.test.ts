@@ -24,7 +24,10 @@ import {
 const temporaryObjects: { root: string; key?: string }[] = [];
 const servers: Server[] = [];
 
-function createStoredZip(entries: readonly { name: string; content: string }[]): Buffer {
+function createStoredZip(
+  entries: readonly { name: string; content: string }[],
+  generalPurposeFlags = 0,
+): Buffer {
   const localParts: Buffer[] = [];
   const centralParts: Buffer[] = [];
   let localOffset = 0;
@@ -35,6 +38,7 @@ function createStoredZip(entries: readonly { name: string; content: string }[]):
     const localHeader = Buffer.alloc(30);
     localHeader.writeUInt32LE(0x0403_4b50, 0);
     localHeader.writeUInt16LE(20, 4);
+    localHeader.writeUInt16LE(generalPurposeFlags, 6);
     localHeader.writeUInt32LE(checksum, 14);
     localHeader.writeUInt32LE(content.length, 18);
     localHeader.writeUInt32LE(content.length, 22);
@@ -45,6 +49,7 @@ function createStoredZip(entries: readonly { name: string; content: string }[]):
     centralHeader.writeUInt32LE(0x0201_4b50, 0);
     centralHeader.writeUInt16LE(20, 4);
     centralHeader.writeUInt16LE(20, 6);
+    centralHeader.writeUInt16LE(generalPurposeFlags, 8);
     centralHeader.writeUInt32LE(checksum, 16);
     centralHeader.writeUInt32LE(content.length, 20);
     centralHeader.writeUInt32LE(content.length, 24);
@@ -303,6 +308,33 @@ describe("upload validation", () => {
         }),
       "MIME_MISMATCH",
     );
+  });
+
+  it("accepts a DOCX whose entries carry DEFLATE compression-level flag bits", () => {
+    // Real Word / LibreOffice output sets bits 1-2 (compression level) on
+    // deflated entries; those are informational and must not fail validation.
+    const archive = createStoredZip(
+      [
+        {
+          name: "[Content_Types].xml",
+          content:
+            '<Types><Override PartName="/word/document.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.document.main+xml"/></Types>',
+        },
+        { name: "_rels/.rels", content: "<Relationships/>" },
+        { name: "word/document.xml", content: "<root/>" },
+      ],
+      0x0006,
+    );
+    expect(
+      validateUpload({
+        filename: "course-work.docx",
+        declaredMimeType: "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+        size: archive.length,
+        maxBytes: 4_096,
+        header: archive,
+        trailer: archive,
+      }).normalizedExtension,
+    ).toBe(".docx");
   });
 
   it("rejects a synthetic ZIP substring and unsafe central-directory paths", () => {

@@ -220,6 +220,47 @@ function declaredMime(file: File): string {
   return mimeByExtension[extension] ?? (file.type || "application/octet-stream");
 }
 
+/** Turns an attachment API error code into a specific, actionable message. */
+function attachmentErrorMessage(
+  code: string | undefined,
+  english: boolean,
+  maximumBytes: number,
+): string | undefined {
+  const megabytes = Math.floor(maximumBytes / 1_048_576);
+  switch (code) {
+    case "FILE_TYPE_NOT_ALLOWED":
+      return english
+        ? "This file type is not supported. Send PDF, Word, PowerPoint, Excel, text, an image, audio, or MP4."
+        : "نوع الملف غير مدعوم. أرسل PDF أو Word أو PowerPoint أو Excel أو نصًا أو صورة أو صوتًا أو MP4.";
+    case "FILE_MIME_MISMATCH":
+      return english
+        ? "The file looks damaged or its contents don’t match its name. Re-save it (in Word: “Save As → .docx”) and try again."
+        : "يبدو أن الملف تالف أو محتواه لا يطابق اسمه. احفظه من جديد (في وورد: «حفظ باسم ← .docx») ثم أعد المحاولة.";
+    case "FILE_TOO_LARGE":
+      return english
+        ? `The maximum file size is ${megabytes} MB.`
+        : `الحد الأعلى لحجم الملف ${megabytes} م.ب.`;
+    case "MAX_FILES_EXCEEDED":
+      return english
+        ? "The file count for this conversation has been reached."
+        : "تم بلوغ حد عدد الملفات في هذه المحادثة.";
+    case "TOTAL_FILE_SIZE_EXCEEDED":
+      return english
+        ? "The total size of files for this conversation has been reached."
+        : "تم بلوغ الحجم الإجمالي المسموح للملفات في هذه المحادثة.";
+    case "STORAGE_UNAVAILABLE":
+      return english
+        ? "File storage is busy right now. Wait a moment and try again."
+        : "خدمة تخزين الملفات مشغولة الآن. انتظر قليلًا ثم أعد المحاولة.";
+    case "UPLOAD_TIMEOUT":
+      return english
+        ? "The upload timed out. Try again on a stable connection."
+        : "انتهت مهلة رفع الملف. أعد المحاولة عبر اتصال مستقر.";
+    default:
+      return undefined;
+  }
+}
+
 function contentTypeForMime(mimeType: string): "IMAGE" | "AUDIO" | "FILE" {
   if (mimeType.startsWith("image/")) return "IMAGE";
   if (mimeType.startsWith("audio/")) return "AUDIO";
@@ -2796,7 +2837,9 @@ export function UnifiedChatWorkspace({
       const result = (await upload.json().catch(() => ({}))) as AttachmentMutationWire;
       if (!upload.ok || result.attachment === undefined) {
         throw new Error(
-          result.message ?? (english ? "The file could not be uploaded." : "تعذر رفع الملف."),
+          attachmentErrorMessage(result.error, english, maximumBytes) ??
+            result.message ??
+            (english ? "The file could not be uploaded." : "تعذر رفع الملف."),
         );
       }
       const ready = await waitForAttachment(result.attachment);

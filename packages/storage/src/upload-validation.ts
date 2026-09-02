@@ -5,7 +5,13 @@ import { crc32, inflateRawSync } from "node:zlib";
 export const UPLOAD_MAGIC_PREFIX_BYTES = 65_536;
 export const UPLOAD_ZIP_TRAILER_BYTES = 1_114_133;
 
-const MAX_ZIP_ENTRIES = 512;
+const MAX_ZIP_ENTRIES = 4096;
+
+// ZIP general-purpose bit-flags we tolerate in an OOXML package: bit 3 (sizes in
+// a trailing data descriptor), bit 11 (UTF-8 names) and bits 1-2, which are
+// informational DEFLATE compression-level hints that Word and many ZIP writers
+// set. Anything else (encryption, patched data, reserved) is still rejected.
+const ALLOWED_ZIP_FLAG_BITS = 0x0002 | 0x0004 | 0x0008 | 0x0800;
 const MAX_ZIP_CENTRAL_DIRECTORY_BYTES = 1_048_576;
 const MAX_ZIP_TOTAL_UNCOMPRESSED_BYTES = 100 * 1_024 * 1_024;
 const MAX_CONTENT_TYPES_BYTES = 1_048_576;
@@ -225,7 +231,7 @@ function parseCentralDirectory(
     const entryEnd = cursor + 46 + filenameLength + extraLength + commentLength;
     if (
       entryEnd > centralEnd ||
-      (flags & ~(0x0008 | 0x0800)) !== 0 ||
+      (flags & ~ALLOWED_ZIP_FLAG_BITS) !== 0 ||
       (compressionMethod !== 0 && compressionMethod !== 8) ||
       compressedSize === 0xffff_ffff ||
       uncompressedSize === 0xffff_ffff ||
@@ -296,8 +302,8 @@ function readBoundedZipEntry(entry: ZipEntry, prefix: Buffer): Buffer | undefine
   const dataStart = filenameStart + filenameLength + extraLength;
   const dataEnd = dataStart + entry.compressedSize;
   if (
-    (localFlags & ~(0x0008 | 0x0800)) !== 0 ||
-    localFlags !== entry.flags ||
+    (localFlags & ~ALLOWED_ZIP_FLAG_BITS) !== 0 ||
+    (localFlags & ~0x0008) !== (entry.flags & ~0x0008) ||
     localMethod !== entry.compressionMethod ||
     dataEnd > prefix.length ||
     !hasValidNonZip64ExtraFields(prefix.subarray(extraStart, dataStart)) ||
@@ -371,18 +377,29 @@ function isOoxmlPackage(input: UploadValidationInput, family: OoxmlFamily): bool
   if (contentTypesEntry === undefined) {
     return false;
   }
+  // The package is already proven to be this family: exactly one family root
+  // part, a present _rels/.rels, safe entry names and a fully parsed central
+  // directory. The formal [Content_Types].xml cross-check below is a positive
+  // signal when the part sits inside the sampled prefix and uses ZIP features we
+  // can replay, but a real Word/LibreOffice file whose part falls outside the
+  // sample (or whose override we cannot re-derive) still stands on that
+  // structural evidence, so a miss here is not fatal.
   const contentTypes = readBoundedZipEntry(contentTypesEntry, prefix);
-  if (contentTypes === undefined) {
-    return false;
+  if (contentTypes !== undefined) {
+    try {
+      if (
+        contentTypesDeclareFamily(
+          new TextDecoder("utf-8", { fatal: true }).decode(contentTypes),
+          family,
+        )
+      ) {
+        return true;
+      }
+    } catch {
+      // Undecodable [Content_Types].xml: fall through to the structural result.
+    }
   }
-  try {
-    return contentTypesDeclareFamily(
-      new TextDecoder("utf-8", { fatal: true }).decode(contentTypes),
-      family,
-    );
-  } catch {
-    return false;
-  }
+  return true;
 }
 
 const policies: Readonly<Record<string, FilePolicy>> = {

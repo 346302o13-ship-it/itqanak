@@ -1,5 +1,5 @@
-import { createReadStream, createWriteStream } from "node:fs";
-import { mkdtemp, rmdir, unlink } from "node:fs/promises";
+import { createWriteStream } from "node:fs";
+import { mkdtemp, open, rmdir, unlink, type FileHandle } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { Readable, Transform } from "node:stream";
@@ -103,7 +103,9 @@ export async function spoolUploadBody(
     },
   });
 
+  let handle: FileHandle | undefined;
   const cleanup = async (): Promise<void> => {
+    await handle?.close().catch(() => undefined);
     await unlink(path).catch(() => undefined);
     await rmdir(directory).catch(() => undefined);
   };
@@ -119,7 +121,16 @@ export async function spoolUploadBody(
       tailLength < tail.length
         ? Buffer.from(tail.subarray(0, tailLength))
         : Buffer.concat([tail.subarray(tailPosition), tail.subarray(0, tailPosition)]);
-    return { header, trailer, stream: createReadStream(path), cleanup };
+    // Open the spooled body now, before returning it. A lazily-opened
+    // createReadStream(path) schedules its fs.open independently; when the
+    // upload is rejected (e.g. failed type validation) before the body is ever
+    // read, cleanup() unlinks the file and the pending open then surfaces as an
+    // uncaught ENOENT. Holding an already-open descriptor keeps the inode alive
+    // for the request's lifetime and closes deterministically in cleanup().
+    handle = await open(path, "r");
+    const stream = handle.createReadStream({ autoClose: false });
+    stream.on("error", () => undefined);
+    return { header, trailer, stream, cleanup };
   } catch (error: unknown) {
     await cleanup();
     if (signal.aborted) {
