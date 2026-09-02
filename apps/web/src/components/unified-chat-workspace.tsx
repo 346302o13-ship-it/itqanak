@@ -43,7 +43,6 @@ import { playUiSound } from "@/lib/ui-sounds";
 import { setActiveConversation } from "@/lib/active-conversation";
 import { compressImageForUpload } from "@/lib/image-compression";
 
-import { NavLink } from "./nav-link";
 import { PaymentReceiptUploader } from "./payment-receipt-uploader";
 
 import {
@@ -1658,6 +1657,10 @@ export function UnifiedChatWorkspace({
   services = [],
 }: UnifiedChatWorkspaceProps) {
   const english = locale === "en";
+  // Home target for the header back control. Kept as a plain string used by a
+  // plain <a> (never next/link) so leaving the chat is always a real browser
+  // navigation that nothing can silently swallow.
+  const backHref = `/${locale}/${mode === "admin" ? "admin" : "student"}`;
   const fileInput = useRef<HTMLInputElement>(null);
   const logRef = useRef<HTMLDivElement>(null);
   const endRef = useRef<HTMLDivElement>(null);
@@ -4018,7 +4021,11 @@ export function UnifiedChatWorkspace({
       <main className="flex min-h-0 min-w-0 flex-1 flex-col bg-[var(--itq-color-surface-soft)]">
         <header className="flex h-[4.65rem] shrink-0 items-center justify-between gap-3 border-b border-[var(--itq-color-border)] bg-[var(--itq-color-surface)] px-3 sm:px-5">
           <div className="flex min-w-0 items-center gap-2 sm:gap-3">
-            <NavLink
+            {/* Plain <a> + explicit hard navigation. This deliberately bypasses
+                next/link: a client-router push out of this huge component was
+                silently no-opping in the installed PWA. A full load always
+                works. */}
+            <a
               aria-label={
                 english
                   ? mode === "admin"
@@ -4028,11 +4035,25 @@ export function UnifiedChatWorkspace({
                     ? "العودة إلى مركز الإدارة"
                     : "العودة إلى بوابة الطالب"
               }
-              className="relative grid size-10 shrink-0 place-items-center rounded-xl border border-[var(--itq-color-border)] text-[var(--itq-color-ink)] no-underline hover:bg-[var(--itq-color-surface-soft)]"
-              href={`/${locale}/${mode === "admin" ? "admin" : "student"}`}
+              className="grid size-10 shrink-0 place-items-center rounded-xl border border-[var(--itq-color-border)] text-[var(--itq-color-ink)] no-underline hover:bg-[var(--itq-color-surface-soft)]"
+              href={backHref}
+              onClick={(event) => {
+                if (
+                  event.defaultPrevented ||
+                  event.button !== 0 ||
+                  event.metaKey ||
+                  event.ctrlKey ||
+                  event.shiftKey ||
+                  event.altKey
+                ) {
+                  return;
+                }
+                event.preventDefault();
+                window.location.assign(backHref);
+              }}
             >
               <ArrowIcon className="size-5 rtl:-scale-x-100" />
-            </NavLink>
+            </a>
             {mode === "admin" ? (
               <button
                 aria-controls={contactsPanelId}

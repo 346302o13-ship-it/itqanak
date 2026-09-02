@@ -15,16 +15,15 @@ self.addEventListener("activate", (event) => {
 });
 
 /*
- * A fetch handler is required for the app to be installable on Android
- * (a real WebAPK, not just a shortcut). It caches nothing and MUST NOT touch
- * form submissions or their redirects — only plain GET navigations are passed
- * straight to the network so the handler simply "exists".
+ * A fetch handler only has to EXIST for the older Android "installable WebAPK"
+ * heuristic — it must never call respondWith. The moment this worker answers a
+ * navigation (even by re-issuing the identical request) the browser is locked
+ * to that promise, so any transient fetch rejection becomes a dead, blank
+ * navigation with no native fallback. In a standalone PWA that looks exactly
+ * like a button that "does nothing". So this handler intentionally does not
+ * intercept anything: every request goes straight to the browser.
  */
-self.addEventListener("fetch", (event) => {
-  if (event.request.method === "GET" && event.request.mode === "navigate") {
-    event.respondWith(fetch(event.request));
-  }
-});
+self.addEventListener("fetch", () => {});
 
 /*
  * The open chat tab tells the worker which conversation is on screen right now
