@@ -25,7 +25,9 @@ const copyByLocale = {
     brand: "إتقانك",
     kicker: "بوابة الطالب — تطبيق",
     heading: "ثبّت بوابة الطالب على جهازك",
-    sub: "تطبيق سريع بأيقونة على شاشتك الرئيسية، وإشعار فوري لكل رد من الفريق. بدون متجر تطبيقات.",
+    about:
+      "إتقانك منصة دعم تعليمي: حل واجبات، مشاريع، أبحاث وتقارير، عروض تقديمية، ترجمة وشرح — بجودة عالية، تسليم في الوقت، وخصوصية تامة.",
+    sub: "ثبّت بوابة الطالب كتطبيق سريع بأيقونة على شاشتك، وإشعار فوري لكل رد من الفريق. بدون متجر تطبيقات.",
     installNow: "ثبّت بوابة الطالب الآن",
     install: "تثبيت التطبيق",
     installing: "جارٍ التثبيت…",
@@ -57,7 +59,9 @@ const copyByLocale = {
     brand: "ITQANAK",
     kicker: "Student portal — app",
     heading: "Install the student portal on your device",
-    sub: "A fast app with an icon on your home screen and an instant alert for every reply. No app store.",
+    about:
+      "ITQANAK is an educational-support platform: assignments, projects, research and reports, presentations, translation and tutoring — high quality, on-time delivery, full privacy.",
+    sub: "Install the student portal as a fast app with a home-screen icon and an instant alert for every reply. No app store.",
     installNow: "Install the student portal now",
     install: "Install the app",
     installing: "Installing…",
@@ -232,7 +236,8 @@ export function InstallLanding({ locale }: { readonly locale: "ar" | "en" }) {
             <h1 className="mt-4 text-[1.9rem] font-black leading-[1.15] tracking-[-0.02em] sm:text-[2.35rem]">
               {mode === "installed" ? copy.installedTitle : copy.heading}
             </h1>
-            <p className="mt-3 leading-8 text-[var(--itq-color-muted)]">{copy.sub}</p>
+            <p className="mt-3 leading-8 text-[var(--itq-color-ink-soft)]">{copy.about}</p>
+            <p className="mt-2 text-sm leading-7 text-[var(--itq-color-muted)]">{copy.sub}</p>
 
             <div className="mt-7">
               {mode === "installed" ? (

@@ -7,25 +7,30 @@ import { webAppManifestHref } from "./pwa-manifest";
 // these tags itself (not redirect) — several link-preview crawlers do not
 // follow a 3xx before scraping.
 
-// The advert card. A 1200x630 landscape JPEG (the tall poster centred on a
-// brand-green field) so WhatsApp, Telegram and X all render a LARGE preview —
-// a portrait image gets shrunk to a side thumbnail on WhatsApp. Lives in
-// public/; resolved to an absolute URL against metadataBase at request time.
+// The advert card: the poster's hero band (brand + hook) exported landscape
+// (~1200x722) so WhatsApp, Telegram and X all render a LARGE preview — a
+// portrait image is shrunk to a side thumbnail on WhatsApp. Lives in public/;
+// resolved to an absolute URL against metadataBase at request time.
 const shareImagePath = "/install-share.jpg";
+const shareImageWidth = 1200;
+const shareImageHeight = 722;
+
 const copy = {
   ar: {
-    title: "ثبّت تطبيق بوابة الطالب",
+    title: "منصة إتقانك — ثبّت تطبيق بوابة الطالب",
     description:
-      "ثبّت بوابة الطالب من إتقانك على جهازك في ثوانٍ: أيقونة على شاشتك الرئيسية، إشعار فوري لكل رد، وفتح أسرع. بدون متجر تطبيقات — يعمل على أندرويد وiPhone والكمبيوتر.",
+      "إتقانك منصة دعم تعليمي: حل واجبات، مشاريع، أبحاث وتقارير، عروض تقديمية، ترجمة وشرح — بجودة عالية، تسليم في الوقت، وخصوصية تامة. ثبّت بوابة الطالب على جهازك وتابع طلباتك بإشعارات فورية للردود.",
     siteName: "إتقانك",
     ogLocale: "ar_SA",
+    imageAlt: "منصة إتقانك للدعم التعليمي — ثبّت تطبيق بوابة الطالب",
   },
   en: {
-    title: "Install the student portal app",
+    title: "ITQANAK — install the student portal app",
     description:
-      "Install the ITQANAK student portal on your device in seconds: a home-screen icon, an instant alert for every reply, and a faster open. No app store — works on Android, iPhone, and desktop.",
+      "ITQANAK is an educational-support platform: assignments, projects, research and reports, presentations, translation and tutoring — high quality, on-time delivery, full privacy. Install the student portal to follow your requests with instant reply alerts.",
     siteName: "ITQANAK",
     ogLocale: "en_US",
+    imageAlt: "ITQANAK educational-support platform — install the student portal app",
   },
 } as const;
 
@@ -35,7 +40,6 @@ export function buildInstallMetadata(
   canonicalPath: string = ogPath,
 ): Metadata {
   const text = copy[locale];
-  const brandedTitle = `${text.title} | ${text.siteName}`;
   return {
     title: text.title,
     description: text.description,
@@ -45,7 +49,7 @@ export function buildInstallMetadata(
       languages: { "ar-SA": "/ar/install", en: "/en/install" },
     },
     openGraph: {
-      title: brandedTitle,
+      title: text.title,
       description: text.description,
       type: "website",
       url: ogPath,
@@ -54,16 +58,16 @@ export function buildInstallMetadata(
       images: [
         {
           url: shareImagePath,
-          width: 1200,
-          height: 630,
+          width: shareImageWidth,
+          height: shareImageHeight,
           type: "image/jpeg",
-          alt: brandedTitle,
+          alt: text.imageAlt,
         },
       ],
     },
     twitter: {
       card: "summary_large_image",
-      title: brandedTitle,
+      title: text.title,
       description: text.description,
       images: [shareImagePath],
     },
