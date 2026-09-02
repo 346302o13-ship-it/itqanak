@@ -6,6 +6,7 @@ export {
 } from "./validation.js";
 export { RequestService, type RequestServiceOptions } from "./service.js";
 export { AdminRequestService, type AdminRequestServiceOptions } from "./admin-service.js";
+export { StorageAdminService, type StorageAdminServiceOptions } from "./storage-admin.js";
 export {
   canArchivePendingRequest,
   isStalePendingStatus,
@@ -137,9 +138,13 @@ export {
   type SubmitRequestInput,
   type ArchivePendingRequestsInput,
   type ArchivePendingRequestsResult,
+  type RetentionSweepPreview,
   type StalePendingRequestFilter,
   type StalePendingRequestItem,
   type StalePendingRequestReport,
+  type StorageAdminAttachment,
+  type StorageAdminFilter,
+  type StorageAdminReport,
   type StudentRequestTransitionInput,
   type UpdateDraftRequestInput,
   notificationKinds,

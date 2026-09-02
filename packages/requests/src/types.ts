@@ -266,6 +266,59 @@ export interface ArchivePendingRequestsInput {
   readonly reason?: string;
 }
 
+export interface StorageAdminFilter {
+  readonly status?: "STORED" | "EXPIRED" | "PENDING_DELETION";
+  readonly studentUserId?: string;
+  readonly search?: string;
+  readonly page?: number;
+  readonly pageSize?: number;
+}
+
+export interface StorageAdminAttachment {
+  readonly id: string;
+  readonly conversationId: string;
+  readonly studentUserId: string;
+  readonly studentDisplayName: string;
+  readonly uploaderDisplayName: string;
+  readonly originalFilename: string;
+  readonly sizeBytes: number;
+  readonly mimeType: string;
+  readonly storageStatus: string;
+  readonly createdAt: Date;
+  readonly lastDownloadedAt?: Date;
+  readonly downloadCount: number;
+  readonly deleteAfter?: Date;
+  readonly requestNumber?: string;
+  /** Payment-receipt attachment — never swept. */
+  readonly isReceipt: boolean;
+}
+
+export interface StorageAdminReport {
+  readonly items: readonly StorageAdminAttachment[];
+  readonly page: number;
+  readonly pageSize: number;
+  readonly total: number;
+  readonly pageCount: number;
+  readonly stats: {
+    readonly totalFiles: number;
+    readonly totalBytes: number;
+    readonly storedFiles: number;
+    readonly storedBytes: number;
+    readonly expiredFiles: number;
+    readonly pendingDeletionFiles: number;
+    readonly receiptFiles: number;
+  };
+}
+
+export interface RetentionSweepPreview {
+  readonly messageArchivalEnabled: boolean;
+  readonly messageRetentionDays: number;
+  readonly attachmentUndownloadedRetentionDays: number;
+  readonly messagesEligible: number;
+  readonly attachmentsEligible: number;
+  readonly attachmentSampleFilenames: readonly string[];
+}
+
 export interface ArchivePendingRequestsResult {
   readonly archivedIds: readonly string[];
   readonly skipped: readonly {

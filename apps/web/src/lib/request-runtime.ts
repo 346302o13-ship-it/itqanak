@@ -10,6 +10,7 @@ import {
   RequestService,
   NotificationService,
   ServiceQuoteService,
+  StorageAdminService,
   SupportService,
   UnifiedConversationAttachmentService,
   UnifiedConversationService,
@@ -80,6 +81,7 @@ export async function createStudentRequestRuntime(requireRateLimiting = false) {
         storage,
         logger,
       }),
+      storageAdmin: new StorageAdminService({ database: runtime.database, storage, logger }),
       attachments: new RequestAttachmentService({
         database: runtime.database,
         config: runtime.config,

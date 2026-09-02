@@ -40,6 +40,7 @@ export class UnifiedAttachmentRetentionSweeper {
         AND (
           (
             attachments.download_count = 0
+            AND attachments.delete_after IS NULL
             AND attachments.created_at < now() - (${days} * interval '1 day')
           )
           OR (

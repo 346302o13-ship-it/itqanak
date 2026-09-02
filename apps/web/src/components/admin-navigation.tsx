@@ -10,6 +10,7 @@ import {
   FinanceIcon,
   MessageIcon,
   OperationsIcon,
+  PaperclipIcon,
   RequestsIcon,
   ServicesIcon,
   UserIcon,
@@ -62,6 +63,13 @@ const itemsByLocale = {
       label: "الطلبات المعلّقة",
       mobileLabel: "المعلّقة",
       Icon: RequestsIcon,
+      system: true,
+    },
+    {
+      href: "/ar/admin/storage",
+      label: "إدارة التخزين",
+      mobileLabel: "التخزين",
+      Icon: PaperclipIcon,
       system: true,
     },
     {
@@ -130,6 +138,13 @@ const itemsByLocale = {
       label: "Stale requests",
       mobileLabel: "Stale",
       Icon: RequestsIcon,
+      system: true,
+    },
+    {
+      href: "/en/admin/storage",
+      label: "Storage",
+      mobileLabel: "Storage",
+      Icon: PaperclipIcon,
       system: true,
     },
     {
