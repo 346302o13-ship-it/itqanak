@@ -768,6 +768,7 @@ export class RequestService {
           : "requests.created_at DESC, requests.id DESC";
     const predicate = `
       requests.student_user_id = $1
+      AND requests.archived_at IS NULL
       AND ($2::text IS NULL OR requests.request_number ILIKE $2 ESCAPE E'\\\\'
            OR requests.title ILIKE $2 ESCAPE E'\\\\')
       AND ($3::text IS NULL OR requests.status = $3)
@@ -810,13 +811,13 @@ export class RequestService {
           count(*) FILTER (WHERE status = 'WAITING_FOR_STUDENT')::text AS waiting_count,
           count(*) FILTER (WHERE status = 'COMPLETED')::text AS completed_count
         FROM service_requests
-        WHERE student_user_id = ${principal.userId}
+        WHERE student_user_id = ${principal.userId} AND archived_at IS NULL
       `,
       this.database.unsafe<RequestRow[]>(
         `SELECT ${requestSelect}
          FROM service_requests AS requests
          INNER JOIN services ON services.id = requests.service_id
-         WHERE requests.student_user_id = $1
+         WHERE requests.student_user_id = $1 AND requests.archived_at IS NULL
          ORDER BY requests.created_at DESC, requests.id DESC
          LIMIT 5`,
         [principal.userId],

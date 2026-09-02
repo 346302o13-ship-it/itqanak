@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import {
+  canArchivePendingRequest,
   isStalePendingStatus,
   STALE_PENDING_THRESHOLD_DAYS,
   stalePendingRequestReason,
@@ -29,5 +30,44 @@ describe("stale pending request detection", () => {
 
   it("keeps a draft threshold shorter than the review threshold", () => {
     expect(STALE_PENDING_THRESHOLD_DAYS.DRAFT).toBeLessThan(STALE_PENDING_THRESHOLD_DAYS.SUBMITTED);
+  });
+});
+
+describe("archive eligibility", () => {
+  it("allows archiving a non-terminal request with no due", () => {
+    expect(
+      canArchivePendingRequest({
+        status: "SUBMITTED",
+        hasFinancialRecord: false,
+        alreadyArchived: false,
+      }),
+    ).toEqual({ ok: true });
+  });
+
+  it("refuses a request that carries a financial record", () => {
+    expect(
+      canArchivePendingRequest({
+        status: "QUOTED",
+        hasFinancialRecord: true,
+        alreadyArchived: false,
+      }),
+    ).toEqual({ ok: false, reason: "HAS_FINANCE" });
+  });
+
+  it("refuses terminal states and double archiving", () => {
+    expect(
+      canArchivePendingRequest({
+        status: "COMPLETED",
+        hasFinancialRecord: false,
+        alreadyArchived: false,
+      }),
+    ).toEqual({ ok: false, reason: "NOT_PENDING" });
+    expect(
+      canArchivePendingRequest({
+        status: "DRAFT",
+        hasFinancialRecord: false,
+        alreadyArchived: true,
+      }),
+    ).toEqual({ ok: false, reason: "ALREADY_ARCHIVED" });
   });
 });

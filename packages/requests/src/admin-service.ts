@@ -19,10 +19,16 @@ import type { Logger } from "@itqanak/observability";
 
 import { isUuid, normalizeBoundedPage } from "./chat-validation.js";
 import { RequestDomainError } from "./errors.js";
-import { isStalePendingStatus, stalePendingRequestReason } from "./pending-requests.js";
+import {
+  canArchivePendingRequest,
+  isStalePendingStatus,
+  stalePendingRequestReason,
+} from "./pending-requests.js";
 import type {
   AcademicLevel,
   AdminCreateRequestInput,
+  ArchivePendingRequestsInput,
+  ArchivePendingRequestsResult,
   AdminRequestDetail,
   AdminRequestEditInput,
   AdminRequestListInput,
@@ -110,6 +116,16 @@ interface StalePendingRow {
   readonly created_at: Date | string;
   readonly updated_at: Date | string;
   readonly days_pending: number | string;
+  readonly has_financial_record: boolean;
+  readonly archived_at: Date | string | null;
+  readonly archived_by_name: string | null;
+  readonly archive_reason: string | null;
+}
+
+interface ArchiveTargetRow {
+  readonly id: string;
+  readonly status: string;
+  readonly archived_at: Date | string | null;
   readonly has_financial_record: boolean;
 }
 
@@ -580,6 +596,7 @@ export class AdminRequestService {
       AND ($3::uuid IS NULL OR requests.service_id = $3)
       AND ($4::uuid IS NULL OR current_assignment.assigned_admin_user_id = $4)
       AND (NOT $5::boolean OR current_assignment.assigned_admin_user_id IS NULL)
+      AND requests.archived_at IS NULL
     `;
     const parameters = [searchPattern, status, serviceId, assignedAdminUserId, unassignedOnly];
     const [counts, rows] = await Promise.all([
@@ -648,13 +665,15 @@ export class AdminRequestService {
       filter.minDaysPending > 0
         ? Math.min(filter.minDaysPending, 100_000)
         : null;
+    const mode = filter.includeArchived === "only" ? "only" : "exclude";
 
     const staleCte = `
       stale AS (
         SELECT requests.id, requests.request_number, requests.status, requests.title,
                requests.student_user_id, students.display_name AS student_display_name,
                services.name_ar AS service_name_ar,
-               requests.created_at, requests.updated_at,
+               requests.created_at, requests.updated_at, requests.archived_at,
+               requests.archive_reason, archivist.display_name AS archived_by_name,
                GREATEST(0, EXTRACT(DAY FROM (now() - requests.updated_at))::int) AS days_pending,
                EXISTS (
                  SELECT 1 FROM finance_dues AS dues WHERE dues.request_id = requests.id
@@ -662,10 +681,20 @@ export class AdminRequestService {
         FROM service_requests AS requests
         INNER JOIN users AS students ON students.id = requests.student_user_id
         INNER JOIN services ON services.id = requests.service_id
+        LEFT JOIN users AS archivist ON archivist.id = requests.archived_by_user_id
         WHERE requests.status IN ('DRAFT', 'SUBMITTED', 'UNDER_REVIEW', 'QUOTED')
           AND (
-            (requests.status = 'DRAFT' AND requests.updated_at < now() - interval '7 days')
-            OR (requests.status <> 'DRAFT' AND requests.updated_at < now() - interval '30 days')
+            ($4::text = 'only' AND requests.archived_at IS NOT NULL)
+            OR (
+              $4::text <> 'only'
+              AND requests.archived_at IS NULL
+              AND (
+                (requests.status = 'DRAFT'
+                  AND requests.updated_at < now() - interval '7 days')
+                OR (requests.status <> 'DRAFT'
+                  AND requests.updated_at < now() - interval '30 days')
+              )
+            )
           )
           AND ($2::uuid IS NULL OR requests.student_user_id = $2::uuid)
           AND (
@@ -686,17 +715,18 @@ export class AdminRequestService {
                 count(*) FILTER (WHERE $1::text IS NULL OR status = $1::text)::text
                   AS filtered_total
          FROM stale`,
-        [status, studentUserId, minDaysPending],
+        [status, studentUserId, minDaysPending, mode],
       ),
       this.database.unsafe<StalePendingRow[]>(
         `WITH ${staleCte}
          SELECT id, request_number, status, title, student_user_id, student_display_name,
-                service_name_ar, created_at, updated_at, days_pending, has_financial_record
+                service_name_ar, created_at, updated_at, days_pending, has_financial_record,
+                archived_at, archived_by_name, archive_reason
          FROM stale
          WHERE ($1::text IS NULL OR status = $1::text)
-         ORDER BY days_pending DESC, request_number ASC
-         LIMIT $4 OFFSET $5`,
-        [status, studentUserId, minDaysPending, pageSize, offset],
+         ORDER BY archived_at DESC NULLS LAST, days_pending DESC, request_number ASC
+         LIMIT $5 OFFSET $6`,
+        [status, studentUserId, minDaysPending, mode, pageSize, offset],
       ),
     ]);
 
@@ -705,6 +735,12 @@ export class AdminRequestService {
     const items: StalePendingRequestItem[] = pageRows.map((row) => {
       const rowStatus = isStalePendingStatus(row.status) ? row.status : "SUBMITTED";
       const daysPending = toSafeInteger(row.days_pending, "days_pending");
+      const archivedAt =
+        row.archived_at === null
+          ? undefined
+          : row.archived_at instanceof Date
+            ? row.archived_at
+            : new Date(row.archived_at);
       return {
         id: row.id,
         requestNumber: row.request_number,
@@ -718,6 +754,9 @@ export class AdminRequestService {
         daysPending,
         reason: stalePendingRequestReason(rowStatus, daysPending) ?? "معلّق",
         hasFinancialRecord: row.has_financial_record === true,
+        ...(archivedAt === undefined ? {} : { archivedAt }),
+        ...(row.archived_by_name === null ? {} : { archivedByName: row.archived_by_name }),
+        ...(row.archive_reason === null ? {} : { archiveReason: row.archive_reason }),
       };
     });
 
@@ -735,6 +774,118 @@ export class AdminRequestService {
         quoted: toSafeInteger(stat?.quoted ?? "0", "quoted"),
       },
     };
+  }
+
+  /**
+   * Archives up to 100 non-terminal requests: a reversible soft state that
+   * hides them from the request inbox, the student dashboard/list and the
+   * stale-pending review. Requests that are terminal, already archived, or
+   * carry a financial due are skipped and reported back.
+   */
+  public async archivePendingRequests(
+    principal: AuthenticatedPrincipal,
+    input: ArchivePendingRequestsInput,
+    context: RequestAuditContext = {},
+  ): Promise<ArchivePendingRequestsResult> {
+    requirePermission(requireRole(principal, "ADMIN"), "admin.requests.archive");
+    const ids = [...new Set(input.requestIds)].filter((value) => isUuid(value)).slice(0, 100);
+    if (ids.length === 0) {
+      throw new RequestDomainError("INVALID_REQUEST");
+    }
+    const reason = input.reason?.trim().slice(0, 500);
+    const normalizedReason = reason !== undefined && reason.length > 0 ? reason : null;
+
+    const archivedIds: string[] = [];
+    const skipped: {
+      id: string;
+      reason: "NOT_FOUND" | "NOT_PENDING" | "HAS_FINANCE" | "ALREADY_ARCHIVED";
+    }[] = [];
+
+    await this.database.begin(async (transaction) => {
+      const tx = transaction as DatabaseClient;
+      const rows = await tx.unsafe<ArchiveTargetRow[]>(
+        `SELECT requests.id, requests.status, requests.archived_at,
+                EXISTS (
+                  SELECT 1 FROM finance_dues AS dues WHERE dues.request_id = requests.id
+                ) AS has_financial_record
+         FROM service_requests AS requests
+         WHERE requests.id = ANY($1::uuid[])
+         FOR UPDATE`,
+        [ids],
+      );
+      const byId = new Map(rows.map((row) => [row.id, row]));
+      for (const id of ids) {
+        const row = byId.get(id);
+        if (row === undefined) {
+          skipped.push({ id, reason: "NOT_FOUND" });
+          continue;
+        }
+        const verdict = canArchivePendingRequest({
+          status: row.status,
+          hasFinancialRecord: row.has_financial_record === true,
+          alreadyArchived: row.archived_at !== null,
+        });
+        if (!verdict.ok) {
+          skipped.push({ id, reason: verdict.reason });
+          continue;
+        }
+        const updated = await tx<{ readonly id: string }[]>`
+          UPDATE service_requests
+          SET archived_at = now(), archived_by_user_id = ${principal.userId},
+              archive_reason = ${normalizedReason}, updated_at = now()
+          WHERE id = ${id} AND archived_at IS NULL
+          RETURNING id
+        `;
+        if (updated[0] === undefined) {
+          skipped.push({ id, reason: "ALREADY_ARCHIVED" });
+          continue;
+        }
+        archivedIds.push(id);
+        await recordAuditEvent(tx, {
+          ...context,
+          eventType: "service_request.archived",
+          outcome: "SUCCESS",
+          actorUserId: principal.userId,
+          sessionId: principal.sessionId,
+          resourceType: "service_request",
+          resourceId: id,
+          metadata: normalizedReason === null ? {} : { reason: normalizedReason },
+        });
+      }
+    });
+
+    return { archivedIds, skipped };
+  }
+
+  /** Restores a single archived request to normal visibility. */
+  public async restorePendingRequest(
+    principal: AuthenticatedPrincipal,
+    requestId: string,
+    context: RequestAuditContext = {},
+  ): Promise<void> {
+    requirePermission(requireRole(principal, "ADMIN"), "admin.requests.archive");
+    if (!isUuid(requestId)) {
+      throw new RequestDomainError("REQUEST_NOT_FOUND");
+    }
+    const restored = await this.database<{ readonly id: string }[]>`
+      UPDATE service_requests
+      SET archived_at = NULL, archived_by_user_id = NULL, archive_reason = NULL,
+          updated_at = now()
+      WHERE id = ${requestId} AND archived_at IS NOT NULL
+      RETURNING id
+    `;
+    if (restored[0] === undefined) {
+      throw new RequestDomainError("REQUEST_NOT_FOUND");
+    }
+    await recordAuditEvent(this.database, {
+      ...context,
+      eventType: "service_request.restored",
+      outcome: "SUCCESS",
+      actorUserId: principal.userId,
+      sessionId: principal.sessionId,
+      resourceType: "service_request",
+      resourceId: requestId,
+    });
   }
 
   public async getAdminRequest(

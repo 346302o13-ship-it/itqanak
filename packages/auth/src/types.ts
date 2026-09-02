@@ -29,6 +29,7 @@ export const permissionCodes = [
   "requests.chat.send.own",
   "admin.requests.read",
   "admin.requests.manage",
+  "admin.requests.archive",
   "admin.requests.assign",
   "admin.requests.chat.read",
   "admin.requests.chat.send",

@@ -21,6 +21,30 @@ export function isStalePendingStatus(status: string): status is StalePendingStat
   return (STALE_PENDING_STATUSES as readonly string[]).includes(status);
 }
 
+export type ArchivePendingRejection = "NOT_PENDING" | "HAS_FINANCE" | "ALREADY_ARCHIVED";
+
+/**
+ * Whether an administrator may archive this request. Archiving is only for
+ * non-terminal requests with no financial record; completed / cancelled /
+ * rejected requests and anything with a due are kept and stay visible.
+ */
+export function canArchivePendingRequest(input: {
+  readonly status: string;
+  readonly hasFinancialRecord: boolean;
+  readonly alreadyArchived: boolean;
+}): { readonly ok: true } | { readonly ok: false; readonly reason: ArchivePendingRejection } {
+  if (input.alreadyArchived) {
+    return { ok: false, reason: "ALREADY_ARCHIVED" };
+  }
+  if (!isStalePendingStatus(input.status)) {
+    return { ok: false, reason: "NOT_PENDING" };
+  }
+  if (input.hasFinancialRecord) {
+    return { ok: false, reason: "HAS_FINANCE" };
+  }
+  return { ok: true };
+}
+
 /**
  * A short Arabic reason a request is flagged, or `undefined` when it is not
  * stale (unknown state, or not idle long enough).

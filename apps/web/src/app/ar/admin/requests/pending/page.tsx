@@ -35,6 +35,8 @@ export default async function AdminPendingRequestsPage({ searchParams }: PagePro
   const status = STALE_STATUSES.find((value) => value === rawStatus);
   const minDays = boundedInteger(one(query.minDays), 100_000);
   const page = boundedInteger(one(query.page), 1_000) ?? 1;
+  const archivedView = one(query.view) === "archived";
+  const notice = one(query.notice);
 
   const runtime = await createStudentRequestRuntime();
   let report;
@@ -42,6 +44,7 @@ export default async function AdminPendingRequestsPage({ searchParams }: PagePro
     report = await runtime.adminRequests.listStalePendingRequests(principal, {
       ...(status === undefined ? {} : { status }),
       ...(minDays === undefined ? {} : { minDaysPending: minDays }),
+      ...(archivedView ? { includeArchived: "only" as const } : {}),
       page,
       pageSize: 25,
     });
@@ -54,8 +57,13 @@ export default async function AdminPendingRequestsPage({ searchParams }: PagePro
       <PendingRequestsReport
         activeMinDays={minDays}
         activeStatus={status}
+        archivedView={archivedView}
+        csrfToken={csrfToken}
         locale="ar"
+        notice={notice}
+        noticeCount={boundedInteger(one(query.n), 1_000_000)}
         report={report}
+        skippedCount={boundedInteger(one(query.skipped), 1_000_000)}
       />
     </AdminShell>
   );

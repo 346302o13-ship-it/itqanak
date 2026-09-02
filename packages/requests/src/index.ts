@@ -7,10 +7,12 @@ export {
 export { RequestService, type RequestServiceOptions } from "./service.js";
 export { AdminRequestService, type AdminRequestServiceOptions } from "./admin-service.js";
 export {
+  canArchivePendingRequest,
   isStalePendingStatus,
   stalePendingRequestReason,
   STALE_PENDING_STATUSES,
   STALE_PENDING_THRESHOLD_DAYS,
+  type ArchivePendingRejection,
   type StalePendingStatus,
 } from "./pending-requests.js";
 export { ChatService, type ChatServiceOptions } from "./chat-service.js";
@@ -128,6 +130,8 @@ export {
   type SendSupportMessageInput,
   type SendSupportMessageResult,
   type SubmitRequestInput,
+  type ArchivePendingRequestsInput,
+  type ArchivePendingRequestsResult,
   type StalePendingRequestFilter,
   type StalePendingRequestItem,
   type StalePendingRequestReport,

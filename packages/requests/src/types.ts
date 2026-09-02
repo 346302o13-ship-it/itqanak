@@ -236,6 +236,8 @@ export interface StalePendingRequestFilter {
   readonly studentUserId?: string;
   /** Only requests idle at least this many days (on top of the per-status floor). */
   readonly minDaysPending?: number;
+  /** "exclude" (default) hides archived requests; "only" shows just archived ones. */
+  readonly includeArchived?: "exclude" | "only";
   readonly page?: number;
   readonly pageSize?: number;
 }
@@ -252,8 +254,24 @@ export interface StalePendingRequestItem {
   readonly updatedAt: Date;
   readonly daysPending: number;
   readonly reason: string;
-  /** True when a financial due is attached — such a request is never deletable. */
+  /** True when a financial due is attached — such a request is never archivable. */
   readonly hasFinancialRecord: boolean;
+  readonly archivedAt?: Date;
+  readonly archivedByName?: string;
+  readonly archiveReason?: string;
+}
+
+export interface ArchivePendingRequestsInput {
+  readonly requestIds: readonly string[];
+  readonly reason?: string;
+}
+
+export interface ArchivePendingRequestsResult {
+  readonly archivedIds: readonly string[];
+  readonly skipped: readonly {
+    readonly id: string;
+    readonly reason: "NOT_FOUND" | "NOT_PENDING" | "HAS_FINANCE" | "ALREADY_ARCHIVED";
+  }[];
 }
 
 export interface StalePendingRequestReport {
