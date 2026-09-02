@@ -10,6 +10,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const lastModified = new Date();
   const entries: MetadataRoute.Sitemap = [
     { url: new URL("/ar", baseUrl).toString(), lastModified },
+    { url: new URL("/install", baseUrl).toString(), lastModified },
     { url: new URL("/ar/install", baseUrl).toString(), lastModified },
     { url: new URL("/ar/privacy", baseUrl).toString(), lastModified },
     { url: new URL("/ar/services", baseUrl).toString(), lastModified },
