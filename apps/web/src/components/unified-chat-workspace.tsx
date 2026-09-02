@@ -50,6 +50,7 @@ import {
   CheckCheckIcon,
   CheckIcon,
   ChevronIcon,
+  ClockIcon,
   CloseIcon,
   DownloadIcon,
   MessageIcon,
@@ -4656,7 +4657,12 @@ export function UnifiedChatWorkspace({
                               onOpenImage={setLightbox}
                             />
                           )}
-                          {message.deletedAt !== undefined ? (
+                          {message.archived === true ? (
+                            <p className="flex items-center gap-1.5 text-sm italic leading-7 text-[var(--itq-color-bubble-meta)]">
+                              <ClockIcon className="size-3.5 shrink-0" />
+                              {english ? "This message was archived" : "تمت أرشفة هذه الرسالة"}
+                            </p>
+                          ) : message.deletedAt !== undefined ? (
                             <p
                               className={`flex items-center gap-1.5 text-sm italic leading-7 ${"text-[var(--itq-color-bubble-meta)]"}`}
                             >

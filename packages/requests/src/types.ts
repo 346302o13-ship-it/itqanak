@@ -551,6 +551,12 @@ export interface UnifiedMessage {
   readonly editedAt?: Date;
   /** Set when the sender has deleted the message; `body` is blanked. */
   readonly deletedAt?: Date;
+  /**
+   * True once the message has passed the retention window and its content was
+   * moved out of the hot table; `body` is blanked and attachments / quotes /
+   * request links are omitted. The chat shows an "archived" placeholder.
+   */
+  readonly archived?: boolean;
 }
 
 export interface UnifiedMessageReply {

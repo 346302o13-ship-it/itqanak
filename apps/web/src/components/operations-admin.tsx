@@ -1,18 +1,21 @@
-import type { PlatformOperationalState } from "@itqanak/operations";
+import type { PlatformOperationalState, PlatformRetentionState } from "@itqanak/operations";
 import type { FileScannerReadiness } from "@itqanak/storage";
 
 import { AdminShell } from "./admin-shell";
 import { CsrfInput } from "./auth-shell";
 import { LocalDateTime } from "./local-date-time";
+import { RetentionSettingsSection } from "./retention-settings-section";
 import { SubmitButton } from "./submit-button";
 
 interface OperationsAdminProps {
   readonly state: PlatformOperationalState;
+  readonly retention: PlatformRetentionState;
   readonly scannerReadiness: FileScannerReadiness;
   readonly csrfToken: string | undefined;
   readonly displayName: string;
   readonly locale: "ar" | "en";
   readonly notice?: string;
+  readonly retentionNotice?: string;
 }
 
 const copyByLocale = {
@@ -127,11 +130,13 @@ const fieldClass =
 
 export function OperationsAdmin({
   state,
+  retention,
   scannerReadiness,
   csrfToken,
   displayName,
   locale,
   notice,
+  retentionNotice,
 }: OperationsAdminProps) {
   const copy = copyByLocale[locale];
   const scannerLabel =
@@ -305,6 +310,13 @@ export function OperationsAdmin({
             </SubmitButton>
           </section>
         </form>
+
+        <RetentionSettingsSection
+          csrfToken={csrfToken}
+          locale={locale}
+          retention={retention}
+          {...(retentionNotice === undefined ? {} : { notice: retentionNotice })}
+        />
       </div>
     </AdminShell>
   );

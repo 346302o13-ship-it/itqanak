@@ -1,6 +1,6 @@
 import "server-only";
 
-import { PlatformOperationsService } from "@itqanak/operations";
+import { PlatformOperationsService, PlatformRetentionService } from "@itqanak/operations";
 
 import { createAuthRuntime } from "./auth-runtime";
 
@@ -9,6 +9,7 @@ export async function createOperationsRuntime() {
   return {
     ...runtime,
     operations: new PlatformOperationsService({ database: runtime.database }),
+    retention: new PlatformRetentionService({ database: runtime.database }),
   };
 }
 

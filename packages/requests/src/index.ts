@@ -66,6 +66,11 @@ export {
   type UnifiedAttachmentRetentionSweeperOptions,
 } from "./unified-attachment-retention.js";
 export {
+  MessageRetentionSweeper,
+  ARCHIVED_MESSAGE_MARKER,
+  type MessageRetentionSweeperOptions,
+} from "./message-retention.js";
+export {
   AttachmentStorageReconciler,
   boundedReconciliationLimit,
   removeReferencedObjectIfPresent,

@@ -7,10 +7,15 @@ import { AuthEmailOutboxProcessor, createAuthEmailSender } from "@itqanak/auth";
 import { loadConfig, type AppConfig } from "@itqanak/config";
 import { checkDatabaseHealth, closeDatabase, createDatabase } from "@itqanak/db";
 import { createLogger, type Logger } from "@itqanak/observability";
-import { PlatformMessagingService, PlatformOperationsService } from "@itqanak/operations";
+import {
+  PlatformMessagingService,
+  PlatformOperationsService,
+  PlatformRetentionService,
+} from "@itqanak/operations";
 import {
   AttachmentScanProcessor,
   AttachmentStorageReconciler,
+  MessageRetentionSweeper,
   UnifiedAttachmentRetentionSweeper,
   UnifiedAttachmentScanProcessor,
   UnifiedAttachmentStorageReconciler,
@@ -111,6 +116,11 @@ async function startWorker(config: AppConfig, logger: Logger, signal: AbortSigna
     storage: objectStorage,
     logger: logger.child({ workerName }),
   });
+  const retentionSettings = new PlatformRetentionService({ database });
+  const messageRetention = new MessageRetentionSweeper({
+    database,
+    logger: logger.child({ workerName }),
+  });
   const authEmailSender = createAuthEmailSender(config);
   const authEmailOutbox =
     authEmailSender === undefined
@@ -191,8 +201,21 @@ async function startWorker(config: AppConfig, logger: Logger, signal: AbortSigna
         await unifiedAttachmentStorageReconciliation.processBatch(1);
         if (Date.now() >= nextRetentionSweepAt) {
           const swept = await unifiedAttachmentRetention.processBatch(50);
+          let messagesSwept = 0;
+          try {
+            const retention = await retentionSettings.getRuntimeRetention();
+            if (retention.messageArchivalEnabled) {
+              messagesSwept = await messageRetention.processBatch(
+                retention.messageRetentionDays,
+                100,
+              );
+            }
+          } catch {
+            // Retention settings unavailable: skip this pass, try again next tick.
+          }
           // Sweep again soon while there is a backlog, otherwise every 10 min.
-          nextRetentionSweepAt = Date.now() + (swept >= 50 ? 5_000 : 10 * 60_000);
+          const backlog = swept >= 50 || messagesSwept >= 100;
+          nextRetentionSweepAt = Date.now() + (backlog ? 5_000 : 10 * 60_000);
         }
         failedAttempts = 0;
         await waitFor(idleIntervalMs, signal);

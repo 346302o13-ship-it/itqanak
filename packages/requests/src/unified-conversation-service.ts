@@ -96,6 +96,7 @@ interface MessageRow {
   readonly metadata: unknown;
   readonly message_status: string;
   readonly sent_at: Date | string;
+  readonly archived_at: Date | string | null;
   readonly reply_to_message_id: string | null;
   readonly reply_body: string | null;
   readonly reply_sender_type: string | null;
@@ -172,7 +173,7 @@ const messageSelect = `
   messages.id, messages.conversation_id, messages.sender_type, messages.sender_user_id,
   senders.display_name AS sender_display_name, messages.content_type, messages.body,
   messages.client_message_id, messages.client_payload_fingerprint, messages.metadata,
-  messages.sent_at, messages.reply_to_message_id,
+  messages.sent_at, messages.archived_at, messages.reply_to_message_id,
   reply_target.body AS reply_body, reply_target.sender_type AS reply_sender_type,
   reply_target.content_type AS reply_content_type,
   reply_revision.action AS reply_revision_action, reply_revision.new_body AS reply_revision_body,
@@ -493,10 +494,12 @@ function toMessage(row: MessageRow): UnifiedMessage {
     });
   }
   const quote = toQuote(row);
+  const archived = row.archived_at !== null;
   const deleted = row.revision_action === "DELETE";
   const edited = row.revision_action === "EDIT";
   const revisionAt = row.revision_at === null ? undefined : toDate(row.revision_at);
-  const effectiveBody = deleted ? "" : edited ? (row.revision_body ?? row.body) : row.body;
+  const suppressed = archived || deleted;
+  const effectiveBody = suppressed ? "" : edited ? (row.revision_body ?? row.body) : row.body;
   const replyDeleted = row.reply_revision_action === "DELETE";
   const replyBody = replyDeleted
     ? ""
@@ -511,10 +514,11 @@ function toMessage(row: MessageRow): UnifiedMessage {
     ...(row.sender_display_name === null ? {} : { senderDisplayName: row.sender_display_name }),
     contentType: toContentType(row.content_type),
     body: effectiveBody,
-    ...(edited && revisionAt !== undefined ? { editedAt: revisionAt } : {}),
+    ...(archived ? { archived: true } : {}),
+    ...(edited && !archived && revisionAt !== undefined ? { editedAt: revisionAt } : {}),
     ...(deleted && revisionAt !== undefined ? { deletedAt: revisionAt } : {}),
-    ...(request === undefined || deleted ? {} : { request }),
-    ...(deleted ||
+    ...(request === undefined || suppressed ? {} : { request }),
+    ...(suppressed ||
     row.attachment_id === null ||
     row.attachment_source === null ||
     row.attachment_filename === null ||
@@ -533,7 +537,7 @@ function toMessage(row: MessageRow): UnifiedMessage {
             storageStatus: toStorageStatus(row.attachment_storage_status),
           },
         }),
-    ...(quote === undefined || deleted ? {} : { quote }),
+    ...(quote === undefined || suppressed ? {} : { quote }),
     ...(row.reply_to_message_id === null ||
     row.reply_body === null ||
     row.reply_sender_type === null ||

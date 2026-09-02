@@ -1,12 +1,19 @@
 export { PlatformOperationsService, type PlatformOperationsServiceOptions } from "./service.js";
 export {
+  PlatformRetentionService,
+  normalizeRetentionUpdate,
+  type PlatformRetentionServiceOptions,
+} from "./retention-service.js";
+export {
   OperationalControlError,
   operationalControlErrorCodes,
   fileScannerObservedStates,
   type FileScannerObservedState,
   type OperationalControlErrorCode,
   type PlatformOperationalState,
+  type PlatformRetentionState,
   type UpdatePlatformOperationalStateInput,
+  type UpdatePlatformRetentionStateInput,
 } from "./types.js";
 export {
   assertOperationalVersion,

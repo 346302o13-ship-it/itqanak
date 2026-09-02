@@ -30,6 +30,21 @@ export interface UpdatePlatformOperationalStateInput {
   readonly confirmedCriticalAction: boolean;
 }
 
+export interface PlatformRetentionState {
+  readonly messageArchivalEnabled: boolean;
+  readonly messageRetentionDays: number;
+  readonly version: number;
+  readonly updatedAt: Date;
+}
+
+export interface UpdatePlatformRetentionStateInput {
+  readonly messageArchivalEnabled: boolean;
+  readonly messageRetentionDays: number;
+  readonly expectedVersion: number;
+  /** Required to switch archival ON (it removes message text from the hot table). */
+  readonly confirmedCriticalAction: boolean;
+}
+
 export const operationalControlErrorCodes = [
   "INVALID_MESSAGE",
   "INVALID_STATE",
