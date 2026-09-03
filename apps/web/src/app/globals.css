@@ -113,6 +113,19 @@ label:has(> input[type="radio"]) {
   }
 }
 
+/* Landing hero fills the visible screen below the sticky public header. Same
+   `vh` base + `dvh` upgrade as above; if the unit is dropped the section simply
+   falls back to its natural height. */
+.itq-hero-h {
+  min-height: calc(100vh - 7rem);
+}
+
+@supports (height: 100dvh) {
+  .itq-hero-h {
+    min-height: calc(100dvh - 7rem);
+  }
+}
+
 @media (display-mode: standalone) {
   body {
     overscroll-behavior: none;

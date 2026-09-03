@@ -132,7 +132,7 @@ export function LandingPage({
       {/* Hero — a solid institutional green panel with a faint geometric field,
           a gold top rule, and a quick-links strip, in the manner of a Saudi
           university / ministry landing. No photograph. */}
-      <section className="relative isolate overflow-hidden rounded-[var(--itq-radius-hero)] bg-[linear-gradient(160deg,var(--itq-color-brand-800),var(--itq-color-brand-950))] text-white shadow-[var(--itq-shadow-card)]">
+      <section className="itq-hero-h relative isolate flex flex-col overflow-hidden rounded-[var(--itq-radius-hero)] bg-[linear-gradient(160deg,var(--itq-color-brand-800),var(--itq-color-brand-950))] text-white shadow-[var(--itq-shadow-card)]">
         <span
           aria-hidden="true"
           className="absolute inset-x-0 top-0 h-1 bg-[var(--itq-color-accent-500)]"
@@ -142,67 +142,69 @@ export function LandingPage({
           aria-hidden="true"
           className="absolute inset-0 bg-[linear-gradient(180deg,transparent,color-mix(in_srgb,var(--itq-color-brand-950)_55%,transparent))]"
         />
-        <div className="relative px-6 py-14 sm:px-10 sm:py-16 lg:px-14 lg:py-20">
-          <div className="max-w-3xl">
-            <div className="flex flex-wrap items-center gap-2.5">
-              <span className="inline-flex items-center gap-2 rounded-md border border-white/25 bg-white/10 px-3 py-1.5 text-xs font-black tracking-wide">
-                <MarketingIcon
-                  className="size-3.5 text-[var(--itq-color-accent-300)]"
-                  name="sparkles"
-                />
-                {copy.hero.eyebrow}
-              </span>
-              <span className="inline-flex items-center gap-2 rounded-md bg-[var(--itq-color-accent-500)] px-2.5 py-1.5 text-xs font-black text-[var(--itq-color-brand-950)]">
-                <span
-                  aria-hidden="true"
-                  className="size-1.5 rounded-full bg-[var(--itq-color-brand-950)]"
-                />
-                {copy.hero.status}
-              </span>
-            </div>
-            <h1 className="mt-6 text-[2.15rem] font-black leading-[1.15] tracking-[-0.01em] sm:text-[2.9rem] lg:text-[3.4rem]">
-              {copy.hero.title}{" "}
-              <span className="relative whitespace-nowrap text-[var(--itq-color-accent-300)]">
-                {copy.hero.highlightedTitle}
-                <span
-                  aria-hidden="true"
-                  className="absolute inset-x-0 -bottom-1 h-0.5 bg-[var(--itq-color-accent-500)]"
-                />
-              </span>
-            </h1>
-            <p className="mt-5 max-w-2xl text-[1.02rem] leading-8 text-white/80 sm:text-lg">
-              {copy.hero.description}
-            </p>
-            <div className="mt-8 flex flex-col flex-wrap gap-3 sm:flex-row">
-              <Link
-                className="inline-flex min-h-12 items-center justify-center rounded-[var(--itq-radius-control)] bg-[var(--itq-color-accent-500)] px-6 py-3 font-black text-[var(--itq-color-brand-950)] shadow-[var(--itq-shadow-sm)] transition hover:brightness-105"
-                href={`${prefix}/services`}
-              >
-                {copy.hero.primaryLabel}
-              </Link>
-              <WhatsAppLink
-                appearance="glass"
-                label={copy.hero.whatsappLabel}
-                locale={locale}
-                message={copy.hero.whatsappMessage}
-              />
-            </div>
-            {copy.hero.priceChips === undefined ? null : (
-              <div className="mt-7 flex flex-wrap gap-2">
-                {copy.hero.priceChips.map((chip) => (
+        <div className="relative flex flex-1 flex-col px-6 py-12 sm:px-10 sm:py-14 lg:px-14 lg:py-16">
+          <div className="flex flex-1 flex-col justify-center">
+            <div className="max-w-3xl">
+              <div className="flex flex-wrap items-center gap-2.5">
+                <span className="inline-flex items-center gap-2 rounded-md border border-white/25 bg-white/10 px-3 py-1.5 text-xs font-black tracking-wide">
+                  <MarketingIcon
+                    className="size-3.5 text-[var(--itq-color-accent-300)]"
+                    name="sparkles"
+                  />
+                  {copy.hero.eyebrow}
+                </span>
+                <span className="inline-flex items-center gap-2 rounded-md bg-[var(--itq-color-accent-500)] px-2.5 py-1.5 text-xs font-black text-[var(--itq-color-brand-950)]">
                   <span
-                    className="inline-flex items-center gap-1.5 rounded-md border border-white/20 bg-white/[0.08] px-3 py-1.5 text-sm font-black text-white/90"
-                    key={chip}
-                  >
-                    <span
-                      aria-hidden="true"
-                      className="size-1 rounded-full bg-[var(--itq-color-accent-300)]"
-                    />
-                    {chip}
-                  </span>
-                ))}
+                    aria-hidden="true"
+                    className="size-1.5 rounded-full bg-[var(--itq-color-brand-950)]"
+                  />
+                  {copy.hero.status}
+                </span>
               </div>
-            )}
+              <h1 className="mt-6 text-[2.15rem] font-black leading-[1.15] tracking-[-0.01em] sm:text-[2.9rem] lg:text-[3.4rem]">
+                {copy.hero.title}{" "}
+                <span className="relative whitespace-nowrap text-[var(--itq-color-accent-300)]">
+                  {copy.hero.highlightedTitle}
+                  <span
+                    aria-hidden="true"
+                    className="absolute inset-x-0 -bottom-1 h-0.5 bg-[var(--itq-color-accent-500)]"
+                  />
+                </span>
+              </h1>
+              <p className="mt-5 max-w-2xl text-[1.02rem] leading-8 text-white/80 sm:text-lg">
+                {copy.hero.description}
+              </p>
+              <div className="mt-8 flex flex-col flex-wrap gap-3 sm:flex-row">
+                <Link
+                  className="inline-flex min-h-12 items-center justify-center rounded-[var(--itq-radius-control)] bg-[var(--itq-color-accent-500)] px-6 py-3 font-black text-[var(--itq-color-brand-950)] shadow-[var(--itq-shadow-sm)] transition hover:brightness-105"
+                  href={`${prefix}/services`}
+                >
+                  {copy.hero.primaryLabel}
+                </Link>
+                <WhatsAppLink
+                  appearance="glass"
+                  label={copy.hero.whatsappLabel}
+                  locale={locale}
+                  message={copy.hero.whatsappMessage}
+                />
+              </div>
+              {copy.hero.priceChips === undefined ? null : (
+                <div className="mt-7 flex flex-wrap gap-2">
+                  {copy.hero.priceChips.map((chip) => (
+                    <span
+                      className="inline-flex items-center gap-1.5 rounded-md border border-white/20 bg-white/[0.08] px-3 py-1.5 text-sm font-black text-white/90"
+                      key={chip}
+                    >
+                      <span
+                        aria-hidden="true"
+                        className="size-1 rounded-full bg-[var(--itq-color-accent-300)]"
+                      />
+                      {chip}
+                    </span>
+                  ))}
+                </div>
+              )}
+            </div>
           </div>
 
           {copy.hero.quickLinks === undefined || copy.hero.quickLinks.length === 0 ? null : (
