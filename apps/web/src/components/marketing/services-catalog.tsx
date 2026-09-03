@@ -1,6 +1,7 @@
 import Link from "next/link";
-import type { CSSProperties, JSX } from "react";
+import type { JSX } from "react";
 
+import { GreenBand } from "./green-band";
 import { MarketingIcon, type MarketingIconName } from "./marketing-icon";
 import { SectionIntro } from "./section-intro";
 import { WhatsAppLink, type MarketingLocale } from "./whatsapp-link";
@@ -61,12 +62,6 @@ const categoryIcons: readonly MarketingIconName[] = [
   "files",
 ];
 
-const geometryStyle: CSSProperties = {
-  backgroundImage:
-    "url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='72' height='72' viewBox='0 0 72 72'%3E%3Cg fill='none' stroke='%23ffffff' stroke-opacity='0.10' stroke-width='1.3'%3E%3Crect x='18' y='18' width='36' height='36'/%3E%3Crect x='18' y='18' width='36' height='36' transform='rotate(45 36 36)'/%3E%3Ccircle cx='36' cy='36' r='3'/%3E%3C/g%3E%3C/svg%3E\")",
-  backgroundSize: "72px 72px",
-};
-
 export function ServicesCatalogView({
   categories,
   copy,
@@ -75,33 +70,33 @@ export function ServicesCatalogView({
   const prefix = `/${locale}`;
   return (
     <>
-      <section className="itq-bleed relative isolate -mt-6 overflow-hidden bg-[linear-gradient(160deg,var(--itq-color-brand-800),var(--itq-color-brand-950))] py-14 text-white sm:-mt-10 sm:py-16">
-        <span
-          aria-hidden="true"
-          className="absolute inset-x-0 top-0 h-1 bg-[var(--itq-color-accent-500)]"
-        />
-        <div aria-hidden="true" className="absolute inset-0 opacity-60" style={geometryStyle} />
-        <div className="relative mx-auto grid w-full max-w-[80rem] items-end gap-8 px-4 sm:px-6 lg:grid-cols-[minmax(0,1fr)_20rem] lg:px-8">
+      <GreenBand ariaLabelledBy="services-hero-title" className="-mt-6 sm:-mt-10" size="compact">
+        <div className="grid items-end gap-8 lg:grid-cols-[minmax(0,1fr)_20rem]">
           <div className="max-w-3xl">
-            <p className="text-xs font-black uppercase tracking-[0.16em] text-[var(--itq-color-accent-300)]">
+            <p className="text-[0.68rem] font-black uppercase tracking-[0.16em] text-[var(--itq-color-accent-300)]">
               {copy.eyebrow}
             </p>
-            <h1 className="mt-4 text-[2.15rem] font-black leading-[1.15] tracking-[-0.01em] sm:text-[2.9rem]">
+            <h1
+              className="mt-3 text-[1.85rem] font-black leading-[1.12] tracking-[-0.015em] sm:text-[2.35rem] lg:text-[2.7rem]"
+              id="services-hero-title"
+            >
               {copy.title}
             </h1>
-            <p className="mt-5 max-w-2xl text-lg leading-8 text-white/80">{copy.description}</p>
+            <p className="mt-3.5 max-w-2xl text-[0.98rem] leading-7 text-white/85 sm:text-base">
+              {copy.description}
+            </p>
           </div>
-          <div className="rounded-[var(--itq-radius-control)] border border-white/15 bg-white/10 p-5">
-            <p className="text-sm leading-7 text-white/80">{copy.supportDescription}</p>
+          <div className="rounded-[var(--itq-radius-control)] border border-white/15 bg-white/[0.07] p-4">
+            <p className="text-[0.85rem] leading-6 text-white/85">{copy.supportDescription}</p>
             <WhatsAppLink
               appearance="glass"
-              className="mt-4 w-full"
+              className="mt-3 w-full"
               locale={locale}
               message={copy.whatsappMessage}
             />
           </div>
         </div>
-      </section>
+      </GreenBand>
 
       {categories.length === 0 ? (
         <section className="my-12 rounded-[var(--itq-radius-panel)] border border-dashed border-[var(--itq-color-border-strong)] bg-[var(--itq-color-surface)] p-10 text-center">
@@ -116,7 +111,7 @@ export function ServicesCatalogView({
         <>
           <nav
             aria-label={copy.categoryNavLabel}
-            className="sticky top-[4.75rem] z-30 -mx-4 mt-8 flex gap-2 overflow-x-auto border-b border-[var(--itq-color-border)] bg-[var(--itq-color-canvas)]/92 px-4 py-3 backdrop-blur-md [scrollbar-width:thin] sm:-mx-6 sm:px-6"
+            className="sticky top-[4.75rem] z-30 -mx-4 mt-6 flex gap-2 overflow-x-auto border-b border-[var(--itq-color-border)] bg-[var(--itq-color-canvas)]/92 px-4 py-3 backdrop-blur-md [scrollbar-width:thin] sm:-mx-6 sm:px-6"
           >
             {categories.map((category) => (
               <a
@@ -136,7 +131,7 @@ export function ServicesCatalogView({
               title={copy.catalogTitle}
               titleId="catalog-title"
             />
-            <div className="mt-9 grid items-start gap-4 md:grid-cols-2 xl:grid-cols-3">
+            <div className="mt-8 grid items-start gap-4 md:grid-cols-2 xl:grid-cols-3">
               {categories.map((category, categoryIndex) => {
                 const lead = categoryIndex < 2;
                 return (
@@ -145,28 +140,20 @@ export function ServicesCatalogView({
                     id={`category-${category.slug}`}
                     key={category.id}
                   >
-                    <span
-                      aria-hidden="true"
-                      className={`absolute inset-x-0 top-0 h-1 ${
-                        lead
-                          ? "bg-[var(--itq-color-accent-500)]"
-                          : "bg-[var(--itq-color-brand-600)]"
-                      }`}
-                    />
-                    <div className="relative border-b border-[var(--itq-color-border)] bg-[var(--itq-color-surface-soft)] p-6">
+                    <div className="relative border-b border-[var(--itq-color-border)] bg-[var(--itq-color-surface-soft)] p-5">
                       {lead ? (
-                        <span className="absolute end-4 top-4 inline-flex items-center rounded-md bg-[var(--itq-color-accent-500)] px-2.5 py-1 text-[11px] font-black text-[var(--itq-color-brand-950)]">
+                        <span className="absolute end-3 top-3 inline-flex items-center rounded-md bg-[var(--itq-color-accent-500)] px-2 py-0.5 text-[10px] font-black uppercase tracking-wide text-[var(--itq-color-brand-950)]">
                           {copy.popularBadge}
                         </span>
                       ) : null}
-                      <span className="inline-flex size-11 items-center justify-center rounded-[var(--itq-radius-control)] bg-[var(--itq-color-brand-50)] text-[var(--itq-color-brand-strong)]">
+                      <span className="inline-flex size-10 items-center justify-center rounded-[var(--itq-radius-control)] bg-[var(--itq-color-brand-50)] text-[var(--itq-color-brand-strong)]">
                         <MarketingIcon
                           className="size-5"
                           name={categoryIcons[categoryIndex % categoryIcons.length] ?? "sparkles"}
                         />
                       </span>
-                      <h2 className="mt-4 text-xl font-black tracking-tight">{category.name}</h2>
-                      <p className="mt-2 min-h-12 text-sm leading-7 text-[var(--itq-color-muted)]">
+                      <h2 className="mt-3.5 text-lg font-black tracking-tight">{category.name}</h2>
+                      <p className="mt-1.5 min-h-10 text-[0.85rem] leading-6 text-[var(--itq-color-muted)]">
                         {category.description}
                       </p>
                     </div>
@@ -181,7 +168,7 @@ export function ServicesCatalogView({
                               </span>
                             )}
                           </div>
-                          <p className="mt-2 min-h-12 text-sm leading-7 text-[var(--itq-color-muted)]">
+                          <p className="mt-1.5 min-h-10 text-[0.85rem] leading-6 text-[var(--itq-color-muted)]">
                             {service.shortDescription}
                           </p>
                           <div className="mt-4 flex flex-wrap items-center justify-between gap-3">
@@ -210,14 +197,14 @@ export function ServicesCatalogView({
         </>
       )}
 
-      <section className="itq-bleed -mb-24 overflow-hidden border-y border-[var(--itq-color-border)] bg-[var(--itq-color-surface-soft)] py-12 sm:py-14 lg:-mb-28">
-        <div className="mx-auto flex w-full max-w-[80rem] flex-col items-start justify-between gap-7 px-4 sm:px-6 lg:flex-row lg:items-center lg:px-8">
+      <section className="itq-section !pt-0">
+        <div className="flex flex-col items-start justify-between gap-6 rounded-[var(--itq-radius-panel)] border border-[var(--itq-color-border)] bg-[var(--itq-color-surface-soft)] p-6 sm:p-8 lg:flex-row lg:items-center">
           <div className="max-w-2xl">
-            <p className="text-sm font-black text-[var(--itq-color-accent-700)]">
+            <p className="text-[0.68rem] font-black uppercase tracking-[0.16em] text-[var(--itq-color-brand-strong)]">
               {copy.supportEyebrow}
             </p>
-            <h2 className="mt-2 text-2xl font-black leading-9 sm:text-3xl">{copy.supportTitle}</h2>
-            <p className="mt-3 leading-7 text-[var(--itq-color-muted)]">
+            <h2 className="mt-2 text-xl font-black leading-8 sm:text-2xl">{copy.supportTitle}</h2>
+            <p className="mt-2.5 text-[0.95rem] leading-7 text-[var(--itq-color-muted)]">
               {copy.supportDescription}
             </p>
           </div>

@@ -235,14 +235,15 @@ svg {
     );
 }
 
-/* Consistent vertical rhythm for the visitor-page sections. */
+/* Consistent vertical rhythm for the visitor-page sections — tightened for a
+   denser, more editorial cadence. */
 .itq-section {
-  padding-block: 4.5rem;
+  padding-block: 3rem;
 }
 
 @media (min-width: 640px) {
   .itq-section {
-    padding-block: 6.5rem;
+    padding-block: 4rem;
   }
 }
 

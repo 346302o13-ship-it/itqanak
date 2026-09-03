@@ -26,29 +26,22 @@ export function SectionIntro({
       {eyebrow === undefined ? null : (
         <p
           className={classNames(
-            "inline-flex items-center gap-2 rounded-md border border-[var(--itq-color-brand-200)] bg-[var(--itq-color-brand-50)] px-3 py-1.5 text-[0.7rem] font-black uppercase tracking-[0.1em] text-[var(--itq-color-brand-strong)]",
-            align === "center" && "mx-auto",
+            "inline-flex items-center gap-2 text-[0.68rem] font-black uppercase tracking-[0.16em] text-[var(--itq-color-brand-strong)]",
+            align === "center" && "justify-center",
           )}
         >
-          <span aria-hidden="true" className="size-1.5 bg-[var(--itq-color-accent-500)]" />
+          <span aria-hidden="true" className="h-px w-5 bg-[var(--itq-color-accent-500)]" />
           {eyebrow}
         </p>
       )}
       <h2
-        className="mt-4 text-3xl font-black leading-[1.18] tracking-[-0.015em] text-[var(--itq-color-ink)] sm:text-[2.4rem]"
+        className="mt-3 text-[1.7rem] font-black leading-[1.15] tracking-[-0.015em] text-[var(--itq-color-ink)] sm:text-[2.05rem]"
         id={titleId}
       >
         {title}
       </h2>
-      <span
-        aria-hidden="true"
-        className={classNames(
-          "mt-4 block h-1 w-14 bg-[var(--itq-color-accent-500)]",
-          align === "center" && "mx-auto",
-        )}
-      />
       {description === undefined ? null : (
-        <p className="mt-5 text-base leading-8 text-[var(--itq-color-muted)] sm:text-lg">
+        <p className="mt-4 text-[0.98rem] leading-7 text-[var(--itq-color-muted)] sm:text-base">
           {description}
         </p>
       )}
