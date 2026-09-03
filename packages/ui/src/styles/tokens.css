@@ -7,35 +7,34 @@
   color-scheme: light;
 
   --itq-color-canvas: #f5f7f4;
-  --itq-color-canvas-warm: #fbf6ec;
+  --itq-color-canvas-warm: #eef4ef;
   --itq-color-surface: #ffffff;
-  --itq-color-surface-soft: #f1f6f3;
-  --itq-color-ink: #0d2931;
-  --itq-color-ink-soft: #25434b;
-  --itq-color-muted: #596d72;
-  --itq-color-border: #dbe5e1;
-  --itq-color-border-strong: #c6d6d1;
-  --itq-color-neutral-50: #f1f4f3;
-  --itq-color-neutral-700: #45534e;
-  /* One dark navy for chat/admin identity panels; replaces the drifting
-     #112c38 / #102f3b / #123640 literals. */
-  --itq-color-ink-deep: #112c38;
+  --itq-color-surface-soft: #eef4f0;
+  --itq-color-ink: #0f2a1f;
+  --itq-color-ink-soft: #234034;
+  --itq-color-muted: #5a6d63;
+  --itq-color-border: #dde6df;
+  --itq-color-border-strong: #c7d6cc;
+  --itq-color-neutral-50: #f1f4f2;
+  --itq-color-neutral-700: #45534c;
+  /* One deep green for chat/admin identity panels. */
+  --itq-color-ink-deep: #0e2f1e;
 
-  --itq-color-brand-50: #edf8f5;
-  --itq-color-brand-100: #d5eee8;
-  --itq-color-brand-200: #addfd5;
-  --itq-color-brand-300: #7fcdbf;
-  --itq-color-brand-400: #3fa99b;
-  --itq-color-brand-500: #1a9184;
-  --itq-color-brand-600: #128276;
-  --itq-color-brand-700: #086a63;
-  --itq-color-brand-800: #07544f;
-  --itq-color-brand-900: #073f3c;
-  --itq-color-brand-950: #052e2b;
-  /* Foreground brand: standalone accent text and icons, and text on a
-     brand tint. Lifts to a mid-teal in dark so it reads on a dark surface;
-     the ramp above stays dark for solid button / hero backgrounds. */
-  --itq-color-brand-strong: #086a63;
+  /* Brand ramp: Saudi institutional green, centred near the flag green
+     (#006C35). -700/-800 are the solid button / hero backgrounds (white text
+     safe), -strong is foreground text/icons on light. */
+  --itq-color-brand-50: #e8f4ec;
+  --itq-color-brand-100: #cce6d4;
+  --itq-color-brand-200: #a1d0b0;
+  --itq-color-brand-300: #6bb588;
+  --itq-color-brand-400: #3f9963;
+  --itq-color-brand-500: #1e8449;
+  --itq-color-brand-600: #0f7540;
+  --itq-color-brand-700: #036a3a;
+  --itq-color-brand-800: #00522a;
+  --itq-color-brand-900: #013f21;
+  --itq-color-brand-950: #002c17;
+  --itq-color-brand-strong: #04663a;
 
   /* Conversation surface: a WhatsApp-style warm canvas with green outgoing
      bubbles and neutral incoming bubbles. */
@@ -46,11 +45,12 @@
   --itq-color-bubble-in-ink: #0d2931;
   --itq-color-bubble-meta: #5b7268;
 
-  --itq-color-accent-50: #fff8e9;
-  --itq-color-accent-200: #f2d69c;
-  --itq-color-accent-300: #e9c27a;
-  --itq-color-accent-500: #c58b2b;
-  --itq-color-accent-700: #8d5d13;
+  /* Institutional gold: headings accents, "most requested" badge, hero top rule. */
+  --itq-color-accent-50: #faf3e1;
+  --itq-color-accent-200: #ecd6a0;
+  --itq-color-accent-300: #ddbd71;
+  --itq-color-accent-500: #b58a26;
+  --itq-color-accent-700: #7c5c12;
 
   /* WhatsApp-branded support surfaces: the support CTAs are deliberately
      WhatsApp-green, not app-teal. */
@@ -108,12 +108,14 @@
   --itq-shadow-md: 0 2px 4px rgb(13 41 49 / 6%), 0 14px 44px rgb(13 41 49 / 8%);
   --itq-shadow-lg: 0 10px 24px rgb(13 41 49 / 8%), 0 32px 80px rgb(13 41 49 / 12%);
   --itq-shadow-card: 0 24px 72px rgb(13 41 49 / 9%);
-  --itq-shadow-float: 0 28px 80px rgb(7 84 79 / 20%);
+  --itq-shadow-float: 0 22px 60px rgb(0 82 42 / 16%);
 
-  --itq-radius-control: 0.875rem;
-  --itq-radius-card: 1.5rem;
-  --itq-radius-panel: 1.75rem;
-  --itq-radius-hero: 2rem;
+  /* Tighter, institutional radii — closer to a university / ministry site than
+     the previous rounded "app" look. */
+  --itq-radius-control: 0.625rem;
+  --itq-radius-card: 1rem;
+  --itq-radius-panel: 1.15rem;
+  --itq-radius-hero: 1.35rem;
 }
 
 /* Dark palette. The brand / accent / whatsapp / status hues are shifted a few
@@ -137,18 +139,18 @@
     --itq-color-neutral-700: #b7c4c1;
     --itq-color-ink-deep: #0c1d24;
 
-    --itq-color-brand-50: #0f2c28;
-    --itq-color-brand-100: #163a34;
-    --itq-color-brand-200: #24544c;
-    --itq-color-brand-300: #327f74;
-    --itq-color-brand-400: #3fa99b;
-    --itq-color-brand-500: #1a9184;
-    --itq-color-brand-600: #128276;
-    --itq-color-brand-700: #0a7269;
-    --itq-color-brand-800: #07544f;
-    --itq-color-brand-900: #0a4b46;
-    --itq-color-brand-950: #063733;
-    --itq-color-brand-strong: #3fbdad;
+    --itq-color-brand-50: #0d2b1b;
+    --itq-color-brand-100: #133a25;
+    --itq-color-brand-200: #1f5336;
+    --itq-color-brand-300: #2f7d4f;
+    --itq-color-brand-400: #3f9963;
+    --itq-color-brand-500: #1e8449;
+    --itq-color-brand-600: #12793f;
+    --itq-color-brand-700: #0d6c3b;
+    --itq-color-brand-800: #084f2a;
+    --itq-color-brand-900: #0a4826;
+    --itq-color-brand-950: #063318;
+    --itq-color-brand-strong: #48c281;
 
     --itq-color-chat-bg: #0b141a;
     --itq-color-bubble-out: #005c4b;
@@ -157,11 +159,11 @@
     --itq-color-bubble-in-ink: #e9edef;
     --itq-color-bubble-meta: #8aa39b;
 
-    --itq-color-accent-50: #2a2213;
-    --itq-color-accent-200: #f2d69c;
-    --itq-color-accent-300: #e9c27a;
-    --itq-color-accent-500: #dcae5f;
-    --itq-color-accent-700: #e6bd6f;
+    --itq-color-accent-50: #2b2210;
+    --itq-color-accent-200: #efd49a;
+    --itq-color-accent-300: #e2c078;
+    --itq-color-accent-500: #d8ab55;
+    --itq-color-accent-700: #ecc784;
 
     --itq-color-whatsapp-50: #0e2a1c;
     --itq-color-whatsapp-100: #123a26;

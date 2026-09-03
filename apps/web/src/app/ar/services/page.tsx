@@ -37,7 +37,7 @@ const catalogCopy = {
   noFilesLabel: "لا تحتاج ملفات",
   emptyTitle: "لا توجد خدمات متاحة حالياً",
   emptyDescription: "ستظهر الخدمات هنا عند تفعيلها. يمكنك التواصل معنا لمعرفة المستجدات.",
-  popularBadge: "🔥 الأكثر طلباً",
+  popularBadge: "الأكثر طلباً",
   supportEyebrow: "لست متأكداً من الاختيار؟",
   supportTitle: "صف لنا احتياجك وسنساعدك في تحديد الخدمة",
   supportDescription:

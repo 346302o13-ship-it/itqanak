@@ -23,65 +23,75 @@ export const dynamic = "force-dynamic";
 
 const landingCopy = {
   hero: {
-    eyebrow: "Everything a student needs",
+    eyebrow: "The student support platform",
     title: "All your coursework help,",
     highlightedTitle: "in one place.",
     description:
-      "From a daily assignment to your research paper, graduation project and website — pick a service, share the details, and follow every update from your phone. Prices start at 15 SAR.",
+      "From a daily assignment to a research paper, graduation project and website — choose a service, share the details, and follow every update from your account. Prices start at 15 SAR.",
     status: "Services are available",
-    primaryLabel: "Order now",
-    whatsappLabel: "Ask us on WhatsApp",
+    primaryLabel: "Browse services",
+    whatsappLabel: "Ask on WhatsApp",
     whatsappMessage: "Hello, I would like help choosing the right ITQANAK service.",
-    imageAlt: "A student portal view showing a request, its status and its files in ITQANAK",
+    imageAlt: "ITQANAK student support platform",
     priceChips: [
       "Assignments from 20 SAR",
       "Presentations from 40 SAR",
       "Graduation projects from 30 SAR",
       "Subject tutoring from 15 SAR",
     ],
+    quickLinksLabel: "Quick links",
+    quickLinks: [
+      { label: "Assignments", slug: "assignment-guidance" },
+      { label: "Presentations", slug: "presentation-visual-design" },
+      { label: "Graduation projects", slug: "project-guidance" },
+      { label: "Research & formatting", slug: "document-formatting-review" },
+      { label: "All services" },
+    ],
   },
+  stats: [
+    { value: "24+", label: "Detailed academic services" },
+    { value: "9", label: "Areas of study support" },
+    { value: "From 15 SAR", label: "Clear starting prices" },
+    { value: "WhatsApp", label: "Direct help before you order" },
+  ],
   trustItems: [
     {
       icon: "route",
       title: "Everything in one place",
       description:
-        "Assignments, research, slides, projects and websites — one window, not a dozen chats.",
+        "Assignments, research, slides, projects and websites — one window, not a dozen separate chats.",
     },
     {
       icon: "message",
-      title: "Follow it from your phone",
+      title: "Follow it from your account",
       description:
-        "An instant notification on every reply or update, with your files kept in your account.",
+        "A notification on every reply or update, with your files kept in your account to return to any time.",
     },
     {
-      icon: "sparkles",
-      title: "Token prices",
+      icon: "lock",
+      title: "Clear pricing and privacy",
       description:
-        "Starting at 15 SAR, with the final price agreed clearly before any work begins.",
+        "The final price is agreed before work begins, and your request and files are seen only by the authorised team.",
     },
   ],
   services: {
-    eyebrow: "Most requested",
-    title: "Everything you need as a student — in one place",
+    eyebrow: "Most requested services",
+    title: "Start with the service closest to your need",
     description:
-      "The services students ask for most, with approximate starting prices. Tap a service to open its details and start.",
+      "The most requested services, with approximate starting prices. Open a service to see its details and start.",
     items: [
       {
         icon: "document",
-        emoji: "📚",
-        tone: "warning",
-        badge: "🔥 Most requested",
+        badge: "Most requested",
         priceLabel: "From 20 SAR",
         title: "Assignment review & guidance",
         description:
-          "We review your work, flag the mistakes and walk you through the idea — so you submit with confidence.",
+          "We review your work and walk you through the mistakes and the idea, step by step, so you submit with confidence.",
         slug: "assignment-guidance",
       },
       {
         icon: "palette",
-        emoji: "🎨",
-        tone: "info",
-        badge: "🔥 Most requested",
+        badge: "Most requested",
         priceLabel: "From 40 SAR",
         title: "Presentation visual design",
         description: "A clean, cohesive slide deck for any course, ready to print or present.",
@@ -89,9 +99,7 @@ const landingCopy = {
       },
       {
         icon: "compass",
-        emoji: "🚀",
-        tone: "success",
-        badge: "🔥 Most requested",
+        badge: "Most requested",
         priceLabel: "From 30 SAR",
         title: "Graduation project guidance",
         description:
@@ -100,8 +108,6 @@ const landingCopy = {
       },
       {
         icon: "document",
-        emoji: "📝",
-        tone: "danger",
         priceLabel: "From 25 SAR",
         title: "Document formatting & review",
         description:
@@ -110,8 +116,6 @@ const landingCopy = {
       },
       {
         icon: "training",
-        emoji: "💡",
-        tone: "accent",
         priceLabel: "From 15 SAR",
         title: "Subject tutoring",
         description:
@@ -120,8 +124,6 @@ const landingCopy = {
       },
       {
         icon: "code",
-        emoji: "💻",
-        tone: "brand",
         priceLabel: "From 60 SAR",
         title: "Website development",
         description:
@@ -129,8 +131,8 @@ const landingCopy = {
         slug: "website-development",
       },
     ],
-    itemCta: "Order now",
-    allCta: "View all services",
+    itemCta: "View service",
+    allCta: "All services",
   },
   process: {
     eyebrow: "Simple and fast",

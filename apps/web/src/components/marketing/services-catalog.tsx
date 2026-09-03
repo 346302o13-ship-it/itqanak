@@ -1,5 +1,5 @@
 import Link from "next/link";
-import type { JSX } from "react";
+import type { CSSProperties, JSX } from "react";
 
 import { MarketingIcon, type MarketingIconName } from "./marketing-icon";
 import { SectionIntro } from "./section-intro";
@@ -35,7 +35,7 @@ export interface ServicesCatalogCopy {
   readonly noFilesLabel: string;
   readonly emptyTitle: string;
   readonly emptyDescription: string;
-  /** Ribbon on the lead (most-requested) category cards, e.g. "🔥 الأكثر طلباً". */
+  /** Ribbon on the lead (most-requested) category cards. */
   readonly popularBadge: string;
   readonly supportEyebrow: string;
   readonly supportTitle: string;
@@ -58,35 +58,14 @@ const categoryIcons: readonly MarketingIconName[] = [
   "translate",
   "sparkles",
   "code",
+  "files",
 ];
 
-/** One playful pastel per category, cycled by position. All theme-aware tokens. */
-const categoryTones = [
-  {
-    tile: "bg-[var(--itq-color-warning-50)] text-[var(--itq-color-warning-700)]",
-    bar: "bg-[var(--itq-color-warning-500)]",
-  },
-  {
-    tile: "bg-[var(--itq-color-success-50)] text-[var(--itq-color-success-700)]",
-    bar: "bg-[var(--itq-color-success-500)]",
-  },
-  {
-    tile: "bg-[var(--itq-color-info-50)] text-[var(--itq-color-info-700)]",
-    bar: "bg-[var(--itq-color-info-500)]",
-  },
-  {
-    tile: "bg-[var(--itq-color-danger-50)] text-[var(--itq-color-danger-700)]",
-    bar: "bg-[var(--itq-color-danger-500)]",
-  },
-  {
-    tile: "bg-[var(--itq-color-accent-50)] text-[var(--itq-color-accent-700)]",
-    bar: "bg-[var(--itq-color-accent-500)]",
-  },
-  {
-    tile: "bg-[var(--itq-color-brand-50)] text-[var(--itq-color-brand-strong)]",
-    bar: "bg-[var(--itq-color-brand-500)]",
-  },
-] as const;
+const geometryStyle: CSSProperties = {
+  backgroundImage:
+    "url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='72' height='72' viewBox='0 0 72 72'%3E%3Cg fill='none' stroke='%23ffffff' stroke-opacity='0.10' stroke-width='1.3'%3E%3Crect x='18' y='18' width='36' height='36'/%3E%3Crect x='18' y='18' width='36' height='36' transform='rotate(45 36 36)'/%3E%3Ccircle cx='36' cy='36' r='3'/%3E%3C/g%3E%3C/svg%3E\")",
+  backgroundSize: "72px 72px",
+};
 
 export function ServicesCatalogView({
   categories,
@@ -96,33 +75,26 @@ export function ServicesCatalogView({
   const prefix = `/${locale}`;
   return (
     <>
-      <section className="relative overflow-hidden rounded-[var(--itq-radius-hero)] border border-[var(--itq-color-border)] bg-[linear-gradient(135deg,var(--itq-color-brand-900),var(--itq-color-brand-950))] px-6 py-12 text-white shadow-[var(--itq-shadow-card)] sm:px-10 sm:py-16 lg:px-14">
-        <div
-          aria-hidden="true"
-          className="absolute -end-24 -top-24 size-80 rounded-full border-[3rem] border-white/[0.04]"
-        />
-        <div
-          aria-hidden="true"
-          className="absolute -bottom-40 start-1/3 size-72 rounded-full bg-[var(--itq-color-brand-600)]/25 blur-3xl"
-        />
+      <section className="relative isolate overflow-hidden rounded-[var(--itq-radius-hero)] bg-[linear-gradient(160deg,var(--itq-color-brand-800),var(--itq-color-brand-950))] px-6 py-12 text-white shadow-[var(--itq-shadow-card)] sm:px-10 sm:py-14 lg:px-14">
         <span
           aria-hidden="true"
-          className="absolute inset-x-0 top-0 h-1 bg-[linear-gradient(90deg,transparent,color-mix(in_srgb,var(--itq-color-accent-300)_75%,transparent),transparent)]"
+          className="absolute inset-x-0 top-0 h-1 bg-[var(--itq-color-accent-500)]"
         />
+        <div aria-hidden="true" className="absolute inset-0 opacity-60" style={geometryStyle} />
         <div className="relative grid items-end gap-8 lg:grid-cols-[minmax(0,1fr)_20rem]">
           <div className="max-w-3xl">
-            <p className="text-xs font-black uppercase tracking-wide text-[var(--itq-color-accent-200)]">
+            <p className="text-xs font-black uppercase tracking-[0.16em] text-[var(--itq-color-accent-300)]">
               {copy.eyebrow}
             </p>
-            <h1 className="mt-4 text-[2.5rem] font-black leading-[1.12] tracking-[-0.02em] sm:text-[3.25rem]">
+            <h1 className="mt-4 text-[2.15rem] font-black leading-[1.15] tracking-[-0.01em] sm:text-[2.9rem]">
               {copy.title}
             </h1>
-            <p className="mt-5 max-w-2xl text-lg leading-8 text-white/75">{copy.description}</p>
+            <p className="mt-5 max-w-2xl text-lg leading-8 text-white/80">{copy.description}</p>
           </div>
-          <div className="rounded-2xl border border-white/15 bg-white/10 p-5 backdrop-blur-sm">
+          <div className="rounded-[var(--itq-radius-control)] border border-white/15 bg-white/10 p-5">
             <p className="text-sm leading-7 text-white/80">{copy.supportDescription}</p>
             <WhatsAppLink
-              appearance="light"
+              appearance="glass"
               className="mt-4 w-full"
               locale={locale}
               message={copy.whatsappMessage}
@@ -132,7 +104,7 @@ export function ServicesCatalogView({
       </section>
 
       {categories.length === 0 ? (
-        <section className="my-12 rounded-3xl border border-dashed border-[var(--itq-color-border-strong)] bg-[var(--itq-color-surface)] p-10 text-center">
+        <section className="my-12 rounded-[var(--itq-radius-panel)] border border-dashed border-[var(--itq-color-border-strong)] bg-[var(--itq-color-surface)] p-10 text-center">
           <MarketingIcon
             className="mx-auto size-10 text-[var(--itq-color-brand-strong)]"
             name="files"
@@ -144,11 +116,11 @@ export function ServicesCatalogView({
         <>
           <nav
             aria-label={copy.categoryNavLabel}
-            className="sticky top-[4.75rem] z-30 -mx-4 mt-8 flex gap-2 overflow-x-auto border-b border-[var(--itq-color-border)] bg-[var(--itq-color-canvas)]/90 px-4 py-3 backdrop-blur-md [scrollbar-width:thin] sm:-mx-6 sm:px-6"
+            className="sticky top-[4.75rem] z-30 -mx-4 mt-8 flex gap-2 overflow-x-auto border-b border-[var(--itq-color-border)] bg-[var(--itq-color-canvas)]/92 px-4 py-3 backdrop-blur-md [scrollbar-width:thin] sm:-mx-6 sm:px-6"
           >
             {categories.map((category) => (
               <a
-                className="shrink-0 rounded-full border border-[var(--itq-color-border)] bg-[var(--itq-color-surface)] px-4 py-2 text-sm font-black text-[var(--itq-color-ink-soft)] shadow-sm transition hover:border-[var(--itq-color-brand-300)] hover:bg-[var(--itq-color-brand-50)] hover:text-[var(--itq-color-brand-strong)]"
+                className="shrink-0 rounded-[var(--itq-radius-control)] border border-[var(--itq-color-border)] bg-[var(--itq-color-surface)] px-4 py-2 text-sm font-black text-[var(--itq-color-ink-soft)] transition hover:border-[var(--itq-color-brand-300)] hover:bg-[var(--itq-color-brand-50)] hover:text-[var(--itq-color-brand-strong)]"
                 href={`#category-${category.slug}`}
                 key={category.id}
               >
@@ -164,53 +136,55 @@ export function ServicesCatalogView({
               title={copy.catalogTitle}
               titleId="catalog-title"
             />
-            <div className="mt-9 grid items-start gap-5 md:grid-cols-2 xl:grid-cols-3">
+            <div className="mt-9 grid items-start gap-4 md:grid-cols-2 xl:grid-cols-3">
               {categories.map((category, categoryIndex) => {
-                const tone =
-                  categoryTones[categoryIndex % categoryTones.length] ?? categoryTones[0];
+                const lead = categoryIndex < 2;
                 return (
                   <article
-                    className="group relative scroll-mt-36 overflow-hidden rounded-3xl border border-[var(--itq-color-border)] bg-[var(--itq-color-surface)] shadow-[var(--itq-shadow-sm)] transition duration-300 hover:-translate-y-1 hover:border-[var(--itq-color-brand-200)] hover:shadow-[var(--itq-shadow-card)]"
+                    className="group relative scroll-mt-36 overflow-hidden rounded-[var(--itq-radius-card)] border border-[var(--itq-color-border)] bg-[var(--itq-color-surface)] transition duration-200 hover:-translate-y-0.5 hover:border-[var(--itq-color-brand-300)] hover:shadow-[var(--itq-shadow-sm)]"
                     id={`category-${category.slug}`}
                     key={category.id}
                   >
                     <span
                       aria-hidden="true"
-                      className={`absolute inset-x-0 top-0 h-1.5 origin-center scale-x-0 transition-transform duration-300 group-hover:scale-x-100 ${tone.bar}`}
+                      className={`absolute inset-x-0 top-0 h-1 ${
+                        lead
+                          ? "bg-[var(--itq-color-accent-500)]"
+                          : "bg-[var(--itq-color-brand-600)]"
+                      }`}
                     />
                     <div className="relative border-b border-[var(--itq-color-border)] bg-[var(--itq-color-surface-soft)] p-6">
-                      {categoryIndex < 2 ? (
-                        <span className="absolute end-4 top-4 inline-flex items-center rounded-full bg-[var(--itq-color-surface)] px-2.5 py-1 text-[11px] font-black text-[var(--itq-color-ink-soft)] shadow-[var(--itq-shadow-sm)]">
+                      {lead ? (
+                        <span className="absolute end-4 top-4 inline-flex items-center rounded-md bg-[var(--itq-color-accent-500)] px-2.5 py-1 text-[11px] font-black text-[var(--itq-color-brand-950)]">
                           {copy.popularBadge}
                         </span>
                       ) : null}
-                      <span
-                        className={`inline-flex size-12 items-center justify-center rounded-2xl text-2xl shadow-sm transition duration-300 group-hover:-rotate-6 group-hover:scale-110 ${tone.tile}`}
-                      >
+                      <span className="inline-flex size-11 items-center justify-center rounded-[var(--itq-radius-control)] bg-[var(--itq-color-brand-50)] text-[var(--itq-color-brand-strong)]">
                         <MarketingIcon
+                          className="size-5"
                           name={categoryIcons[categoryIndex % categoryIcons.length] ?? "sparkles"}
                         />
                       </span>
-                      <h2 className="mt-5 text-2xl font-black tracking-tight">{category.name}</h2>
-                      <p className="mt-2 min-h-14 leading-7 text-[var(--itq-color-muted)]">
+                      <h2 className="mt-4 text-xl font-black tracking-tight">{category.name}</h2>
+                      <p className="mt-2 min-h-12 text-sm leading-7 text-[var(--itq-color-muted)]">
                         {category.description}
                       </p>
                     </div>
                     <div className="divide-y divide-[var(--itq-color-border)]">
                       {category.services.map((service) => (
-                        <div className="p-6" key={service.id}>
+                        <div className="p-5" key={service.id}>
                           <div className="flex flex-wrap items-start justify-between gap-2">
-                            <h3 className="text-lg font-black">{service.name}</h3>
+                            <h3 className="font-black">{service.name}</h3>
                             {service.priceLabel === undefined ? null : (
-                              <span className="shrink-0 rounded-full bg-[var(--itq-color-brand-50)] px-3 py-1 text-sm font-black text-[var(--itq-color-brand-strong)]">
+                              <span className="shrink-0 rounded-md bg-[var(--itq-color-brand-50)] px-2.5 py-1 text-sm font-black text-[var(--itq-color-brand-strong)]">
                                 {service.priceLabel}
                               </span>
                             )}
                           </div>
-                          <p className="mt-2 min-h-14 text-sm leading-7 text-[var(--itq-color-muted)]">
+                          <p className="mt-2 min-h-12 text-sm leading-7 text-[var(--itq-color-muted)]">
                             {service.shortDescription}
                           </p>
-                          <div className="mt-5 flex flex-wrap items-center justify-between gap-3">
+                          <div className="mt-4 flex flex-wrap items-center justify-between gap-3">
                             <span className="inline-flex items-center gap-1.5 text-xs font-bold text-[var(--itq-color-muted)]">
                               <MarketingIcon
                                 className="size-4"
@@ -219,7 +193,7 @@ export function ServicesCatalogView({
                               {service.acceptsFiles ? copy.acceptsFilesLabel : copy.noFilesLabel}
                             </span>
                             <Link
-                              className="inline-flex min-h-11 items-center justify-center rounded-xl bg-[var(--itq-color-brand-700)] px-4 py-2 text-sm font-black text-white transition hover:bg-[var(--itq-color-brand-800)]"
+                              className="inline-flex min-h-10 items-center justify-center rounded-[var(--itq-radius-control)] bg-[var(--itq-color-brand-700)] px-4 text-sm font-black text-white transition hover:bg-[var(--itq-color-brand-800)]"
                               href={`${prefix}/services/${service.slug}`}
                             >
                               {copy.detailsLabel}
@@ -236,7 +210,7 @@ export function ServicesCatalogView({
         </>
       )}
 
-      <section className="mb-6 overflow-hidden rounded-3xl bg-[var(--itq-color-canvas-warm)] p-7 ring-1 ring-[var(--itq-color-accent-200)]/70 sm:p-10">
+      <section className="mb-6 overflow-hidden rounded-[var(--itq-radius-panel)] border border-[var(--itq-color-border)] bg-[var(--itq-color-surface-soft)] p-7 sm:p-10">
         <div className="flex flex-col items-start justify-between gap-7 lg:flex-row lg:items-center">
           <div className="max-w-2xl">
             <p className="text-sm font-black text-[var(--itq-color-accent-700)]">

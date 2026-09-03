@@ -38,7 +38,7 @@ const catalogCopy = {
   noFilesLabel: "No files required",
   emptyTitle: "No services are available right now",
   emptyDescription: "Services will appear here when activated. Contact us for an update.",
-  popularBadge: "🔥 Most requested",
+  popularBadge: "Most requested",
   supportEyebrow: "Not sure which service to choose?",
   supportTitle: "Describe your requirement and we will help route it",
   supportDescription:

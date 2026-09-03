@@ -26,19 +26,16 @@ export function SectionIntro({
       {eyebrow === undefined ? null : (
         <p
           className={classNames(
-            "inline-flex items-center gap-2 rounded-full border border-[var(--itq-color-brand-200)] bg-[var(--itq-color-brand-50)] px-3.5 py-1.5 text-[0.7rem] font-black uppercase tracking-[0.08em] text-[var(--itq-color-brand-strong)]",
+            "inline-flex items-center gap-2 rounded-md border border-[var(--itq-color-brand-200)] bg-[var(--itq-color-brand-50)] px-3 py-1.5 text-[0.7rem] font-black uppercase tracking-[0.1em] text-[var(--itq-color-brand-strong)]",
             align === "center" && "mx-auto",
           )}
         >
-          <span
-            aria-hidden="true"
-            className="size-1.5 rounded-full bg-[var(--itq-color-brand-strong)]"
-          />
+          <span aria-hidden="true" className="size-1.5 bg-[var(--itq-color-accent-500)]" />
           {eyebrow}
         </p>
       )}
       <h2
-        className="mt-4 text-3xl font-black leading-[1.18] tracking-[-0.015em] text-[var(--itq-color-ink)] sm:text-[2.5rem]"
+        className="mt-4 text-3xl font-black leading-[1.18] tracking-[-0.015em] text-[var(--itq-color-ink)] sm:text-[2.4rem]"
         id={titleId}
       >
         {title}
@@ -46,7 +43,7 @@ export function SectionIntro({
       <span
         aria-hidden="true"
         className={classNames(
-          "mt-4 block h-1 w-16 rounded-full bg-[linear-gradient(90deg,var(--itq-color-brand-500),color-mix(in_srgb,var(--itq-color-accent-500)_75%,transparent))]",
+          "mt-4 block h-1 w-14 bg-[var(--itq-color-accent-500)]",
           align === "center" && "mx-auto",
         )}
       />

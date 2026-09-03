@@ -115,7 +115,7 @@ export function PublicHeader({
             {languageName}
           </Link>
           <Link
-            className="itq-sheen hidden min-h-11 items-center justify-center rounded-xl bg-[linear-gradient(120deg,var(--itq-color-brand-600),var(--itq-color-brand-800))] px-5 text-sm font-black text-white shadow-[var(--itq-shadow-sm)] transition hover:-translate-y-0.5 hover:shadow-[var(--itq-shadow-md)] sm:inline-flex"
+            className="hidden min-h-11 items-center justify-center rounded-[var(--itq-radius-control)] bg-[var(--itq-color-brand-700)] px-5 text-sm font-black text-white transition hover:bg-[var(--itq-color-brand-800)] sm:inline-flex"
             href={loginHref}
           >
             {loginLabel}
@@ -176,7 +176,7 @@ export function PublicHeader({
               </Link>
             ))}
             <Link
-              className="mt-2 inline-flex min-h-12 items-center justify-center rounded-xl bg-[linear-gradient(120deg,var(--itq-color-brand-600),var(--itq-color-brand-800))] px-5 text-sm font-black text-white shadow-[var(--itq-shadow-sm)]"
+              className="mt-2 inline-flex min-h-12 items-center justify-center rounded-[var(--itq-radius-control)] bg-[var(--itq-color-brand-700)] px-5 text-sm font-black text-white"
               href={loginHref}
               onClick={() => setOpen(false)}
             >
