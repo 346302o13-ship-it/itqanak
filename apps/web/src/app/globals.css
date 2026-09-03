@@ -113,25 +113,11 @@ label:has(> input[type="radio"]) {
   }
 }
 
-/* Landing hero fills the visible screen below the sticky public header (which is
-   4.75rem tall; the hero is pulled flush under it with a negative top margin).
-   Same `vh` base + `dvh` upgrade as above; if the unit is dropped the section
-   just falls back to its natural height. */
-.itq-hero-h {
-  min-height: calc(100vh - 4.75rem);
-}
-
-@supports (height: 100dvh) {
-  .itq-hero-h {
-    min-height: calc(100dvh - 4.75rem);
-  }
-}
-
-/* Full-bleed: pull a block in the centred content column out to the full
-   viewport width, so a coloured band reaches both screen edges. The public
+/* Near-full-bleed: pull a block in the centred content column out to almost the
+   full viewport width, leaving a very small gutter on each side. The public
    shell sets `overflow-x: clip` so the 50vw math never adds a scrollbar. */
 .itq-bleed {
-  margin-inline: calc(50% - 50vw);
+  margin-inline: calc(50% - 50vw + 0.5rem);
 }
 
 @media (display-mode: standalone) {

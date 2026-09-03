@@ -4687,14 +4687,14 @@ export function UnifiedChatWorkspace({
                       ) : null
                     ) : (
                       <li
-                        className={`flex ${mine ? "justify-end" : "justify-start"}`}
+                        className={`flex min-w-0 ${mine ? "justify-end" : "justify-start"}`}
                         data-mid={message.id}
                       >
                         <article
                           {...(message.deletedAt === undefined && editingId !== message.id
                             ? bubbleHoldHandlers(message.id)
                             : {})}
-                          className={`max-w-[85%] rounded-xl px-2.5 py-1.5 shadow-sm transition sm:max-w-[75%] ${
+                          className={`min-w-0 max-w-[85%] rounded-xl px-2.5 py-1.5 shadow-sm transition sm:max-w-[75%] ${
                             mine
                               ? "rounded-ee-sm bg-[var(--itq-color-bubble-out)] text-[var(--itq-color-bubble-out-ink)]"
                               : "rounded-es-sm bg-[var(--itq-color-bubble-in)] text-[var(--itq-color-bubble-in-ink)]"
@@ -4986,7 +4986,7 @@ export function UnifiedChatWorkspace({
             <ul className="mx-auto mt-2.5 grid max-w-4xl gap-2.5">
               {outbox.map((entry) => (
                 <li className="flex justify-end" key={entry.clientMessageId}>
-                  <article className="max-w-[85%] rounded-xl rounded-ee-sm bg-[var(--itq-color-bubble-out)]/80 px-2.5 py-1.5 text-[var(--itq-color-bubble-out-ink)] shadow-sm sm:max-w-[75%]">
+                  <article className="min-w-0 max-w-[85%] rounded-xl rounded-ee-sm bg-[var(--itq-color-bubble-out)]/80 px-2.5 py-1.5 text-[var(--itq-color-bubble-out-ink)] shadow-sm sm:max-w-[75%]">
                     <p className="whitespace-pre-wrap break-words text-sm leading-7">
                       <bdi dir="auto">{entry.body}</bdi>
                     </p>
