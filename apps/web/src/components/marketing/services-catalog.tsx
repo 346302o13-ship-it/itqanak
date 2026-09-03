@@ -75,13 +75,13 @@ export function ServicesCatalogView({
   const prefix = `/${locale}`;
   return (
     <>
-      <section className="relative isolate overflow-hidden rounded-[var(--itq-radius-hero)] bg-[linear-gradient(160deg,var(--itq-color-brand-800),var(--itq-color-brand-950))] px-6 py-12 text-white shadow-[var(--itq-shadow-card)] sm:px-10 sm:py-14 lg:px-14">
+      <section className="itq-bleed relative isolate -mt-6 overflow-hidden bg-[linear-gradient(160deg,var(--itq-color-brand-800),var(--itq-color-brand-950))] py-14 text-white sm:-mt-10 sm:py-16">
         <span
           aria-hidden="true"
           className="absolute inset-x-0 top-0 h-1 bg-[var(--itq-color-accent-500)]"
         />
         <div aria-hidden="true" className="absolute inset-0 opacity-60" style={geometryStyle} />
-        <div className="relative grid items-end gap-8 lg:grid-cols-[minmax(0,1fr)_20rem]">
+        <div className="relative mx-auto grid w-full max-w-[80rem] items-end gap-8 px-4 sm:px-6 lg:grid-cols-[minmax(0,1fr)_20rem] lg:px-8">
           <div className="max-w-3xl">
             <p className="text-xs font-black uppercase tracking-[0.16em] text-[var(--itq-color-accent-300)]">
               {copy.eyebrow}
@@ -210,8 +210,8 @@ export function ServicesCatalogView({
         </>
       )}
 
-      <section className="mb-6 overflow-hidden rounded-[var(--itq-radius-panel)] border border-[var(--itq-color-border)] bg-[var(--itq-color-surface-soft)] p-7 sm:p-10">
-        <div className="flex flex-col items-start justify-between gap-7 lg:flex-row lg:items-center">
+      <section className="itq-bleed -mb-24 overflow-hidden border-y border-[var(--itq-color-border)] bg-[var(--itq-color-surface-soft)] py-12 sm:py-14 lg:-mb-28">
+        <div className="mx-auto flex w-full max-w-[80rem] flex-col items-start justify-between gap-7 px-4 sm:px-6 lg:flex-row lg:items-center lg:px-8">
           <div className="max-w-2xl">
             <p className="text-sm font-black text-[var(--itq-color-accent-700)]">
               {copy.supportEyebrow}

@@ -132,7 +132,7 @@ export function LandingPage({
       {/* Hero — a solid institutional green panel with a faint geometric field,
           a gold top rule, and a quick-links strip, in the manner of a Saudi
           university / ministry landing. No photograph. */}
-      <section className="itq-hero-h relative isolate flex flex-col overflow-hidden rounded-[var(--itq-radius-hero)] bg-[linear-gradient(160deg,var(--itq-color-brand-800),var(--itq-color-brand-950))] text-white shadow-[var(--itq-shadow-card)]">
+      <section className="itq-bleed itq-hero-h relative isolate -mt-6 flex flex-col overflow-hidden bg-[linear-gradient(160deg,var(--itq-color-brand-800),var(--itq-color-brand-950))] text-white sm:-mt-10">
         <span
           aria-hidden="true"
           className="absolute inset-x-0 top-0 h-1 bg-[var(--itq-color-accent-500)]"
@@ -142,7 +142,7 @@ export function LandingPage({
           aria-hidden="true"
           className="absolute inset-0 bg-[linear-gradient(180deg,transparent,color-mix(in_srgb,var(--itq-color-brand-950)_55%,transparent))]"
         />
-        <div className="relative flex flex-1 flex-col px-6 py-12 sm:px-10 sm:py-14 lg:px-14 lg:py-16">
+        <div className="relative mx-auto flex w-full max-w-[80rem] flex-1 flex-col px-4 py-12 sm:px-6 sm:py-14 lg:px-8 lg:py-16">
           <div className="flex flex-1 flex-col justify-center">
             <div className="max-w-3xl">
               <div className="flex flex-wrap items-center gap-2.5">
@@ -330,18 +330,20 @@ export function LandingPage({
 
       <section
         aria-labelledby="process-title"
-        className="scroll-mt-28 rounded-[var(--itq-radius-panel)] border border-[var(--itq-color-border)] bg-[var(--itq-color-surface-soft)] px-5 py-14 sm:px-12 sm:py-16"
+        className="itq-bleed scroll-mt-28 border-y border-[var(--itq-color-border)] bg-[var(--itq-color-surface-soft)] py-14 sm:py-16"
         id="how-it-works"
       >
-        <SectionIntro
-          align="center"
-          description={copy.process.description}
-          eyebrow={copy.process.eyebrow}
-          title={copy.process.title}
-          titleId="process-title"
-        />
-        <div className="mt-10">
-          <ProcessSteps locale={locale} steps={copy.process.steps} />
+        <div className="mx-auto w-full max-w-[80rem] px-4 sm:px-6 lg:px-8">
+          <SectionIntro
+            align="center"
+            description={copy.process.description}
+            eyebrow={copy.process.eyebrow}
+            title={copy.process.title}
+            titleId="process-title"
+          />
+          <div className="mt-10">
+            <ProcessSteps locale={locale} steps={copy.process.steps} />
+          </div>
         </div>
       </section>
 
@@ -398,14 +400,14 @@ export function LandingPage({
         </div>
       </section>
 
-      <section className="itq-section">
-        <div className="relative overflow-hidden rounded-[var(--itq-radius-panel)] bg-[linear-gradient(160deg,var(--itq-color-brand-800),var(--itq-color-brand-950))] p-7 text-white shadow-[var(--itq-shadow-card)] sm:p-12">
+      <section className="itq-section !pb-0">
+        <div className="itq-bleed relative overflow-hidden bg-[linear-gradient(160deg,var(--itq-color-brand-800),var(--itq-color-brand-950))] py-14 text-white sm:py-16">
           <span
             aria-hidden="true"
             className="absolute inset-x-0 top-0 h-1 bg-[var(--itq-color-accent-500)]"
           />
           <div aria-hidden="true" className="absolute inset-0 opacity-60" style={geometryStyle} />
-          <div className="relative grid gap-8 lg:grid-cols-[auto_minmax(0,1fr)_minmax(17rem,0.6fr)] lg:items-center">
+          <div className="relative mx-auto grid w-full max-w-[80rem] gap-8 px-4 sm:px-6 lg:grid-cols-[auto_minmax(0,1fr)_minmax(17rem,0.6fr)] lg:items-center lg:px-8">
             <span className="inline-flex size-14 items-center justify-center rounded-[var(--itq-radius-control)] bg-white/10 text-[var(--itq-color-accent-300)] ring-1 ring-white/20">
               <MarketingIcon className="size-7" name="shield" />
             </span>
@@ -451,14 +453,14 @@ export function LandingPage({
         </div>
       </section>
 
-      <section className="mb-6">
-        <div className="relative overflow-hidden rounded-[var(--itq-radius-panel)] bg-[linear-gradient(160deg,var(--itq-color-brand-800),var(--itq-color-brand-950))] p-7 text-white shadow-[var(--itq-shadow-card)] sm:p-12">
+      <section className="-mb-24 lg:-mb-28">
+        <div className="itq-bleed relative overflow-hidden bg-[linear-gradient(160deg,var(--itq-color-brand-800),var(--itq-color-brand-950))] py-14 text-white sm:py-16">
           <span
             aria-hidden="true"
             className="absolute inset-x-0 top-0 h-1 bg-[var(--itq-color-accent-500)]"
           />
           <div aria-hidden="true" className="absolute inset-0 opacity-60" style={geometryStyle} />
-          <div className="relative flex flex-col items-start justify-between gap-8 lg:flex-row lg:items-center">
+          <div className="relative mx-auto flex w-full max-w-[80rem] flex-col items-start justify-between gap-8 px-4 sm:px-6 lg:flex-row lg:items-center lg:px-8">
             <div className="max-w-2xl">
               <p className="inline-flex items-center gap-2 rounded-md bg-[var(--itq-color-accent-500)] px-3 py-1.5 text-xs font-black text-[var(--itq-color-brand-950)]">
                 <MarketingIcon className="size-3.5" name="sparkles" />
