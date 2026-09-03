@@ -27,15 +27,20 @@ export default async function NewRequestPage({ searchParams }: NewRequestPagePro
   const runtime = await createStudentRequestRuntime();
   let services: QuickRequestService[] = [];
   let integrityVersion = "";
+  let preselectServiceId: string | undefined;
+  const requestedSlug = typeof query.service === "string" ? query.service : undefined;
   try {
     const catalog = await runtime.catalog.listPublicCatalog();
     integrityVersion = runtime.config.academicIntegrityVersion;
     services = catalog.flatMap((category) =>
-      category.services.map((service) => ({
-        id: service.id,
-        name: service.nameAr,
-        categoryName: category.nameAr,
-      })),
+      category.services.map((service) => {
+        if (service.slug === requestedSlug) preselectServiceId = service.id;
+        return {
+          id: service.id,
+          name: service.nameAr,
+          categoryName: category.nameAr,
+        };
+      }),
     );
   } finally {
     await runtime.close();
@@ -57,6 +62,7 @@ export default async function NewRequestPage({ searchParams }: NewRequestPagePro
             integrityVersion={integrityVersion}
             locale="ar"
             services={services}
+            {...(preselectServiceId === undefined ? {} : { preselectServiceId })}
           />
         )}
       </div>

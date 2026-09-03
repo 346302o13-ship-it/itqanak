@@ -9,7 +9,7 @@ import { InstallAppButton } from "../install-app-button";
 import { ManagedContentBlocks } from "../managed-content-blocks";
 
 import { FaqList, type FaqItem } from "./faq-list";
-import { FeatureCard } from "./feature-card";
+import { FeatureCard, type FeatureTone } from "./feature-card";
 import { MarketingIcon, type MarketingIconName } from "./marketing-icon";
 import { ProcessSteps, type ProcessStep } from "./process-steps";
 import { RequestPreview } from "./request-preview";
@@ -24,6 +24,10 @@ interface LandingFeature {
 
 interface LandingService extends LandingFeature {
   readonly slug?: string;
+  readonly emoji?: string;
+  readonly tone?: FeatureTone;
+  readonly badge?: string;
+  readonly priceLabel?: string;
 }
 
 export interface LandingPageCopy {
@@ -37,6 +41,8 @@ export interface LandingPageCopy {
     readonly whatsappLabel: string;
     readonly whatsappMessage: string;
     readonly imageAlt: string;
+    /** Concrete "starting from" price chips shown under the hero CTAs. */
+    readonly priceChips?: readonly string[];
   };
   readonly trustItems: readonly LandingFeature[];
   readonly services: {
@@ -173,7 +179,20 @@ export function LandingPage({
               />
               <InstallAppButton locale={locale} surface="public" variant="hero" />
             </div>
-            <div className="mt-9 flex flex-wrap gap-2.5">
+            {copy.hero.priceChips === undefined ? null : (
+              <div className="mt-7 flex flex-wrap gap-2">
+                {copy.hero.priceChips.map((chip) => (
+                  <span
+                    className="inline-flex items-center gap-1.5 rounded-full bg-[var(--itq-color-accent-50)] px-3.5 py-1.5 text-sm font-black text-[var(--itq-color-accent-700)] ring-1 ring-[var(--itq-color-accent-200)]"
+                    key={chip}
+                  >
+                    <MarketingIcon className="size-3.5" name="sparkles" />
+                    {chip}
+                  </span>
+                ))}
+              </div>
+            )}
+            <div className="mt-6 flex flex-wrap gap-2.5">
               {copy.trustItems.slice(0, 3).map((item) => (
                 <span
                   className="inline-flex items-center gap-2 rounded-full border border-[var(--itq-color-border)] bg-[var(--itq-color-surface)]/70 px-3 py-1.5 text-xs font-black text-[var(--itq-color-ink-soft)]"
@@ -256,9 +275,13 @@ export function LandingPage({
               icon={service.icon}
               key={service.title}
               title={service.title}
+              {...(service.emoji === undefined ? {} : { emoji: service.emoji })}
+              {...(service.tone === undefined ? {} : { tone: service.tone })}
+              {...(service.badge === undefined ? {} : { badge: service.badge })}
+              {...(service.priceLabel === undefined ? {} : { priceLabel: service.priceLabel })}
             >
               <Link
-                className="mt-5 inline-flex min-h-11 items-center text-sm font-black text-[var(--itq-color-brand-strong)] underline decoration-[var(--itq-color-brand-200)] decoration-2 underline-offset-8 hover:text-[var(--itq-color-brand-strong)]"
+                className="mt-4 inline-flex min-h-11 items-center gap-1.5 text-sm font-black text-[var(--itq-color-brand-strong)] underline decoration-[var(--itq-color-brand-200)] decoration-2 underline-offset-8 hover:text-[var(--itq-color-brand-strong)]"
                 href={
                   service.slug === undefined
                     ? `${prefix}/services`
@@ -266,6 +289,7 @@ export function LandingPage({
                 }
               >
                 {copy.services.itemCta}
+                <MarketingIcon className="size-4 rtl:-scale-x-100" name="arrow-right" />
               </Link>
             </FeatureCard>
           ))}

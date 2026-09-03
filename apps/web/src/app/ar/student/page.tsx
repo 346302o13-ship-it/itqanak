@@ -82,13 +82,40 @@ export default async function StudentDashboardPage({ searchParams }: StudentDash
           </p>
         </div>
         <Link
-          className="inline-flex min-h-12 items-center gap-2 rounded-2xl bg-[var(--itq-color-brand-700)] px-5 py-3 text-sm font-black text-white shadow-[0_10px_24px_rgb(16_93_89_/_20%)] transition hover:-translate-y-0.5 hover:bg-[var(--itq-color-brand-800)]"
+          className="itq-sheen inline-flex min-h-14 items-center gap-2.5 rounded-2xl bg-[linear-gradient(120deg,var(--itq-color-brand-600),var(--itq-color-brand-800))] px-6 py-3.5 text-base font-black text-white shadow-[var(--itq-shadow-float)] transition hover:-translate-y-0.5 hover:shadow-[var(--itq-shadow-lg)]"
           href="/ar/student/requests/new"
         >
           <PlusIcon className="size-5" />
-          إنشاء طلب جديد
+          اطلب خدمة جديدة
         </Link>
       </div>
+
+      <section aria-label="اختصارات سريعة" className="mt-7">
+        <p className="text-xs font-black uppercase tracking-[0.14em] text-[var(--itq-color-muted)]">
+          اطلب بسرعة
+        </p>
+        <div className="mt-3 flex flex-wrap gap-2.5">
+          {[
+            { emoji: "📚", label: "الواجبات", slug: "assignment-guidance" },
+            { emoji: "🎨", label: "العروض", slug: "presentation-visual-design" },
+            { emoji: "🚀", label: "مشاريع التخرج", slug: "project-guidance" },
+            { emoji: "📝", label: "تنسيق ومراجعة", slug: "document-formatting-review" },
+            { emoji: "💡", label: "شرح المواد", slug: "subject-tutoring" },
+            { emoji: "💻", label: "مواقع", slug: "website-development" },
+          ].map((shortcut) => (
+            <Link
+              className="inline-flex items-center gap-2 rounded-2xl border border-[var(--itq-color-border)] bg-[var(--itq-color-surface)] px-3.5 py-2.5 text-sm font-black shadow-[var(--itq-shadow-sm)] transition hover:-translate-y-0.5 hover:border-[var(--itq-color-brand-200)] hover:bg-[var(--itq-color-brand-50)]"
+              href={`/ar/student/requests/new?service=${shortcut.slug}`}
+              key={shortcut.slug}
+            >
+              <span aria-hidden="true" className="text-lg">
+                {shortcut.emoji}
+              </span>
+              {shortcut.label}
+            </Link>
+          ))}
+        </div>
+      </section>
 
       {dashboard.waitingForStudentCount > 0 ? (
         <Link
@@ -151,18 +178,21 @@ export default async function StudentDashboardPage({ searchParams }: StudentDash
         </div>
         {dashboard.recent.length === 0 ? (
           <div className="mt-5 rounded-[1.5rem] border border-dashed border-[var(--itq-color-brand-200)] bg-[var(--itq-color-brand-50)]/50 p-9 text-center">
-            <span className="mx-auto grid size-14 place-items-center rounded-2xl bg-[var(--itq-color-surface)] text-[var(--itq-color-brand-strong)] shadow-sm">
-              <RequestsIcon className="size-7" />
+            <span
+              aria-hidden="true"
+              className="mx-auto grid size-14 place-items-center rounded-2xl bg-[var(--itq-color-surface)] text-3xl shadow-sm"
+            >
+              🎓
             </span>
-            <p className="mt-4 font-black">مساحتك جاهزة لأول طلب</p>
+            <p className="mt-4 text-lg font-black">أهلاً بك في إتقانك!</p>
             <p className="mx-auto mt-2 max-w-md text-sm leading-6 text-[var(--itq-color-muted)]">
-              اختر الخدمة المناسبة، اشرح ما تحتاجه، وستتابع كل التحديثات من هنا.
+              ما عندك طلبات بعد — اختر خدمتك من الأعلى، اشرح ما تحتاجه، وستتابع كل التحديثات من هنا.
             </p>
             <Link
-              className="mt-5 inline-flex min-h-11 items-center gap-2 rounded-xl bg-[var(--itq-color-brand-700)] px-4 text-sm font-black text-white"
+              className="itq-sheen mt-5 inline-flex min-h-12 items-center gap-2 rounded-xl bg-[linear-gradient(120deg,var(--itq-color-brand-600),var(--itq-color-brand-800))] px-5 text-sm font-black text-white shadow-[var(--itq-shadow-float)]"
               href="/ar/student/requests/new"
             >
-              <PlusIcon className="size-4" /> إنشاء طلبك الأول
+              <PlusIcon className="size-4" /> اطلب خدمتك الأولى
             </Link>
           </div>
         ) : (

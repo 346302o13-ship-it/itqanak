@@ -85,12 +85,39 @@ export default async function EnglishStudentDashboard({ searchParams }: Dashboar
           </p>
         </div>
         <Link
-          className="inline-flex min-h-12 items-center gap-2 rounded-2xl bg-[var(--itq-color-brand-700)] px-5 py-3 text-sm font-black text-white shadow-[0_10px_24px_rgb(16_93_89_/_20%)] transition hover:-translate-y-0.5 hover:bg-[var(--itq-color-brand-800)]"
+          className="itq-sheen inline-flex min-h-14 items-center gap-2.5 rounded-2xl bg-[linear-gradient(120deg,var(--itq-color-brand-600),var(--itq-color-brand-800))] px-6 py-3.5 text-base font-black text-white shadow-[var(--itq-shadow-float)] transition hover:-translate-y-0.5 hover:shadow-[var(--itq-shadow-lg)]"
           href="/en/student/requests/new"
         >
-          <PlusIcon className="size-5" /> Create a request
+          <PlusIcon className="size-5" /> Order a service
         </Link>
       </div>
+
+      <section aria-label="Quick shortcuts" className="mt-7">
+        <p className="text-xs font-black uppercase tracking-[0.14em] text-[var(--itq-color-muted)]">
+          Order quickly
+        </p>
+        <div className="mt-3 flex flex-wrap gap-2.5">
+          {[
+            { emoji: "📚", label: "Assignments", slug: "assignment-guidance" },
+            { emoji: "🎨", label: "Presentations", slug: "presentation-visual-design" },
+            { emoji: "🚀", label: "Graduation projects", slug: "project-guidance" },
+            { emoji: "📝", label: "Formatting & review", slug: "document-formatting-review" },
+            { emoji: "💡", label: "Subject tutoring", slug: "subject-tutoring" },
+            { emoji: "💻", label: "Websites", slug: "website-development" },
+          ].map((shortcut) => (
+            <Link
+              className="inline-flex items-center gap-2 rounded-2xl border border-[var(--itq-color-border)] bg-[var(--itq-color-surface)] px-3.5 py-2.5 text-sm font-black shadow-[var(--itq-shadow-sm)] transition hover:-translate-y-0.5 hover:border-[var(--itq-color-brand-200)] hover:bg-[var(--itq-color-brand-50)]"
+              href={`/en/student/requests/new?service=${shortcut.slug}`}
+              key={shortcut.slug}
+            >
+              <span aria-hidden="true" className="text-lg">
+                {shortcut.emoji}
+              </span>
+              {shortcut.label}
+            </Link>
+          ))}
+        </div>
+      </section>
 
       {dashboard.waitingForStudentCount > 0 ? (
         <Link
@@ -155,18 +182,22 @@ export default async function EnglishStudentDashboard({ searchParams }: Dashboar
         </div>
         {dashboard.recent.length === 0 ? (
           <div className="mt-5 rounded-[1.5rem] border border-dashed border-[var(--itq-color-brand-200)] bg-[var(--itq-color-brand-50)]/50 p-9 text-center">
-            <span className="mx-auto grid size-14 place-items-center rounded-2xl bg-[var(--itq-color-surface)] text-[var(--itq-color-brand-strong)] shadow-sm">
-              <RequestsIcon className="size-7" />
+            <span
+              aria-hidden="true"
+              className="mx-auto grid size-14 place-items-center rounded-2xl bg-[var(--itq-color-surface)] text-3xl shadow-sm"
+            >
+              🎓
             </span>
-            <p className="mt-4 font-black">Your workspace is ready for its first request</p>
+            <p className="mt-4 text-lg font-black">Welcome to ITQANAK!</p>
             <p className="mx-auto mt-2 max-w-md text-sm leading-6 text-[var(--itq-color-muted)]">
-              Choose a service, explain what you need, and follow every update from here.
+              No requests yet — pick a service above, explain what you need, and follow every update
+              from here.
             </p>
             <Link
-              className="mt-5 inline-flex min-h-11 items-center gap-2 rounded-xl bg-[var(--itq-color-brand-700)] px-4 text-sm font-black text-white"
+              className="itq-sheen mt-5 inline-flex min-h-12 items-center gap-2 rounded-xl bg-[linear-gradient(120deg,var(--itq-color-brand-600),var(--itq-color-brand-800))] px-5 text-sm font-black text-white shadow-[var(--itq-shadow-float)]"
               href="/en/student/requests/new"
             >
-              <PlusIcon className="size-4" /> Create your first request
+              <PlusIcon className="size-4" /> Order your first service
             </Link>
           </div>
         ) : (

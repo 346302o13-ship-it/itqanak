@@ -15,6 +15,8 @@ interface QuickRequestFormProps {
   readonly csrfToken: string | undefined;
   readonly locale: "ar" | "en";
   readonly integrityVersion: string;
+  /** Service id to highlight and focus first, from a `?service=` deep link. */
+  readonly preselectServiceId?: string;
 }
 
 /** A UUID-v4-shaped id, so the idempotency key passes server validation even
@@ -51,8 +53,16 @@ export function QuickRequestForm({
   csrfToken,
   locale,
   integrityVersion,
+  preselectServiceId,
 }: QuickRequestFormProps) {
   const english = locale === "en";
+  const orderedServices = useMemo(() => {
+    if (preselectServiceId === undefined) return services;
+    const lead = services.filter((service) => service.id === preselectServiceId);
+    return lead.length === 0
+      ? services
+      : [...lead, ...services.filter((s) => s.id !== preselectServiceId)];
+  }, [services, preselectServiceId]);
   const [text, setText] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const submittedRef = useRef(false);
@@ -104,30 +114,39 @@ export function QuickRequestForm({
           {english ? "Pick a service to start" : "اختر الخدمة للبدء"}
         </p>
         <div className="grid gap-2.5 sm:grid-cols-2">
-          {services.map((service) => (
-            <button
-              className="flex items-center gap-3 rounded-2xl border border-[var(--itq-color-border)] bg-[var(--itq-color-surface)] p-4 text-start shadow-sm transition hover:border-[var(--itq-color-brand-300)] hover:bg-[var(--itq-color-brand-50)] active:scale-[0.98]"
-              key={service.id}
-              name="serviceId"
-              type="submit"
-              value={service.id}
-            >
-              <span className="grid size-11 shrink-0 place-items-center rounded-xl bg-[var(--itq-color-brand-50)] text-[var(--itq-color-brand-strong)]">
-                <RequestsIcon className="size-5" />
-              </span>
-              <span className="min-w-0">
-                <span className="block truncate text-sm font-black" dir="auto">
-                  {service.name}
+          {orderedServices.map((service) => {
+            const preselected = service.id === preselectServiceId;
+            return (
+              <button
+                aria-current={preselected ? "true" : undefined}
+                autoFocus={preselected}
+                className={`flex items-center gap-3 rounded-2xl border p-4 text-start shadow-sm transition hover:border-[var(--itq-color-brand-300)] hover:bg-[var(--itq-color-brand-50)] active:scale-[0.98] ${
+                  preselected
+                    ? "border-[var(--itq-color-brand-500)] bg-[var(--itq-color-brand-50)] ring-2 ring-[var(--itq-color-brand-200)]"
+                    : "border-[var(--itq-color-border)] bg-[var(--itq-color-surface)]"
+                }`}
+                key={service.id}
+                name="serviceId"
+                type="submit"
+                value={service.id}
+              >
+                <span className="grid size-11 shrink-0 place-items-center rounded-xl bg-[var(--itq-color-brand-50)] text-[var(--itq-color-brand-strong)]">
+                  <RequestsIcon className="size-5" />
                 </span>
-                <span
-                  className="mt-0.5 block truncate text-xs text-[var(--itq-color-muted)]"
-                  dir="auto"
-                >
-                  {service.categoryName}
+                <span className="min-w-0">
+                  <span className="block truncate text-sm font-black" dir="auto">
+                    {service.name}
+                  </span>
+                  <span
+                    className="mt-0.5 block truncate text-xs text-[var(--itq-color-muted)]"
+                    dir="auto"
+                  >
+                    {service.categoryName}
+                  </span>
                 </span>
-              </span>
-            </button>
-          ))}
+              </button>
+            );
+          })}
         </div>
       </div>
 

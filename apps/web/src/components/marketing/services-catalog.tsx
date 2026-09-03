@@ -35,6 +35,8 @@ export interface ServicesCatalogCopy {
   readonly noFilesLabel: string;
   readonly emptyTitle: string;
   readonly emptyDescription: string;
+  /** Ribbon on the lead (most-requested) category cards, e.g. "🔥 الأكثر طلباً". */
+  readonly popularBadge: string;
   readonly supportEyebrow: string;
   readonly supportTitle: string;
   readonly supportDescription: string;
@@ -48,13 +50,43 @@ interface ServicesCatalogViewProps {
 }
 
 const categoryIcons: readonly MarketingIconName[] = [
-  "translate",
+  "training",
+  "compass",
   "palette",
   "document",
+  "route",
+  "translate",
+  "sparkles",
   "code",
-  "compass",
-  "training",
 ];
+
+/** One playful pastel per category, cycled by position. All theme-aware tokens. */
+const categoryTones = [
+  {
+    tile: "bg-[var(--itq-color-warning-50)] text-[var(--itq-color-warning-700)]",
+    bar: "bg-[var(--itq-color-warning-500)]",
+  },
+  {
+    tile: "bg-[var(--itq-color-success-50)] text-[var(--itq-color-success-700)]",
+    bar: "bg-[var(--itq-color-success-500)]",
+  },
+  {
+    tile: "bg-[var(--itq-color-info-50)] text-[var(--itq-color-info-700)]",
+    bar: "bg-[var(--itq-color-info-500)]",
+  },
+  {
+    tile: "bg-[var(--itq-color-danger-50)] text-[var(--itq-color-danger-700)]",
+    bar: "bg-[var(--itq-color-danger-500)]",
+  },
+  {
+    tile: "bg-[var(--itq-color-accent-50)] text-[var(--itq-color-accent-700)]",
+    bar: "bg-[var(--itq-color-accent-500)]",
+  },
+  {
+    tile: "bg-[var(--itq-color-brand-50)] text-[var(--itq-color-brand-strong)]",
+    bar: "bg-[var(--itq-color-brand-500)]",
+  },
+] as const;
 
 export function ServicesCatalogView({
   categories,
@@ -133,57 +165,72 @@ export function ServicesCatalogView({
               titleId="catalog-title"
             />
             <div className="mt-9 grid items-start gap-5 md:grid-cols-2 xl:grid-cols-3">
-              {categories.map((category, categoryIndex) => (
-                <article
-                  className="group relative scroll-mt-36 overflow-hidden rounded-3xl border border-[var(--itq-color-border)] bg-[var(--itq-color-surface)] shadow-[var(--itq-shadow-sm)] transition duration-300 before:absolute before:inset-x-0 before:top-0 before:h-1 before:origin-center before:scale-x-0 before:bg-[linear-gradient(90deg,var(--itq-color-brand-500),color-mix(in_srgb,var(--itq-color-accent-500)_80%,transparent))] before:transition-transform before:duration-300 hover:-translate-y-1 hover:border-[var(--itq-color-brand-200)] hover:shadow-[var(--itq-shadow-card)] hover:before:scale-x-100"
-                  id={`category-${category.slug}`}
-                  key={category.id}
-                >
-                  <div className="border-b border-[var(--itq-color-border)] bg-[var(--itq-color-surface-soft)] p-6">
-                    <span className="inline-flex size-12 items-center justify-center rounded-2xl bg-[linear-gradient(135deg,var(--itq-color-brand-50),color-mix(in_srgb,var(--itq-color-accent-200)_55%,transparent))] text-[var(--itq-color-brand-strong)] shadow-sm transition duration-300 group-hover:bg-[linear-gradient(135deg,var(--itq-color-brand-600),var(--itq-color-brand-800))] group-hover:text-white">
-                      <MarketingIcon
-                        name={categoryIcons[categoryIndex % categoryIcons.length] ?? "sparkles"}
-                      />
-                    </span>
-                    <h2 className="mt-5 text-2xl font-black tracking-tight">{category.name}</h2>
-                    <p className="mt-2 min-h-14 leading-7 text-[var(--itq-color-muted)]">
-                      {category.description}
-                    </p>
-                  </div>
-                  <div className="divide-y divide-[var(--itq-color-border)]">
-                    {category.services.map((service) => (
-                      <div className="p-6" key={service.id}>
-                        <div className="flex flex-wrap items-start justify-between gap-2">
-                          <h3 className="text-lg font-black">{service.name}</h3>
-                          {service.priceLabel === undefined ? null : (
-                            <span className="shrink-0 rounded-full bg-[var(--itq-color-brand-50)] px-3 py-1 text-xs font-black text-[var(--itq-color-brand-strong)]">
-                              {service.priceLabel}
+              {categories.map((category, categoryIndex) => {
+                const tone =
+                  categoryTones[categoryIndex % categoryTones.length] ?? categoryTones[0];
+                return (
+                  <article
+                    className="group relative scroll-mt-36 overflow-hidden rounded-3xl border border-[var(--itq-color-border)] bg-[var(--itq-color-surface)] shadow-[var(--itq-shadow-sm)] transition duration-300 hover:-translate-y-1 hover:border-[var(--itq-color-brand-200)] hover:shadow-[var(--itq-shadow-card)]"
+                    id={`category-${category.slug}`}
+                    key={category.id}
+                  >
+                    <span
+                      aria-hidden="true"
+                      className={`absolute inset-x-0 top-0 h-1.5 origin-center scale-x-0 transition-transform duration-300 group-hover:scale-x-100 ${tone.bar}`}
+                    />
+                    <div className="relative border-b border-[var(--itq-color-border)] bg-[var(--itq-color-surface-soft)] p-6">
+                      {categoryIndex < 2 ? (
+                        <span className="absolute end-4 top-4 inline-flex items-center rounded-full bg-[var(--itq-color-surface)] px-2.5 py-1 text-[11px] font-black text-[var(--itq-color-ink-soft)] shadow-[var(--itq-shadow-sm)]">
+                          {copy.popularBadge}
+                        </span>
+                      ) : null}
+                      <span
+                        className={`inline-flex size-12 items-center justify-center rounded-2xl text-2xl shadow-sm transition duration-300 group-hover:-rotate-6 group-hover:scale-110 ${tone.tile}`}
+                      >
+                        <MarketingIcon
+                          name={categoryIcons[categoryIndex % categoryIcons.length] ?? "sparkles"}
+                        />
+                      </span>
+                      <h2 className="mt-5 text-2xl font-black tracking-tight">{category.name}</h2>
+                      <p className="mt-2 min-h-14 leading-7 text-[var(--itq-color-muted)]">
+                        {category.description}
+                      </p>
+                    </div>
+                    <div className="divide-y divide-[var(--itq-color-border)]">
+                      {category.services.map((service) => (
+                        <div className="p-6" key={service.id}>
+                          <div className="flex flex-wrap items-start justify-between gap-2">
+                            <h3 className="text-lg font-black">{service.name}</h3>
+                            {service.priceLabel === undefined ? null : (
+                              <span className="shrink-0 rounded-full bg-[var(--itq-color-brand-50)] px-3 py-1 text-sm font-black text-[var(--itq-color-brand-strong)]">
+                                {service.priceLabel}
+                              </span>
+                            )}
+                          </div>
+                          <p className="mt-2 min-h-14 text-sm leading-7 text-[var(--itq-color-muted)]">
+                            {service.shortDescription}
+                          </p>
+                          <div className="mt-5 flex flex-wrap items-center justify-between gap-3">
+                            <span className="inline-flex items-center gap-1.5 text-xs font-bold text-[var(--itq-color-muted)]">
+                              <MarketingIcon
+                                className="size-4"
+                                name={service.acceptsFiles ? "files" : "check"}
+                              />
+                              {service.acceptsFiles ? copy.acceptsFilesLabel : copy.noFilesLabel}
                             </span>
-                          )}
+                            <Link
+                              className="inline-flex min-h-11 items-center justify-center rounded-xl bg-[var(--itq-color-brand-700)] px-4 py-2 text-sm font-black text-white transition hover:bg-[var(--itq-color-brand-800)]"
+                              href={`${prefix}/services/${service.slug}`}
+                            >
+                              {copy.detailsLabel}
+                            </Link>
+                          </div>
                         </div>
-                        <p className="mt-2 min-h-14 text-sm leading-7 text-[var(--itq-color-muted)]">
-                          {service.shortDescription}
-                        </p>
-                        <div className="mt-5 flex flex-wrap items-center justify-between gap-3">
-                          <span className="inline-flex items-center gap-1.5 text-xs font-bold text-[var(--itq-color-muted)]">
-                            <MarketingIcon
-                              className="size-4"
-                              name={service.acceptsFiles ? "files" : "check"}
-                            />
-                            {service.acceptsFiles ? copy.acceptsFilesLabel : copy.noFilesLabel}
-                          </span>
-                          <Link
-                            className="inline-flex min-h-11 items-center justify-center rounded-xl bg-[var(--itq-color-brand-700)] px-4 py-2 text-sm font-black text-white transition hover:bg-[var(--itq-color-brand-800)]"
-                            href={`${prefix}/services/${service.slug}`}
-                          >
-                            {copy.detailsLabel}
-                          </Link>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </article>
-              ))}
+                      ))}
+                    </div>
+                  </article>
+                );
+              })}
             </div>
           </section>
         </>

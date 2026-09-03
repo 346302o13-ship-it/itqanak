@@ -5,13 +5,14 @@ import { PublicShell } from "@/components/public-shell";
 import { createContentRuntime } from "@/lib/content-runtime";
 
 export const metadata: Metadata = {
-  title: "ITQANAK | Educational support, clearly",
+  title: "ITQANAK | All your coursework help in one place",
   description:
-    "Explore responsible educational services, submit your request securely, and follow every update from one clear student portal.",
+    "Assignments, research, presentations, graduation projects and websites — order in a tap, follow from your phone, and start from 15 SAR.",
   alternates: { canonical: "/en", languages: { "ar-SA": "/ar", en: "/en" } },
   openGraph: {
-    title: "ITQANAK | Educational support, clearly",
-    description: "Responsible services, private requests and clear progress tracking in one place.",
+    title: "ITQANAK | All your coursework help in one place",
+    description:
+      "From the daily assignment to your graduation project, at token prices with clear tracking.",
     locale: "en_US",
     type: "website",
     url: "/en",
@@ -22,111 +23,149 @@ export const dynamic = "force-dynamic";
 
 const landingCopy = {
   hero: {
-    eyebrow: "Your journey from request to completion",
-    title: "Educational support,",
-    highlightedTitle: "organised around you.",
+    eyebrow: "Everything a student needs",
+    title: "All your coursework help,",
+    highlightedTitle: "in one place.",
     description:
-      "Choose the right service, share your requirements and files securely, then follow every update from one thoughtfully designed portal.",
+      "From a daily assignment to your research paper, graduation project and website — pick a service, share the details, and follow every update from your phone. Prices start at 15 SAR.",
     status: "Services are available",
-    primaryLabel: "Explore services",
+    primaryLabel: "Order now",
     whatsappLabel: "Ask us on WhatsApp",
     whatsappMessage: "Hello, I would like help choosing the right ITQANAK service.",
-    imageAlt:
-      "Abstract workspace with a laptop, protected files and voice messages representing request tracking",
+    imageAlt: "A student portal view showing a request, its status and its files in ITQANAK",
+    priceChips: [
+      "Assignments from 20 SAR",
+      "Presentations from 40 SAR",
+      "Graduation projects from 30 SAR",
+      "Subject tutoring from 15 SAR",
+    ],
   },
   trustItems: [
     {
-      icon: "shield",
-      title: "Private by design",
-      description: "Your request and files are visible only to you and the authorised team.",
-    },
-    {
       icon: "route",
-      title: "Clear progress",
-      description: "Understand the current stage and review every important update in order.",
+      title: "Everything in one place",
+      description:
+        "Assignments, research, slides, projects and websites — one window, not a dozen chats.",
     },
     {
       icon: "message",
-      title: "Human support",
-      description: "Reach us directly on WhatsApp when you need help choosing a service.",
+      title: "Follow it from your phone",
+      description:
+        "An instant notification on every reply or update, with your files kept in your account.",
+    },
+    {
+      icon: "sparkles",
+      title: "Token prices",
+      description:
+        "Starting at 15 SAR, with the final price agreed clearly before any work begins.",
     },
   ],
   services: {
-    eyebrow: "Support that fits your needs",
-    title: "Practical educational expertise in one place",
+    eyebrow: "Most requested",
+    title: "Everything you need as a student — in one place",
     description:
-      "Responsible services that help you understand, improve and present your own work while keeping academic responsibility with you.",
+      "The services students ask for most, with approximate starting prices. Tap a service to open its details and start.",
     items: [
       {
-        icon: "translate",
-        title: "Translation",
-        description: "Clear human translation that preserves meaning and essential formatting.",
-        slug: "document-translation",
+        icon: "document",
+        emoji: "📚",
+        tone: "warning",
+        badge: "🔥 Most requested",
+        priceLabel: "From 20 SAR",
+        title: "Assignment review & guidance",
+        description:
+          "We review your work, flag the mistakes and walk you through the idea — so you submit with confidence.",
+        slug: "assignment-guidance",
       },
       {
         icon: "palette",
-        title: "Design & presentations",
-        description: "A polished visual system that makes your supplied content easier to read.",
+        emoji: "🎨",
+        tone: "info",
+        badge: "🔥 Most requested",
+        priceLabel: "From 40 SAR",
+        title: "Presentation visual design",
+        description: "A clean, cohesive slide deck for any course, ready to print or present.",
         slug: "presentation-visual-design",
       },
       {
+        icon: "compass",
+        emoji: "🚀",
+        tone: "success",
+        badge: "🔥 Most requested",
+        priceLabel: "From 30 SAR",
+        title: "Graduation project guidance",
+        description:
+          "Practical direction for the idea, plan, build and defence — from start to submission.",
+        slug: "project-guidance",
+      },
+      {
         icon: "document",
-        title: "Formatting & review",
-        description: "Professional language review and formatting for work you have prepared.",
+        emoji: "📝",
+        tone: "danger",
+        priceLabel: "From 25 SAR",
+        title: "Document formatting & review",
+        description:
+          "Language review and professional formatting for your paper or report, to your university's rules.",
         slug: "document-formatting-review",
       },
       {
-        icon: "code",
-        title: "Technical support",
-        description: "Diagnose the issue and receive practical, secure steps to resolve it.",
-        slug: "technical-consultation",
-      },
-      {
-        icon: "compass",
-        title: "Research guidance",
-        description: "Methodological support for planning and evaluating appropriate resources.",
-        slug: "research-method-guidance",
-      },
-      {
         icon: "training",
-        title: "Training & explanation",
+        emoji: "💡",
+        tone: "accent",
+        priceLabel: "From 15 SAR",
+        title: "Subject tutoring",
         description:
-          "Interactive sessions focused on understanding and independent skill-building.",
-        slug: "guided-learning-session",
+          "A session focused on the hard parts of your course, with simple explanations and worked examples.",
+        slug: "subject-tutoring",
+      },
+      {
+        icon: "code",
+        emoji: "💻",
+        tone: "brand",
+        priceLabel: "From 60 SAR",
+        title: "Website development",
+        description:
+          "A website or online store for your project, cleanly built with a walkthrough of how to run it.",
+        slug: "website-development",
       },
     ],
-    itemCta: "Discover service",
+    itemCta: "Order now",
     allCta: "View all services",
   },
   process: {
-    eyebrow: "A simple, visible journey",
-    title: "Three clear steps from requirement to progress",
+    eyebrow: "Simple and fast",
+    title: "Order in just 3 steps",
     description:
-      "The request flow is intentionally short, with enough room to explain what you need and attach helpful context.",
+      "From choosing a service to receiving the work — every step is clear, and you can ask us on WhatsApp any time.",
     steps: [
-      { title: "Choose a service", description: "Review each outcome and select the closest fit." },
       {
-        title: "Share the details",
-        description: "Create a request, explain the outcome and add relevant files when needed.",
+        title: "Choose your service",
+        description: "Assignment, research, slides, project or website — pick the closest fit.",
       },
       {
-        title: "Follow every update",
-        description: "Return to your portal at any time to review status, messages and files.",
+        title: "Share the details",
+        description:
+          "Write what you need and attach your files, or message us directly on WhatsApp.",
+      },
+      {
+        title: "Follow it from your phone",
+        description:
+          "You get a notification on every update, and download the finished work from your account.",
       },
     ],
   },
   portal: {
-    eyebrow: "Every request in its place",
-    title: "A portal that gives you the complete picture",
+    eyebrow: "Your private portal",
+    title: "Every request and file on one page",
     description:
-      "From the first draft to the final update, the request, its status, conversation and files stay together in one easy-to-find workspace.",
+      "From the saved draft to the finished download, each request's details, status and files stay tidy and easy to return to.",
     points: [
-      "A unique reference number for every request.",
-      "Plain-language statuses that show the stage and any action you need to take.",
-      "An ordered activity history for important updates.",
-      "Private attachments with controlled storage and security scanning.",
+      "A clear reference number for every request.",
+      "Plain-language statuses that show where it is and whether it needs you.",
+      "An ordered timeline that keeps every important update.",
+      "Your files stay private — and you can open them from your device even after the request ends.",
     ],
-    cta: "Open student portal",
+    cta: "Open the student portal",
   },
   why: {
     eyebrow: "Why ITQANAK?",
@@ -136,23 +175,26 @@ const landingCopy = {
     items: [
       {
         icon: "lock",
-        title: "Genuine privacy",
-        description: "Requests and attachments are protected by account-level access controls.",
+        title: "Private & secure",
+        description:
+          "Your request and files are seen only by you and the team authorised to work on them.",
       },
       {
         icon: "files",
-        title: "Organised files",
-        description: "Every file stays with its request and has a visible storage and scan status.",
+        title: "Your files, kept",
+        description:
+          "Every file stays with its request, and you can open it from your device even after it ends.",
       },
       {
-        icon: "route",
-        title: "Understandable stages",
-        description: "Clear language tells you where the request is without technical noise.",
+        icon: "message",
+        title: "Live updates",
+        description: "An instant notification on your phone for every reply or change of status.",
       },
       {
         icon: "headphones",
-        title: "Human help",
-        description: "A direct WhatsApp channel when you need guidance before ordering.",
+        title: "Human help nearby",
+        description:
+          "Ask us on WhatsApp before ordering and we'll help you pick the right service.",
       },
     ],
   },
@@ -171,14 +213,14 @@ const landingCopy = {
       "The essentials about requests, files and contact—plus direct support when needed.",
     items: [
       {
+        question: "How much does a service cost?",
+        answer:
+          "Most services show an approximate starting price (“from …”) and begin at 15 SAR. The final price is agreed after we review your request's scope, files and timing; a few services are priced after a quick chat.",
+      },
+      {
         question: "How do I choose the right service?",
         answer:
           "Review the outcome described for each service. If your need spans more than one area, message us on WhatsApp and we will help route it.",
-      },
-      {
-        question: "Are service prices shown publicly?",
-        answer:
-          "Yes — most services show an approximate starting price (“from …”), and a few are priced after a quick chat. The final price is set once we review the request scope, files and timing.",
       },
       {
         question: "Can I attach files?",
@@ -202,11 +244,10 @@ const landingCopy = {
     whatsappLabel: "Talk to support",
   },
   finalCta: {
-    eyebrow: "Start when you are ready",
-    title: "Turn your requirement into a request you can follow",
-    description:
-      "Explore the services first, or send us a WhatsApp message if you would like help choosing.",
-    primaryLabel: "Browse services",
+    eyebrow: "Ready to start?",
+    title: "Turn your need into a clear request in under a minute",
+    description: "Choose your service now, or ask us on WhatsApp if you'd like help choosing.",
+    primaryLabel: "Order now",
     whatsappLabel: "Ask on WhatsApp",
   },
 } satisfies LandingPageCopy;
