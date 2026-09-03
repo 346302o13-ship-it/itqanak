@@ -97,7 +97,7 @@ export function StudentNavigation({ locale = "ar" }: Readonly<{ locale?: "ar" | 
         return (
           <NavLink
             aria-current={active ? "page" : undefined}
-            className={`group relative flex min-h-12 items-center gap-3 rounded-2xl px-3.5 text-sm font-extrabold transition ${
+            className={`group relative flex min-h-11 items-center gap-3 rounded-[var(--itq-radius-control)] px-3 text-sm font-black transition ${
               active
                 ? "bg-[var(--itq-color-brand-50)] text-[var(--itq-color-brand-strong)]"
                 : "text-[var(--itq-color-muted)] hover:bg-[var(--itq-color-surface-soft)] hover:text-[var(--itq-color-ink)]"
@@ -105,10 +105,16 @@ export function StudentNavigation({ locale = "ar" }: Readonly<{ locale?: "ar" | 
             href={item.href}
             key={item.href}
           >
+            {active ? (
+              <span
+                aria-hidden="true"
+                className="absolute inset-y-2 start-0 w-0.5 rounded-full bg-[var(--itq-color-accent-500)]"
+              />
+            ) : null}
             <span
-              className={`grid size-9 place-items-center rounded-xl transition ${
+              className={`grid size-8 place-items-center rounded-[var(--itq-radius-control)] transition ${
                 active
-                  ? "bg-[var(--itq-color-surface)] text-[var(--itq-color-brand-strong)] shadow-sm"
+                  ? "bg-[var(--itq-color-surface)] text-[var(--itq-color-brand-strong)]"
                   : "text-[var(--itq-color-muted)] group-hover:text-[var(--itq-color-brand-strong)]"
               }`}
             >

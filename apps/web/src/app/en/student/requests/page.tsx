@@ -68,13 +68,15 @@ export default async function EnglishRequestsPage({ searchParams }: RequestsPage
       />
       <div className="flex flex-wrap items-start justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-black">My requests</h1>
+          <h1 className="text-[1.7rem] font-black leading-[1.15] tracking-[-0.015em] sm:text-[2.05rem]">
+            My requests
+          </h1>
           <p className="mt-3 text-[var(--itq-color-muted)]">
             Search, filter and organise every request in one place.
           </p>
         </div>
         <Link
-          className="rounded-xl bg-[var(--itq-color-brand-700)] px-5 py-3 text-sm font-black text-white"
+          className="inline-flex min-h-11 items-center rounded-[var(--itq-radius-control)] bg-[var(--itq-color-brand-700)] px-5 text-sm font-black text-white transition hover:bg-[var(--itq-color-brand-800)]"
           href="/en/student/requests/new"
         >
           New request
@@ -93,7 +95,7 @@ export default async function EnglishRequestsPage({ searchParams }: RequestsPage
         label="Filters"
       >
         <form
-          className="grid gap-4 rounded-2xl bg-[var(--itq-color-brand-50)] p-5 lg:grid-cols-5"
+          className="grid gap-4 rounded-[var(--itq-radius-card)] border border-[var(--itq-color-border)] bg-[var(--itq-color-surface-soft)] p-5 lg:grid-cols-5"
           method="get"
         >
           <div className="lg:col-span-2">
@@ -162,7 +164,7 @@ export default async function EnglishRequestsPage({ searchParams }: RequestsPage
           </div>
           <div className="flex flex-wrap gap-3 lg:col-span-5">
             <button
-              className="rounded-xl bg-[var(--itq-color-brand-700)] px-5 py-3 text-sm font-black text-white"
+              className="inline-flex min-h-11 items-center rounded-[var(--itq-radius-control)] bg-[var(--itq-color-brand-700)] px-5 text-sm font-black text-white transition hover:bg-[var(--itq-color-brand-800)]"
               type="submit"
             >
               Apply filters
@@ -182,7 +184,7 @@ export default async function EnglishRequestsPage({ searchParams }: RequestsPage
         {requests.pageCount}
       </p>
       {requests.items.length === 0 ? (
-        <p className="mt-5 rounded-2xl border border-dashed border-[var(--itq-color-border)] p-7 text-center font-bold">
+        <p className="mt-5 rounded-[var(--itq-radius-card)] border border-dashed border-[var(--itq-color-border)] p-7 text-center font-bold">
           No requests match these filters.
         </p>
       ) : (
@@ -190,7 +192,7 @@ export default async function EnglishRequestsPage({ searchParams }: RequestsPage
           {requests.items.map((request) => (
             <li key={request.id}>
               <Link
-                className="grid gap-3 rounded-2xl border border-[var(--itq-color-border)] p-5 hover:bg-[var(--itq-color-brand-50)] sm:grid-cols-[1fr_auto]"
+                className="grid gap-3 rounded-[var(--itq-radius-card)] border border-[var(--itq-color-border)] p-5 transition hover:border-[var(--itq-color-brand-300)] hover:bg-[var(--itq-color-brand-50)] sm:grid-cols-[1fr_auto]"
                 href={`/en/student/requests/${encodeURIComponent(request.requestNumber)}`}
               >
                 <span>

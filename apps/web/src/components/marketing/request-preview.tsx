@@ -35,7 +35,7 @@ export function RequestPreview({
   return (
     <div
       aria-label={copy.label}
-      className="relative rounded-[1.75rem] border border-[var(--itq-color-border)] bg-[var(--itq-color-surface)] p-4 shadow-[var(--itq-shadow-float)] sm:p-6"
+      className="relative rounded-[var(--itq-radius-panel)] border border-[var(--itq-color-border)] bg-[var(--itq-color-surface)] p-4 shadow-[var(--itq-shadow-sm)] sm:p-6"
       role="img"
     >
       <div className="flex items-start justify-between gap-4 border-b border-[var(--itq-color-border)] pb-5">
@@ -45,7 +45,7 @@ export function RequestPreview({
             {copy.requestNumber}
           </bdi>
         </div>
-        <span className="rounded-full bg-[var(--itq-color-warning-50)] px-3 py-1.5 text-xs font-black text-[var(--itq-color-warning-800)]">
+        <span className="rounded-md bg-[var(--itq-color-warning-50)] px-2.5 py-1 text-xs font-black text-[var(--itq-color-warning-800)]">
           {copy.status}
         </span>
       </div>
@@ -66,9 +66,9 @@ export function RequestPreview({
           ))}
         </ol>
       </div>
-      <div className="rounded-2xl bg-[var(--itq-color-surface-soft)] p-4">
+      <div className="rounded-[var(--itq-radius-control)] bg-[var(--itq-color-surface-soft)] p-4">
         <div className="flex gap-3">
-          <span className="inline-flex size-9 shrink-0 items-center justify-center rounded-xl bg-[var(--itq-color-surface)] text-[var(--itq-color-brand-strong)] shadow-sm">
+          <span className="inline-flex size-9 shrink-0 items-center justify-center rounded-[var(--itq-radius-control)] bg-[var(--itq-color-surface)] text-[var(--itq-color-brand-strong)]">
             <MarketingIcon className="size-5" name="message" />
           </span>
           <div>

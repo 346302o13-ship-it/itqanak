@@ -3,7 +3,7 @@ import Link from "next/link";
 export default function StudentNotFound() {
   return (
     <main className="mx-auto flex min-h-screen max-w-xl items-center px-5 py-10 text-center">
-      <div className="w-full rounded-3xl border border-[var(--itq-color-border)] bg-[var(--itq-color-surface)] p-8 shadow-sm">
+      <div className="w-full rounded-[var(--itq-radius-panel)] border border-[var(--itq-color-border)] bg-[var(--itq-color-surface)] p-8">
         <h1 className="text-3xl font-black">الطلب غير موجود</h1>
         <p className="mt-3 leading-7 text-[var(--itq-color-muted)]">
           لا يمكن العثور على هذا الطلب ضمن حسابك.

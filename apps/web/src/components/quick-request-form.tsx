@@ -99,7 +99,7 @@ export function QuickRequestForm({
         </span>
         <input
           autoComplete="off"
-          className="mt-2 h-14 w-full rounded-2xl border border-[var(--itq-color-border)] bg-[var(--itq-color-surface)] px-4 text-base shadow-sm outline-none focus:border-[var(--itq-color-brand-500)]"
+          className="mt-2 h-12 w-full rounded-[var(--itq-radius-control)] border border-[var(--itq-color-border)] bg-[var(--itq-color-surface)] px-4 text-base outline-none focus:border-[var(--itq-color-brand-500)]"
           dir="auto"
           maxLength={160}
           name="phrase"
@@ -120,7 +120,7 @@ export function QuickRequestForm({
               <button
                 aria-current={preselected ? "true" : undefined}
                 autoFocus={preselected}
-                className={`flex items-center gap-3 rounded-2xl border p-4 text-start shadow-sm transition hover:border-[var(--itq-color-brand-300)] hover:bg-[var(--itq-color-brand-50)] active:scale-[0.98] ${
+                className={`flex items-center gap-3 rounded-[var(--itq-radius-control)] border p-4 text-start transition hover:border-[var(--itq-color-brand-300)] hover:bg-[var(--itq-color-brand-50)] active:scale-[0.98] ${
                   preselected
                     ? "border-[var(--itq-color-brand-500)] bg-[var(--itq-color-brand-50)] ring-2 ring-[var(--itq-color-brand-200)]"
                     : "border-[var(--itq-color-border)] bg-[var(--itq-color-surface)]"
@@ -130,7 +130,7 @@ export function QuickRequestForm({
                 type="submit"
                 value={service.id}
               >
-                <span className="grid size-11 shrink-0 place-items-center rounded-xl bg-[var(--itq-color-brand-50)] text-[var(--itq-color-brand-strong)]">
+                <span className="grid size-10 shrink-0 place-items-center rounded-[var(--itq-radius-control)] bg-[var(--itq-color-brand-50)] text-[var(--itq-color-brand-strong)]">
                   <RequestsIcon className="size-5" />
                 </span>
                 <span className="min-w-0">
@@ -159,9 +159,9 @@ export function QuickRequestForm({
       {submitting ? (
         <span
           aria-hidden="true"
-          className="absolute inset-0 z-10 grid place-items-center rounded-2xl bg-[color-mix(in_srgb,var(--itq-color-surface)_60%,transparent)]"
+          className="absolute inset-0 z-10 grid place-items-center rounded-[var(--itq-radius-panel)] bg-[color-mix(in_srgb,var(--itq-color-surface)_60%,transparent)]"
         >
-          <span className="inline-flex items-center gap-2 rounded-xl bg-[var(--itq-color-brand-700)] px-4 py-2 text-sm font-black text-white shadow-[var(--itq-shadow-md)]">
+          <span className="inline-flex items-center gap-2 rounded-[var(--itq-radius-control)] bg-[var(--itq-color-brand-700)] px-4 py-2 text-sm font-black text-white shadow-[var(--itq-shadow-sm)]">
             {english ? "Creating…" : "جارٍ الإنشاء…"}
           </span>
         </span>

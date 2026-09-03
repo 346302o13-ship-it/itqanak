@@ -49,7 +49,9 @@ export default async function NewRequestPage({ searchParams }: NewRequestPagePro
   return (
     <StudentShell csrfToken={csrfToken} displayName={principal.displayName}>
       <RequestFlash {...(typeof query.notice === "string" ? { status: query.notice } : {})} />
-      <h1 className="text-2xl font-black sm:text-3xl">اطلب في نقرة واحدة</h1>
+      <h1 className="text-[1.7rem] font-black leading-[1.15] tracking-[-0.015em] sm:text-[2.05rem]">
+        اطلب في نقرة واحدة
+      </h1>
       <p className="mt-2 leading-7 text-[var(--itq-color-muted)]">
         اختر الخدمة، ثم أكمل التفاصيل معنا في المحادثة مباشرة.
       </p>

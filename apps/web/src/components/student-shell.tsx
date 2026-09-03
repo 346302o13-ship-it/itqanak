@@ -46,8 +46,8 @@ export function StudentShell({
             >
               <BrandMark className="size-11" />
               <span className="hidden sm:inline">{english ? "ITQANAK" : "إتقانك"}</span>
-              <span className="hidden rounded-full bg-[var(--itq-color-success-50)] px-2.5 py-1 text-[10px] font-black text-[var(--itq-color-success-800)] md:inline">
-                {english ? "STUDENT PORTAL" : "بوابة الطالب"}
+              <span className="hidden rounded-md bg-[var(--itq-color-brand-50)] px-2 py-0.5 text-[10px] font-black uppercase tracking-wide text-[var(--itq-color-brand-strong)] md:inline">
+                {english ? "Student portal" : "بوابة الطالب"}
               </span>
             </Link>
             <div className="flex items-center gap-2 sm:gap-3">
@@ -56,10 +56,10 @@ export function StudentShell({
                 <NotificationCenter csrfToken={csrfToken} locale={locale} surface="student" />
               </div>
               <Link
-                className="flex min-h-11 items-center gap-2 rounded-2xl border border-[var(--itq-color-border)] bg-[var(--itq-color-surface)] px-2 pe-3"
+                className="flex min-h-11 items-center gap-2 rounded-[var(--itq-radius-control)] border border-[var(--itq-color-border)] bg-[var(--itq-color-surface)] px-2 pe-3 transition hover:border-[var(--itq-color-brand-300)]"
                 href={`${prefix}/account`}
               >
-                <span className="grid size-8 place-items-center rounded-xl bg-[var(--itq-color-brand-700)] text-sm font-black text-white">
+                <span className="grid size-8 place-items-center rounded-[var(--itq-radius-control)] bg-[var(--itq-color-brand-700)] text-sm font-black text-white">
                   {initial}
                 </span>
                 <span className="hidden max-w-36 truncate text-xs font-extrabold sm:block">
@@ -83,17 +83,17 @@ export function StudentShell({
       >
         {workspace ? null : (
           <aside className="hidden self-start lg:sticky lg:top-[6.75rem] lg:block">
-            <div className="rounded-[1.75rem] border border-[var(--itq-color-border)] bg-[var(--itq-color-surface)] p-3 shadow-[var(--itq-shadow-sm)]">
-              <div className="mb-3 rounded-2xl bg-[var(--itq-color-surface-soft)] p-4">
-                <p className="text-xs font-bold text-[var(--itq-color-muted)]">
+            <div className="rounded-[var(--itq-radius-panel)] border border-[var(--itq-color-border)] bg-[var(--itq-color-surface)] p-3">
+              <div className="mb-3 rounded-[var(--itq-radius-control)] bg-[var(--itq-color-surface-soft)] p-4">
+                <p className="text-[0.68rem] font-black uppercase tracking-[0.14em] text-[var(--itq-color-muted)]">
                   {english ? "Welcome back" : "مرحباً بعودتك"}
                 </p>
                 <p className="mt-1 truncate font-black">{displayName}</p>
               </div>
               <StudentNavigation locale={locale} />
-              <div className="mx-2 my-4 h-px bg-[var(--itq-color-border)]" />
+              <div className="mx-1 my-3 h-px bg-[var(--itq-color-border)]" />
               <a
-                className="group flex items-start gap-3 rounded-2xl bg-[var(--itq-color-whatsapp-50)] p-3.5 text-[var(--itq-color-whatsapp-800)] transition hover:bg-[var(--itq-color-whatsapp-100)]"
+                className="group flex items-start gap-3 rounded-[var(--itq-radius-control)] bg-[var(--itq-color-whatsapp-50)] p-3.5 text-[var(--itq-color-whatsapp-800)] transition hover:bg-[var(--itq-color-whatsapp-100)]"
                 href={supportWhatsAppHref(
                   locale,
                   english ? "Student portal support" : "مساعدة داخل بوابة الطالب",
@@ -101,7 +101,7 @@ export function StudentShell({
                 rel="noreferrer"
                 target="_blank"
               >
-                <span className="grid size-9 shrink-0 place-items-center rounded-xl bg-[var(--itq-color-whatsapp-600)] text-white">
+                <span className="grid size-9 shrink-0 place-items-center rounded-[var(--itq-radius-control)] bg-[var(--itq-color-whatsapp-600)] text-white">
                   <WhatsAppIcon className="size-5" />
                 </span>
                 <span>
@@ -125,7 +125,7 @@ export function StudentShell({
           {workspace ? (
             children
           ) : (
-            <div className="rounded-[1.75rem] border border-[var(--itq-color-border)] bg-[var(--itq-color-surface)] p-5 shadow-[var(--itq-shadow-sm)] sm:p-8 lg:p-9">
+            <div className="rounded-[var(--itq-radius-panel)] border border-[var(--itq-color-border)] bg-[var(--itq-color-surface)] p-5 sm:p-7 lg:p-8">
               {children}
             </div>
           )}

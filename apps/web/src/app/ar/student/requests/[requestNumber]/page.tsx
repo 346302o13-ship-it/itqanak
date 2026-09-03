@@ -222,7 +222,7 @@ export default async function RequestDetailPage({ params, searchParams }: Reques
       )}
 
       <div className="mt-10">
-        <section className="rounded-[1.5rem] border border-[var(--itq-color-brand-200)] bg-[var(--itq-color-brand-50)] p-5 sm:flex sm:items-center sm:justify-between sm:gap-5">
+        <section className="rounded-[var(--itq-radius-card)] border border-[var(--itq-color-brand-200)] bg-[var(--itq-color-brand-50)] p-5 sm:flex sm:items-center sm:justify-between sm:gap-5">
           <div>
             <h2 className="text-lg font-black">المحادثة الموحدة مع الدعم</h2>
             <p className="mt-2 text-sm leading-7 text-[var(--itq-color-muted)]">

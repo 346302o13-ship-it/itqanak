@@ -92,7 +92,7 @@ export function PublicHeader({
             <Link
               aria-current={item.current ? "page" : undefined}
               className={classNames(
-                "rounded-xl px-3.5 py-2.5 transition hover:bg-[var(--itq-color-surface)]",
+                "rounded-[var(--itq-radius-control)] px-3.5 py-2.5 transition hover:bg-[var(--itq-color-surface)]",
                 item.current &&
                   "bg-[var(--itq-color-surface)] text-[var(--itq-color-brand-strong)] shadow-[var(--itq-shadow-sm)]",
               )}
@@ -107,7 +107,7 @@ export function PublicHeader({
         <div className="flex items-center gap-1.5 sm:gap-2">
           <Link
             aria-label={languageLabel}
-            className="inline-flex size-11 items-center justify-center rounded-xl border border-[var(--itq-color-border)] bg-[var(--itq-color-surface)] text-xs font-black text-[var(--itq-color-brand-strong)] shadow-sm transition hover:bg-[var(--itq-color-brand-50)]"
+            className="inline-flex size-11 items-center justify-center rounded-[var(--itq-radius-control)] border border-[var(--itq-color-border)] bg-[var(--itq-color-surface)] text-xs font-black text-[var(--itq-color-brand-strong)] transition hover:bg-[var(--itq-color-brand-50)]"
             href={oppositeHref}
             hrefLang={oppositeLocale}
             lang={oppositeLocale}
@@ -124,7 +124,7 @@ export function PublicHeader({
             aria-controls="public-mobile-nav"
             aria-expanded={open}
             aria-label={navigationLabel}
-            className="inline-flex size-11 items-center justify-center rounded-xl border border-[var(--itq-color-border)] bg-[var(--itq-color-surface)] text-[var(--itq-color-ink)] shadow-sm lg:hidden"
+            className="inline-flex size-11 items-center justify-center rounded-[var(--itq-radius-control)] border border-[var(--itq-color-border)] bg-[var(--itq-color-surface)] text-[var(--itq-color-ink)] lg:hidden"
             onClick={() => setOpen((value) => !value)}
             type="button"
           >
@@ -164,7 +164,7 @@ export function PublicHeader({
               <Link
                 aria-current={item.current ? "page" : undefined}
                 className={classNames(
-                  "rounded-xl px-4 py-3 transition hover:bg-[var(--itq-color-surface)]",
+                  "rounded-[var(--itq-radius-control)] px-4 py-3 transition hover:bg-[var(--itq-color-surface)]",
                   item.current &&
                     "bg-[var(--itq-color-surface)] text-[var(--itq-color-brand-strong)]",
                 )}

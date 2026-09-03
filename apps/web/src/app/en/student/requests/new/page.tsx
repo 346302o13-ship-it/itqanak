@@ -52,7 +52,9 @@ export default async function EnglishNewRequestPage({ searchParams }: NewRequest
         locale="en"
         {...(typeof query.notice === "string" ? { status: query.notice } : {})}
       />
-      <h1 className="text-2xl font-black sm:text-3xl">Request in one tap</h1>
+      <h1 className="text-[1.7rem] font-black leading-[1.15] tracking-[-0.015em] sm:text-[2.05rem]">
+        Request in one tap
+      </h1>
       <p className="mt-2 leading-7 text-[var(--itq-color-muted)]">
         Pick a service, then work out the details with us right in the chat.
       </p>
