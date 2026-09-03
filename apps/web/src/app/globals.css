@@ -22,6 +22,7 @@ html {
 }
 
 body {
+  min-height: 100vh;
   min-height: 100svh;
   min-height: 100dvh;
   margin: 0;
@@ -82,6 +83,34 @@ label:has(> input[type="radio"]) {
 
 .itq-safe-t {
   padding-top: env(safe-area-inset-top);
+}
+
+/* Full-viewport-height helpers with a graceful fallback. `100vh` is the base so
+   engines without the newer viewport units (older Android System WebView, some
+   in-app browsers) still get a bounded height — without it an `h-[100svh]` rule
+   is dropped entirely, the height chain collapses to `auto`, and the chat's
+   message list renders at full natural height, overflowing the screen with the
+   composer clipped off the bottom. The `@supports` block then upgrades capable
+   engines to `100dvh` (the live visible viewport, so the surface tracks the
+   browser UI). The feature query keeps the fallback alive through CSS
+   minification, which would otherwise fold consecutive `height` declarations
+   down to the last one. */
+.itq-screen-h {
+  height: 100vh;
+}
+
+.itq-screen-min-h {
+  min-height: 100vh;
+}
+
+@supports (height: 100dvh) {
+  .itq-screen-h {
+    height: 100dvh;
+  }
+
+  .itq-screen-min-h {
+    min-height: 100dvh;
+  }
 }
 
 @media (display-mode: standalone) {

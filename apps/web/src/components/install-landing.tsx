@@ -210,7 +210,7 @@ export function InstallLanding({ locale }: { readonly locale: "ar" | "en" }) {
 
   return (
     <div
-      className="grid min-h-[100svh] min-h-[100dvh] place-items-center bg-[var(--itq-color-canvas)] px-5 py-10 text-[var(--itq-color-ink)]"
+      className="itq-screen-min-h grid place-items-center bg-[var(--itq-color-canvas)] px-5 py-10 text-[var(--itq-color-ink)]"
       dir={copy.dir}
       lang={locale}
     >

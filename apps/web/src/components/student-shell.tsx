@@ -33,7 +33,7 @@ export function StudentShell({
   const initial = displayName.trim().slice(0, 1) || (english ? "S" : "ط");
   return (
     <div
-      className="min-h-[100svh] min-h-[100dvh] bg-[var(--itq-color-canvas)]"
+      className="itq-screen-min-h bg-[var(--itq-color-canvas)]"
       dir={english ? "ltr" : "rtl"}
       lang={locale}
     >
@@ -77,7 +77,7 @@ export function StudentShell({
       <div
         className={
           workspace
-            ? "itq-safe-t mx-auto h-[100svh] max-w-[120rem] overflow-hidden lg:h-[100dvh]"
+            ? "itq-safe-t itq-screen-h mx-auto max-w-[120rem] overflow-hidden"
             : "mx-auto grid max-w-[92rem] gap-7 px-4 pb-28 pt-6 sm:px-7 lg:grid-cols-[17.5rem_minmax(0,1fr)] lg:px-10 lg:pb-12 lg:pt-8"
         }
       >

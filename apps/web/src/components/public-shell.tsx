@@ -116,7 +116,7 @@ export function PublicShell({
 
   return (
     <div
-      className="min-h-[100svh] min-h-[100dvh] bg-[var(--itq-color-canvas)] text-[var(--itq-color-ink)]"
+      className="itq-screen-min-h bg-[var(--itq-color-canvas)] text-[var(--itq-color-ink)]"
       dir={direction}
       lang={locale}
     >

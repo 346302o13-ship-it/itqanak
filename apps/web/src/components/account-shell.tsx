@@ -30,7 +30,7 @@ export function AccountShell({
   const homeHref = surface === "admin" ? `${prefix}/admin` : `${prefix}/student`;
   return (
     <div
-      className="min-h-[100svh] min-h-[100dvh] bg-[var(--itq-color-canvas)]"
+      className="itq-screen-min-h bg-[var(--itq-color-canvas)]"
       dir={english ? "ltr" : "rtl"}
       lang={locale}
     >
