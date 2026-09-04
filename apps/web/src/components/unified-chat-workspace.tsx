@@ -1855,6 +1855,15 @@ export function UnifiedChatWorkspace({
   // Guards refreshRequests against a stale response landing after the admin
   // has already switched to a different student's conversation — see there.
   const apiBaseRef = useRef<string | undefined>(undefined);
+  // The SSE effect below sets up its `onmessage` handler exactly once (its
+  // dependency array is just [mode], which never changes) — calling
+  // `refreshRequests` by name there would freeze that closure on whatever
+  // conversation was open when the tab first mounted, and keep re-fetching
+  // *that* student's requests/dues forever after, on every event for every
+  // student platform-wide. Calling `refreshRequestsRef.current()` instead
+  // always reaches the latest version, bound to whichever conversation is
+  // actually open right now.
+  const refreshRequestsRef = useRef<() => Promise<void>>(async () => undefined);
   const mediaRecorder = useRef<MediaRecorder | undefined>(undefined);
   const mediaStream = useRef<MediaStream | undefined>(undefined);
   const recordedChunks = useRef<Blob[]>([]);
@@ -2016,6 +2025,9 @@ export function UnifiedChatWorkspace({
       /* keep the current list on a transient failure */
     }
   }, [apiBase]);
+  useEffect(() => {
+    refreshRequestsRef.current = refreshRequests;
+  }, [refreshRequests]);
 
   // Keep the request list's finance state fresh while a conversation is open.
   useEffect(() => {
@@ -2606,7 +2618,7 @@ export function UnifiedChatWorkspace({
         }
         if (mode === "admin") {
           contactPokeRef.current();
-          void refreshRequests();
+          void refreshRequestsRef.current();
           if (
             payload.conversationId === conversationIdRef.current &&
             payload.senderType !== "ADMIN"
