@@ -6,6 +6,7 @@ import { useEffect, useState } from "react";
 import { BrandMark, classNames } from "@itqanak/ui";
 
 import { InstallAppButton } from "../install-app-button";
+import { ThemeToggleButton } from "../theme-toggle-button";
 
 import type { MarketingLocale } from "./whatsapp-link";
 
@@ -105,6 +106,7 @@ export function PublicHeader({
         </nav>
 
         <div className="flex items-center gap-1.5 sm:gap-2">
+          <ThemeToggleButton locale={locale} />
           <Link
             aria-label={languageLabel}
             className="inline-flex size-11 items-center justify-center rounded-[var(--itq-radius-control)] border border-[var(--itq-color-border)] bg-[var(--itq-color-surface)] text-xs font-black text-[var(--itq-color-brand-strong)] transition hover:bg-[var(--itq-color-brand-50)]"

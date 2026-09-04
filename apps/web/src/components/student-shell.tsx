@@ -10,6 +10,7 @@ import { InstallAppButton } from "./install-app-button";
 import { NotificationCenter } from "./notification-center";
 import { StudentMobileNavigation, StudentNavigation } from "./student-navigation";
 import { StudentSupportFab } from "./student-support-fab";
+import { ThemeToggleButton } from "./theme-toggle-button";
 import { supportWhatsAppHref } from "@/lib/support-contact";
 
 interface StudentShellProps {
@@ -51,6 +52,7 @@ export function StudentShell({
               </span>
             </Link>
             <div className="flex items-center gap-2 sm:gap-3">
+              <ThemeToggleButton locale={locale} />
               <InstallAppButton compact locale={locale} surface="student" />
               <div className="text-[var(--itq-color-muted)]">
                 <NotificationCenter csrfToken={csrfToken} locale={locale} surface="student" />

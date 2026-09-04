@@ -2,11 +2,13 @@
 
 import { useEffect, useLayoutEffect, useState } from "react";
 
-type Choice = "system" | "light" | "dark";
+export type ThemeChoice = "system" | "light" | "dark";
 
 const STORAGE_KEY = "itq-theme";
 
-function readChoice(): Choice {
+/** Shared with `ThemeToggleButton` — one localStorage key and `data-theme`
+ *  contract for every appearance control on the site. */
+export function readChoice(): ThemeChoice {
   try {
     const stored = localStorage.getItem(STORAGE_KEY);
     return stored === "light" || stored === "dark" ? stored : "system";
@@ -15,7 +17,7 @@ function readChoice(): Choice {
   }
 }
 
-function applyChoice(choice: Choice): void {
+export function applyChoice(choice: ThemeChoice): void {
   const root = document.documentElement;
   try {
     if (choice === "system") {
@@ -31,6 +33,17 @@ function applyChoice(choice: Choice): void {
   }
 }
 
+/** The theme actually in effect right now, resolving "system" via the media
+ *  query. Only meaningful client-side, after mount. */
+export function effectiveTheme(choice: ThemeChoice): "light" | "dark" {
+  if (choice !== "system") return choice;
+  try {
+    return window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
+  } catch {
+    return "light";
+  }
+}
+
 /**
  * Three-way appearance control: follow the device, or pin light / dark. The
  * choice is stored per-browser and re-applied before paint by a small script in
@@ -38,7 +51,7 @@ function applyChoice(choice: Choice): void {
  */
 export function ThemeToggle({ locale = "ar" }: Readonly<{ locale?: "ar" | "en" }>) {
   const english = locale === "en";
-  const [choice, setChoice] = useState<Choice>("system");
+  const [choice, setChoice] = useState<ThemeChoice>("system");
   const [ready, setReady] = useState(false);
 
   useEffect(() => {
@@ -53,7 +66,7 @@ export function ThemeToggle({ locale = "ar" }: Readonly<{ locale?: "ar" | "en" }
     applyChoice(readChoice());
   }, []);
 
-  const options: readonly { value: Choice; label: string }[] = [
+  const options: readonly { value: ThemeChoice; label: string }[] = [
     { value: "system", label: english ? "System" : "النظام" },
     { value: "light", label: english ? "Light" : "فاتح" },
     { value: "dark", label: english ? "Dark" : "داكن" },

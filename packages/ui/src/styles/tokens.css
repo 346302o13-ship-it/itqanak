@@ -38,7 +38,7 @@
 
   /* Conversation surface: a WhatsApp-style warm canvas with green outgoing
      bubbles and neutral incoming bubbles. */
-  --itq-color-chat-bg: #ece5dd;
+  --itq-color-chat-bg: #e6f0e8;
   --itq-color-bubble-out: #d9fdd3;
   --itq-color-bubble-out-ink: #0f1f17;
   --itq-color-bubble-in: #ffffff;
@@ -152,7 +152,7 @@
     --itq-color-brand-950: #063318;
     --itq-color-brand-strong: #48c281;
 
-    --itq-color-chat-bg: #0b141a;
+    --itq-color-chat-bg: #0c1a15;
     --itq-color-bubble-out: #005c4b;
     --itq-color-bubble-out-ink: #e9edef;
     --itq-color-bubble-in: #202c33;
@@ -249,7 +249,7 @@
   --itq-color-brand-950: #063318;
   --itq-color-brand-strong: #48c281;
 
-  --itq-color-chat-bg: #0b141a;
+  --itq-color-chat-bg: #0c1a15;
   --itq-color-bubble-out: #005c4b;
   --itq-color-bubble-out-ink: #e9edef;
   --itq-color-bubble-in: #202c33;
