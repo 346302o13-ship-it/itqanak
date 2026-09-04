@@ -48,6 +48,7 @@ export const allowedUploadMimeTypes = [
   "video/mp4",
   "video/quicktime",
   "video/3gpp",
+  "application/zip",
 ] as const;
 
 export type AllowedUploadMimeType = (typeof allowedUploadMimeTypes)[number];
@@ -80,7 +81,8 @@ export type ValidatedUpload = Readonly<{
     | ".amr"
     | ".mp4"
     | ".mov"
-    | ".3gp";
+    | ".3gp"
+    | ".zip";
   declaredMimeType: AllowedUploadMimeType;
   detectedMimeType: AllowedUploadMimeType;
   size: number;
@@ -105,6 +107,11 @@ type FilePolicy = Readonly<{
   detectedMimeType: AllowedUploadMimeType;
   matchesMagic?: (header: Uint8Array) => boolean;
   ooxmlFamily?: OoxmlFamily;
+  /** A plain ZIP archive: needs the full central-directory parse
+   *  (`isSafeGenericZip`), not just a header check, so it needs the trailer
+   *  spooled the same way OOXML documents do — see `requiresZipTrailer` in
+   *  the upload routes. */
+  requiresZipParse?: boolean;
 }>;
 
 const startsWith = (header: Uint8Array, signature: readonly number[]): boolean =>
@@ -414,18 +421,37 @@ function contentTypesDeclareFamily(xml: string, family: OoxmlFamily): boolean {
   return false;
 }
 
-function isOoxmlPackage(input: UploadValidationInput, family: OoxmlFamily): boolean {
+/** Magic bytes + the full bomb/traversal-safe central-directory parse — the
+ *  part of ZIP validation that has nothing to do with any specific family.
+ *  Shared by the OOXML check below and the generic-ZIP one. */
+function parseZipEntries(input: UploadValidationInput): readonly ZipEntry[] | undefined {
   const prefix = Buffer.from(input.header.subarray(0, UPLOAD_MAGIC_PREFIX_BYTES));
   if (!startsWith(prefix, [0x50, 0x4b, 0x03, 0x04])) {
-    return false;
+    return undefined;
   }
   const suppliedTrailer =
     input.trailer ??
     (input.size <= input.header.length ? input.header.subarray(0, input.size) : undefined);
   if (suppliedTrailer === undefined) {
-    return false;
+    return undefined;
   }
-  const entries = parseCentralDirectory(input.size, suppliedTrailer);
+  return parseCentralDirectory(input.size, suppliedTrailer);
+}
+
+/** Any ZIP archive that clears the same structural checks an OOXML package
+ *  does (valid central directory, bounded entry count/sizes/expansion ratio,
+ *  safe entry names, no symlinks) — just without requiring a specific
+ *  document family inside it. Entries are never decompressed here (the
+ *  Content-Types cross-check below is OOXML-only); the malware scan every
+ *  attachment goes through after upload — ClamAV's own archive handling,
+ *  purpose-built for this — is what actually looks inside. */
+function isSafeGenericZip(input: UploadValidationInput): boolean {
+  return parseZipEntries(input) !== undefined;
+}
+
+function isOoxmlPackage(input: UploadValidationInput, family: OoxmlFamily): boolean {
+  const prefix = Buffer.from(input.header.subarray(0, UPLOAD_MAGIC_PREFIX_BYTES));
+  const entries = parseZipEntries(input);
   if (entries === undefined) {
     return false;
   }
@@ -652,6 +678,12 @@ const policies: Readonly<Record<string, FilePolicy>> = {
     detectedMimeType: "video/3gpp",
     matchesMagic: isIsoBaseMediaContainer,
   },
+  ".zip": {
+    normalizedExtension: ".zip",
+    declaredMimeType: "application/zip",
+    detectedMimeType: "application/zip",
+    requiresZipParse: true,
+  },
 };
 
 export const ALLOWED_UPLOAD_MIME_TYPES = new Set<string>(allowedUploadMimeTypes);
@@ -731,9 +763,11 @@ export function validateUpload(input: UploadValidationInput): ValidatedUpload {
     throw new StorageValidationError("MIME_MISMATCH", "The file samples are invalid.");
   }
   const matchesDetectedType =
-    policy.ooxmlFamily === undefined
-      ? (policy.matchesMagic?.(input.header.subarray(0, UPLOAD_MAGIC_PREFIX_BYTES)) ?? false)
-      : isOoxmlPackage(input, policy.ooxmlFamily);
+    policy.ooxmlFamily !== undefined
+      ? isOoxmlPackage(input, policy.ooxmlFamily)
+      : policy.requiresZipParse === true
+        ? isSafeGenericZip(input)
+        : (policy.matchesMagic?.(input.header.subarray(0, UPLOAD_MAGIC_PREFIX_BYTES)) ?? false);
   if (!matchesDetectedType) {
     throw new StorageValidationError(
       "MIME_MISMATCH",

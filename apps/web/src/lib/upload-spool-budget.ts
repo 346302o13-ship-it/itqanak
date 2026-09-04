@@ -82,7 +82,9 @@ export class UploadConcurrencyBudget {
   }
 }
 
-// Production gives /tmp a 64 MiB tmpfs. Two maximum-size OOXML files may be
-// admitted concurrently while at least 24 MiB remains for runtime overhead.
+// Production gives /tmp a 64 MiB tmpfs. Two maximum-size full-body-spooled
+// files (OOXML documents or plain ZIP archives — anything whose ZIP central
+// directory has to be captured) may be admitted concurrently while at least
+// 24 MiB remains for runtime overhead.
 export const ooxmlUploadSpoolBudget = new UploadSpoolBudget(40 * 1_024 * 1_024);
 export const uploadConcurrencyBudget = new UploadConcurrencyBudget(32);

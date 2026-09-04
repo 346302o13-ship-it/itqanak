@@ -132,7 +132,7 @@ interface StudentTransitionWire {
 }
 
 const acceptedExtensions =
-  ".pdf,.docx,.pptx,.xlsx,.doc,.xls,.ppt,.rtf,.csv,.txt,.png,.jpg,.jpeg,.webp,.gif,.heic,.heif,.webm,.ogg,.mp3,.wav,.m4a,.aac,.amr,.mp4,.mov,.3gp";
+  ".pdf,.docx,.pptx,.xlsx,.doc,.xls,.ppt,.rtf,.csv,.txt,.png,.jpg,.jpeg,.webp,.gif,.heic,.heif,.webm,.ogg,.mp3,.wav,.m4a,.aac,.amr,.mp4,.mov,.3gp,.zip";
 
 // Reaction + composer emoji. Mirrors `messageReactionEmojis` in
 // @itqanak/requests (the server allowlist); kept inline so this client bundle
@@ -230,6 +230,7 @@ const mimeByExtension: Readonly<Record<string, string>> = {
   mp4: "video/mp4",
   mov: "video/quicktime",
   "3gp": "video/3gpp",
+  zip: "application/zip",
 };
 
 function declaredMime(file: File): string {
@@ -247,8 +248,8 @@ function attachmentErrorMessage(
   switch (code) {
     case "FILE_TYPE_NOT_ALLOWED":
       return english
-        ? "This file type is not supported. Send a document (PDF, Word, PowerPoint, Excel, RTF, CSV, text), an image, or a voice/video message."
-        : "نوع الملف غير مدعوم. أرسل مستنداً (PDF أو Word أو PowerPoint أو Excel أو RTF أو CSV أو نص)، أو صورة، أو رسالة صوتية أو فيديو.";
+        ? "This file type is not supported. Send a document (PDF, Word, PowerPoint, Excel, RTF, CSV, text), an image, a voice/video message, or a ZIP archive."
+        : "نوع الملف غير مدعوم. أرسل مستنداً (PDF أو Word أو PowerPoint أو Excel أو RTF أو CSV أو نص)، أو صورة، أو رسالة صوتية أو فيديو، أو ملف ZIP مضغوط.";
     case "FILE_MIME_MISMATCH":
       return english
         ? "The file looks damaged or its contents don’t match its name. Re-save it (in Word: “Save As → .docx”) and try again."

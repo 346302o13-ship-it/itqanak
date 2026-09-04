@@ -25,8 +25,9 @@ interface UploadRouteContext {
 
 function requiresZipTrailer(filename: string, declaredMimeType: string): boolean {
   return (
-    /\.(?:docx|pptx|xlsx)$/iu.test(filename) ||
-    declaredMimeType.startsWith("application/vnd.openxmlformats-officedocument.")
+    /\.(?:docx|pptx|xlsx|zip)$/iu.test(filename) ||
+    declaredMimeType.startsWith("application/vnd.openxmlformats-officedocument.") ||
+    declaredMimeType === "application/zip"
   );
 }
 

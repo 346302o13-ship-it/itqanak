@@ -251,18 +251,50 @@ describe("upload validation", () => {
         }),
       "MIME_MISMATCH",
     );
-    // Generic .zip stays unsupported — only the OOXML family above (backed by
-    // the full central-directory parse) is accepted as a ZIP container.
+  });
+
+  it("accepts a plain ZIP archive that passes the same structural checks OOXML does", () => {
+    const archive = createStoredZip([
+      { name: "notes.txt", content: "hello" },
+      { name: "folder/data.csv", content: "a,b\n1,2" },
+    ]);
+    expect(
+      validateUpload({
+        filename: "submission.zip",
+        declaredMimeType: "application/zip",
+        size: archive.length,
+        maxBytes: 1024,
+        header: archive,
+      }),
+    ).toMatchObject({ normalizedExtension: ".zip", detectedMimeType: "application/zip" });
+  });
+
+  it("rejects a ZIP with an unsafe entry name even though the extension/MIME are right", () => {
+    const archive = createStoredZip([{ name: "../../etc/passwd", content: "x" }]);
     expectStorageValidationCode(
       () =>
         validateUpload({
-          filename: "files.zip",
+          filename: "submission.zip",
           declaredMimeType: "application/zip",
-          size: 4,
-          maxBytes: 20,
-          header: Buffer.from([0x50, 0x4b, 0x03, 0x04]),
+          size: archive.length,
+          maxBytes: 1024,
+          header: archive,
         }),
-      "TYPE_NOT_ALLOWED",
+      "MIME_MISMATCH",
+    );
+  });
+
+  it("rejects a .zip file whose bytes are not actually a ZIP", () => {
+    expectStorageValidationCode(
+      () =>
+        validateUpload({
+          filename: "submission.zip",
+          declaredMimeType: "application/zip",
+          size: 9,
+          maxBytes: 1024,
+          header: Buffer.from("not a zip"),
+        }),
+      "MIME_MISMATCH",
     );
   });
 

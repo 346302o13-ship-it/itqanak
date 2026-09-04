@@ -48,6 +48,7 @@ const uploadMimeByExtension: Readonly<Record<string, string>> = {
   mp4: "video/mp4",
   mov: "video/quicktime",
   "3gp": "video/3gpp",
+  zip: "application/zip",
 };
 
 function uploadMimeType(file: File): string {
@@ -165,7 +166,7 @@ export function AttachmentUpload({
         {english ? "Add one file" : "إضافة ملف واحد"}
       </label>
       <input
-        accept=".pdf,.docx,.pptx,.xlsx,.doc,.xls,.ppt,.rtf,.csv,.txt,.png,.jpg,.jpeg,.webp,.gif,.heic,.heif,.webm,.ogg,.mp3,.wav,.m4a,.aac,.amr,.mp4,.mov,.3gp"
+        accept=".pdf,.docx,.pptx,.xlsx,.doc,.xls,.ppt,.rtf,.csv,.txt,.png,.jpg,.jpeg,.webp,.gif,.heic,.heif,.webm,.ogg,.mp3,.wav,.m4a,.aac,.amr,.mp4,.mov,.3gp,.zip"
         className="mt-3 block w-full rounded-xl border border-[var(--itq-color-border)] bg-[var(--itq-color-surface)] p-3 text-sm"
         disabled={pending}
         id="requestAttachment"
@@ -174,8 +175,8 @@ export function AttachmentUpload({
       />
       <p className="mt-2 text-xs leading-6 text-[var(--itq-color-muted)]">
         {english
-          ? `Allowed: documents (PDF, Word, PowerPoint, Excel, RTF, CSV, text), images (incl. WebP, GIF, HEIC), and voice or video messages. Maximum ${megabytes(maximumBytes, locale)} MB per file.`
-          : `الأنواع المسموحة: المستندات (PDF وWord وPowerPoint وExcel وRTF وCSV ونص)، والصور (وتشمل WebP وGIF وHEIC)، والرسائل الصوتية أو مقاطع الفيديو. الحد الأقصى لهذا الطلب ${megabytes(maximumBytes, locale)} ميجابايت للملف.`}
+          ? `Allowed: documents (PDF, Word, PowerPoint, Excel, RTF, CSV, text), images (incl. WebP, GIF, HEIC), voice or video messages, and ZIP archives. Maximum ${megabytes(maximumBytes, locale)} MB per file.`
+          : `الأنواع المسموحة: المستندات (PDF وWord وPowerPoint وExcel وRTF وCSV ونص)، والصور (وتشمل WebP وGIF وHEIC)، والرسائل الصوتية أو مقاطع الفيديو، وملفات ZIP المضغوطة. الحد الأقصى لهذا الطلب ${megabytes(maximumBytes, locale)} ميجابايت للملف.`}
       </p>
       <button
         className="mt-4 rounded-xl bg-[var(--itq-color-brand-700)] px-5 py-3 text-sm font-black text-white disabled:cursor-wait disabled:opacity-60"
