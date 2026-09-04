@@ -1852,6 +1852,9 @@ export function UnifiedChatWorkspace({
   const messagePokeRef = useRef<() => void>(() => undefined);
   const contactPokeRef = useRef<() => void>(() => undefined);
   const conversationIdRef = useRef<string | undefined>(conversation?.id);
+  // Guards refreshRequests against a stale response landing after the admin
+  // has already switched to a different student's conversation — see there.
+  const apiBaseRef = useRef<string | undefined>(undefined);
   const mediaRecorder = useRef<MediaRecorder | undefined>(undefined);
   const mediaStream = useRef<MediaStream | undefined>(undefined);
   const recordedChunks = useRef<Blob[]>([]);
@@ -1975,13 +1978,18 @@ export function UnifiedChatWorkspace({
   // changes — priced / paid / receipt — need this to land in the UI.
   const refreshRequests = useCallback(async (): Promise<void> => {
     if (apiBase === undefined) return;
+    // Captured now, checked again after the request lands: if the admin has
+    // since switched to a different student's conversation, apiBaseRef will
+    // have moved on and this (now stale) response must be discarded rather
+    // than overwriting the requests panel with another student's data.
+    const requestedApiBase = apiBase;
     try {
       const response = await fetch(apiBase, {
         cache: "no-store",
         credentials: "same-origin",
         headers: { Accept: "application/json" },
       });
-      if (!response.ok) return;
+      if (!response.ok || apiBaseRef.current !== requestedApiBase) return;
       const payload = (await response.json()) as {
         conversation?: {
           requests?: readonly (Record<string, unknown> & { updatedAt: string })[];
@@ -1993,6 +2001,7 @@ export function UnifiedChatWorkspace({
           }[];
         };
       };
+      if (apiBaseRef.current !== requestedApiBase) return;
       const fresh = payload.conversation?.requests;
       if (!Array.isArray(fresh)) return;
       setRequests(
@@ -2049,6 +2058,12 @@ export function UnifiedChatWorkspace({
     setLoadedPage(initialMessagePage.page);
     setPageCount(initialMessagePage.pageCount ?? 1);
     setRequests([...(conversation?.requests ?? [])]);
+    // Otherwise the previous conversation's outstanding-dues figures stay on
+    // screen (this component instance persists across a sidebar switch —
+    // see the admin conversation list's next/link) until the next
+    // refreshRequests() call happens to land, which briefly shows one
+    // student's financial data while another student's conversation is open.
+    setOutstanding([...(conversation?.outstanding ?? [])]);
     setLinkedRequestId(selectedRequestId);
     setContactsOpen(conversation === undefined);
     setDetailsOpen(false);
@@ -2344,6 +2359,9 @@ export function UnifiedChatWorkspace({
   useEffect(() => {
     conversationIdRef.current = conversation?.id;
   }, [conversation?.id]);
+  useEffect(() => {
+    apiBaseRef.current = apiBase;
+  }, [apiBase]);
 
   // WhatsApp rule: while this exact conversation is open AND the tab is on
   // screen, an incoming message for it must not chime or raise a notification.
