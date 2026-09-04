@@ -53,6 +53,13 @@ export interface DraftRequestInput {
   readonly academicLevel?: AcademicLevel | null;
   readonly institutionName?: string | null;
   readonly privacyRequested?: boolean;
+  /** Ad-campaign attribution, copied verbatim from the `itq_utm` landing
+   *  cookie — never run through the shared `@itqanak/core` validation, since
+   *  malformed attribution must never block a request. See `sanitizeUtmValue`
+   *  in `service.ts`. */
+  readonly utmSource?: string | null;
+  readonly utmMedium?: string | null;
+  readonly utmCampaign?: string | null;
 }
 
 export interface UpdateDraftRequestInput

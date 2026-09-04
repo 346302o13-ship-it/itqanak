@@ -307,6 +307,10 @@ services:
       # /api/push/vapid-key). The private key is mounted in the Worker only.
       WEB_PUSH_VAPID_PUBLIC_KEY: ${WEB_PUSH_VAPID_PUBLIC_KEY:-}
       WEB_PUSH_SUBJECT: ${WEB_PUSH_SUBJECT:-}
+      # Ad pixels: unset by default, so no third-party script loads and the
+      # strict CSP in next.config.ts is unchanged. Set to turn a campaign on.
+      FB_PIXEL_ID: ${FB_PIXEL_ID:-}
+      TIKTOK_PIXEL_ID: ${TIKTOK_PIXEL_ID:-}
       # Non-secret delivery descriptors for the administrator monitoring page.
       # The Meta token remains mounted only in the Worker service.
       WHATSAPP_MONITORING_MODE: ${WHATSAPP_MODE:-disabled}

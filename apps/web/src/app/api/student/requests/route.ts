@@ -12,6 +12,7 @@ import {
 import { getRequestId } from "@/lib/request-id";
 import { createStudentRequestRuntime } from "@/lib/request-runtime";
 import { principalForRequest } from "@/lib/route-principal";
+import { parseUtmCookie, utmCookieName } from "@/lib/utm-cookie";
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/iu;
 
@@ -74,9 +75,13 @@ export async function POST(request: NextRequest) {
       if (protectedForm.formData.get("quick") === "true") {
         await fillQuickRequestFields(runtime.database, protectedForm.formData, locale);
       }
+      const utm = parseUtmCookie(request.cookies.get(utmCookieName())?.value);
       const result = await runtime.requests.createDraft(
         principal,
-        createDraftInput(protectedForm.formData),
+        {
+          ...createDraftInput(protectedForm.formData),
+          ...(utm === undefined ? {} : { utmSource: utm.s, utmMedium: utm.m, utmCampaign: utm.c }),
+        },
         { ...protectedForm.context, requestId },
       );
       const detailPath = `/${locale}/student/requests/${encodeURIComponent(result.request.requestNumber)}`;

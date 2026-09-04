@@ -2,9 +2,26 @@ import { NextResponse, type NextRequest } from "next/server";
 
 import { CloudflareAccessError, verifyCloudflareAccessRequest } from "./lib/cloudflare-access";
 import { maintenanceResponseForRequest } from "./lib/maintenance-gate";
+import { utmCookieName, type UtmCookieValue } from "./lib/utm-cookie";
 
 function csrfCookieName(): string {
   return process.env.NODE_ENV === "production" ? "__Host-itqanak_csrf" : "itqanak_dev_csrf";
+}
+
+/** First-touch ad attribution, so a request created days after the ad click
+ *  still carries it (see `POST /api/student/requests`). Only ever set once
+ *  per 30-day window — a later direct or organic visit must not overwrite the
+ *  campaign that actually brought the student in. */
+function utmCookieValue(request: NextRequest): string | undefined {
+  const params = request.nextUrl.searchParams;
+  const source = params.get("utm_source");
+  if (source === null || source.trim() === "") return undefined;
+  const value: UtmCookieValue = {
+    s: source.slice(0, 80),
+    m: (params.get("utm_medium") ?? "").slice(0, 80),
+    c: (params.get("utm_campaign") ?? "").slice(0, 120),
+  };
+  return JSON.stringify(value);
 }
 
 function randomCsrfToken(): string {
@@ -117,6 +134,21 @@ export async function proxy(request: NextRequest) {
       path: "/",
       maxAge: 60 * 60 * 8,
     });
+  }
+  const utmName = utmCookieName();
+  if (!onAdminHost && !pathname.startsWith("/api/") && request.cookies.get(utmName) === undefined) {
+    const utmValue = utmCookieValue(request);
+    if (utmValue !== undefined) {
+      response.cookies.set({
+        name: utmName,
+        value: utmValue,
+        httpOnly: true,
+        secure: process.env.NODE_ENV === "production",
+        sameSite: "lax",
+        path: "/",
+        maxAge: 60 * 60 * 24 * 30,
+      });
+    }
   }
   return response;
 }

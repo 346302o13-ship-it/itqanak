@@ -34,7 +34,7 @@ export function GET(): ImageResponse {
       {
         style: {
           alignItems: "center",
-          background: "linear-gradient(145deg, #0b5f59 0%, #073f3c 68%, #102a2e 100%)",
+          background: "linear-gradient(145deg, #0f7540 0%, #00522a 68%, #002c17 100%)",
           display: "flex",
           height: "100%",
           justifyContent: "center",

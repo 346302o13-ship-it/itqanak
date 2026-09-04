@@ -42,6 +42,25 @@ import {
   requestSubmissionFingerprint,
 } from "./validation.js";
 
+/** Trims, strips control characters, and caps length; never throws — a
+ *  malformed or oversized attribution value should silently become "no
+ *  attribution" rather than block request creation. Matches the DB column
+ *  caps in migration 039. */
+export function sanitizeUtmValue(
+  value: string | null | undefined,
+  maxLength: number,
+): string | null {
+  if (value === null || value === undefined) return null;
+  let cleaned = "";
+  for (const char of value) {
+    const code = char.codePointAt(0) ?? 0;
+    if (code >= 0x20 && code !== 0x7f) cleaned += char;
+  }
+  cleaned = cleaned.trim();
+  if (cleaned.length === 0) return null;
+  return cleaned.slice(0, maxLength);
+}
+
 interface RequestRow {
   readonly id: string;
   readonly request_number: string;
@@ -321,6 +340,12 @@ export class RequestService {
     requirePermission(principal, "requests.create");
     const normalized = normalizeDraftRequestInput(input);
     const fingerprint = requestSubmissionFingerprint(normalized.serviceId, normalized);
+    // Ad-campaign attribution rides in separately from the validated fields
+    // (see `DraftRequestInput.utmSource` / `sanitizeUtmValue`) — it must never
+    // fail request creation, so it never touches `normalizeDraftRequestInput`.
+    const utmSource = sanitizeUtmValue(input.utmSource, 80);
+    const utmMedium = sanitizeUtmValue(input.utmMedium, 80);
+    const utmCampaign = sanitizeUtmValue(input.utmCampaign, 120);
 
     const result = await this.database.begin(async (transaction) => {
       const tx = transaction as DatabaseClient;
@@ -341,14 +366,14 @@ export class RequestService {
           student_user_id, service_id, request_kind, status, title, description,
           deadline_at, urgency, budget_amount, budget_currency, language_code,
           academic_level, institution_name, privacy_requested, submission_key,
-          submission_fingerprint
+          submission_fingerprint, utm_source, utm_medium, utm_campaign
         ) VALUES (
           ${principal.userId}, ${service.id}, 'SERVICE', 'DRAFT', ${normalized.title},
           ${normalized.description}, ${normalized.deadlineAt ?? null}, ${normalized.urgency},
           ${normalized.budgetAmount ?? null}, ${normalized.budgetCurrency ?? null},
           ${normalized.languageCode ?? null}, ${normalized.academicLevel ?? null},
           ${normalized.institutionName ?? null}, ${normalized.privacyRequested},
-          ${normalized.submissionKey}, ${fingerprint}
+          ${normalized.submissionKey}, ${fingerprint}, ${utmSource}, ${utmMedium}, ${utmCampaign}
         )
         ON CONFLICT (student_user_id, submission_key) DO NOTHING
         RETURNING id

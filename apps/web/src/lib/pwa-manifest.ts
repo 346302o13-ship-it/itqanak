@@ -78,8 +78,8 @@ export function webAppManifestForContext(
     display: "standalone",
     dir: locale === "ar" ? "rtl" : "ltr",
     lang: locale,
-    background_color: "#f7f5ef",
-    theme_color: "#07544f",
+    background_color: "#f5f7f4",
+    theme_color: "#00522a",
     icons: [
       {
         src: "/install-icon-192",

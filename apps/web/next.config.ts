@@ -1,16 +1,24 @@
 import type { NextConfig } from "next";
 
+// Ad-pixel domains are only added to the policy when the matching pixel ID is
+// actually configured (see `layout.tsx`) — an unconfigured deployment keeps
+// the strict, third-party-free policy below unchanged.
+const fbPixelHosts = process.env.FB_PIXEL_ID ? ["https://connect.facebook.net"] : [];
+const fbPixelConnectHosts = process.env.FB_PIXEL_ID ? ["https://www.facebook.com"] : [];
+const tiktokPixelHosts = process.env.TIKTOK_PIXEL_ID ? ["https://analytics.tiktok.com"] : [];
+
 const contentSecurityPolicy = [
   "default-src 'self'",
   "base-uri 'self'",
   "form-action 'self'",
   "frame-ancestors 'none'",
   "object-src 'none'",
-  "img-src 'self' data:",
+  ["img-src 'self' data:", ...fbPixelConnectHosts].join(" "),
   "font-src 'self' data:",
+  ["connect-src 'self'", ...fbPixelConnectHosts, ...tiktokPixelHosts].join(" "),
   // Next's hydration bootstrap currently requires this policy exception. It is
   // scoped to this first-party app and documented in docs/SECURITY.md.
-  "script-src 'self' 'unsafe-inline'",
+  ["script-src 'self' 'unsafe-inline'", ...fbPixelHosts, ...tiktokPixelHosts].join(" "),
   "style-src 'self' 'unsafe-inline'",
   ...(process.env.NODE_ENV === "production" ? ["upgrade-insecure-requests"] : []),
 ].join("; ");
