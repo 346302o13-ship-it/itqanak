@@ -9,6 +9,7 @@ import { ShieldCheckIcon } from "./icons";
 import { InstallAppButton } from "./install-app-button";
 import { AdminMobileNavigation, AdminNavigation } from "./admin-navigation";
 import { NotificationCenter } from "./notification-center";
+import { ThemeToggleButton } from "./theme-toggle-button";
 
 interface AdminShellProps {
   readonly displayName: string;
@@ -28,6 +29,7 @@ export function AdminShell({
 }: AdminShellProps) {
   const english = locale === "en";
   const prefix = `/${locale}`;
+  const initial = displayName.trim().slice(0, 1) || (english ? "A" : "م");
   return (
     <div
       className="itq-screen-min-h bg-[var(--itq-color-canvas)]"
@@ -35,21 +37,35 @@ export function AdminShell({
       lang={locale}
     >
       {workspace ? null : (
-        <header className="sticky top-0 z-30 itq-safe-t border-b border-[var(--itq-color-border)] bg-[var(--itq-color-ink-deep)]/95 text-white backdrop-blur-xl">
+        <header className="sticky top-0 z-30 itq-safe-t border-b border-[var(--itq-color-border)]/80 bg-[var(--itq-color-canvas)]/90 backdrop-blur-xl">
           <div className="mx-auto flex h-[4.75rem] max-w-[96rem] items-center justify-between gap-4 px-4 sm:px-7 lg:px-10">
-            <Link className="inline-flex items-center gap-3 font-black" href={`${prefix}/admin`}>
-              <BrandMark className="size-11 bg-[var(--itq-color-surface)] text-[var(--itq-color-brand-strong)]" />
+            <Link
+              className="inline-flex items-center gap-3 text-lg font-black"
+              href={`${prefix}/admin`}
+            >
+              <BrandMark className="size-11" />
               <span className="hidden sm:inline">{english ? "ITQANAK" : "إتقانك"}</span>
-              <span className="hidden rounded-full bg-white/10 px-2.5 py-1 text-[10px] md:inline">
-                {english ? "ADMIN CENTER" : "مركز الإدارة"}
+              <span className="hidden rounded-md bg-[var(--itq-color-brand-50)] px-2 py-0.5 text-[10px] font-black uppercase tracking-wide text-[var(--itq-color-brand-strong)] md:inline">
+                {english ? "Admin center" : "مركز الإدارة"}
               </span>
             </Link>
-            <div className="flex items-center gap-2">
-              <InstallAppButton compact locale={locale} surface="admin" variant="header" />
-              <NotificationCenter csrfToken={csrfToken} locale={locale} surface="admin" />
-              <span className="hidden rounded-2xl bg-white/10 px-4 py-3 text-xs font-black sm:inline">
-                {displayName}
-              </span>
+            <div className="flex items-center gap-2 sm:gap-3">
+              <ThemeToggleButton locale={locale} />
+              <InstallAppButton compact locale={locale} surface="admin" />
+              <div className="text-[var(--itq-color-muted)]">
+                <NotificationCenter csrfToken={csrfToken} locale={locale} surface="admin" />
+              </div>
+              <Link
+                className="flex min-h-11 items-center gap-2 rounded-[var(--itq-radius-control)] border border-[var(--itq-color-border)] bg-[var(--itq-color-surface)] px-2 pe-3 transition hover:border-[var(--itq-color-brand-300)]"
+                href={`${prefix}/account`}
+              >
+                <span className="grid size-8 place-items-center rounded-[var(--itq-radius-control)] bg-[var(--itq-color-brand-700)] text-sm font-black text-white">
+                  {initial}
+                </span>
+                <span className="hidden max-w-36 truncate text-xs font-extrabold sm:block">
+                  {displayName}
+                </span>
+              </Link>
             </div>
           </div>
         </header>
@@ -65,9 +81,9 @@ export function AdminShell({
       >
         {workspace ? null : (
           <aside className="hidden self-start lg:sticky lg:top-[6.75rem] lg:block">
-            <div className="rounded-[1.75rem] border border-[var(--itq-color-border)] bg-[var(--itq-color-surface)] p-3 shadow-[var(--itq-shadow-sm)]">
-              <div className="mb-3 rounded-2xl bg-[var(--itq-color-brand-50)] p-4">
-                <div className="flex items-center gap-2 text-xs font-black text-[var(--itq-color-success-800)]">
+            <div className="rounded-[var(--itq-radius-panel)] border border-[var(--itq-color-border)] bg-[var(--itq-color-surface)] p-3">
+              <div className="mb-3 rounded-[var(--itq-radius-control)] bg-[var(--itq-color-surface-soft)] p-4">
+                <div className="flex items-center gap-2 text-[0.68rem] font-black uppercase tracking-[0.14em] text-[var(--itq-color-success-700)]">
                   <ShieldCheckIcon className="size-4" />{" "}
                   {english ? "Trusted admin session" : "جلسة إدارية موثوقة"}
                 </div>

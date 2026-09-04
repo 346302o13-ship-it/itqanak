@@ -235,20 +235,35 @@ export function AdminNavigation({ locale = "ar" }: Readonly<{ locale?: "ar" | "e
         return (
           <div className="contents" key={href}>
             {href === firstSystemHref ? (
-              <p className="mt-3 px-4 pb-1 text-[11px] font-black uppercase tracking-wide text-[var(--itq-color-muted)]">
+              <p className="mt-3 px-3 pb-1 text-[11px] font-black uppercase tracking-wide text-[var(--itq-color-muted)]">
                 {locale === "en" ? "System" : "النظام"}
               </p>
             ) : null}
             <NavLink
               aria-current={active ? "page" : undefined}
-              className={`relative flex min-h-12 items-center gap-3 rounded-2xl px-4 text-sm font-black transition ${
+              className={`group relative flex min-h-11 items-center gap-3 rounded-[var(--itq-radius-control)] px-3 text-sm font-black transition ${
                 active
-                  ? "bg-[var(--itq-color-brand-700)] text-white shadow-sm"
-                  : "text-[var(--itq-color-muted)] hover:bg-[var(--itq-color-brand-50)] hover:text-[var(--itq-color-brand-strong)]"
+                  ? "bg-[var(--itq-color-brand-50)] text-[var(--itq-color-brand-strong)]"
+                  : "text-[var(--itq-color-muted)] hover:bg-[var(--itq-color-surface-soft)] hover:text-[var(--itq-color-ink)]"
               }`}
               href={href}
             >
-              <Icon className="size-5" /> {label}
+              {active ? (
+                <span
+                  aria-hidden="true"
+                  className="absolute inset-y-2 start-0 w-0.5 rounded-full bg-[var(--itq-color-accent-500)]"
+                />
+              ) : null}
+              <span
+                className={`grid size-8 shrink-0 place-items-center rounded-[var(--itq-radius-control)] transition ${
+                  active
+                    ? "bg-[var(--itq-color-surface)] text-[var(--itq-color-brand-strong)]"
+                    : "text-[var(--itq-color-muted)] group-hover:text-[var(--itq-color-brand-strong)]"
+                }`}
+              >
+                <Icon className="size-5" />
+              </span>
+              {label}
             </NavLink>
           </div>
         );

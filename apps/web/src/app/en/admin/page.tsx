@@ -86,7 +86,7 @@ export default async function EnglishAdminPage() {
           </p>
         </div>
         <Link
-          className="rounded-xl bg-[var(--itq-color-brand-700)] px-5 py-3 text-sm font-black text-white"
+          className="rounded-[var(--itq-radius-control)] bg-[var(--itq-color-brand-700)] px-5 py-3 text-sm font-black text-white"
           href="/en/admin/support"
         >
           Open conversation center
@@ -96,10 +96,12 @@ export default async function EnglishAdminPage() {
       <section className="mt-8 grid gap-4 sm:grid-cols-2 xl:grid-cols-4" aria-label="Admin metrics">
         {metrics.map(({ label, value, detail, Icon, tone }) => (
           <article
-            className="rounded-[1.5rem] border border-[var(--itq-color-border)] bg-[var(--itq-color-surface)] p-5 shadow-[var(--itq-shadow-sm)]"
+            className="rounded-[var(--itq-radius-panel)] border border-[var(--itq-color-border)] bg-[var(--itq-color-surface)] p-5"
             key={label}
           >
-            <span className={`grid size-11 place-items-center rounded-2xl ${tone}`}>
+            <span
+              className={`grid size-11 place-items-center rounded-[var(--itq-radius-control)] ${tone}`}
+            >
               <Icon className="size-5" />
             </span>
             <strong className="mt-5 block text-3xl font-black">
@@ -112,7 +114,7 @@ export default async function EnglishAdminPage() {
       </section>
 
       <div className="mt-7 grid gap-6 xl:grid-cols-[minmax(0,1.45fr)_minmax(18rem,.8fr)]">
-        <section className="rounded-[1.5rem] border border-[var(--itq-color-border)] bg-[var(--itq-color-surface)] p-5 shadow-[var(--itq-shadow-sm)]">
+        <section className="rounded-[var(--itq-radius-panel)] border border-[var(--itq-color-border)] bg-[var(--itq-color-surface)] p-5">
           <div className="flex items-center justify-between gap-3">
             <div>
               <h2 className="text-xl font-black">Latest requests</h2>
@@ -129,13 +131,13 @@ export default async function EnglishAdminPage() {
           </div>
           <div className="mt-5 grid gap-3">
             {requests.items.length === 0 ? (
-              <p className="rounded-2xl bg-[var(--itq-color-surface-soft)] p-6 text-center text-sm text-[var(--itq-color-muted)]">
+              <p className="rounded-[var(--itq-radius-card)] bg-[var(--itq-color-surface-soft)] p-6 text-center text-sm text-[var(--itq-color-muted)]">
                 No requests yet.
               </p>
             ) : (
               requests.items.map((item) => (
                 <Link
-                  className="grid gap-3 rounded-2xl border border-[var(--itq-color-border)] p-4 transition hover:border-[var(--itq-color-brand-200)] hover:bg-[var(--itq-color-brand-50)] sm:grid-cols-[minmax(0,1fr)_auto]"
+                  className="grid gap-3 rounded-[var(--itq-radius-card)] border border-[var(--itq-color-border)] p-4 transition hover:border-[var(--itq-color-brand-200)] hover:bg-[var(--itq-color-brand-50)] sm:grid-cols-[minmax(0,1fr)_auto]"
                   href={`/en/admin/requests/${encodeURIComponent(item.requestNumber)}`}
                   key={item.id}
                 >
@@ -161,7 +163,7 @@ export default async function EnglishAdminPage() {
           </div>
         </section>
         <div className="grid gap-6">
-          <section className="rounded-[1.5rem] border border-[var(--itq-color-border)] bg-[var(--itq-color-ink-deep)] p-5 text-white shadow-[var(--itq-shadow-sm)]">
+          <section className="rounded-[var(--itq-radius-panel)] border border-[var(--itq-color-border)] bg-[var(--itq-color-ink-deep)] p-5 text-white">
             <h2 className="text-xl font-black">Account verification</h2>
             <p className="mt-2 text-sm leading-7 text-white/70">
               Confirm an account only after receiving a message from the student's registered
@@ -172,13 +174,13 @@ export default async function EnglishAdminPage() {
             </strong>
             <p className="mt-2 text-sm font-bold">accounts waiting for review</p>
             <Link
-              className="mt-7 inline-flex min-h-11 items-center rounded-xl bg-[var(--itq-color-brand-600)] px-5 text-sm font-black text-white"
+              className="mt-7 inline-flex min-h-11 items-center rounded-[var(--itq-radius-control)] bg-[var(--itq-color-brand-600)] px-5 text-sm font-black text-white"
               href="/en/admin/approvals?tab=phone"
             >
               Open verification queue
             </Link>
           </section>
-          <section className="rounded-[1.5rem] border border-[var(--itq-color-border)] bg-[var(--itq-color-surface)] p-5 shadow-[var(--itq-shadow-sm)]">
+          <section className="rounded-[var(--itq-radius-panel)] border border-[var(--itq-color-border)] bg-[var(--itq-color-surface)] p-5">
             <h2 className="text-xl font-black">Dues summary</h2>
             <p className="mt-2 text-sm text-[var(--itq-color-muted)]">
               Paid and unpaid totals stay separated by currency.
@@ -189,7 +191,7 @@ export default async function EnglishAdminPage() {
               ) : (
                 financeReport.totals.map((total) => (
                   <div
-                    className="rounded-xl bg-[var(--itq-color-surface-soft)] p-3"
+                    className="rounded-[var(--itq-radius-control)] bg-[var(--itq-color-surface-soft)] p-3"
                     key={total.currency}
                   >
                     <strong dir="ltr">
