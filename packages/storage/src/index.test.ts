@@ -228,7 +228,7 @@ describe("upload validation", () => {
     expectStorageValidationCode(() => validateUpload({ ...base, size: 21 }), "FILE_TOO_LARGE");
   });
 
-  it("canonicalizes JPEG and rejects unsupported M4A/archive-style uploads", () => {
+  it("canonicalizes JPEG and rejects a garbled M4A / still-unsupported archive uploads", () => {
     expect(
       validateUpload({
         filename: "photo.jpeg",
@@ -238,6 +238,8 @@ describe("upload validation", () => {
         header: Buffer.from([0xff, 0xd8, 0xff, 0xdb]),
       }).normalizedExtension,
     ).toBe(".jpg");
+    // .m4a is a recognized extension now, so bytes that don't match its
+    // ISO-BMFF container fail as a content mismatch, not an unknown type.
     expectStorageValidationCode(
       () =>
         validateUpload({
@@ -245,10 +247,12 @@ describe("upload validation", () => {
           declaredMimeType: "audio/mp4",
           size: 12,
           maxBytes: 20,
-          header: Buffer.from("unsupported"),
+          header: Buffer.from("unsupported!"),
         }),
-      "TYPE_NOT_ALLOWED",
+      "MIME_MISMATCH",
     );
+    // Generic .zip stays unsupported — only the OOXML family above (backed by
+    // the full central-directory parse) is accepted as a ZIP container.
     expectStorageValidationCode(
       () =>
         validateUpload({
@@ -259,6 +263,77 @@ describe("upload validation", () => {
           header: Buffer.from([0x50, 0x4b, 0x03, 0x04]),
         }),
       "TYPE_NOT_ALLOWED",
+    );
+  });
+
+  it("accepts the expanded document/image/audio/video family by magic bytes", () => {
+    const oleHeader = Buffer.from([0xd0, 0xcf, 0x11, 0xe0, 0xa1, 0xb1, 0x1a, 0xe1, 0, 0, 0, 0]);
+    const isoBmffHeader = (brand: string) =>
+      Buffer.concat([Buffer.alloc(4), Buffer.from("ftyp"), Buffer.from(brand, "ascii")]);
+    const cases: readonly {
+      filename: string;
+      declaredMimeType: string;
+      header: Buffer;
+    }[] = [
+      { filename: "old.doc", declaredMimeType: "application/msword", header: oleHeader },
+      { filename: "old.xls", declaredMimeType: "application/vnd.ms-excel", header: oleHeader },
+      { filename: "old.ppt", declaredMimeType: "application/vnd.ms-powerpoint", header: oleHeader },
+      {
+        filename: "note.rtf",
+        declaredMimeType: "application/rtf",
+        header: Buffer.from("{\\rtf1\\ansi"),
+      },
+      { filename: "grades.csv", declaredMimeType: "text/csv", header: Buffer.from("a,b,c\n1,2,3") },
+      {
+        filename: "photo.webp",
+        declaredMimeType: "image/webp",
+        header: Buffer.from([0x52, 0x49, 0x46, 0x46, 0, 0, 0, 0, 0x57, 0x45, 0x42, 0x50]),
+      },
+      {
+        filename: "sticker.gif",
+        declaredMimeType: "image/gif",
+        header: Buffer.from("GIF89a"),
+      },
+      { filename: "photo.heic", declaredMimeType: "image/heic", header: isoBmffHeader("heic") },
+      { filename: "photo.heif", declaredMimeType: "image/heif", header: isoBmffHeader("mif1") },
+      { filename: "clip.mov", declaredMimeType: "video/quicktime", header: isoBmffHeader("qt  ") },
+      { filename: "clip.3gp", declaredMimeType: "video/3gpp", header: isoBmffHeader("3gp5") },
+      { filename: "voice.m4a", declaredMimeType: "audio/mp4", header: isoBmffHeader("M4A ") },
+      {
+        filename: "voice.aac",
+        declaredMimeType: "audio/aac",
+        header: Buffer.from([0xff, 0xf1, 0, 0]),
+      },
+      {
+        filename: "voice.amr",
+        declaredMimeType: "audio/amr",
+        header: Buffer.from("#!AMR\n"),
+      },
+    ];
+    for (const testCase of cases) {
+      const result = validateUpload({
+        filename: testCase.filename,
+        declaredMimeType: testCase.declaredMimeType,
+        size: testCase.header.length,
+        maxBytes: 1024,
+        header: testCase.header,
+      });
+      expect(result.declaredMimeType).toBe(testCase.declaredMimeType);
+    }
+  });
+
+  it("rejects a HEIC-extension file whose ISO-BMFF brand is not a HEIC/HEIF brand", () => {
+    const mp4Header = Buffer.concat([Buffer.alloc(4), Buffer.from("ftyp"), Buffer.from("isom")]);
+    expectStorageValidationCode(
+      () =>
+        validateUpload({
+          filename: "clip.heic",
+          declaredMimeType: "image/heic",
+          size: mp4Header.length,
+          maxBytes: 1024,
+          header: mp4Header,
+        }),
+      "MIME_MISMATCH",
     );
   });
 

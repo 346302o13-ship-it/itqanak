@@ -131,7 +131,8 @@ interface StudentTransitionWire {
   readonly message?: string;
 }
 
-const acceptedExtensions = ".pdf,.docx,.pptx,.xlsx,.txt,.png,.jpg,.jpeg,.webm,.ogg,.mp3,.wav,.mp4";
+const acceptedExtensions =
+  ".pdf,.docx,.pptx,.xlsx,.doc,.xls,.ppt,.rtf,.csv,.txt,.png,.jpg,.jpeg,.webp,.gif,.heic,.heif,.webm,.ogg,.mp3,.wav,.m4a,.aac,.amr,.mp4,.mov,.3gp";
 
 // Reaction + composer emoji. Mirrors `messageReactionEmojis` in
 // @itqanak/requests (the server allowlist); kept inline so this client bundle
@@ -206,15 +207,29 @@ const mimeByExtension: Readonly<Record<string, string>> = {
   docx: "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
   pptx: "application/vnd.openxmlformats-officedocument.presentationml.presentation",
   xlsx: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+  doc: "application/msword",
+  xls: "application/vnd.ms-excel",
+  ppt: "application/vnd.ms-powerpoint",
+  rtf: "application/rtf",
+  csv: "text/csv",
   txt: "text/plain",
   png: "image/png",
   jpg: "image/jpeg",
   jpeg: "image/jpeg",
+  webp: "image/webp",
+  gif: "image/gif",
+  heic: "image/heic",
+  heif: "image/heif",
   webm: "audio/webm",
   ogg: "audio/ogg",
   mp3: "audio/mpeg",
   wav: "audio/wav",
+  m4a: "audio/mp4",
+  aac: "audio/aac",
+  amr: "audio/amr",
   mp4: "video/mp4",
+  mov: "video/quicktime",
+  "3gp": "video/3gpp",
 };
 
 function declaredMime(file: File): string {
@@ -232,8 +247,8 @@ function attachmentErrorMessage(
   switch (code) {
     case "FILE_TYPE_NOT_ALLOWED":
       return english
-        ? "This file type is not supported. Send PDF, Word, PowerPoint, Excel, text, an image, audio, or MP4."
-        : "نوع الملف غير مدعوم. أرسل PDF أو Word أو PowerPoint أو Excel أو نصًا أو صورة أو صوتًا أو MP4.";
+        ? "This file type is not supported. Send a document (PDF, Word, PowerPoint, Excel, RTF, CSV, text), an image, or a voice/video message."
+        : "نوع الملف غير مدعوم. أرسل مستنداً (PDF أو Word أو PowerPoint أو Excel أو RTF أو CSV أو نص)، أو صورة، أو رسالة صوتية أو فيديو.";
     case "FILE_MIME_MISMATCH":
       return english
         ? "The file looks damaged or its contents don’t match its name. Re-save it (in Word: “Save As → .docx”) and try again."

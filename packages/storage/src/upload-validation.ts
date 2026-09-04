@@ -21,14 +21,33 @@ export const allowedUploadMimeTypes = [
   "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
   "application/vnd.openxmlformats-officedocument.presentationml.presentation",
   "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+  // Legacy (pre-OOXML) Office formats: same container-level check rigor as
+  // .txt below (a magic-byte/structural check, not a full parse) — real
+  // per-file safety against embedded macros comes from the ClamAV scan every
+  // attachment goes through after upload (AttachmentScanProcessor), not from
+  // this check alone.
+  "application/msword",
+  "application/vnd.ms-excel",
+  "application/vnd.ms-powerpoint",
+  "application/rtf",
+  "text/csv",
   "text/plain",
   "image/png",
   "image/jpeg",
+  "image/webp",
+  "image/gif",
+  "image/heic",
+  "image/heif",
   "audio/webm",
   "audio/ogg",
   "audio/mpeg",
   "audio/wav",
+  "audio/mp4",
+  "audio/aac",
+  "audio/amr",
   "video/mp4",
+  "video/quicktime",
+  "video/3gpp",
 ] as const;
 
 export type AllowedUploadMimeType = (typeof allowedUploadMimeTypes)[number];
@@ -40,14 +59,28 @@ export type ValidatedUpload = Readonly<{
     | ".docx"
     | ".pptx"
     | ".xlsx"
+    | ".doc"
+    | ".xls"
+    | ".ppt"
+    | ".rtf"
+    | ".csv"
     | ".txt"
     | ".png"
     | ".jpg"
+    | ".webp"
+    | ".gif"
+    | ".heic"
+    | ".heif"
     | ".webm"
     | ".ogg"
     | ".mp3"
     | ".wav"
-    | ".mp4";
+    | ".m4a"
+    | ".aac"
+    | ".amr"
+    | ".mp4"
+    | ".mov"
+    | ".3gp";
   declaredMimeType: AllowedUploadMimeType;
   detectedMimeType: AllowedUploadMimeType;
   size: number;
@@ -76,6 +109,41 @@ type FilePolicy = Readonly<{
 
 const startsWith = (header: Uint8Array, signature: readonly number[]): boolean =>
   signature.every((byte, index) => header[index] === byte);
+
+const isOleCompoundFile = (header: Uint8Array): boolean =>
+  startsWith(header, [0xd0, 0xcf, 0x11, 0xe0, 0xa1, 0xb1, 0x1a, 0xe1]);
+
+/** ISO base media (MP4-family) container: byte 4-7 spell "ftyp". Shared by
+ *  MP4/MOV/3GP/M4A — as lenient as the existing `.mp4` check (no brand
+ *  filtering), so a container mislabeled with the wrong one of these
+ *  extensions still passes; that was already true of `.mp4` alone. */
+const isIsoBaseMediaContainer = (header: Uint8Array): boolean =>
+  header[4] === 0x66 && header[5] === 0x74 && header[6] === 0x79 && header[7] === 0x70;
+
+/** Same ISO-BMFF container, but only for the HEIC/HEIF "major brand" values —
+ *  narrower than `isIsoBaseMediaContainer` so a renamed video does not pass as
+ *  a photo. */
+const heicBrands = new Set([
+  "heic",
+  "heix",
+  "heim",
+  "heis",
+  "hevc",
+  "hevx",
+  "hevm",
+  "hevs",
+  "mif1",
+]);
+const isHeicContainer = (header: Uint8Array): boolean => {
+  if (!isIsoBaseMediaContainer(header)) return false;
+  const brand = String.fromCharCode(
+    header[8] ?? 0,
+    header[9] ?? 0,
+    header[10] ?? 0,
+    header[11] ?? 0,
+  );
+  return heicBrands.has(brand);
+};
 
 const isUtf8Text = (header: Uint8Array): boolean => {
   if (header.length === 0 || header.includes(0)) {
@@ -427,6 +495,36 @@ const policies: Readonly<Record<string, FilePolicy>> = {
     detectedMimeType: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
     ooxmlFamily: "xlsx",
   },
+  ".doc": {
+    normalizedExtension: ".doc",
+    declaredMimeType: "application/msword",
+    detectedMimeType: "application/msword",
+    matchesMagic: isOleCompoundFile,
+  },
+  ".xls": {
+    normalizedExtension: ".xls",
+    declaredMimeType: "application/vnd.ms-excel",
+    detectedMimeType: "application/vnd.ms-excel",
+    matchesMagic: isOleCompoundFile,
+  },
+  ".ppt": {
+    normalizedExtension: ".ppt",
+    declaredMimeType: "application/vnd.ms-powerpoint",
+    detectedMimeType: "application/vnd.ms-powerpoint",
+    matchesMagic: isOleCompoundFile,
+  },
+  ".rtf": {
+    normalizedExtension: ".rtf",
+    declaredMimeType: "application/rtf",
+    detectedMimeType: "application/rtf",
+    matchesMagic: (header) => startsWith(header, [0x7b, 0x5c, 0x72, 0x74, 0x66, 0x31]),
+  },
+  ".csv": {
+    normalizedExtension: ".csv",
+    declaredMimeType: "text/csv",
+    detectedMimeType: "text/csv",
+    matchesMagic: isUtf8Text,
+  },
   ".txt": {
     normalizedExtension: ".txt",
     declaredMimeType: "text/plain",
@@ -450,6 +548,38 @@ const policies: Readonly<Record<string, FilePolicy>> = {
     declaredMimeType: "image/jpeg",
     detectedMimeType: "image/jpeg",
     matchesMagic: (header) => startsWith(header, [0xff, 0xd8, 0xff]),
+  },
+  ".webp": {
+    normalizedExtension: ".webp",
+    declaredMimeType: "image/webp",
+    detectedMimeType: "image/webp",
+    matchesMagic: (header) =>
+      startsWith(header, [0x52, 0x49, 0x46, 0x46]) &&
+      header[8] === 0x57 &&
+      header[9] === 0x45 &&
+      header[10] === 0x42 &&
+      header[11] === 0x50,
+  },
+  ".gif": {
+    normalizedExtension: ".gif",
+    declaredMimeType: "image/gif",
+    detectedMimeType: "image/gif",
+    matchesMagic: (header) =>
+      startsWith(header, [0x47, 0x49, 0x46, 0x38]) &&
+      (header[4] === 0x37 || header[4] === 0x39) &&
+      header[5] === 0x61,
+  },
+  ".heic": {
+    normalizedExtension: ".heic",
+    declaredMimeType: "image/heic",
+    detectedMimeType: "image/heic",
+    matchesMagic: isHeicContainer,
+  },
+  ".heif": {
+    normalizedExtension: ".heif",
+    declaredMimeType: "image/heif",
+    detectedMimeType: "image/heif",
+    matchesMagic: isHeicContainer,
   },
   ".webm": {
     normalizedExtension: ".webm",
@@ -482,13 +612,45 @@ const policies: Readonly<Record<string, FilePolicy>> = {
       header[10] === 0x56 &&
       header[11] === 0x45,
   },
+  ".m4a": {
+    normalizedExtension: ".m4a",
+    declaredMimeType: "audio/mp4",
+    detectedMimeType: "audio/mp4",
+    matchesMagic: isIsoBaseMediaContainer,
+  },
+  ".aac": {
+    normalizedExtension: ".aac",
+    declaredMimeType: "audio/aac",
+    detectedMimeType: "audio/aac",
+    // ADTS frame sync: 12-bit sync word (0xFFF) plus the MPEG version/layer
+    // bits, same check shape as the .mp3 frame-sync test above.
+    matchesMagic: (header) =>
+      header[0] === 0xff && header[1] !== undefined && (header[1] & 0xf6) === 0xf0,
+  },
+  ".amr": {
+    normalizedExtension: ".amr",
+    declaredMimeType: "audio/amr",
+    detectedMimeType: "audio/amr",
+    matchesMagic: (header) => startsWith(header, [0x23, 0x21, 0x41, 0x4d, 0x52]),
+  },
   ".mp4": {
     normalizedExtension: ".mp4",
     declaredMimeType: "video/mp4",
     detectedMimeType: "video/mp4",
     // ISO base media format: bytes 4..8 are the "ftyp" box type.
-    matchesMagic: (header) =>
-      header[4] === 0x66 && header[5] === 0x74 && header[6] === 0x79 && header[7] === 0x70,
+    matchesMagic: isIsoBaseMediaContainer,
+  },
+  ".mov": {
+    normalizedExtension: ".mov",
+    declaredMimeType: "video/quicktime",
+    detectedMimeType: "video/quicktime",
+    matchesMagic: isIsoBaseMediaContainer,
+  },
+  ".3gp": {
+    normalizedExtension: ".3gp",
+    declaredMimeType: "video/3gpp",
+    detectedMimeType: "video/3gpp",
+    matchesMagic: isIsoBaseMediaContainer,
   },
 };
 

@@ -71,7 +71,18 @@ export interface UnifiedConversationAttachmentServiceOptions {
 }
 
 const allowedInlineAudio = new Set(["audio/webm", "audio/ogg", "audio/mpeg", "audio/wav"]);
-const allowedInlineMedia = new Set([...allowedInlineAudio, "image/png", "image/jpeg", "video/mp4"]);
+// Raster images only — kept to the same low-risk, well-understood formats as
+// the rest of this set. Legacy Office/RTF/HEIC/video-container formats can
+// still be uploaded (see upload-validation.ts) but always wait for a clean
+// scan before preview, same as PDF/DOCX today.
+const allowedInlineMedia = new Set([
+  ...allowedInlineAudio,
+  "image/png",
+  "image/jpeg",
+  "image/webp",
+  "image/gif",
+  "video/mp4",
+]);
 
 function integer(value: number | string, field: string): number {
   const parsed = typeof value === "number" ? value : Number(value);
