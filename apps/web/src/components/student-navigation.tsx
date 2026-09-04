@@ -1,6 +1,6 @@
 "use client";
 
-import { usePathname } from "next/navigation";
+import { usePathname, useSearchParams } from "next/navigation";
 import type { ComponentType, SVGProps } from "react";
 
 import { MobileNavBar } from "./mobile-nav-bar";
@@ -46,7 +46,7 @@ const itemsByLocale: Readonly<Record<"ar" | "en", readonly NavigationItem[]>> = 
       icon: MessageIcon,
     },
     {
-      href: "/ar/student/assistant",
+      href: "/ar/student/support?assistant=1",
       label: "المساعد الذكي",
       shortLabel: "المساعد",
       icon: SparkleIcon,
@@ -75,7 +75,7 @@ const itemsByLocale: Readonly<Record<"ar" | "en", readonly NavigationItem[]>> = 
       icon: MessageIcon,
     },
     {
-      href: "/en/student/assistant",
+      href: "/en/student/support?assistant=1",
       label: "AI assistant",
       shortLabel: "Assistant",
       icon: SparkleIcon,
@@ -96,23 +96,42 @@ const itemsByLocale: Readonly<Record<"ar" | "en", readonly NavigationItem[]>> = 
   ],
 };
 
-function isActive(pathname: string, item: NavigationItem): boolean {
-  if (item.exact === true) {
-    return pathname === item.href;
+/**
+ * The assistant and the support chat are now the same route
+ * (/student/support), told apart only by a ?assistant= query the pathname
+ * comparisons below can't see — assistantActive is checked separately and
+ * special-cases those two items before falling through to ordinary prefix
+ * matching.
+ */
+function isActive(pathname: string, item: NavigationItem, assistantActive: boolean): boolean {
+  const [itemPath = item.href, itemQuery] = item.href.split("?");
+  if (itemQuery?.includes("assistant") === true) {
+    return pathname === itemPath && assistantActive;
   }
-  if (item.href.endsWith("/student/requests") && pathname.endsWith("/student/requests/new")) {
+  if (
+    (itemPath === "/ar/student/support" || itemPath === "/en/student/support") &&
+    pathname === itemPath &&
+    assistantActive
+  ) {
     return false;
   }
-  return pathname === item.href || pathname.startsWith(`${item.href}/`);
+  if (item.exact === true) {
+    return pathname === itemPath;
+  }
+  if (itemPath.endsWith("/student/requests") && pathname.endsWith("/student/requests/new")) {
+    return false;
+  }
+  return pathname === itemPath || pathname.startsWith(`${itemPath}/`);
 }
 
 export function StudentNavigation({ locale = "ar" }: Readonly<{ locale?: "ar" | "en" }>) {
   const pathname = usePathname();
+  const assistantActive = useSearchParams().has("assistant");
   const items = itemsByLocale[locale];
   return (
     <nav aria-label={locale === "en" ? "Student portal" : "بوابة الطالب"} className="grid gap-1.5">
       {items.map((item) => {
-        const active = isActive(pathname, item);
+        const active = isActive(pathname, item, assistantActive);
         const ItemIcon = item.icon;
         return (
           <NavLink
@@ -150,11 +169,12 @@ export function StudentNavigation({ locale = "ar" }: Readonly<{ locale?: "ar" | 
 
 export function StudentMobileNavigation({ locale = "ar" }: Readonly<{ locale?: "ar" | "en" }>) {
   const pathname = usePathname();
+  const assistantActive = useSearchParams().has("assistant");
   const items = itemsByLocale[locale].map((item) => ({
     href: item.href,
     label: item.shortLabel,
     icon: item.icon,
-    active: isActive(pathname, item),
+    active: isActive(pathname, item, assistantActive),
   }));
   return (
     <MobileNavBar

@@ -1,6 +1,6 @@
 "use client";
 
-import { usePathname } from "next/navigation";
+import { usePathname, useSearchParams } from "next/navigation";
 
 import { MobileNavBar } from "./mobile-nav-bar";
 import { NavLink } from "./nav-link";
@@ -22,7 +22,7 @@ const itemsByLocale = {
   ar: [
     { href: "/ar/admin", label: "نظرة عامة", mobileLabel: "الرئيسية", Icon: DashboardIcon },
     {
-      href: "/ar/admin/assistant",
+      href: "/ar/admin/support?assistant=1",
       label: "المساعد الذكي",
       mobileLabel: "المساعد",
       Icon: SparkleIcon,
@@ -110,7 +110,7 @@ const itemsByLocale = {
   en: [
     { href: "/en/admin", label: "Overview", mobileLabel: "Home", Icon: DashboardIcon },
     {
-      href: "/en/admin/assistant",
+      href: "/en/admin/support?assistant=1",
       label: "AI assistant",
       mobileLabel: "Assistant",
       Icon: SparkleIcon,
@@ -197,7 +197,25 @@ const itemsByLocale = {
   ],
 } as const;
 
-function adminNavActive(pathname: string, href: string): boolean {
+/**
+ * The assistant and the conversation list are now the same route
+ * (/admin/support), told apart only by a ?assistant= query the URL-based
+ * pathname matching below can't see — so this takes the current search
+ * separately and special-cases those two items before falling through to
+ * the ordinary prefix matching.
+ */
+function adminNavActive(pathname: string, href: string, assistantActive: boolean): boolean {
+  const [hrefPath = href, hrefQuery] = href.split("?");
+  if (hrefQuery?.includes("assistant") === true) {
+    return pathname === hrefPath && assistantActive;
+  }
+  if (
+    (hrefPath === "/ar/admin/support" || hrefPath === "/en/admin/support") &&
+    pathname === hrefPath &&
+    assistantActive
+  ) {
+    return false;
+  }
   if (href === "/ar/admin" || href === "/en/admin") return pathname === href;
   // The stale-requests page is its own item; without this it would also light
   // the request-inbox item through the legacy "/admin/requests" prefix below.
@@ -208,7 +226,7 @@ function adminNavActive(pathname: string, href: string): boolean {
   if (/^\/(?:ar|en)\/admin\/monitoring\/autobox(?:\/|$)/u.test(pathname)) {
     return href === "/ar/admin/monitoring/autobox" || href === "/en/admin/monitoring/autobox";
   }
-  if (pathname.startsWith(href)) return true;
+  if (pathname.startsWith(hrefPath)) return true;
   // The request inbox now lives under /admin/support; phone verification and
   // password recovery now live under /admin/approvals. Keep the item lit on the
   // legacy paths that redirect there.
@@ -218,11 +236,12 @@ function adminNavActive(pathname: string, href: string): boolean {
     "/ar/admin/approvals": ["/ar/admin/verifications", "/ar/admin/password-resets"],
     "/en/admin/approvals": ["/en/admin/verifications", "/en/admin/password-resets"],
   };
-  return (legacy[href] ?? []).some((prefix) => pathname.startsWith(prefix));
+  return (legacy[hrefPath] ?? []).some((prefix) => pathname.startsWith(prefix));
 }
 
 export function AdminNavigation({ locale = "ar" }: Readonly<{ locale?: "ar" | "en" }>) {
   const pathname = usePathname();
+  const assistantActive = useSearchParams().has("assistant");
   const items = itemsByLocale[locale];
   const firstSystemHref = items.find((item) => "system" in item && item.system)?.href;
   return (
@@ -231,7 +250,7 @@ export function AdminNavigation({ locale = "ar" }: Readonly<{ locale?: "ar" | "e
       className="grid gap-1.5"
     >
       {items.map(({ href, label, Icon }) => {
-        const active = adminNavActive(pathname, href);
+        const active = adminNavActive(pathname, href, assistantActive);
         return (
           <div className="contents" key={href}>
             {href === firstSystemHref ? (
@@ -274,11 +293,12 @@ export function AdminNavigation({ locale = "ar" }: Readonly<{ locale?: "ar" | "e
 
 export function AdminMobileNavigation({ locale = "ar" }: Readonly<{ locale?: "ar" | "en" }>) {
   const pathname = usePathname();
+  const assistantActive = useSearchParams().has("assistant");
   const items = itemsByLocale[locale].map(({ href, mobileLabel, Icon }) => ({
     href,
     label: mobileLabel,
     icon: Icon,
-    active: adminNavActive(pathname, href),
+    active: adminNavActive(pathname, href, assistantActive),
   }));
   return (
     <MobileNavBar

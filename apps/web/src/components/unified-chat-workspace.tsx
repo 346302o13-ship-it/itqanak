@@ -44,6 +44,8 @@ import { setActiveConversation } from "@/lib/active-conversation";
 import { useSetMobileWorkspaceNavVisible } from "@/lib/mobile-workspace-nav";
 import { cacheAttachment, readCachedAttachment } from "@/lib/attachment-cache";
 import { compressImageForUpload } from "@/lib/image-compression";
+import { renderMessageText } from "@/lib/chat-markdown";
+import type { AssistantDisplayMessage } from "@/lib/assistant-display";
 
 import { PaymentReceiptUploader } from "./payment-receipt-uploader";
 
@@ -68,14 +70,22 @@ import {
 import { RequestStatusChip } from "./request-status-chip";
 
 interface UnifiedChatWorkspaceProps {
+  /** Renders the AI assistant as this workspace's main panel instead of a
+   *  real conversation — same header/list/bubble chrome, so it reads as one
+   *  more entry in the chat, not a separate page. */
+  readonly assistantMode?: boolean;
+  readonly assistantGreeting?: string;
+  readonly assistantInitialMessages?: readonly AssistantDisplayMessage[];
+  readonly assistantPlaceholder?: string;
   readonly conversation?: UnifiedConversationDetail;
   readonly conversations?: readonly UnifiedConversationSummary[];
   readonly csrfToken: string | undefined;
   readonly initialMessagePage: UnifiedMessageListResult;
   /** Admin only: land on the conversation list (mobile) instead of jumping
    *  straight into the auto-selected conversation. The page passes this as
-   *  `true` only when the visit had no explicit ?student=/?conversation= —
-   *  a deep link into a specific chat still opens directly into it. */
+   *  `true` only when the visit had no explicit ?student=/?conversation=/
+   *  ?assistant= — a deep link into a specific chat still opens directly
+   *  into it. */
   readonly initialContactsOpen?: boolean;
   readonly locale?: "ar" | "en";
   readonly maximumBytes: number;
@@ -1693,12 +1703,14 @@ function AttachmentBody({
 }
 
 function ConversationList({
+  assistantActive = false,
   conversations,
   locale,
   onClose,
   search,
   selectedId,
 }: Readonly<{
+  assistantActive?: boolean;
   conversations: readonly UnifiedConversationSummary[];
   locale: "ar" | "en";
   onClose?: () => void;
@@ -1745,8 +1757,13 @@ function ConversationList({
       </div>
       <div className="shrink-0 border-b border-[var(--itq-color-border)] p-2">
         <Link
-          className="flex items-center gap-3 rounded-2xl border border-[var(--itq-color-accent-200)] bg-[var(--itq-color-brand-50)] p-3 no-underline transition hover:bg-[var(--itq-color-brand-100)]"
-          href={`/${locale}/admin/assistant`}
+          aria-current={assistantActive ? "page" : undefined}
+          className={`flex items-center gap-3 rounded-2xl border p-3 no-underline transition hover:bg-[var(--itq-color-brand-100)] ${
+            assistantActive
+              ? "border-[var(--itq-color-brand-400)] bg-[var(--itq-color-brand-100)] ring-2 ring-[var(--itq-color-brand-300)]"
+              : "border-[var(--itq-color-accent-200)] bg-[var(--itq-color-brand-50)]"
+          }`}
+          href={`/${locale}/admin/support?assistant=1`}
         >
           <span className="grid size-12 shrink-0 place-items-center rounded-full bg-[var(--itq-color-brand-700)] text-white">
             <SparkleIcon className="size-5" />
@@ -1845,6 +1862,10 @@ function ConversationList({
 }
 
 export function UnifiedChatWorkspace({
+  assistantGreeting,
+  assistantInitialMessages,
+  assistantMode = false,
+  assistantPlaceholder,
   conversation,
   conversations = [],
   csrfToken,
@@ -1980,6 +2001,79 @@ export function UnifiedChatWorkspace({
     setDetailsOpen(false);
     if (restoreFocus) window.requestAnimationFrame(() => detailsTriggerRef.current?.focus());
   }, []);
+
+  // The AI assistant renders inside this same shell (chosen over its own
+  // page) so it reads as one more conversation, not a separate app — see
+  // assistantMode below. Its own small, independent state: no SSE, no
+  // attachments, no read receipts, nothing the real-time conversation
+  // machinery above needs to know about.
+  const [assistantMessages, setAssistantMessages] = useState<readonly AssistantDisplayMessage[]>(
+    assistantInitialMessages ?? [],
+  );
+  const [assistantInput, setAssistantInput] = useState("");
+  const [assistantSending, setAssistantSending] = useState(false);
+  const [assistantNotice, setAssistantNotice] = useState<string>();
+  const assistantLogRef = useRef<HTMLDivElement>(null);
+
+  const scrollAssistantToEnd = useCallback((): void => {
+    requestAnimationFrame(() => {
+      const el = assistantLogRef.current;
+      if (el) el.scrollTop = el.scrollHeight;
+    });
+  }, []);
+
+  const sendAssistantMessage = useCallback(async (): Promise<void> => {
+    const text = assistantInput.trim();
+    if (text.length === 0 || assistantSending || csrfToken === undefined) return;
+    setAssistantInput("");
+    setAssistantNotice(undefined);
+    setAssistantMessages((current) => [...current, { role: "user", text }]);
+    scrollAssistantToEnd();
+    setAssistantSending(true);
+    try {
+      const endpoint = mode === "admin" ? "/api/admin/assistant" : "/api/assistant/student";
+      const response = await fetch(endpoint, {
+        method: "POST",
+        credentials: "same-origin",
+        headers: { "Content-Type": "application/json", "X-Itqanak-CSRF-Token": csrfToken },
+        body: JSON.stringify({ message: text, locale }),
+      });
+      const payload = (await response.json().catch(() => ({}))) as {
+        text?: string;
+        actions?: readonly { label: string; href: string }[];
+        error?: string;
+      };
+      if (!response.ok) {
+        setAssistantNotice(
+          payload.error === "RATE_LIMITED"
+            ? english
+              ? "You've sent a lot of messages — please wait a bit and try again."
+              : "أرسلت عدداً كبيراً من الرسائل — انتظر قليلاً ثم حاول مجدداً."
+            : payload.error === "ASSISTANT_UNAVAILABLE"
+              ? english
+                ? "The assistant is temporarily unavailable. Please try again shortly."
+                : "المساعد غير متاح مؤقتاً. حاول مجدداً بعد قليل."
+              : english
+                ? "Something went wrong sending that. Please try again."
+                : "حدث خطأ أثناء إرسال الرسالة. حاول مجدداً.",
+        );
+        return;
+      }
+      setAssistantMessages((current) => [
+        ...current,
+        { role: "assistant", text: payload.text ?? "", actions: payload.actions ?? [] },
+      ]);
+      scrollAssistantToEnd();
+    } catch {
+      setAssistantNotice(
+        english
+          ? "Something went wrong sending that. Please try again."
+          : "حدث خطأ أثناء إرسال الرسالة. حاول مجدداً.",
+      );
+    } finally {
+      setAssistantSending(false);
+    }
+  }, [assistantInput, assistantSending, csrfToken, english, locale, mode, scrollAssistantToEnd]);
 
   const selectedRequest = requests.find((request) => request.id === linkedRequestId);
   const activeRequestCount = requests.filter(
@@ -2426,7 +2520,12 @@ export function UnifiedChatWorkspace({
   // Publish that to the bell + the service worker on a heartbeat, and withdraw
   // it the instant the tab hides or this view unmounts.
   useEffect(() => {
-    const id = conversation?.id;
+    // Showing the assistant panel means this real conversation is not what's
+    // on screen right now, even though `conversation` (student mode always
+    // loads its own conversation for the header/back-link) is still defined
+    // — without this guard an incoming support message would be silently
+    // suppressed as if the student were already looking at it.
+    const id = assistantMode ? undefined : conversation?.id;
     if (id === undefined) return undefined;
     const sync = () => {
       setActiveConversation(document.visibilityState === "visible" ? id : null);
@@ -2447,7 +2546,7 @@ export function UnifiedChatWorkspace({
       navigator.serviceWorker?.removeEventListener("message", onWorkerMessage);
       setActiveConversation(null);
     };
-  }, [conversation?.id]);
+  }, [assistantMode, conversation?.id]);
 
   useEffect(() => {
     if (mode !== "admin") return;
@@ -4193,6 +4292,249 @@ export function UnifiedChatWorkspace({
       </div>
     );
 
+  if (assistantMode) {
+    const assistantGreetingBubble =
+      assistantMessages.length === 0 && assistantGreeting !== undefined ? (
+        <li
+          className="mx-auto max-w-md rounded-xl border border-[var(--itq-color-border)] bg-[var(--itq-color-surface)] px-4 py-3 text-sm leading-6 shadow-sm"
+          dir="auto"
+        >
+          {assistantGreeting}
+        </li>
+      ) : null;
+    return (
+      <section
+        aria-label={english ? "AI assistant conversation" : "محادثة المساعد الذكي"}
+        className="relative flex h-full min-h-0 overflow-hidden border-x border-[var(--itq-color-border)] bg-[var(--itq-color-surface)]"
+      >
+        {mode === "admin" ? (
+          <>
+            <button
+              aria-label={english ? "Close conversations" : "إغلاق قائمة المحادثات"}
+              className={`fixed inset-0 z-40 bg-black/35 backdrop-blur-[1px] lg:hidden ${contactsOpen ? "block" : "hidden"}`}
+              onClick={() => closeContacts()}
+              type="button"
+            />
+            <aside
+              aria-label={english ? "Student conversations" : "محادثات الطلاب"}
+              aria-modal={contactsOpen ? true : undefined}
+              className={`itq-bottom-nav-space fixed top-0 start-0 z-50 flex w-[min(88vw,24rem)] min-h-0 flex-col border-e border-[var(--itq-color-border)] bg-[var(--itq-color-surface-soft)] shadow-2xl transition-[transform,visibility] lg:static lg:z-auto lg:w-[21rem] lg:shrink-0 lg:translate-x-0 lg:shadow-none ${
+                contactsOpen
+                  ? "visible translate-x-0"
+                  : english
+                    ? "invisible -translate-x-full lg:visible"
+                    : "invisible translate-x-full lg:visible"
+              }`}
+              id={contactsPanelId}
+              ref={contactsPanelRef}
+              role={contactsOpen ? "dialog" : undefined}
+              tabIndex={contactsOpen ? -1 : undefined}
+            >
+              <ConversationList
+                assistantActive
+                conversations={contactItems}
+                locale={locale}
+                onClose={() => closeContacts()}
+                {...(search === undefined ? {} : { search })}
+              />
+            </aside>
+          </>
+        ) : null}
+
+        <main className="flex min-h-0 min-w-0 flex-1 flex-col bg-[var(--itq-color-surface-soft)]">
+          <header className="flex h-[4.65rem] shrink-0 items-center justify-between gap-3 border-b border-[var(--itq-color-border)] bg-[var(--itq-color-surface)] px-3 sm:px-5">
+            <div className="flex min-w-0 items-center gap-2 sm:gap-3">
+              <a
+                aria-label={
+                  english
+                    ? mode === "admin"
+                      ? "Back to admin center"
+                      : "Back to the student portal"
+                    : mode === "admin"
+                      ? "العودة إلى مركز الإدارة"
+                      : "العودة إلى بوابة الطالب"
+                }
+                className="grid size-10 shrink-0 place-items-center rounded-xl border border-[var(--itq-color-border)] text-[var(--itq-color-ink)] no-underline hover:bg-[var(--itq-color-surface-soft)]"
+                href={backHref}
+                onClick={(event) => {
+                  if (
+                    event.defaultPrevented ||
+                    event.button !== 0 ||
+                    event.metaKey ||
+                    event.ctrlKey ||
+                    event.shiftKey ||
+                    event.altKey
+                  ) {
+                    return;
+                  }
+                  event.preventDefault();
+                  window.location.assign(backHref);
+                }}
+              >
+                <ArrowIcon className="size-5 rtl:-scale-x-100" />
+              </a>
+              {mode === "admin" ? (
+                <button
+                  aria-controls={contactsPanelId}
+                  aria-expanded={contactsOpen}
+                  aria-haspopup="dialog"
+                  aria-label={english ? "Open conversations" : "فتح قائمة المحادثات"}
+                  className="grid size-10 shrink-0 place-items-center rounded-xl border border-[var(--itq-color-border)] lg:hidden"
+                  onClick={() => {
+                    closeDetails(false);
+                    setContactsOpen(true);
+                  }}
+                  ref={contactsTriggerRef}
+                  type="button"
+                >
+                  <MessageIcon className="size-5" />
+                </button>
+              ) : null}
+              <span className="grid size-11 shrink-0 place-items-center rounded-full bg-[var(--itq-color-brand-700)] text-white">
+                <SparkleIcon className="size-5" />
+              </span>
+              <div className="min-w-0">
+                <h1 className="truncate text-sm font-black sm:text-base">
+                  {english ? "AI Assistant" : "المساعد الذكي"}
+                </h1>
+                <p className="flex items-center gap-1.5 truncate text-[10px] font-bold text-[var(--itq-color-success-700)] sm:text-xs">
+                  <span className="size-2 rounded-full bg-[var(--itq-color-success-500)]" />
+                  {english ? "Always available" : "متاح دائماً"}
+                </p>
+              </div>
+            </div>
+            <div className="flex items-center gap-2">
+              <span className="hidden items-center gap-1.5 rounded-full bg-[var(--itq-color-success-50)] px-3 py-1.5 text-[10px] font-black text-[var(--itq-color-success-800)] sm:inline-flex">
+                <ShieldCheckIcon className="size-3.5" /> {english ? "Secure" : "آمنة"}
+              </span>
+              {mode === "student" ? (
+                <a
+                  aria-label={english ? "Back to support chat" : "الرجوع لمحادثة الدعم"}
+                  className="grid size-10 shrink-0 place-items-center rounded-xl border border-[var(--itq-color-border)] text-[var(--itq-color-ink)] no-underline hover:bg-[var(--itq-color-surface-soft)]"
+                  href={`/${locale}/student/support`}
+                  onClick={(event) => {
+                    if (
+                      event.defaultPrevented ||
+                      event.button !== 0 ||
+                      event.metaKey ||
+                      event.ctrlKey ||
+                      event.shiftKey ||
+                      event.altKey
+                    ) {
+                      return;
+                    }
+                    event.preventDefault();
+                    window.location.assign(`/${locale}/student/support`);
+                  }}
+                >
+                  <MessageIcon className="size-5" />
+                </a>
+              ) : null}
+            </div>
+          </header>
+
+          <div
+            className="itq-chat-bg itq-scroll relative min-h-0 flex-1 overflow-y-auto overscroll-contain px-3 py-4 sm:px-6"
+            ref={assistantLogRef}
+          >
+            <ol className="mx-auto grid max-w-4xl gap-2.5">
+              {assistantGreetingBubble}
+              {assistantMessages.map((message, index) => (
+                <li
+                  className={`flex min-w-0 ${message.role === "user" ? "justify-end" : "justify-start"}`}
+                  key={index}
+                >
+                  <article
+                    className={`min-w-0 max-w-[85%] rounded-xl px-2.5 py-1.5 shadow-sm sm:max-w-[75%] ${
+                      message.role === "user"
+                        ? "rounded-ee-sm bg-[var(--itq-color-bubble-out)] text-[var(--itq-color-bubble-out-ink)]"
+                        : "rounded-es-sm bg-[var(--itq-color-bubble-in)] text-[var(--itq-color-bubble-in-ink)]"
+                    }`}
+                  >
+                    {message.role === "user" ? (
+                      <p className="whitespace-pre-wrap break-words text-sm leading-7">
+                        <bdi dir="auto">{message.text}</bdi>
+                      </p>
+                    ) : (
+                      <div className="text-sm leading-7">{renderMessageText(message.text)}</div>
+                    )}
+                    {message.actions !== undefined && message.actions.length > 0 ? (
+                      <div className="mt-2 flex flex-wrap gap-1.5">
+                        {message.actions.map((action) => (
+                          <Link
+                            className="inline-flex min-h-8 items-center rounded-full border border-[var(--itq-color-accent-500)] bg-[var(--itq-color-surface)] px-3 text-xs font-black text-[var(--itq-color-brand-strong)] no-underline transition hover:bg-[var(--itq-color-brand-50)]"
+                            href={action.href}
+                            key={action.href + action.label}
+                          >
+                            {action.label}
+                          </Link>
+                        ))}
+                      </div>
+                    ) : null}
+                  </article>
+                </li>
+              ))}
+              {assistantSending ? (
+                <li className="flex justify-start">
+                  <article className="rounded-xl rounded-es-sm bg-[var(--itq-color-bubble-in)] px-3 py-2 text-xs text-[var(--itq-color-bubble-in-ink)] shadow-sm">
+                    {english ? "Typing…" : "يكتب…"}
+                  </article>
+                </li>
+              ) : null}
+            </ol>
+          </div>
+
+          {assistantNotice === undefined ? null : (
+            <p
+              aria-live="polite"
+              className="shrink-0 border-t border-[var(--itq-color-danger-200)] bg-[var(--itq-color-danger-50)] px-4 py-2 text-xs font-bold text-[var(--itq-color-danger-950)]"
+            >
+              {assistantNotice}
+            </p>
+          )}
+
+          <form
+            className="itq-safe-b shrink-0 border-t border-[var(--itq-color-border)] bg-[var(--itq-color-surface)] px-3 py-2 sm:px-5"
+            onSubmit={(event) => {
+              event.preventDefault();
+              void sendAssistantMessage();
+            }}
+          >
+            <div className="flex items-end gap-1.5 sm:gap-2">
+              <div className="flex min-w-0 flex-1 items-end gap-1 rounded-[1.6rem] border border-[var(--itq-color-border)] bg-[var(--itq-color-surface)] px-3 py-1 shadow-sm focus-within:border-[var(--itq-color-brand-500)]">
+                <textarea
+                  aria-label={english ? "Message" : "الرسالة"}
+                  className="max-h-32 min-h-9 min-w-0 flex-1 resize-none bg-transparent py-1.5 text-sm leading-6 outline-none"
+                  dir="auto"
+                  disabled={assistantSending}
+                  maxLength={2_000}
+                  onChange={(event) => setAssistantInput(event.currentTarget.value)}
+                  onKeyDown={(event) => {
+                    if (event.key === "Enter" && !event.shiftKey) {
+                      event.preventDefault();
+                      void sendAssistantMessage();
+                    }
+                  }}
+                  placeholder={assistantPlaceholder}
+                  rows={1}
+                  value={assistantInput}
+                />
+              </div>
+              <button
+                aria-label={english ? "Send message" : "إرسال الرسالة"}
+                className="grid size-11 shrink-0 place-items-center rounded-full bg-[var(--itq-color-brand-700)] text-white shadow-sm transition hover:bg-[var(--itq-color-brand-800)] disabled:cursor-not-allowed disabled:opacity-50"
+                disabled={assistantSending || assistantInput.trim().length === 0}
+                type="submit"
+              >
+                <SendIcon className={`size-5 ${english ? "" : "-scale-x-100"}`} />
+              </button>
+            </div>
+          </form>
+        </main>
+      </section>
+    );
+  }
+
   if (mode === "admin" && conversation === undefined) {
     return (
       <section
@@ -4378,7 +4720,7 @@ export function UnifiedChatWorkspace({
               <a
                 aria-label={english ? "Open AI assistant" : "فتح المساعد الذكي"}
                 className="grid size-10 shrink-0 place-items-center rounded-xl border border-[var(--itq-color-accent-200)] bg-[var(--itq-color-brand-50)] text-[var(--itq-color-brand-strong)] no-underline hover:bg-[var(--itq-color-brand-100)]"
-                href={`/${locale}/student/assistant`}
+                href={`/${locale}/student/support?assistant=1`}
                 onClick={(event) => {
                   if (
                     event.defaultPrevented ||
@@ -4391,7 +4733,7 @@ export function UnifiedChatWorkspace({
                     return;
                   }
                   event.preventDefault();
-                  window.location.assign(`/${locale}/student/assistant`);
+                  window.location.assign(`/${locale}/student/support?assistant=1`);
                 }}
               >
                 <SparkleIcon className="size-5" />

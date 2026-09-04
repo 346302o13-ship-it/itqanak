@@ -1,6 +1,8 @@
 "use client";
 
-import { useRef, useState, type ReactNode } from "react";
+import { useRef, useState } from "react";
+
+import { renderMessageText } from "@/lib/chat-markdown";
 
 import { MessageIcon, SendIcon } from "./icons";
 
@@ -29,74 +31,11 @@ export interface AssistantChatProps {
   readonly title: string;
   readonly greeting: string;
   readonly placeholder: string;
-  /** Compact fits a floating popover; full stretches to its container, used
-   *  on the dedicated assistant pages. */
+  /** Compact fits a floating popover; full stretches to its container. Only
+   *  the visitor FAB uses this component now — student/admin render the
+   *  assistant inside UnifiedChatWorkspace instead, so it reads as one more
+   *  conversation rather than a separate page. */
   readonly variant?: "compact" | "full";
-  /** Prior turns loaded server-side (student/admin persist history — see
-   *  assistant-display.ts). Omitted/empty for the visitor surface, which
-   *  stays session-only. */
-  readonly initialMessages?: readonly DisplayMessage[];
-  /** Link back to the surface's own conversation list (student/admin only —
-   *  ties the assistant into the same chat area the user came from). */
-  readonly backHref?: string;
-  readonly backLabel?: string;
-}
-
-/** `**bold**` spans only — split and wrap, never dangerouslySetInnerHTML, so
- *  there is no HTML-injection surface even though this text came from a
- *  model reply. */
-function renderInline(text: string, keyPrefix: string): ReactNode[] {
-  return text
-    .split(/(\*\*[^*]+\*\*)/g)
-    .map((part, index) =>
-      part.startsWith("**") && part.endsWith("**") && part.length > 4 ? (
-        <strong key={`${keyPrefix}-${index}`}>{part.slice(2, -2)}</strong>
-      ) : (
-        <span key={`${keyPrefix}-${index}`}>{part}</span>
-      ),
-    );
-}
-
-/**
- * The assistant is asked (system prompt) to format with plain text, **bold**,
- * and "- " bullet lines only — this renders exactly that lightweight subset,
- * so a reply never shows raw markdown characters in the chat bubble.
- */
-function renderMessageText(text: string): ReactNode {
-  const blocks: ReactNode[] = [];
-  let listItems: string[] = [];
-
-  const flushList = (key: string) => {
-    if (listItems.length === 0) return;
-    blocks.push(
-      <ul className="my-1 ms-5 list-disc space-y-0.5" key={`ul-${key}`}>
-        {listItems.map((item, index) => (
-          <li key={index}>{renderInline(item, `li-${key}-${index}`)}</li>
-        ))}
-      </ul>,
-    );
-    listItems = [];
-  };
-
-  text.split("\n").forEach((line, index) => {
-    const bulletMatch = /^[-*]\s+(.*)/.exec(line.trim());
-    if (bulletMatch) {
-      listItems.push(bulletMatch[1] ?? "");
-      return;
-    }
-    flushList(String(index));
-    if (line.trim().length === 0) {
-      blocks.push(<div className="h-2" key={`gap-${index}`} />);
-    } else {
-      blocks.push(
-        <p className="leading-6" key={`p-${index}`}>
-          {renderInline(line, `p-${index}`)}
-        </p>,
-      );
-    }
-  });
-  flushList("end");
-  return blocks;
 }
 
 function errorMessage(code: string | undefined, english: boolean): string {
@@ -116,19 +55,16 @@ function errorMessage(code: string | undefined, english: boolean): string {
 }
 
 export function AssistantChat({
-  backHref,
-  backLabel,
   csrfToken,
   endpoint,
   greeting,
-  initialMessages = [],
   locale,
   placeholder,
   title,
   variant = "full",
 }: AssistantChatProps) {
   const english = locale === "en";
-  const [messages, setMessages] = useState<readonly DisplayMessage[]>(initialMessages);
+  const [messages, setMessages] = useState<readonly DisplayMessage[]>([]);
   const [input, setInput] = useState("");
   const [sending, setSending] = useState(false);
   const [notice, setNotice] = useState<string>();
@@ -191,29 +127,6 @@ export function AssistantChat({
           <MessageIcon className="size-4.5" />
         </span>
         <p className="min-w-0 flex-1 truncate text-sm font-black">{title}</p>
-        {backHref === undefined ? null : (
-          <a
-            className="ms-auto inline-flex shrink-0 items-center gap-1.5 rounded-[var(--itq-radius-control)] border border-[var(--itq-color-border)] bg-[var(--itq-color-surface)] px-2.5 py-1.5 text-xs font-black text-[var(--itq-color-ink)] no-underline hover:bg-[var(--itq-color-brand-50)]"
-            href={backHref}
-            onClick={(event) => {
-              if (
-                event.defaultPrevented ||
-                event.button !== 0 ||
-                event.metaKey ||
-                event.ctrlKey ||
-                event.shiftKey ||
-                event.altKey
-              ) {
-                return;
-              }
-              event.preventDefault();
-              window.location.assign(backHref);
-            }}
-          >
-            <MessageIcon className="size-3.5" />
-            {backLabel}
-          </a>
-        )}
       </header>
 
       <div
