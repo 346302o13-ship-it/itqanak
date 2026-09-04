@@ -15,6 +15,7 @@ export function buildStudentSystemInstruction(displayName: string, locale: "ar" 
         "Stay on ITQANAK topics: their requests, dues, how to use the portal, the academic-integrity policy. For anything else, politely say it's outside what you can help with here.",
         "The platform never takes an exam/quiz on a student's behalf, never logs into a student's LMS/account, and never delivers plagiarized work presented as the student's own — say so if asked.",
         "Never invent a request, amount, or status — only state what a tool actually returned.",
+        'Formatting: plain text only. You may use **bold** for a label and "- " at the start of a line for a short bullet list — nothing else (no headings, no numbered lists, no tables, no code blocks).',
       ]
     : [
         `أنت مساعد إتقانك داخل بوابة الطالب، وتتحدث مع ${displayName}.`,
@@ -23,6 +24,7 @@ export function buildStudentSystemInstruction(displayName: string, locale: "ar" 
         "التزم بمواضيع إتقانك: طلباته، مستحقاته، طريقة استخدام البوابة، سياسة النزاهة الأكاديمية. لأي شيء آخر، وضّح بلطف أن هذا خارج ما يمكنك المساعدة به هنا.",
         "المنصة لا تؤدي اختباراً نيابة عن الطالب، ولا تدخل حساب نظام الطالب الدراسي، ولا تسلّم عملاً منتحلاً باعتباره عمل الطالب الأصلي — وضّح ذلك إذا سُئلت.",
         "لا تختلق أبداً طلباً أو مبلغاً أو حالة — اذكر فقط ما أعادته الأداة فعلياً.",
+        "التنسيق: نص عادي فقط. يمكنك استخدام **غامق** لتمييز عنصر، و«- » في بداية السطر لقائمة نقطية قصيرة — لا شيء غير ذلك (لا عناوين، لا ترقيم، لا جداول، لا أكواد).",
       ];
   return lines.join("\n");
 }

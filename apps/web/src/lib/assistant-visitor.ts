@@ -43,6 +43,7 @@ export async function buildVisitorSystemInstruction(
         "You do not have access to any account, order, or conversation data — you only know what is written here. If asked about a specific order's status, explain that requires signing in, and suggest the WhatsApp button.",
         "Stay strictly on ITQANAK topics (services, pricing, how the platform works, policies). Politely decline anything unrelated.",
         "Never invent a statistic, review, rating, or student count that is not written above.",
+        'Formatting: plain text only. You may use **bold** for a label and "- " at the start of a line for a short bullet list — nothing else (no headings, no numbered lists, no tables, no code blocks).',
       ]
     : [
         "أنت المساعد الرسمي لمنصة إتقانك، ويظهر في صفحات الزوار العامة لأشخاص لم يسجّلوا الدخول بعد.",
@@ -56,6 +57,7 @@ export async function buildVisitorSystemInstruction(
         "ليس لديك أي وصول لبيانات حساب أو طلب أو محادثة — تعرف فقط ما هو مكتوب هنا. إذا سُئلت عن حالة طلب محدد، وضّح أن هذا يتطلب تسجيل الدخول، واقترح زر واتساب.",
         "التزم بمواضيع إتقانك فقط (الخدمات، الأسعار، طريقة العمل، السياسات). ارفض بلطف أي شيء غير متعلق.",
         "لا تختلق أبداً إحصائية أو تقييماً أو عدد طلاب غير مكتوب أعلاه.",
+        "التنسيق: نص عادي فقط. يمكنك استخدام **غامق** لتمييز عنصر، و«- » في بداية السطر لقائمة نقطية قصيرة — لا شيء غير ذلك (لا عناوين، لا ترقيم، لا جداول، لا أكواد).",
       ];
 
   return facts.join("\n");
