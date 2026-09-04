@@ -61,6 +61,7 @@ import {
   SearchIcon,
   SendIcon,
   ShieldCheckIcon,
+  SparkleIcon,
   UserIcon,
 } from "./icons";
 import { RequestStatusChip } from "./request-status-chip";
@@ -1735,6 +1736,31 @@ function ConversationList({
             placeholder={english ? "Name, mobile or email" : "الاسم أو الجوال أو البريد"}
           />
         </form>
+      </div>
+      <div className="shrink-0 border-b border-[var(--itq-color-border)] p-2">
+        <Link
+          className="flex items-center gap-3 rounded-2xl border border-[var(--itq-color-accent-200)] bg-[var(--itq-color-brand-50)] p-3 no-underline transition hover:bg-[var(--itq-color-brand-100)]"
+          href={`/${locale}/admin/assistant`}
+        >
+          <span className="grid size-12 shrink-0 place-items-center rounded-full bg-[var(--itq-color-brand-700)] text-white">
+            <SparkleIcon className="size-5" />
+          </span>
+          <span className="min-w-0 flex-1">
+            <span className="flex items-center gap-1.5">
+              <bdi className="truncate text-sm font-black" dir="auto">
+                {english ? "AI Assistant" : "المساعد الذكي"}
+              </bdi>
+              <span className="shrink-0 rounded-full bg-[var(--itq-color-brand-700)] px-1.5 py-0.5 text-[9px] font-black text-white">
+                {english ? "AI" : "ذكي"}
+              </span>
+            </span>
+            <bdi className="mt-0.5 block truncate text-xs text-[var(--itq-color-muted)]" dir="auto">
+              {english
+                ? "Ask about any student, request or service health"
+                : "اسأل عن أي طالب أو طلب أو حالة الخدمة"}
+            </bdi>
+          </span>
+        </Link>
       </div>
       <div className="itq-scroll min-h-0 flex-1 overflow-y-auto overscroll-contain p-2" role="list">
         {conversations.length === 0 ? (
@@ -4328,6 +4354,29 @@ export function UnifiedChatWorkspace({
             <span className="hidden items-center gap-1.5 rounded-full bg-[var(--itq-color-success-50)] px-3 py-1.5 text-[10px] font-black text-[var(--itq-color-success-800)] sm:inline-flex">
               <ShieldCheckIcon className="size-3.5" /> {english ? "Secure" : "آمنة"}
             </span>
+            {mode === "student" ? (
+              <a
+                aria-label={english ? "Open AI assistant" : "فتح المساعد الذكي"}
+                className="grid size-10 shrink-0 place-items-center rounded-xl border border-[var(--itq-color-accent-200)] bg-[var(--itq-color-brand-50)] text-[var(--itq-color-brand-strong)] no-underline hover:bg-[var(--itq-color-brand-100)]"
+                href={`/${locale}/student/assistant`}
+                onClick={(event) => {
+                  if (
+                    event.defaultPrevented ||
+                    event.button !== 0 ||
+                    event.metaKey ||
+                    event.ctrlKey ||
+                    event.shiftKey ||
+                    event.altKey
+                  ) {
+                    return;
+                  }
+                  event.preventDefault();
+                  window.location.assign(`/${locale}/student/assistant`);
+                }}
+              >
+                <SparkleIcon className="size-5" />
+              </a>
+            ) : null}
             {mode === "admin" && services.length > 0 ? (
               <button
                 aria-expanded={createRequestOpen}

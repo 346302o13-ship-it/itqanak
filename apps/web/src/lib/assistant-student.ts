@@ -5,6 +5,13 @@ import type { AuthenticatedPrincipal } from "@itqanak/auth";
 import type { FinanceService } from "@itqanak/finance";
 import type { RequestService } from "@itqanak/requests";
 
+/** A signed-in student's chat must never hand back a link to the public
+ *  marketing site (they are already inside their own portal) — only their
+ *  own student area or account settings. */
+export function isAllowedStudentActionHref(href: string): boolean {
+  return /^\/(ar|en)\/(student|account)(\/|$)/u.test(href);
+}
+
 export function buildStudentSystemInstruction(displayName: string, locale: "ar" | "en"): string {
   const english = locale === "en";
   const lines = english

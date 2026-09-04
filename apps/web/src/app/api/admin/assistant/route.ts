@@ -6,6 +6,7 @@ import { NextResponse } from "next/server";
 import {
   buildAdminSystemInstruction,
   createAdminToolExecutor,
+  isAllowedAdminActionHref,
   adminTools,
 } from "@/lib/assistant-admin";
 import { assertProtectedAssistantRequest } from "@/lib/assistant-http";
@@ -47,17 +48,22 @@ export async function POST(request: NextRequest) {
         runtime.unifiedConversations,
         principal,
       );
+      const priorHistory = await runtime.assistantHistory.listRecent(principal.userId);
       const result = await runChat(client, {
         systemInstruction,
         userMessage: body.message,
-        history: body.history,
+        history: priorHistory,
         tools: adminTools,
         toolExecutor,
         maxOutputTokens: 500,
         maxIterations: 8,
+        isAllowedActionHref: isAllowedAdminActionHref,
       });
+      const newTurns = result.history.slice(priorHistory.length);
+      await runtime.assistantHistory.append(principal.userId, newTurns);
+      await runtime.assistantHistory.trim(principal.userId);
       return NextResponse.json(
-        { text: result.text, actions: result.actions, history: result.history },
+        { text: result.text, actions: result.actions },
         { headers: { "Cache-Control": "no-store", "X-Request-ID": requestId } },
       );
     } finally {

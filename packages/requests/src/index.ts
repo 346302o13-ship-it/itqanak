@@ -26,6 +26,11 @@ export {
 export { ServiceQuoteService, type ServiceQuoteServiceOptions } from "./quote-service.js";
 export { NotificationService, type NotificationServiceOptions } from "./notification-service.js";
 export {
+  AssistantHistoryService,
+  type AssistantHistoryServiceOptions,
+  type AssistantMessageRow,
+} from "./assistant-history-service.js";
+export {
   UnifiedConversationAttachmentService,
   type AddUnifiedConversationAttachmentInput,
   type UnifiedConversationAttachmentServiceOptions,

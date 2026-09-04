@@ -32,6 +32,14 @@ export interface AssistantChatProps {
   /** Compact fits a floating popover; full stretches to its container, used
    *  on the dedicated assistant pages. */
   readonly variant?: "compact" | "full";
+  /** Prior turns loaded server-side (student/admin persist history — see
+   *  assistant-display.ts). Omitted/empty for the visitor surface, which
+   *  stays session-only. */
+  readonly initialMessages?: readonly DisplayMessage[];
+  /** Link back to the surface's own conversation list (student/admin only —
+   *  ties the assistant into the same chat area the user came from). */
+  readonly backHref?: string;
+  readonly backLabel?: string;
 }
 
 /** `**bold**` spans only — split and wrap, never dangerouslySetInnerHTML, so
@@ -108,19 +116,24 @@ function errorMessage(code: string | undefined, english: boolean): string {
 }
 
 export function AssistantChat({
+  backHref,
+  backLabel,
   csrfToken,
   endpoint,
   greeting,
+  initialMessages = [],
   locale,
   placeholder,
   title,
   variant = "full",
 }: AssistantChatProps) {
   const english = locale === "en";
-  const [messages, setMessages] = useState<readonly DisplayMessage[]>([]);
+  const [messages, setMessages] = useState<readonly DisplayMessage[]>(initialMessages);
   const [input, setInput] = useState("");
   const [sending, setSending] = useState(false);
   const [notice, setNotice] = useState<string>();
+  // Only the visitor route (session-only, unauthenticated) reads/returns this;
+  // student/admin persist server-side and ignore it — see assistant-http.ts.
   const historyRef = useRef<unknown>(undefined);
   const logRef = useRef<HTMLDivElement>(null);
 
@@ -177,19 +190,44 @@ export function AssistantChat({
         <span className="grid size-9 shrink-0 place-items-center rounded-[var(--itq-radius-control)] bg-[var(--itq-color-brand-700)] text-white">
           <MessageIcon className="size-4.5" />
         </span>
-        <p className="text-sm font-black">{title}</p>
+        <p className="min-w-0 flex-1 truncate text-sm font-black">{title}</p>
+        {backHref === undefined ? null : (
+          <a
+            className="ms-auto inline-flex shrink-0 items-center gap-1.5 rounded-[var(--itq-radius-control)] border border-[var(--itq-color-border)] bg-[var(--itq-color-surface)] px-2.5 py-1.5 text-xs font-black text-[var(--itq-color-ink)] no-underline hover:bg-[var(--itq-color-brand-50)]"
+            href={backHref}
+            onClick={(event) => {
+              if (
+                event.defaultPrevented ||
+                event.button !== 0 ||
+                event.metaKey ||
+                event.ctrlKey ||
+                event.shiftKey ||
+                event.altKey
+              ) {
+                return;
+              }
+              event.preventDefault();
+              window.location.assign(backHref);
+            }}
+          >
+            <MessageIcon className="size-3.5" />
+            {backLabel}
+          </a>
+        )}
       </header>
 
       <div
         className="itq-scroll itq-chat-bg min-h-0 flex-1 space-y-3 overflow-y-auto px-3 py-4"
         ref={logRef}
       >
-        <div
-          className="max-w-[85%] rounded-[var(--itq-radius-card)] border border-[var(--itq-color-border)] bg-[var(--itq-color-surface)] px-4 py-3 text-sm leading-6"
-          dir="auto"
-        >
-          {greeting}
-        </div>
+        {messages.length === 0 ? (
+          <div
+            className="max-w-[85%] rounded-[var(--itq-radius-card)] border border-[var(--itq-color-border)] bg-[var(--itq-color-surface)] px-4 py-3 text-sm leading-6"
+            dir="auto"
+          >
+            {greeting}
+          </div>
+        ) : null}
         {messages.map((message, index) => (
           <div
             className={`flex ${message.role === "user" ? "justify-end" : "justify-start"}`}

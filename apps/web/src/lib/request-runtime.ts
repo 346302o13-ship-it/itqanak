@@ -5,6 +5,7 @@ import { ContentBlockService } from "@itqanak/content";
 import { createLogger } from "@itqanak/observability";
 import {
   AdminRequestService,
+  AssistantHistoryService,
   ChatService,
   RequestAttachmentService,
   RequestService,
@@ -75,6 +76,7 @@ export async function createStudentRequestRuntime(requireRateLimiting = false) {
         conversations: unifiedConversations,
       }),
       notifications: new NotificationService({ database: runtime.database }),
+      assistantHistory: new AssistantHistoryService({ database: runtime.database }),
       unifiedAttachments: new UnifiedConversationAttachmentService({
         database: runtime.database,
         config: runtime.config,

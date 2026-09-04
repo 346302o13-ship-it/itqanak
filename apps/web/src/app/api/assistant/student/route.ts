@@ -10,6 +10,7 @@ import { geminiClient } from "@/lib/assistant-runtime";
 import {
   buildStudentSystemInstruction,
   createStudentToolExecutor,
+  isAllowedStudentActionHref,
   studentTools,
 } from "@/lib/assistant-student";
 import { getRequestId } from "@/lib/request-id";
@@ -44,16 +45,25 @@ export async function POST(request: NextRequest) {
       const systemInstruction = buildStudentSystemInstruction(principal.displayName, body.locale);
       const finance = new FinanceService({ database: runtime.database });
       const toolExecutor = createStudentToolExecutor(runtime.requests, finance, principal);
+      // Server-persisted history is authoritative — the same durability every
+      // other conversation in this platform already has, so the assistant
+      // survives a reload instead of resetting. Client-supplied history is
+      // ignored here (still accepted for the unauthenticated visitor surface).
+      const priorHistory = await runtime.assistantHistory.listRecent(principal.userId);
       const result = await runChat(client, {
         systemInstruction,
         userMessage: body.message,
-        history: body.history,
+        history: priorHistory,
         tools: studentTools,
         toolExecutor,
         maxOutputTokens: 400,
+        isAllowedActionHref: isAllowedStudentActionHref,
       });
+      const newTurns = result.history.slice(priorHistory.length);
+      await runtime.assistantHistory.append(principal.userId, newTurns);
+      await runtime.assistantHistory.trim(principal.userId);
       return NextResponse.json(
-        { text: result.text, actions: result.actions, history: result.history },
+        { text: result.text, actions: result.actions },
         { headers: { "Cache-Control": "no-store", "X-Request-ID": requestId } },
       );
     } finally {

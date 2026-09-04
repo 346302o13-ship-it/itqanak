@@ -72,7 +72,15 @@ export interface ChatOptions {
   /** Tool-call rounds before the model is forced to answer immediately.
    *  Default 6. */
   readonly maxIterations?: number;
+  /** Tests a present_answer action's `href` before it is allowed through —
+   *  defaults to any internal /ar or /en path plus a wa.me link. A
+   *  signed-in surface (student/admin) should pass a tighter test so the
+   *  model can never hand back a link to the public marketing site. */
+  readonly isAllowedActionHref?: (href: string) => boolean;
 }
+
+const defaultIsAllowedActionHref = (href: string): boolean =>
+  /^\/(ar|en)(\/|$)/u.test(href) || href.startsWith("https://wa.me/");
 
 function isFunctionCallPart(part: GeminiPart): part is GeminiPart & {
   readonly functionCall: { readonly name: string; readonly args?: Record<string, unknown> };
@@ -87,24 +95,25 @@ function extractText(parts: readonly GeminiPart[]): string {
     .trim();
 }
 
-function sanitizeActions(value: unknown): readonly ChatAction[] {
+function sanitizeActions(
+  value: unknown,
+  isAllowedHref: (href: string) => boolean,
+): readonly ChatAction[] {
   if (!Array.isArray(value)) return [];
   const actions: ChatAction[] = [];
   for (const entry of value) {
     if (typeof entry !== "object" || entry === null) continue;
     const label = (entry as { label?: unknown }).label;
     const href = (entry as { href?: unknown }).href;
-    // Internal paths only — never let the model hand back an arbitrary
-    // external URL as a clickable button. WhatsApp is the one allowed
-    // external destination, since it is already the platform's own support
-    // channel and every surface already links to it elsewhere.
+    // Never let the model hand back an arbitrary external URL as a clickable
+    // button — only whatever this surface's isAllowedHref permits.
     if (
       typeof label === "string" &&
       label.trim().length > 0 &&
       label.length <= 40 &&
       typeof href === "string" &&
-      (/^\/(ar|en)(\/|$)/u.test(href) || href.startsWith("https://wa.me/")) &&
-      href.length <= 200
+      href.length <= 200 &&
+      isAllowedHref(href)
     ) {
       actions.push({ label: label.trim(), href });
     }
@@ -129,6 +138,7 @@ export async function runChat(client: GeminiClient, options: ChatOptions): Promi
   const tools = options.tools ?? [];
   const allTools = [...tools, PRESENT_ANSWER_TOOL];
   const allowedNames = allTools.map((tool) => tool.name);
+  const isAllowedActionHref = options.isAllowedActionHref ?? defaultIsAllowedActionHref;
   const maxIterations = options.maxIterations ?? 6;
   let history: GeminiContent[] = [
     ...(options.history ?? []),
@@ -167,7 +177,7 @@ export async function runChat(client: GeminiClient, options: ChatOptions): Promi
         typeof args.text === "string" && args.text.trim().length > 0
           ? args.text.trim()
           : FALLBACK_TEXT;
-      return { text, actions: sanitizeActions(args.actions), history };
+      return { text, actions: sanitizeActions(args.actions, isAllowedActionHref), history };
     }
 
     if (functionCalls.length === 0) {

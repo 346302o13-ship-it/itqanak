@@ -6,6 +6,12 @@ import type { GeminiFunctionDeclaration, ToolExecutor } from "@itqanak/ai";
 import type { AuthenticatedPrincipal, AuthService } from "@itqanak/auth";
 import type { AdminRequestService, UnifiedConversationService } from "@itqanak/requests";
 
+/** A signed-in admin's chat must never hand back a link to the public
+ *  marketing site — only the admin center or their own account settings. */
+export function isAllowedAdminActionHref(href: string): boolean {
+  return /^\/(ar|en)\/(admin|account)(\/|$)/u.test(href);
+}
+
 export function buildAdminSystemInstruction(displayName: string, locale: "ar" | "en"): string {
   const english = locale === "en";
   const lines = english
