@@ -47,6 +47,7 @@ const nextConfig: NextConfig = {
   // fragments and never reach the server. Production does not use this logger.
   logging: { browserToTerminal: false, incomingRequests: false },
   transpilePackages: [
+    "@itqanak/ai",
     "@itqanak/auth",
     "@itqanak/catalog",
     "@itqanak/content",

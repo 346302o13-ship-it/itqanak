@@ -311,6 +311,20 @@ services:
       # strict CSP in next.config.ts is unchanged. Set to turn a campaign on.
       FB_PIXEL_ID: ${FB_PIXEL_ID:-}
       TIKTOK_PIXEL_ID: ${TIKTOK_PIXEL_ID:-}
+      # AI assistant: a pool of Gemini API keys (each optional — an unset slot
+      # mounts /dev/null, which resolveSecret treats as absent) rotated
+      # automatically on quota/rate-limit errors. Zero keys just disables the
+      # feature, no startup requirement.
+      GEMINI_MODEL: ${GEMINI_MODEL:-gemini-3.6-flash}
+      GEMINI_API_KEY_1_FILE: /run/secrets/gemini_api_key_1
+      GEMINI_API_KEY_2_FILE: /run/secrets/gemini_api_key_2
+      GEMINI_API_KEY_3_FILE: /run/secrets/gemini_api_key_3
+      GEMINI_API_KEY_4_FILE: /run/secrets/gemini_api_key_4
+      GEMINI_API_KEY_5_FILE: /run/secrets/gemini_api_key_5
+      GEMINI_API_KEY_6_FILE: /run/secrets/gemini_api_key_6
+      GEMINI_API_KEY_7_FILE: /run/secrets/gemini_api_key_7
+      GEMINI_API_KEY_8_FILE: /run/secrets/gemini_api_key_8
+      GEMINI_API_KEY_9_FILE: /run/secrets/gemini_api_key_9
       # Non-secret delivery descriptors for the administrator monitoring page.
       # The Meta token remains mounted only in the Worker service.
       WHATSAPP_MONITORING_MODE: ${WHATSAPP_MODE:-disabled}
@@ -348,6 +362,15 @@ services:
       - smtp_password
       - storage_s3_access_key_id
       - storage_s3_secret_access_key
+      - gemini_api_key_1
+      - gemini_api_key_2
+      - gemini_api_key_3
+      - gemini_api_key_4
+      - gemini_api_key_5
+      - gemini_api_key_6
+      - gemini_api_key_7
+      - gemini_api_key_8
+      - gemini_api_key_9
     depends_on:
       migrate:
         condition: service_completed_successfully
@@ -595,6 +618,27 @@ secrets:
     file: ${ITQANAK_SMTP_PASSWORD_SECRET_FILE:-/dev/null}
   whatsapp_access_token:
     file: ${ITQANAK_WHATSAPP_ACCESS_TOKEN_SECRET_FILE:-/dev/null}
+  # AI assistant: each slot optional, defaults to /dev/null (treated as
+  # unconfigured — see resolveSecret's allowEmpty). Zero keys just disables
+  # the assistant feature.
+  gemini_api_key_1:
+    file: ${ITQANAK_GEMINI_API_KEY_1_SECRET_FILE:-/dev/null}
+  gemini_api_key_2:
+    file: ${ITQANAK_GEMINI_API_KEY_2_SECRET_FILE:-/dev/null}
+  gemini_api_key_3:
+    file: ${ITQANAK_GEMINI_API_KEY_3_SECRET_FILE:-/dev/null}
+  gemini_api_key_4:
+    file: ${ITQANAK_GEMINI_API_KEY_4_SECRET_FILE:-/dev/null}
+  gemini_api_key_5:
+    file: ${ITQANAK_GEMINI_API_KEY_5_SECRET_FILE:-/dev/null}
+  gemini_api_key_6:
+    file: ${ITQANAK_GEMINI_API_KEY_6_SECRET_FILE:-/dev/null}
+  gemini_api_key_7:
+    file: ${ITQANAK_GEMINI_API_KEY_7_SECRET_FILE:-/dev/null}
+  gemini_api_key_8:
+    file: ${ITQANAK_GEMINI_API_KEY_8_SECRET_FILE:-/dev/null}
+  gemini_api_key_9:
+    file: ${ITQANAK_GEMINI_API_KEY_9_SECRET_FILE:-/dev/null}
   storage_s3_access_key_id:
     file: ${ITQANAK_STORAGE_S3_ACCESS_KEY_ID_SECRET_FILE:?Set ITQANAK_STORAGE_S3_ACCESS_KEY_ID_SECRET_FILE to a protected secret-file path}
   storage_s3_secret_access_key:

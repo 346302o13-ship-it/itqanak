@@ -294,3 +294,15 @@ export function OperationsIcon(props: IconProps) {
     </Icon>
   );
 }
+
+export function SparkleIcon(props: IconProps) {
+  return (
+    <Icon {...props}>
+      <path {...stroke} d="M12 3v3.5M12 17.5V21M3 12h3.5M17.5 12H21" />
+      <path
+        {...stroke}
+        d="M12 8.5c0 2-1.5 3.5-3.5 3.5 2 0 3.5 1.5 3.5 3.5 0-2 1.5-3.5 3.5-3.5-2 0-3.5-1.5-3.5-3.5Z"
+      />
+    </Icon>
+  );
+}

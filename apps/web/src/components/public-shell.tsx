@@ -3,9 +3,11 @@ import type { JSX, ReactNode } from "react";
 
 import { BrandMark } from "@itqanak/ui";
 
+import { AssistantFab } from "./assistant-fab";
 import { EducationalGuide } from "./educational-guide";
 import { InstallAppButton } from "./install-app-button";
 import { MarketingIcon, PublicHeader, WhatsAppLink, type MarketingLocale } from "./marketing";
+import { csrfTokenForPage } from "@/lib/auth-runtime";
 import { SUPPORT_WHATSAPP_E164 } from "@/lib/support-contact";
 
 export interface PublicShellCopy {
@@ -100,14 +102,15 @@ interface PublicShellProps {
   readonly copy?: Partial<PublicShellCopy>;
 }
 
-export function PublicShell({
+export async function PublicShell({
   active,
   alternateHref,
   children,
   copy: copyOverrides,
   locale = "ar",
-}: PublicShellProps): JSX.Element {
+}: PublicShellProps): Promise<JSX.Element> {
   const copy = { ...copyByLocale[locale], ...copyOverrides };
+  const csrfToken = await csrfTokenForPage();
   const prefix = `/${locale}`;
   const oppositeLocale = locale === "ar" ? "en" : "ar";
   const direction = locale === "ar" ? "rtl" : "ltr";
@@ -308,6 +311,7 @@ export function PublicShell({
       <div className="fixed bottom-4 start-4 z-40 sm:bottom-6 sm:start-6 print:hidden">
         <InstallAppButton locale={locale} surface="public" variant="fab" />
       </div>
+      <AssistantFab csrfToken={csrfToken} locale={locale} />
       <EducationalGuide audience="public" locale={locale} />
     </div>
   );

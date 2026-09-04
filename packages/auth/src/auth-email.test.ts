@@ -36,6 +36,7 @@ const config: AppConfig = {
     maxAttempts: 5,
   },
   operationalControls: { maintenanceCacheTtlMs: 2_000 },
+  assistant: { geminiApiKeys: [], model: "gemini-3.6-flash" },
   auth: {
     studentSessionAbsoluteTtlSeconds: 2_592_000,
     studentSessionIdleTtlSeconds: 604_800,

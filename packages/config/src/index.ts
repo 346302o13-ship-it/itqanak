@@ -120,6 +120,17 @@ export interface AppConfig {
       readonly password: string;
     };
   };
+  /**
+   * The AI assistant (visitor FAQ / student self-service / admin ops copilot)
+   * is entirely optional: with zero keys configured it just stays disabled,
+   * never a startup requirement. `geminiApiKeys` is already filtered to only
+   * the keys that were actually configured, in the order they should be
+   * tried — see @itqanak/ai's GeminiClient for the rotation itself.
+   */
+  readonly assistant: {
+    readonly geminiApiKeys: readonly string[];
+    readonly model: string;
+  };
   readonly databaseUrl?: string;
   readonly redisUrl?: string;
   readonly sessionSecret?: string;
@@ -150,6 +161,8 @@ export interface SafeAppConfig {
   /** Intentionally exposes only the operating mode, never scanner network details. */
   readonly fileScanning: Pick<AppConfig["fileScanning"], "mode">;
   readonly operationalControls: AppConfig["operationalControls"];
+  /** Count only — never the keys themselves. */
+  readonly assistant: { readonly geminiApiKeyCount: number; readonly model: string };
   readonly auth: Omit<AppConfig["auth"], "emailPayloadKey" | "smtp"> & {
     readonly hasSmtpConfiguration: boolean;
   };
@@ -457,6 +470,7 @@ export function loadConfig(options: LoadConfigOptions = {}): AppConfig {
   let smtpPassword: string | undefined;
   let storageS3AccessKeyId: string | undefined;
   let storageS3SecretAccessKey: string | undefined;
+  const geminiApiKeys: string[] = [];
   try {
     databaseUrl = resolveSecret(environment, "DATABASE_URL", { secretDirectory });
     redisUrl = resolveSecret(environment, "REDIS_URL", { secretDirectory });
@@ -480,6 +494,17 @@ export function loadConfig(options: LoadConfigOptions = {}): AppConfig {
     storageS3SecretAccessKey = resolveSecret(environment, "STORAGE_S3_SECRET_ACCESS_KEY", {
       secretDirectory,
     });
+    // A numbered pool (GEMINI_API_KEY_1.._12) rather than a single secret: the
+    // AI assistant rotates to the next key on a quota/rate-limit error, so a
+    // free-tier deployment can combine several keys into one larger effective
+    // quota. Any slot may be absent; only configured, non-empty ones are used.
+    for (let index = 1; index <= 12; index += 1) {
+      const key = resolveSecret(environment, `GEMINI_API_KEY_${index}`, {
+        secretDirectory,
+        allowEmpty: true,
+      });
+      if (key !== undefined && key.length > 0) geminiApiKeys.push(key);
+    }
   } catch (error: unknown) {
     if (error instanceof ConfigError) {
       issues.push(...error.issues);
@@ -922,6 +947,10 @@ export function loadConfig(options: LoadConfigOptions = {}): AppConfig {
       ),
     },
     operationalControls: { maintenanceCacheTtlMs },
+    assistant: {
+      geminiApiKeys,
+      model: (environment.GEMINI_MODEL ?? "gemini-3.6-flash").trim() || "gemini-3.6-flash",
+    },
     auth: {
       ...auth,
       ...(emailDeliveryMode !== "smtp" ||
@@ -1018,6 +1047,10 @@ export function toSafeConfig(config: AppConfig): SafeAppConfig {
     },
     fileScanning: { mode: config.fileScanning.mode },
     operationalControls: config.operationalControls,
+    assistant: {
+      geminiApiKeyCount: config.assistant.geminiApiKeys.length,
+      model: config.assistant.model,
+    },
     auth: {
       studentSessionAbsoluteTtlSeconds: config.auth.studentSessionAbsoluteTtlSeconds,
       studentSessionIdleTtlSeconds: config.auth.studentSessionIdleTtlSeconds,

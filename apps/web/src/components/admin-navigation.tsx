@@ -13,6 +13,7 @@ import {
   PaperclipIcon,
   RequestsIcon,
   ServicesIcon,
+  SparkleIcon,
   UserIcon,
   VerifiedIcon,
 } from "./icons";
@@ -20,6 +21,12 @@ import {
 const itemsByLocale = {
   ar: [
     { href: "/ar/admin", label: "نظرة عامة", mobileLabel: "الرئيسية", Icon: DashboardIcon },
+    {
+      href: "/ar/admin/assistant",
+      label: "المساعد الذكي",
+      mobileLabel: "المساعد",
+      Icon: SparkleIcon,
+    },
     {
       href: "/ar/admin/support",
       label: "الطلبات والمحادثات",
@@ -102,6 +109,12 @@ const itemsByLocale = {
   ],
   en: [
     { href: "/en/admin", label: "Overview", mobileLabel: "Home", Icon: DashboardIcon },
+    {
+      href: "/en/admin/assistant",
+      label: "AI assistant",
+      mobileLabel: "Assistant",
+      Icon: SparkleIcon,
+    },
     {
       href: "/en/admin/support",
       label: "Requests & chat",

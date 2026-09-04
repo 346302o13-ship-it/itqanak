@@ -52,6 +52,9 @@ importers:
       "@ibm/plex-sans-arabic":
         specifier: 1.1.0
         version: 1.1.0
+      "@itqanak/ai":
+        specifier: workspace:*
+        version: link:../../packages/ai
       "@itqanak/auth":
         specifier: workspace:*
         version: link:../../packages/auth
@@ -159,6 +162,12 @@ importers:
       tsx:
         specifier: 4.19.3
         version: 4.19.3
+
+  packages/ai:
+    dependencies:
+      "@itqanak/observability":
+        specifier: workspace:*
+        version: link:../observability
 
   packages/auth:
     dependencies:
@@ -2318,6 +2327,7 @@ packages:
         integrity: sha512-QePbBFMJFjgmlE+cXAlbHZbHpdFVS2E/6vzCy7aKlebddvl1vadiC4JFV5u/wqTkNUwEV8WrQi257jf5f06hrg==,
       }
     engines: { node: ^18.18.0 || ^20.9.0 || >=21.1.0 }
+    deprecated: This version is no longer supported. Please see https://eslint.org/version-support for other options.
     hasBin: true
     peerDependencies:
       jiti: "*"

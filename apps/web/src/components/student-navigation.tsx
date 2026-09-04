@@ -6,7 +6,15 @@ import type { ComponentType, SVGProps } from "react";
 import { MobileNavBar } from "./mobile-nav-bar";
 import { NavLink } from "./nav-link";
 
-import { FinanceIcon, HomeIcon, MessageIcon, RequestsIcon, ServicesIcon, UserIcon } from "./icons";
+import {
+  FinanceIcon,
+  HomeIcon,
+  MessageIcon,
+  RequestsIcon,
+  ServicesIcon,
+  SparkleIcon,
+  UserIcon,
+} from "./icons";
 
 type NavigationItem = Readonly<{
   href: string;
@@ -37,6 +45,12 @@ const itemsByLocale: Readonly<Record<"ar" | "en", readonly NavigationItem[]>> = 
       shortLabel: "المحادثة",
       icon: MessageIcon,
     },
+    {
+      href: "/ar/student/assistant",
+      label: "المساعد الذكي",
+      shortLabel: "المساعد",
+      icon: SparkleIcon,
+    },
     { href: "/ar/student/requests", label: "طلباتي", shortLabel: "طلباتي", icon: RequestsIcon },
     {
       href: "/ar/student/finance",
@@ -59,6 +73,12 @@ const itemsByLocale: Readonly<Record<"ar" | "en", readonly NavigationItem[]>> = 
       label: "Chat",
       shortLabel: "Chat",
       icon: MessageIcon,
+    },
+    {
+      href: "/en/student/assistant",
+      label: "AI assistant",
+      shortLabel: "Assistant",
+      icon: SparkleIcon,
     },
     {
       href: "/en/student/requests",
