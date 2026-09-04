@@ -66,19 +66,37 @@ label:has(> input[type="radio"]) {
 }
 
 /* Conversation backdrop: a soft green-tinted paper (distinct from the plain
-   canvas, so the thread reads as a messaging surface, not a form) plus the
-   same faint eight-point-star field used on the institutional GreenBand
-   sections (green-band.tsx), recoloured for a light background instead of a
-   dark one — so the chat surface is drawn from the site's own motif, not a
-   generic messaging-app skin. */
+   canvas, so the thread reads as a messaging surface, not a form) with real
+   depth instead of one flat tone — a soft brand-tinted light near the top
+   (the same device GreenBand's corner light uses, echoed here for one
+   consistent site-wide "light source"), a gentle tonal sweep across the
+   surface, and the same faint eight-point-star field used on the
+   institutional GreenBand sections (green-band.tsx), recoloured for a light
+   background instead of a dark one — so the chat surface is drawn from the
+   site's own motif, not a generic messaging-app skin. Layer order: glow,
+   sweep, pattern, base colour. */
 .itq-chat-bg {
   background-color: var(--itq-color-chat-bg);
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='128' height='128' viewBox='0 0 128 128'%3E%3Cg fill='none' stroke='%23000' stroke-opacity='0.05' stroke-width='1.2'%3E%3Crect x='34' y='34' width='60' height='60'/%3E%3Crect x='34' y='34' width='60' height='60' transform='rotate(45 64 64)'/%3E%3C/g%3E%3C/svg%3E");
+  background-image:
+    radial-gradient(52rem 26rem at 16% -10%, rgb(4 102 58 / 0.08), transparent 62%),
+    linear-gradient(
+      165deg,
+      color-mix(in srgb, var(--itq-color-chat-bg) 55%, white) 0%,
+      var(--itq-color-chat-bg) 58%
+    ),
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='128' height='128' viewBox='0 0 128 128'%3E%3Cg fill='none' stroke='%23000' stroke-opacity='0.06' stroke-width='1.2'%3E%3Crect x='34' y='34' width='60' height='60'/%3E%3Crect x='34' y='34' width='60' height='60' transform='rotate(45 64 64)'/%3E%3C/g%3E%3C/svg%3E");
 }
 
 :root:not([data-theme="light"]) .itq-chat-bg,
 :root[data-theme="dark"] .itq-chat-bg {
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='128' height='128' viewBox='0 0 128 128'%3E%3Cg fill='none' stroke='%23fff' stroke-opacity='0.05' stroke-width='1.2'%3E%3Crect x='34' y='34' width='60' height='60'/%3E%3Crect x='34' y='34' width='60' height='60' transform='rotate(45 64 64)'/%3E%3C/g%3E%3C/svg%3E");
+  background-image:
+    radial-gradient(52rem 26rem at 16% -10%, rgb(72 194 129 / 0.1), transparent 62%),
+    linear-gradient(
+      165deg,
+      color-mix(in srgb, var(--itq-color-chat-bg) 70%, white 6%) 0%,
+      var(--itq-color-chat-bg) 58%
+    ),
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='128' height='128' viewBox='0 0 128 128'%3E%3Cg fill='none' stroke='%23fff' stroke-opacity='0.055' stroke-width='1.2'%3E%3Crect x='34' y='34' width='60' height='60'/%3E%3Crect x='34' y='34' width='60' height='60' transform='rotate(45 64 64)'/%3E%3C/g%3E%3C/svg%3E");
 }
 
 /* Icon-only appearance toggle (theme-toggle-button.tsx): the sun/moon icon

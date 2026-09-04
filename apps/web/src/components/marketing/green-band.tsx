@@ -21,10 +21,11 @@ interface GreenBandProps {
 }
 
 /**
- * The shared institutional green band used across the visitor pages — a rich,
- * near-flat green with one soft corner light, a very faint geometric field, a
- * gold hairline and a grounding fade. Every band re-constrains its content to
- * the page's 80rem column so text stays aligned with the rest of the page.
+ * The shared institutional green band used across the visitor pages — a real
+ * diagonal gradient (brighter corner to a deeper one, not a fixed tone), one
+ * soft corner light, a faint geometric field, a gold hairline and a light
+ * grounding fade. Every band re-constrains its content to the page's 80rem
+ * column so text stays aligned with the rest of the page.
  */
 export function GreenBand({
   ariaLabelledBy,
@@ -37,18 +38,18 @@ export function GreenBand({
     <section
       aria-labelledby={ariaLabelledBy}
       className={classNames(
-        "relative isolate overflow-hidden bg-[linear-gradient(180deg,var(--itq-color-brand-800),var(--itq-color-brand-900))] text-white",
+        "relative isolate overflow-hidden bg-[linear-gradient(135deg,var(--itq-color-brand-600)_0%,var(--itq-color-brand-700)_48%,var(--itq-color-brand-900)_100%)] text-white",
         bleed && "itq-bleed",
         className,
       )}
     >
       <div
         aria-hidden="true"
-        className="pointer-events-none absolute inset-0 bg-[radial-gradient(72rem_34rem_at_14%_-16%,rgb(255_255_255/0.09),transparent_62%)]"
+        className="pointer-events-none absolute inset-0 bg-[radial-gradient(72rem_34rem_at_14%_-16%,rgb(255_255_255/0.14),transparent_62%)]"
       />
       <div
         aria-hidden="true"
-        className="pointer-events-none absolute inset-0 opacity-[0.055]"
+        className="pointer-events-none absolute inset-0 opacity-[0.06]"
         style={patternStyle}
       />
       <span
@@ -57,7 +58,7 @@ export function GreenBand({
       />
       <div
         aria-hidden="true"
-        className="pointer-events-none absolute inset-x-0 bottom-0 h-24 bg-[linear-gradient(180deg,transparent,rgb(0_0_0/0.16))]"
+        className="pointer-events-none absolute inset-x-0 bottom-0 h-24 bg-[linear-gradient(180deg,transparent,rgb(0_0_0/0.1))]"
       />
       <div
         className={classNames(
