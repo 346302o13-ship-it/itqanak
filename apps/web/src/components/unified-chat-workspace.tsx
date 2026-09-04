@@ -41,6 +41,7 @@ import {
 import { requestStatusLabel } from "@/lib/request-presenters";
 import { playUiSound } from "@/lib/ui-sounds";
 import { setActiveConversation } from "@/lib/active-conversation";
+import { useSetMobileWorkspaceNavVisible } from "@/lib/mobile-workspace-nav";
 import { cacheAttachment, readCachedAttachment } from "@/lib/attachment-cache";
 import { compressImageForUpload } from "@/lib/image-compression";
 
@@ -71,6 +72,11 @@ interface UnifiedChatWorkspaceProps {
   readonly conversations?: readonly UnifiedConversationSummary[];
   readonly csrfToken: string | undefined;
   readonly initialMessagePage: UnifiedMessageListResult;
+  /** Admin only: land on the conversation list (mobile) instead of jumping
+   *  straight into the auto-selected conversation. The page passes this as
+   *  `true` only when the visit had no explicit ?student=/?conversation= —
+   *  a deep link into a specific chat still opens directly into it. */
+  readonly initialContactsOpen?: boolean;
   readonly locale?: "ar" | "en";
   readonly maximumBytes: number;
   readonly mode: "student" | "admin";
@@ -1842,6 +1848,7 @@ export function UnifiedChatWorkspace({
   conversation,
   conversations = [],
   csrfToken,
+  initialContactsOpen,
   initialMessagePage,
   locale = "ar",
   maximumBytes,
@@ -1915,7 +1922,9 @@ export function UnifiedChatWorkspace({
   const [recordingStarting, setRecordingStarting] = useState(false);
   const [notice, setNotice] = useState<string>();
   const [newMessagesAvailable, setNewMessagesAvailable] = useState(false);
-  const [contactsOpen, setContactsOpen] = useState(conversation === undefined);
+  const [contactsOpen, setContactsOpen] = useState(
+    initialContactsOpen ?? conversation === undefined,
+  );
   const [detailsOpen, setDetailsOpen] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
   const [createRequestOpen, setCreateRequestOpen] = useState(false);
@@ -1956,6 +1965,17 @@ export function UnifiedChatWorkspace({
     setContactsOpen(false);
     if (restoreFocus) window.requestAnimationFrame(() => contactsTriggerRef.current?.focus());
   }, []);
+
+  // WhatsApp rule: the shell's bottom tab bar shows while the mobile
+  // conversation list is open and hides once a chat is showing. Only admin
+  // has a browsable list here; the effect cleans up on unmount so leaving
+  // this page (e.g. to the assistant) never leaves the bar stuck visible.
+  const setWorkspaceNavVisible = useSetMobileWorkspaceNavVisible();
+  useEffect(() => {
+    if (mode !== "admin") return undefined;
+    setWorkspaceNavVisible(contactsOpen);
+    return () => setWorkspaceNavVisible(false);
+  }, [mode, contactsOpen, setWorkspaceNavVisible]);
   const closeDetails = useCallback((restoreFocus = true): void => {
     setDetailsOpen(false);
     if (restoreFocus) window.requestAnimationFrame(() => detailsTriggerRef.current?.focus());
@@ -4221,7 +4241,7 @@ export function UnifiedChatWorkspace({
           <aside
             aria-label={english ? "Student conversations" : "محادثات الطلاب"}
             aria-modal={contactsOpen ? true : undefined}
-            className={`fixed inset-y-0 start-0 z-50 flex w-[min(88vw,24rem)] min-h-0 flex-col border-e border-[var(--itq-color-border)] bg-[var(--itq-color-surface-soft)] shadow-2xl transition-[transform,visibility] lg:static lg:z-auto lg:w-[21rem] lg:shrink-0 lg:translate-x-0 lg:shadow-none ${
+            className={`itq-bottom-nav-space fixed top-0 start-0 z-50 flex w-[min(88vw,24rem)] min-h-0 flex-col border-e border-[var(--itq-color-border)] bg-[var(--itq-color-surface-soft)] shadow-2xl transition-[transform,visibility] lg:static lg:z-auto lg:w-[21rem] lg:shrink-0 lg:translate-x-0 lg:shadow-none ${
               contactsOpen
                 ? "visible translate-x-0"
                 : english

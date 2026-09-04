@@ -128,6 +128,14 @@ label:has(> input[type="radio"]) {
   padding-bottom: max(0.75rem, env(safe-area-inset-bottom));
 }
 
+/* Reserves exactly the bottom tab bar's own height (see MobileNavBar: pt-1.5
+   + a min-h-[3.25rem] row + its own .itq-safe-b padding) so a fixed panel
+   above it — the admin mobile conversation list — can stop short of covering
+   it instead of the two overlapping. Static on large screens either way. */
+.itq-bottom-nav-space {
+  bottom: calc(3.625rem + max(0.75rem, env(safe-area-inset-bottom)));
+}
+
 .itq-safe-t {
   padding-top: env(safe-area-inset-top);
 }

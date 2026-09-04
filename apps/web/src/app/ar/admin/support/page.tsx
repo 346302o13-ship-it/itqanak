@@ -86,11 +86,13 @@ export default async function AdminSupportPage({ searchParams }: PageProps) {
     conversation === undefined || list.items.some((item) => item.id === conversation.id)
       ? list.items
       : [conversation, ...list.items];
+  const explicitlySelected = requestedStudent !== undefined || requestedConversation !== undefined;
   return (
     <AdminShell csrfToken={csrfToken} displayName={principal.displayName} workspace>
       <UnifiedChatWorkspace
         conversations={conversationItems}
         csrfToken={csrfToken}
+        initialContactsOpen={!explicitlySelected}
         initialMessagePage={messages}
         maximumBytes={maximumBytes}
         mode="admin"

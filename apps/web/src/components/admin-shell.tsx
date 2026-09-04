@@ -3,6 +3,8 @@ import type { ReactNode } from "react";
 
 import { BrandMark } from "@itqanak/ui";
 
+import { MobileWorkspaceNavProvider } from "@/lib/mobile-workspace-nav";
+
 import { AnnouncementBanner } from "./announcement-banner";
 import { PushRegistrar } from "./push-registrar";
 import { ShieldCheckIcon } from "./icons";
@@ -10,6 +12,7 @@ import { InstallAppButton } from "./install-app-button";
 import { AdminMobileNavigation, AdminNavigation } from "./admin-navigation";
 import { NotificationCenter } from "./notification-center";
 import { ThemeToggleButton } from "./theme-toggle-button";
+import { AdminWorkspaceMobileNavSlot } from "./workspace-mobile-nav-slot";
 
 interface AdminShellProps {
   readonly displayName: string;
@@ -72,30 +75,33 @@ export function AdminShell({
       )}
       {workspace ? null : <AnnouncementBanner locale={locale} />}
       <PushRegistrar csrfToken={csrfToken} />
-      <div
-        className={
-          workspace
-            ? "itq-safe-t itq-screen-h mx-auto max-w-[120rem] overflow-hidden"
-            : "mx-auto grid max-w-[96rem] gap-7 px-4 pb-28 pt-7 sm:px-7 lg:grid-cols-[17rem_minmax(0,1fr)] lg:px-10 lg:pb-12"
-        }
-      >
-        {workspace ? null : (
-          <aside className="hidden self-start lg:sticky lg:top-[6.75rem] lg:block">
-            <div className="rounded-[var(--itq-radius-panel)] border border-[var(--itq-color-border)] bg-[var(--itq-color-surface)] p-3">
-              <div className="mb-3 rounded-[var(--itq-radius-control)] bg-[var(--itq-color-surface-soft)] p-4">
-                <div className="flex items-center gap-2 text-[0.68rem] font-black uppercase tracking-[0.14em] text-[var(--itq-color-success-700)]">
-                  <ShieldCheckIcon className="size-4" />{" "}
-                  {english ? "Trusted admin session" : "جلسة إدارية موثوقة"}
+      {workspace ? (
+        <MobileWorkspaceNavProvider>
+          <div className="itq-safe-t itq-screen-h mx-auto max-w-[120rem] overflow-hidden">
+            <main className="h-full min-w-0 overflow-hidden">{children}</main>
+          </div>
+          <AdminWorkspaceMobileNavSlot locale={locale} />
+        </MobileWorkspaceNavProvider>
+      ) : (
+        <>
+          <div className="mx-auto grid max-w-[96rem] gap-7 px-4 pb-28 pt-7 sm:px-7 lg:grid-cols-[17rem_minmax(0,1fr)] lg:px-10 lg:pb-12">
+            <aside className="hidden self-start lg:sticky lg:top-[6.75rem] lg:block">
+              <div className="rounded-[var(--itq-radius-panel)] border border-[var(--itq-color-border)] bg-[var(--itq-color-surface)] p-3">
+                <div className="mb-3 rounded-[var(--itq-radius-control)] bg-[var(--itq-color-surface-soft)] p-4">
+                  <div className="flex items-center gap-2 text-[0.68rem] font-black uppercase tracking-[0.14em] text-[var(--itq-color-success-700)]">
+                    <ShieldCheckIcon className="size-4" />{" "}
+                    {english ? "Trusted admin session" : "جلسة إدارية موثوقة"}
+                  </div>
+                  <p className="mt-2 truncate text-sm font-black">{displayName}</p>
                 </div>
-                <p className="mt-2 truncate text-sm font-black">{displayName}</p>
+                <AdminNavigation locale={locale} />
               </div>
-              <AdminNavigation locale={locale} />
-            </div>
-          </aside>
-        )}
-        <main className={workspace ? "h-full min-w-0 overflow-hidden" : "min-w-0"}>{children}</main>
-      </div>
-      {workspace ? null : <AdminMobileNavigation locale={locale} />}
+            </aside>
+            <main className="min-w-0">{children}</main>
+          </div>
+          <AdminMobileNavigation locale={locale} />
+        </>
+      )}
     </div>
   );
 }
