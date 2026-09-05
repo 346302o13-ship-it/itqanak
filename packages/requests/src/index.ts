@@ -36,6 +36,22 @@ export {
   type AdminQuickReply,
 } from "./admin-quick-replies-service.js";
 export {
+  GroupChannelService,
+  type GroupChannelServiceOptions,
+  type GroupChannelMessage,
+  type GroupChannelView,
+  type GroupChannelPostInput,
+  type GroupChannelPostResult,
+  type GroupChannelSenderType,
+} from "./group-channel-service.js";
+export {
+  announcementPreview,
+  computeGroupUnread,
+  normalizeGroupChannelBody,
+  GROUP_CHANNEL_BODY_MAX,
+  GROUP_CHANNEL_PREVIEW_MAX,
+} from "./group-channel-logic.js";
+export {
   UnifiedConversationAttachmentService,
   type AddUnifiedConversationAttachmentInput,
   type UnifiedConversationAttachmentServiceOptions,

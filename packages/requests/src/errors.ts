@@ -43,6 +43,7 @@ export const requestErrorCodes = [
   "QUICK_REPLY_LIMIT",
   "QUICK_REPLY_NOT_FOUND",
   "PINNED_MESSAGE_LIMIT",
+  "GROUP_CHANNEL_CLOSED",
 ] as const;
 
 export type RequestErrorCode = (typeof requestErrorCodes)[number];
