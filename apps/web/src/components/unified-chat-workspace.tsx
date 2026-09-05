@@ -1972,6 +1972,10 @@ export function UnifiedChatWorkspace({
     conversation === undefined ? "" : readDraft(draftStorageKey("conversation", conversation.id)),
   );
   const [pending, setPending] = useState(false);
+  // A file chosen (picked or dropped) but not sent yet — it sits in the
+  // composer so a caption can be typed alongside it, WhatsApp-style.
+  const [pendingFile, setPendingFile] = useState<File | undefined>(undefined);
+  const [dragging, setDragging] = useState(false);
   const [outbox, setOutbox] = useState<readonly OutboxEntry[]>([]);
   const [loadingOlder, setLoadingOlder] = useState(false);
   const [recording, setRecording] = useState(false);
@@ -2180,6 +2184,25 @@ export function UnifiedChatWorkspace({
     if (!assistantMode) return;
     writeDraft(draftStorageKey("assistant", mode), assistantInput);
   }, [assistantMode, assistantInput, mode]);
+
+  // Grow the composer with its content (a few lines) instead of scrolling
+  // one line at a time.
+  useEffect(() => {
+    const el = composerRef.current;
+    if (el === null) return;
+    el.style.height = "auto";
+    el.style.height = `${Math.min(el.scrollHeight, 160)}px`;
+  }, [body]);
+
+  const pendingPreviewUrl = useMemo(() => {
+    if (pendingFile === undefined || !pendingFile.type.startsWith("image/")) return undefined;
+    return URL.createObjectURL(pendingFile);
+  }, [pendingFile]);
+  useEffect(() => {
+    return () => {
+      if (pendingPreviewUrl !== undefined) URL.revokeObjectURL(pendingPreviewUrl);
+    };
+  }, [pendingPreviewUrl]);
 
   const selectedRequest = requests.find((request) => request.id === linkedRequestId);
   const activeRequestCount = requests.filter(
@@ -3193,6 +3216,16 @@ export function UnifiedChatWorkspace({
   }
 
   function submitText() {
+    if (pendingFile !== undefined) {
+      const file = pendingFile;
+      const caption = body.trim();
+      setPendingFile(undefined);
+      setBody("");
+      setReplyingTo(undefined);
+      nearBottom.current = true;
+      void uploadAndSend(file, "picker", caption.length === 0 ? undefined : caption);
+      return;
+    }
     const normalized = body.trim();
     if (normalized.length === 0) return;
     const entry: OutboxEntry = {
@@ -3392,7 +3425,11 @@ export function UnifiedChatWorkspace({
     );
   }
 
-  async function uploadAndSend(input: File, source: "picker" | "recording" = "picker") {
+  async function uploadAndSend(
+    input: File,
+    source: "picker" | "recording" = "picker",
+    caption?: string,
+  ) {
     if (
       apiBase === undefined ||
       pending ||
@@ -3438,9 +3475,11 @@ export function UnifiedChatWorkspace({
         );
       }
       const ready = await waitForAttachment(result.attachment);
+      const trimmedCaption = caption?.trim() ?? "";
       const sent = await sendMessage({
         contentType: contentTypeForMime(ready.mimeType),
         attachmentId: result.attachment.id,
+        ...(trimmedCaption.length === 0 ? {} : { body: trimmedCaption }),
         ...(linkedRequestId === undefined ? {} : { requestId: linkedRequestId }),
       });
       if (sent) {
@@ -5306,6 +5345,21 @@ export function UnifiedChatWorkspace({
           aria-live="polite"
           aria-relevant="additions"
           className="itq-chat-bg itq-scroll relative min-h-0 flex-1 overflow-y-auto overscroll-contain px-3 py-4 sm:px-6"
+          onDragLeave={(event) => {
+            if (event.currentTarget === event.target) setDragging(false);
+          }}
+          onDragOver={(event) => {
+            if (Array.from(event.dataTransfer.types).includes("Files")) {
+              event.preventDefault();
+              setDragging(true);
+            }
+          }}
+          onDrop={(event) => {
+            event.preventDefault();
+            setDragging(false);
+            const file = event.dataTransfer.files?.[0];
+            if (file !== undefined && !interactionLocked) setPendingFile(file);
+          }}
           onScroll={(event) => {
             const element = event.currentTarget;
             nearBottom.current =
@@ -5320,6 +5374,11 @@ export function UnifiedChatWorkspace({
             backgroundSize: "28px 28px, 36px 36px",
           }}
         >
+          {dragging ? (
+            <div className="pointer-events-none absolute inset-3 z-20 grid place-items-center rounded-2xl border-2 border-dashed border-[var(--itq-color-brand-500)] bg-[var(--itq-color-brand-50)]/80 text-sm font-black text-[var(--itq-color-brand-strong)]">
+              {english ? "Drop the file to attach it" : "أفلت الملف لإرفاقه"}
+            </div>
+          ) : null}
           {loadedPage < pageCount ? (
             <button
               className="mx-auto mb-5 block rounded-full border border-[var(--itq-color-border)] bg-[var(--itq-color-surface)] px-4 py-2 text-xs font-black shadow-sm disabled:opacity-60"
@@ -5804,6 +5863,15 @@ export function UnifiedChatWorkspace({
                               onOpenImage={openImageLightbox}
                             />
                           )}
+                          {message.attachment !== undefined &&
+                          message.deletedAt === undefined &&
+                          message.archived !== true &&
+                          message.body.length > 0 &&
+                          message.body !== message.attachment.originalFilename ? (
+                            <p className="mt-1.5 whitespace-pre-wrap break-words text-sm leading-7">
+                              <bdi dir="auto">{message.body}</bdi>
+                            </p>
+                          ) : null}
                           {message.archived === true ? (
                             <p className="flex items-center gap-1.5 text-sm italic leading-7 text-[var(--itq-color-bubble-meta)]">
                               <ClockIcon className="size-3.5 shrink-0" />
@@ -6053,6 +6121,40 @@ export function UnifiedChatWorkspace({
               ))}
             </div>
           ) : null}
+          {pendingFile !== undefined ? (
+            <div className="mb-2 flex items-center gap-3 rounded-xl border border-[var(--itq-color-border)] bg-[var(--itq-color-surface-soft)] p-2">
+              {pendingPreviewUrl !== undefined ? (
+                <img
+                  alt=""
+                  className="size-12 shrink-0 rounded-lg object-cover"
+                  src={pendingPreviewUrl}
+                />
+              ) : (
+                <span className="grid size-12 shrink-0 place-items-center rounded-lg bg-[var(--itq-color-brand-50)] text-[var(--itq-color-brand-strong)]">
+                  <PaperclipIcon className="size-5" />
+                </span>
+              )}
+              <span className="min-w-0 flex-1">
+                <bdi className="block truncate text-xs font-black" dir="auto">
+                  {pendingFile.name}
+                </bdi>
+                <span className="mt-0.5 block text-[10px] text-[var(--itq-color-muted)]">
+                  {new Intl.NumberFormat(english ? "en" : "ar-SA", {
+                    maximumFractionDigits: 1,
+                  }).format(pendingFile.size / 1_048_576)}{" "}
+                  {english ? "MB" : "م.ب"} · {english ? "add a caption below" : "أضف وصفاً بالأسفل"}
+                </span>
+              </span>
+              <button
+                aria-label={english ? "Remove file" : "إزالة الملف"}
+                className="grid size-7 shrink-0 place-items-center rounded-full text-[var(--itq-color-muted)] hover:bg-[var(--itq-color-surface)]"
+                onClick={() => setPendingFile(undefined)}
+                type="button"
+              >
+                <CloseIcon className="size-4" />
+              </button>
+            </div>
+          ) : null}
           <div className="flex items-end gap-1.5 sm:gap-2">
             <input
               accept={acceptedExtensions}
@@ -6060,7 +6162,8 @@ export function UnifiedChatWorkspace({
               disabled={interactionLocked}
               onChange={(event) => {
                 const file = event.currentTarget.files?.[0];
-                if (file !== undefined) void uploadAndSend(file);
+                if (file !== undefined) setPendingFile(file);
+                event.currentTarget.value = "";
               }}
               ref={fileInput}
               type="file"
@@ -6072,7 +6175,8 @@ export function UnifiedChatWorkspace({
               disabled={interactionLocked}
               onChange={(event) => {
                 const file = event.currentTarget.files?.[0];
-                if (file !== undefined) void uploadAndSend(file);
+                if (file !== undefined) setPendingFile(file);
+                event.currentTarget.value = "";
               }}
               ref={cameraInput}
               type="file"
@@ -6083,7 +6187,8 @@ export function UnifiedChatWorkspace({
               disabled={interactionLocked}
               onChange={(event) => {
                 const file = event.currentTarget.files?.[0];
-                if (file !== undefined) void uploadAndSend(file);
+                if (file !== undefined) setPendingFile(file);
+                event.currentTarget.value = "";
               }}
               ref={galleryInput}
               type="file"
@@ -6199,7 +6304,7 @@ export function UnifiedChatWorkspace({
               </button>
               <textarea
                 aria-label={english ? "Message" : "الرسالة"}
-                className="max-h-32 min-h-9 min-w-0 flex-1 resize-none bg-transparent py-1.5 text-sm leading-6 outline-none"
+                className="max-h-40 min-h-9 min-w-0 flex-1 resize-none bg-transparent py-1.5 text-sm leading-6 outline-none"
                 dir="auto"
                 disabled={recording || recordingStarting}
                 maxLength={10_000}
@@ -6213,7 +6318,15 @@ export function UnifiedChatWorkspace({
                     void submitText();
                   }
                 }}
-                placeholder={english ? "Type a message" : "اكتب رسالة"}
+                placeholder={
+                  pendingFile !== undefined
+                    ? english
+                      ? "Add a caption…"
+                      : "أضف وصفاً…"
+                    : english
+                      ? "Type a message"
+                      : "اكتب رسالة"
+                }
                 ref={composerRef}
                 rows={1}
                 value={body}
@@ -6257,7 +6370,7 @@ export function UnifiedChatWorkspace({
                 ) : null}
               </span>
             </div>
-            {body.trim().length > 0 && !recording ? (
+            {(body.trim().length > 0 || pendingFile !== undefined) && !recording ? (
               <button
                 aria-label={english ? "Send message" : "إرسال الرسالة"}
                 className="grid size-11 shrink-0 place-items-center rounded-full bg-[var(--itq-color-brand-700)] text-white shadow-sm transition hover:bg-[var(--itq-color-brand-800)] disabled:cursor-not-allowed disabled:opacity-50"
