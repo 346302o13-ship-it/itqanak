@@ -140,6 +140,16 @@ label:has(> input[type="radio"]) {
   padding-top: env(safe-area-inset-top);
 }
 
+/* Kill the mobile double-tap-to-zoom (and its ~300ms tap delay) on the chat's
+   tappable elements — a message bubble, an action, an image — so a quick
+   double tap reacts instead of zooming the page. Panning still works. */
+.itq-chat-bg button,
+.itq-chat-bg a,
+.itq-chat-bg article,
+.itq-chat-bg img {
+  touch-action: manipulation;
+}
+
 /* Full-viewport-height helpers with a graceful fallback. `100vh` is the base so
    engines without the newer viewport units (older Android System WebView, some
    in-app browsers) still get a bounded height — without it an `h-[100svh]` rule
