@@ -39,6 +39,9 @@ export const requestErrorCodes = [
   "QUOTE_NOT_PENDING",
   "QUOTE_EXPIRED",
   "NOTIFICATION_NOT_FOUND",
+  "INVALID_QUICK_REPLY",
+  "QUICK_REPLY_LIMIT",
+  "QUICK_REPLY_NOT_FOUND",
 ] as const;
 
 export type RequestErrorCode = (typeof requestErrorCodes)[number];

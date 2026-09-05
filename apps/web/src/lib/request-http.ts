@@ -45,6 +45,9 @@ const statusByCode: Readonly<Record<RequestDomainError["code"], number>> = {
   QUOTE_NOT_PENDING: 409,
   QUOTE_EXPIRED: 409,
   NOTIFICATION_NOT_FOUND: 404,
+  INVALID_QUICK_REPLY: 422,
+  QUICK_REPLY_LIMIT: 409,
+  QUICK_REPLY_NOT_FOUND: 404,
 };
 
 const messageByStatus: Readonly<Record<number, string>> = {

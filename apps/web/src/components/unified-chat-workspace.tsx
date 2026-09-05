@@ -52,6 +52,7 @@ import type { AssistantDisplayMessage } from "@/lib/assistant-display";
 import { ImageLightbox, type LightboxImage } from "./image-lightbox";
 import { LinkPreview, firstUrl } from "./link-preview";
 import { PaymentReceiptUploader } from "./payment-receipt-uploader";
+import { QuickRepliesManager, type CustomQuickReply } from "./quick-replies-manager";
 import { VoiceMessageBubble } from "./voice-message-bubble";
 
 import {
@@ -1999,6 +2000,8 @@ export function UnifiedChatWorkspace({
   const [quickRepliesOpen, setQuickRepliesOpen] = useState(false);
   const [attachSheetOpen, setAttachSheetOpen] = useState(false);
   const [aiDrafting, setAiDrafting] = useState(false);
+  const [customReplies, setCustomReplies] = useState<readonly CustomQuickReply[]>([]);
+  const [quickRepliesManagerOpen, setQuickRepliesManagerOpen] = useState(false);
   const [lightbox, setLightbox] = useState<{
     readonly images: readonly LightboxImage[];
     readonly index: number;
@@ -2062,6 +2065,27 @@ export function UnifiedChatWorkspace({
     setDetailsOpen(false);
     if (restoreFocus) window.requestAnimationFrame(() => detailsTriggerRef.current?.focus());
   }, []);
+
+  // The admin's own editable quick-reply templates (migration 041). Loaded
+  // once; edits go through QuickRepliesManager which reports the new list
+  // back so the composer popover stays in sync without a refetch.
+  useEffect(() => {
+    if (mode !== "admin") return;
+    let alive = true;
+    void (async () => {
+      try {
+        const response = await fetch("/api/admin/quick-replies", { credentials: "same-origin" });
+        if (!response.ok) return;
+        const payload = (await response.json()) as { items?: readonly CustomQuickReply[] };
+        if (alive && Array.isArray(payload.items)) setCustomReplies(payload.items);
+      } catch {
+        // A missing custom set just means the built-in templates show alone.
+      }
+    })();
+    return () => {
+      alive = false;
+    };
+  }, [mode]);
 
   // The AI assistant renders inside this same shell (chosen over its own
   // page) so it reads as one more conversation, not a separate app — see
@@ -5915,10 +5939,18 @@ export function UnifiedChatWorkspace({
                         </span>
                       </button>
                       <span className="my-1 block border-t border-[var(--itq-color-border)]" />
-                      {quickReplies(locale).map((reply) => (
+                      {[
+                        ...customReplies.map((reply) => ({ ...reply, custom: true })),
+                        ...quickReplies(locale).map((reply) => ({
+                          id: `builtin:${reply.title}`,
+                          title: reply.title,
+                          body: reply.body,
+                          custom: false,
+                        })),
+                      ].map((reply) => (
                         <button
                           className="block w-full rounded-lg px-3 py-2 text-start hover:bg-[var(--itq-color-surface-soft)]"
-                          key={reply.title}
+                          key={reply.id}
                           onClick={() => {
                             setBody(
                               fillQuickReply(reply.body, conversation?.studentDisplayName, locale),
@@ -5934,6 +5966,17 @@ export function UnifiedChatWorkspace({
                           </span>
                         </button>
                       ))}
+                      <span className="my-1 block border-t border-[var(--itq-color-border)]" />
+                      <button
+                        className="block w-full rounded-lg px-3 py-2 text-start text-[11px] font-black text-[var(--itq-color-brand-strong)] hover:bg-[var(--itq-color-brand-50)]"
+                        onClick={() => {
+                          setQuickRepliesOpen(false);
+                          setQuickRepliesManagerOpen(true);
+                        }}
+                        type="button"
+                      >
+                        {english ? "Manage templates…" : "إدارة القوالب…"}
+                      </button>
                     </div>
                   </div>
                 ) : null}
@@ -6152,6 +6195,16 @@ export function UnifiedChatWorkspace({
           onClose={() => setLightbox(undefined)}
         />
       )}
+
+      {quickRepliesManagerOpen ? (
+        <QuickRepliesManager
+          csrfToken={csrfToken}
+          items={customReplies}
+          locale={locale}
+          onChange={setCustomReplies}
+          onClose={() => setQuickRepliesManagerOpen(false)}
+        />
+      ) : null}
     </section>
   );
 }

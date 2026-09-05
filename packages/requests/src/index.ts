@@ -31,6 +31,11 @@ export {
   type AssistantMessageRow,
 } from "./assistant-history-service.js";
 export {
+  AdminQuickRepliesService,
+  type AdminQuickRepliesServiceOptions,
+  type AdminQuickReply,
+} from "./admin-quick-replies-service.js";
+export {
   UnifiedConversationAttachmentService,
   type AddUnifiedConversationAttachmentInput,
   type UnifiedConversationAttachmentServiceOptions,

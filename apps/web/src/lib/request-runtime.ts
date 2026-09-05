@@ -4,6 +4,7 @@ import { CatalogService } from "@itqanak/catalog";
 import { ContentBlockService } from "@itqanak/content";
 import { createLogger } from "@itqanak/observability";
 import {
+  AdminQuickRepliesService,
   AdminRequestService,
   AssistantHistoryService,
   ChatService,
@@ -77,6 +78,7 @@ export async function createStudentRequestRuntime(requireRateLimiting = false) {
       }),
       notifications: new NotificationService({ database: runtime.database }),
       assistantHistory: new AssistantHistoryService({ database: runtime.database }),
+      adminQuickReplies: new AdminQuickRepliesService({ database: runtime.database }),
       unifiedAttachments: new UnifiedConversationAttachmentService({
         database: runtime.database,
         config: runtime.config,
