@@ -1,6 +1,38 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 
-import { classifyTargetUrl, isBlockedAddress } from "./ssrf-ip-ranges";
+import { classifyTargetUrl, guardedLookup, isBlockedAddress } from "./ssrf-ip-ranges";
+
+vi.mock("node:dns", () => ({
+  lookup: (
+    hostname: string,
+    _options: unknown,
+    callback: (error: Error | null, addresses: { address: string; family: number }[]) => void,
+  ) => {
+    const table: Record<string, { address: string; family: number }[]> = {
+      "public.example": [{ address: "93.184.216.34", family: 4 }],
+      "rebind.example": [
+        { address: "93.184.216.34", family: 4 },
+        { address: "169.254.169.254", family: 4 },
+      ],
+      "internal.example": [{ address: "10.0.0.5", family: 4 }],
+      "v6.example": [{ address: "2606:4700:4700::1111", family: 6 }],
+    };
+    const hit = table[hostname];
+    if (hit === undefined) {
+      callback(new Error("ENOTFOUND"), []);
+      return;
+    }
+    callback(null, hit);
+  },
+}));
+
+function runLookup(host: string): Promise<{ error: Error | null; address: string }> {
+  return new Promise((resolve) => {
+    guardedLookup(host, {}, (error, address) =>
+      resolve({ error, address: typeof address === "string" ? address : "" }),
+    );
+  });
+}
 
 describe("isBlockedAddress", () => {
   it("blocks private / reserved IPv4", () => {
@@ -84,5 +116,35 @@ describe("classifyTargetUrl", () => {
 
   it("rejects a garbage string", () => {
     expect(classifyTargetUrl("::::")).toMatchObject({ ok: false });
+  });
+});
+
+describe("guardedLookup", () => {
+  it("returns a validated public address", async () => {
+    const result = await runLookup("public.example");
+    expect(result.error).toBeNull();
+    expect(result.address).toBe("93.184.216.34");
+  });
+
+  it("rejects the whole host when one record is private (rebinding defence)", async () => {
+    const result = await runLookup("rebind.example");
+    expect(result.error).not.toBeNull();
+    expect(result.address).toBe("");
+  });
+
+  it("rejects a host that only resolves to a private address", async () => {
+    const result = await runLookup("internal.example");
+    expect(result.error).not.toBeNull();
+  });
+
+  it("passes a public IPv6 host through", async () => {
+    const result = await runLookup("v6.example");
+    expect(result.error).toBeNull();
+    expect(result.address).toBe("2606:4700:4700::1111");
+  });
+
+  it("propagates a resolution failure", async () => {
+    const result = await runLookup("nope.example");
+    expect(result.error).not.toBeNull();
   });
 });

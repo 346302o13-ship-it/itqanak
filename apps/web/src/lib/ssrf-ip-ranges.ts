@@ -1,10 +1,18 @@
-import { isIP } from "node:net";
+import { lookup as dnsLookup } from "node:dns";
+import { isIP, type LookupFunction } from "node:net";
 
 /**
- * Pure, dependency-free SSRF range checks — kept out of the `server-only`
- * fetcher so they can be unit-tested (same split as
+ * Pure SSRF range checks + the connect-time guarded lookup — kept out of the
+ * `server-only` fetcher so they can be unit-tested (same split as
  * admin-monitoring-presenters).
  */
+
+export class SsrfBlockedError extends Error {
+  public constructor(reason: string) {
+    super(reason);
+    this.name = "SsrfBlockedError";
+  }
+}
 
 function ipv4ToInt(ip: string): number | undefined {
   const parts = ip.split(".");
@@ -108,3 +116,34 @@ export function classifyTargetUrl(raw: string): TargetUrlCheck {
   }
   return { ok: true, url };
 }
+
+/**
+ * An undici `connect.lookup` that resolves the name itself, rejects the
+ * whole host if ANY A/AAAA record is private/reserved, and hands back only a
+ * validated public address — so a socket can never be rebound to an
+ * internal IP after the check.
+ */
+export const guardedLookup: LookupFunction = (hostname, options, callback) => {
+  dnsLookup(hostname, { all: true, verbatim: true }, (error, addresses) => {
+    if (error !== null) {
+      callback(error, "", 0);
+      return;
+    }
+    const list = Array.isArray(addresses) ? addresses : [];
+    if (list.length === 0) {
+      callback(new SsrfBlockedError("target host does not resolve"), "", 0);
+      return;
+    }
+    for (const entry of list) {
+      if (isBlockedAddress(entry.address)) {
+        callback(new SsrfBlockedError("target host resolves to a private address"), "", 0);
+        return;
+      }
+    }
+    const wantFamily = typeof options.family === "number" ? options.family : undefined;
+    const chosen =
+      (wantFamily !== undefined ? list.find((entry) => entry.family === wantFamily) : undefined) ??
+      list[0];
+    callback(null, chosen?.address ?? "", chosen?.family ?? 4);
+  });
+};

@@ -3,32 +3,40 @@ import "server-only";
 import { lookup } from "node:dns/promises";
 import { isIP } from "node:net";
 
-import { classifyTargetUrl, isBlockedAddress } from "./ssrf-ip-ranges";
+import { Agent } from "undici";
+
+import {
+  classifyTargetUrl,
+  guardedLookup,
+  isBlockedAddress,
+  SsrfBlockedError,
+} from "./ssrf-ip-ranges";
+
+export { SsrfBlockedError };
 
 /**
  * Fetch a user-supplied URL for link previews without letting it reach
- * anything internal. Defence in depth: https-only, DNS resolved and every
- * resulting address checked against private/reserved ranges, redirects
- * followed manually with the same checks each hop, hard time and size caps,
- * no cookies/redirect of credentials, HTML content-type only.
- *
- * Known residual gap: DNS-rebinding TOCTOU — the name is re-resolved by
- * `fetch` after this check. Closing it needs a pinned-IP dispatcher. The
- * blast radius here is small (no credentials forwarded, HTML-only, capped,
- * only parsed `<title>`/`og:*` returned), so this is accepted for now — see
- * the chat-audit backlog.
+ * anything internal. Defence in depth: https-only; a pre-flight DNS check;
+ * and — the real enforcement — a dispatcher whose connect-time `lookup`
+ * resolves the name itself, rejects the whole host if ANY A/AAAA record is
+ * private/reserved, and hands the socket exactly the address it validated
+ * (so there is no DNS-rebinding window). Redirects are followed manually
+ * with the same checks each hop; hard 5s / 512KB caps; no cookies or
+ * credentials; HTML content-type only.
  */
-export class SsrfBlockedError extends Error {
-  public constructor(reason: string) {
-    super(reason);
-    this.name = "SsrfBlockedError";
-  }
-}
 
 const MAX_BYTES = 512 * 1024;
 const TIMEOUT_MS = 5_000;
 const MAX_REDIRECTS = 3;
 const USER_AGENT = "ItqanakLinkPreview/1.0 (+https://itqanqhelpstudent.online)";
+
+const guardedAgent = new Agent({
+  connect: { lookup: guardedLookup } as NonNullable<Agent.Options["connect"]>,
+  connectTimeout: TIMEOUT_MS,
+  headersTimeout: TIMEOUT_MS,
+  bodyTimeout: TIMEOUT_MS,
+  maxRedirections: 0,
+});
 
 async function assertPublicHost(hostname: string): Promise<void> {
   const bare =
@@ -76,7 +84,9 @@ export async function ssrfSafeFetchHtml(raw: string): Promise<{ finalUrl: string
         signal: controller.signal,
         headers: { "User-Agent": USER_AGENT, Accept: "text/html,application/xhtml+xml" },
         cache: "no-store",
-      });
+        // undici extension — connect only through the guarded, IP-pinned lookup.
+        dispatcher: guardedAgent,
+      } as RequestInit & { dispatcher: unknown });
     } catch {
       clearTimeout(timer);
       throw new SsrfBlockedError("request failed");
