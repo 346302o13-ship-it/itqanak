@@ -168,6 +168,17 @@ export function NotificationCenter({ csrfToken, locale = "ar", surface }: Notifi
     soundEnabledRef.current = enabled;
   }, []);
 
+  // Reflect the unread count in the browser tab, WhatsApp-web style: "(3) …".
+  // Re-derives the base title each run so it never stacks prefixes, and puts
+  // the real title back on unmount.
+  useEffect(() => {
+    const base = document.title.replace(/^\(\d+\+?\)\s+/u, "");
+    document.title = unreadCount > 0 ? `(${unreadCount > 99 ? "99+" : unreadCount}) ${base}` : base;
+    return () => {
+      document.title = document.title.replace(/^\(\d+\+?\)\s+/u, "");
+    };
+  }, [unreadCount]);
+
   useEffect(() => {
     let active = true;
     let timeout: number | undefined;
