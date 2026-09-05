@@ -18,7 +18,7 @@ import {
   UnifiedConversationAttachmentService,
   UnifiedConversationService,
 } from "@itqanak/requests";
-import { createObjectStorage, type ObjectStorage } from "@itqanak/storage";
+import { createMalwareScanner, createObjectStorage, type ObjectStorage } from "@itqanak/storage";
 
 import { createAuthRuntime } from "./auth-runtime";
 
@@ -51,6 +51,7 @@ export async function createStudentRequestRuntime(requireRateLimiting = false) {
     });
     return {
       ...runtime,
+      objectStorage: storage,
       catalog: new CatalogService({ database: runtime.database }),
       content: new ContentBlockService({ database: runtime.database }),
       requests: new RequestService({
@@ -80,7 +81,11 @@ export async function createStudentRequestRuntime(requireRateLimiting = false) {
       notifications: new NotificationService({ database: runtime.database }),
       assistantHistory: new AssistantHistoryService({ database: runtime.database }),
       adminQuickReplies: new AdminQuickRepliesService({ database: runtime.database }),
-      groupChannel: new GroupChannelService({ database: runtime.database }),
+      groupChannel: new GroupChannelService({
+        database: runtime.database,
+        storage,
+        scanner: createMalwareScanner(runtime.config.fileScanning),
+      }),
       unifiedAttachments: new UnifiedConversationAttachmentService({
         database: runtime.database,
         config: runtime.config,

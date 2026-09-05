@@ -9,7 +9,7 @@ interface GroupChannelMessage {
   readonly senderType: "ADMIN" | "STUDENT" | "SYSTEM";
   readonly authoredByMe: boolean;
   readonly authorName?: string;
-  readonly contentType: "TEXT" | "SYSTEM";
+  readonly contentType: "TEXT" | "IMAGE" | "SYSTEM";
   readonly body: string;
   readonly sentAt: string;
   readonly deleted: boolean;
@@ -28,7 +28,10 @@ interface GroupChannelView {
 interface DisplayMessage extends GroupChannelMessage {
   readonly pending?: boolean;
   readonly failed?: boolean;
+  readonly localImageUrl?: string;
 }
+
+const IMAGE_FILENAME = /\.(?:png|jpe?g|webp|gif)$/iu;
 
 export interface GroupChannelPaneProps {
   readonly locale: "ar" | "en";
@@ -73,8 +76,10 @@ export function GroupChannelPane({ locale, csrfToken, apiBase, backHref }: Group
   const [aiPrompt, setAiPrompt] = useState("");
   const [aiBusy, setAiBusy] = useState(false);
   const [aiError, setAiError] = useState<string | undefined>(undefined);
+  const [imageBusy, setImageBusy] = useState(false);
   const scrollRef = useRef<HTMLDivElement | null>(null);
   const composerRef = useRef<HTMLTextAreaElement | null>(null);
+  const imageInputRef = useRef<HTMLInputElement | null>(null);
   const nearBottom = useRef(true);
 
   const adminMode = apiBase === "/api/admin/group-channel" && view?.isAdmin === true;
@@ -200,6 +205,66 @@ export function GroupChannelPane({ locale, csrfToken, apiBase, backHref }: Group
       setSending(false);
     }
   }, [apiBase, csrfToken, draft, refresh, sending, view]);
+
+  const sendImage = useCallback(
+    async (file: File) => {
+      if (csrfToken === undefined || imageBusy) return;
+      if (!file.type.startsWith("image/") || file.size > 10 * 1024 * 1024) return;
+      const clientMessageId = crypto.randomUUID();
+      const localImageUrl = URL.createObjectURL(file);
+      const caption = draft.trim();
+      const optimistic: DisplayMessage = {
+        id: `pending-${clientMessageId}`,
+        senderType: "ADMIN",
+        authoredByMe: true,
+        contentType: "IMAGE",
+        body: caption.length > 0 ? caption : file.name,
+        sentAt: new Date().toISOString(),
+        deleted: false,
+        pending: true,
+        localImageUrl,
+      };
+      setOutbox((current) => [...current, optimistic]);
+      setDraft("");
+      nearBottom.current = true;
+      setImageBusy(true);
+      try {
+        const headers: Record<string, string> = {
+          "Content-Type": file.type,
+          "X-Itqanak-CSRF-Token": csrfToken,
+          "X-Itqanak-Filename": encodeURIComponent(file.name),
+          "X-Itqanak-Client-Message-Id": clientMessageId,
+        };
+        if (caption.length > 0) headers["X-Itqanak-Caption"] = encodeURIComponent(caption);
+        const response = await fetch("/api/admin/group-channel/attachment", {
+          method: "POST",
+          credentials: "same-origin",
+          headers,
+          body: file,
+        });
+        if (!response.ok) {
+          setOutbox((current) =>
+            current.map((message) =>
+              message.id === optimistic.id ? { ...message, pending: false, failed: true } : message,
+            ),
+          );
+          return;
+        }
+        setOutbox((current) => current.filter((message) => message.id !== optimistic.id));
+        URL.revokeObjectURL(localImageUrl);
+        await refresh();
+      } catch {
+        setOutbox((current) =>
+          current.map((message) =>
+            message.id === optimistic.id ? { ...message, pending: false, failed: true } : message,
+          ),
+        );
+      } finally {
+        setImageBusy(false);
+      }
+    },
+    [csrfToken, draft, imageBusy, refresh],
+  );
 
   const togglePolicy = useCallback(async () => {
     if (view === undefined || csrfToken === undefined || policyBusy) return;
@@ -374,6 +439,10 @@ export function GroupChannelPane({ locale, csrfToken, apiBase, backHref }: Group
           const label = authorLabel(message, english);
           const mine = label.tone === "me";
           const canDelete = adminMode && message.pending !== true && message.failed !== true;
+          const isImage = message.contentType === "IMAGE";
+          const imageSrc = message.localImageUrl ?? `${apiBase}/attachment/${message.id}`;
+          const showCaption =
+            isImage && message.body.length > 0 && !IMAGE_FILENAME.test(message.body);
           return (
             <div className={`flex flex-col ${mine ? "items-end" : "items-start"}`} key={message.id}>
               <span
@@ -396,16 +465,40 @@ export function GroupChannelPane({ locale, csrfToken, apiBase, backHref }: Group
                 ) : null}
               </span>
               <div
-                className={`max-w-[85%] rounded-2xl px-3.5 py-2 text-sm leading-7 ${
-                  mine
-                    ? "bg-[var(--itq-color-brand-600)] text-white"
-                    : "border border-[var(--itq-color-border)] bg-[var(--itq-color-surface)]"
+                className={`max-w-[85%] overflow-hidden rounded-2xl text-sm leading-7 ${
+                  isImage
+                    ? "border border-[var(--itq-color-border)] bg-[var(--itq-color-surface)]"
+                    : mine
+                      ? "bg-[var(--itq-color-brand-600)] px-3.5 py-2 text-white"
+                      : "border border-[var(--itq-color-border)] bg-[var(--itq-color-surface)] px-3.5 py-2"
                 } ${message.failed === true ? "opacity-60 ring-1 ring-[var(--itq-color-danger-500)]" : ""} ${
                   message.pending === true ? "opacity-70" : ""
                 }`}
                 dir="auto"
               >
-                {renderMessageText(message.body)}
+                {isImage ? (
+                  <>
+                    <a
+                      className="block"
+                      href={imageSrc}
+                      rel="noreferrer"
+                      target={message.localImageUrl === undefined ? "_blank" : undefined}
+                    >
+                      <img
+                        alt={english ? "Shared image" : "صورة"}
+                        className="max-h-80 w-full object-contain"
+                        src={imageSrc}
+                      />
+                    </a>
+                    {showCaption ? (
+                      <p className="px-3.5 py-2" dir="auto">
+                        {renderMessageText(message.body)}
+                      </p>
+                    ) : null}
+                  </>
+                ) : (
+                  renderMessageText(message.body)
+                )}
                 {message.failed === true ? (
                   <button
                     className="mt-1 block text-[10px] font-bold underline"
@@ -485,6 +578,30 @@ export function GroupChannelPane({ locale, csrfToken, apiBase, backHref }: Group
               void send();
             }}
           >
+            {adminMode ? (
+              <>
+                <input
+                  accept="image/png,image/jpeg,image/webp,image/gif"
+                  className="hidden"
+                  onChange={(event) => {
+                    const file = event.currentTarget.files?.[0];
+                    event.currentTarget.value = "";
+                    if (file !== undefined) void sendImage(file);
+                  }}
+                  ref={imageInputRef}
+                  type="file"
+                />
+                <button
+                  aria-label={english ? "Attach an image" : "إرفاق صورة"}
+                  className="grid size-11 shrink-0 place-items-center rounded-full border border-[var(--itq-color-border)] text-[var(--itq-color-ink)] disabled:opacity-40"
+                  disabled={imageBusy || csrfToken === undefined}
+                  onClick={() => imageInputRef.current?.click()}
+                  type="button"
+                >
+                  <span aria-hidden>🖼️</span>
+                </button>
+              </>
+            ) : null}
             <textarea
               className="max-h-40 min-h-10 flex-1 resize-none rounded-2xl border border-[var(--itq-color-border)] bg-[var(--itq-color-surface-soft)] px-4 py-2.5 text-sm leading-6 outline-none focus:border-[var(--itq-color-brand-500)]"
               dir="auto"

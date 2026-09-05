@@ -41,8 +41,11 @@ export {
   type GroupChannelMessage,
   type GroupChannelView,
   type GroupChannelPostInput,
+  type GroupChannelPostImageInput,
   type GroupChannelPostResult,
+  type GroupChannelImageDownload,
   type GroupChannelSenderType,
+  type GroupChannelContentType,
 } from "./group-channel-service.js";
 export {
   announcementPreview,
@@ -50,6 +53,7 @@ export {
   normalizeGroupChannelBody,
   GROUP_CHANNEL_BODY_MAX,
   GROUP_CHANNEL_PREVIEW_MAX,
+  GROUP_IMAGE_MAX_BYTES,
 } from "./group-channel-logic.js";
 export {
   UnifiedConversationAttachmentService,

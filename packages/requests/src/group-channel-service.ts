@@ -1,9 +1,18 @@
+import { createHash, randomUUID } from "node:crypto";
+import { Readable } from "node:stream";
+
 import {
   recordAuditEvent,
   type AuthenticatedPrincipal,
   type RequestAuditContext,
 } from "@itqanak/auth";
 import type { DatabaseClient } from "@itqanak/db";
+import {
+  StorageValidationError,
+  validateUpload,
+  type MalwareScanner,
+  type ObjectStorage,
+} from "@itqanak/storage";
 
 import { isUuid } from "./chat-validation.js";
 import { RequestDomainError } from "./errors.js";
@@ -11,11 +20,15 @@ import {
   announcementPreview,
   assertSettingsVersion,
   computeGroupUnread,
+  GROUP_IMAGE_MAX_BYTES,
   groupChannelFingerprint,
   normalizeGroupChannelBody,
 } from "./group-channel-logic.js";
 
 export type GroupChannelSenderType = "ADMIN" | "STUDENT" | "SYSTEM";
+export type GroupChannelContentType = "TEXT" | "IMAGE" | "SYSTEM";
+
+const GROUP_IMAGE_EXTENSIONS = new Set([".png", ".jpg", ".webp", ".gif"]);
 
 export interface GroupChannelMessage {
   readonly id: string;
@@ -24,7 +37,7 @@ export interface GroupChannelMessage {
   /** The real author name — populated only when an administrator is viewing, so
    *  students never see who posted another student's message. */
   readonly authorName?: string;
-  readonly contentType: "TEXT" | "SYSTEM";
+  readonly contentType: GroupChannelContentType;
   readonly body: string;
   readonly sentAt: string;
   readonly deleted: boolean;
@@ -45,6 +58,14 @@ export interface GroupChannelPostInput {
   readonly clientMessageId?: unknown;
 }
 
+export interface GroupChannelPostImageInput {
+  readonly bytes: Buffer;
+  readonly filename: string;
+  readonly declaredMimeType: string;
+  readonly caption?: string;
+  readonly clientMessageId?: unknown;
+}
+
 export interface GroupChannelPostResult {
   readonly message: GroupChannelMessage;
   readonly idempotentReplay: boolean;
@@ -52,6 +73,8 @@ export interface GroupChannelPostResult {
 
 export interface GroupChannelServiceOptions {
   readonly database: DatabaseClient;
+  readonly storage?: ObjectStorage;
+  readonly scanner?: MalwareScanner;
 }
 
 const DEFAULT_LIMIT = 100;
@@ -61,11 +84,18 @@ interface MessageRow {
   readonly id: string;
   readonly sender_type: GroupChannelSenderType;
   readonly sender_user_id: string | null;
-  readonly content_type: "TEXT" | "SYSTEM";
+  readonly content_type: GroupChannelContentType;
   readonly body: string;
   readonly sent_at: Date | string;
   readonly deleted_at: Date | string | null;
   readonly author_name: string | null;
+}
+
+export interface GroupChannelImageDownload {
+  readonly storageKey: string;
+  readonly detectedMimeType: string;
+  readonly originalFilename: string;
+  readonly sizeBytes: number;
 }
 
 interface SettingsRow {
@@ -90,9 +120,13 @@ function isAdmin(principal: AuthenticatedPrincipal): boolean {
  */
 export class GroupChannelService {
   private readonly database: DatabaseClient;
+  private readonly storage: ObjectStorage | undefined;
+  private readonly scanner: MalwareScanner | undefined;
 
   public constructor(options: GroupChannelServiceOptions) {
     this.database = options.database;
+    this.storage = options.storage;
+    this.scanner = options.scanner;
   }
 
   public async getSettings(): Promise<{ membersCanPost: boolean; version: number }> {
@@ -236,6 +270,168 @@ export class GroupChannelService {
         },
       };
     });
+  }
+
+  /**
+   * Post an image to the group. Administrators only. The bytes are type-checked
+   * and malware-scanned inline before anything is written to object storage, so
+   * a rejected or infected upload never lands in the bucket.
+   */
+  public async postImage(
+    principal: AuthenticatedPrincipal,
+    input: GroupChannelPostImageInput,
+    context: RequestAuditContext = {},
+  ): Promise<GroupChannelPostResult> {
+    if (!isAdmin(principal)) throw new RequestDomainError("REQUEST_FORBIDDEN");
+    const storage = this.storage;
+    const scanner = this.scanner;
+    if (storage === undefined || scanner === undefined) {
+      throw new RequestDomainError("STORAGE_UNAVAILABLE");
+    }
+    const clientMessageId = typeof input.clientMessageId === "string" ? input.clientMessageId : "";
+    if (!isUuid(clientMessageId)) throw new RequestDomainError("INVALID_MESSAGE");
+    if (input.bytes.length < 1 || input.bytes.length > GROUP_IMAGE_MAX_BYTES) {
+      throw new RequestDomainError("FILE_TOO_LARGE");
+    }
+
+    let validated;
+    try {
+      validated = validateUpload({
+        filename: input.filename,
+        declaredMimeType: input.declaredMimeType,
+        size: input.bytes.length,
+        maxBytes: GROUP_IMAGE_MAX_BYTES,
+        header: input.bytes,
+      });
+    } catch (error: unknown) {
+      if (error instanceof StorageValidationError) {
+        throw new RequestDomainError("INVALID_MESSAGE_ATTACHMENT");
+      }
+      throw error;
+    }
+    if (
+      !GROUP_IMAGE_EXTENSIONS.has(validated.normalizedExtension) ||
+      !validated.detectedMimeType.startsWith("image/")
+    ) {
+      throw new RequestDomainError("INVALID_MESSAGE_ATTACHMENT");
+    }
+
+    const scan = await scanner.scan(Readable.from(input.bytes));
+    if (scan.status !== "CLEAN" && scan.status !== "SKIPPED_DEVELOPMENT") {
+      throw new RequestDomainError("SCAN_REQUIRED");
+    }
+    const scanStatus = scan.status === "CLEAN" ? "CLEAN" : "SCAN_SKIPPED_DEVELOPMENT";
+
+    const messageId = randomUUID();
+    const attachmentId = randomUUID();
+    const storageKey = `group-channel/${messageId}/${attachmentId}/${randomUUID().replace(/-/gu, "")}`;
+    const sha256 = createHash("sha256").update(input.bytes).digest("hex");
+    const caption =
+      typeof input.caption === "string" && input.caption.trim().length > 0
+        ? normalizeGroupChannelBody(input.caption)
+        : validated.originalFilename;
+    const fingerprint = groupChannelFingerprint({ sha256, caption });
+
+    const stored = await storage.put(storageKey, Readable.from(input.bytes), {
+      originalName: validated.originalFilename,
+      declaredMimeType: validated.declaredMimeType,
+      detectedMimeType: validated.detectedMimeType,
+      contentLength: input.bytes.length,
+      uploadedAt: new Date(),
+    });
+    if (stored.checksumSha256 !== sha256) {
+      await storage.remove(storageKey).catch(() => undefined);
+      throw new RequestDomainError("STORAGE_UNAVAILABLE");
+    }
+
+    try {
+      return await this.database.begin(async (transaction) => {
+        const tx = transaction as DatabaseClient;
+        const inserted = await tx<{ id: string; sent_at: Date | string }[]>`
+          INSERT INTO group_channel_messages (
+            id, sender_type, sender_user_id, content_type, body,
+            client_message_id, client_payload_fingerprint
+          ) VALUES (
+            ${messageId}, 'ADMIN', ${principal.userId}, 'IMAGE', ${caption},
+            ${clientMessageId}, ${fingerprint}
+          )
+          ON CONFLICT (sender_user_id, client_message_id)
+            WHERE sender_user_id IS NOT NULL AND client_message_id IS NOT NULL
+          DO NOTHING
+          RETURNING id, sent_at
+        `;
+        const messageRow = inserted[0];
+        if (messageRow === undefined) {
+          throw new RequestDomainError("IDEMPOTENCY_KEY_REUSED");
+        }
+        await tx`
+          INSERT INTO group_channel_attachments (
+            id, message_id, uploaded_by_user_id, storage_provider, storage_bucket,
+            storage_key, original_filename, normalized_extension, detected_mime_type,
+            size_bytes, sha256, scan_status
+          ) VALUES (
+            ${attachmentId}, ${messageId}, ${principal.userId}, ${storage.provider},
+            ${storage.provider === "s3" ? (storage.bucket ?? null) : null},
+            ${storageKey}, ${validated.originalFilename}, ${validated.normalizedExtension},
+            ${validated.detectedMimeType}, ${input.bytes.length}, ${sha256}, ${scanStatus}
+          )
+        `;
+        await this.fanOutAnnouncement(tx, principal.userId, messageId, caption);
+        await recordAuditEvent(tx, {
+          ...context,
+          eventType: "group_channel.image_posted",
+          outcome: "SUCCESS",
+          actorUserId: principal.userId,
+          sessionId: principal.sessionId,
+          resourceType: "group_channel_message",
+          resourceId: messageId,
+          metadata: { sizeBytes: input.bytes.length, mimeType: validated.detectedMimeType },
+        });
+        return {
+          idempotentReplay: false,
+          message: {
+            id: messageId,
+            senderType: "ADMIN" as const,
+            authoredByMe: true,
+            authorName: principal.displayName,
+            contentType: "IMAGE" as const,
+            body: caption,
+            sentAt: toDate(messageRow.sent_at).toISOString(),
+            deleted: false,
+          },
+        };
+      });
+    } catch (error: unknown) {
+      await storage.remove(storageKey).catch(() => undefined);
+      throw error;
+    }
+  }
+
+  /** Every member of the group may view its images — the caller has already
+   *  authenticated the principal, and images are proven CLEAN at upload. */
+  public async getImageDownload(messageId: string): Promise<GroupChannelImageDownload> {
+    if (!isUuid(messageId)) throw new RequestDomainError("MESSAGE_NOT_FOUND");
+    const [row] = await this.database<
+      {
+        storage_key: string;
+        detected_mime_type: string;
+        original_filename: string;
+        size_bytes: number | string;
+      }[]
+    >`
+      SELECT a.storage_key, a.detected_mime_type, a.original_filename, a.size_bytes
+      FROM group_channel_attachments a
+      INNER JOIN group_channel_messages m ON m.id = a.message_id
+      WHERE a.message_id = ${messageId} AND m.deleted_at IS NULL
+      LIMIT 1
+    `;
+    if (row === undefined) throw new RequestDomainError("ATTACHMENT_NOT_FOUND");
+    return {
+      storageKey: row.storage_key,
+      detectedMimeType: row.detected_mime_type,
+      originalFilename: row.original_filename,
+      sizeBytes: Number(row.size_bytes),
+    };
   }
 
   private async fanOutAnnouncement(

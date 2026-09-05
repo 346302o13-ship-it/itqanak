@@ -4,6 +4,7 @@ import { RequestDomainError } from "./errors.js";
 
 export const GROUP_CHANNEL_BODY_MAX = 10_000;
 export const GROUP_CHANNEL_PREVIEW_MAX = 320;
+export const GROUP_IMAGE_MAX_BYTES = 10 * 1_024 * 1_024;
 
 /** Trim, normalise newlines, and bound a group-channel message body the same way
  *  the unified conversation does. */
