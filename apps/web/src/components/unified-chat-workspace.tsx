@@ -417,6 +417,35 @@ function formatMessageDate(value: Date, locale: "ar" | "en"): string {
   }).format(value);
 }
 
+/** A raw User-Agent → a short "Browser · OS" line for the admin session list.
+ *  Falls back to the raw string (trimmed) when nothing recognisable matches. */
+function describeUserAgent(ua: string): string {
+  const os = /Windows/.test(ua)
+    ? "Windows"
+    : /iPhone|iPad|iPod/.test(ua)
+      ? "iOS"
+      : /Android/.test(ua)
+        ? "Android"
+        : /Mac OS X/.test(ua)
+          ? "macOS"
+          : /Linux/.test(ua)
+            ? "Linux"
+            : undefined;
+  const browser = /Edg\//.test(ua)
+    ? "Edge"
+    : /OPR\/|Opera/.test(ua)
+      ? "Opera"
+      : /Chrome\//.test(ua)
+        ? "Chrome"
+        : /Firefox\//.test(ua)
+          ? "Firefox"
+          : /Safari\//.test(ua)
+            ? "Safari"
+            : undefined;
+  const parts = [browser, os].filter((part): part is string => part !== undefined);
+  return parts.length > 0 ? parts.join(" · ") : ua.slice(0, 60);
+}
+
 /** Days between two dates by calendar day, ignoring the clock. */
 function calendarDaysAgo(value: Date, now: Date): number {
   const a = new Date(value.getFullYear(), value.getMonth(), value.getDate());
@@ -4462,7 +4491,11 @@ export function UnifiedChatWorkspace({
                   >
                     <p className="flex items-center justify-between gap-2 font-black">
                       <span className="truncate">
-                        {session.device ?? (english ? "Unknown device" : "جهاز غير معروف")}
+                        {session.device === undefined
+                          ? english
+                            ? "Unknown device"
+                            : "جهاز غير معروف"
+                          : describeUserAgent(session.device)}
                       </span>
                       <span
                         className={
