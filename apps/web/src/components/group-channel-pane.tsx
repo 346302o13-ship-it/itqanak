@@ -74,9 +74,17 @@ export function GroupChannelPane({ locale, csrfToken, apiBase, backHref }: Group
   const [aiBusy, setAiBusy] = useState(false);
   const [aiError, setAiError] = useState<string | undefined>(undefined);
   const scrollRef = useRef<HTMLDivElement | null>(null);
+  const composerRef = useRef<HTMLTextAreaElement | null>(null);
   const nearBottom = useRef(true);
 
   const adminMode = apiBase === "/api/admin/group-channel" && view?.isAdmin === true;
+
+  useEffect(() => {
+    const element = composerRef.current;
+    if (element === null) return;
+    element.style.height = "auto";
+    element.style.height = `${Math.min(element.scrollHeight, 160)}px`;
+  }, [draft]);
 
   const markRead = useCallback(async () => {
     if (csrfToken === undefined) return;
@@ -446,6 +454,7 @@ export function GroupChannelPane({ locale, csrfToken, apiBase, backHref }: Group
                 }
               }}
               placeholder={english ? "Write a message…" : "اكتب رسالة…"}
+              ref={composerRef}
               rows={1}
               value={draft}
             />
