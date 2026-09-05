@@ -46,8 +46,10 @@ import { cacheAttachment, readCachedAttachment } from "@/lib/attachment-cache";
 import { compressImageForUpload } from "@/lib/image-compression";
 import { renderMessageText } from "@/lib/chat-markdown";
 import { draftStorageKey, readDraft, writeDraft } from "@/lib/chat-draft";
+import { fillQuickReply, quickReplies } from "@/lib/quick-replies";
 import type { AssistantDisplayMessage } from "@/lib/assistant-display";
 
+import { ImageLightbox, type LightboxImage } from "./image-lightbox";
 import { PaymentReceiptUploader } from "./payment-receipt-uploader";
 
 import {
@@ -967,10 +969,12 @@ function ConversationStatsBar({
   requests,
   outstanding,
   locale,
+  onOpen,
 }: Readonly<{
   requests: readonly UnifiedRequestSummary[];
   outstanding: readonly { currency: string; minorUnit: number; amountMinor: number }[];
   locale: "ar" | "en";
+  onOpen: () => void;
 }>) {
   const english = locale === "en";
   const debt = outstanding.filter((line) => line.amountMinor > 0);
@@ -1001,7 +1005,12 @@ function ConversationStatsBar({
     </span>
   );
   return (
-    <div className="flex shrink-0 items-center gap-2 overflow-x-auto border-b border-[var(--itq-color-border)] bg-[var(--itq-color-surface)] px-3 py-1.5 sm:px-5">
+    <button
+      className="flex w-full shrink-0 items-center gap-2 overflow-x-auto border-b border-[var(--itq-color-border)] bg-[var(--itq-color-surface)] px-3 py-1.5 text-start transition hover:bg-[var(--itq-color-surface-soft)] sm:px-5"
+      onClick={onOpen}
+      title={english ? "Open requests" : "فتح الطلبات"}
+      type="button"
+    >
       {debt.length > 0
         ? debt.map((line) =>
             chip(
@@ -1018,7 +1027,8 @@ function ConversationStatsBar({
         : null}
       {paid > 0 ? chip("ok", `${paid} ${english ? "paid" : "مدفوع"}`) : null}
       {completed > 0 ? chip("muted", `${completed} ${english ? "completed" : "مكتمل"}`) : null}
-    </div>
+      <ChevronIcon className="ms-auto size-4 shrink-0 rotate-90 text-[var(--itq-color-muted)] rtl:-rotate-90" />
+    </button>
   );
 }
 
@@ -1606,9 +1616,10 @@ function AttachmentBody({
   contentType: UnifiedMessage["contentType"];
   locale: "ar" | "en";
   messageId: string;
-  onOpenImage: (image: { src: string; download: string; name: string }) => void;
+  onOpenImage: (messageId: string) => void;
 }>) {
   const english = locale === "en";
+  const [pdfOpen, setPdfOpen] = useState(false);
   const download = `${apiBase}/messages/${encodeURIComponent(messageId)}/attachment`;
   const preview = `${download}/preview`;
 
@@ -1632,13 +1643,7 @@ function AttachmentBody({
         </video>
       ) : contentType === "IMAGE" ? (
         <div className="relative w-full overflow-hidden rounded-xl bg-black/5">
-          <button
-            className="block w-full"
-            onClick={() =>
-              onOpenImage({ src: preview, download, name: attachment.originalFilename })
-            }
-            type="button"
-          >
+          <button className="block w-full" onClick={() => onOpenImage(messageId)} type="button">
             <img
               alt={attachment.originalFilename}
               className="max-h-[22rem] w-full object-contain"
@@ -1674,28 +1679,60 @@ function AttachmentBody({
           </div>
         </div>
       ) : (
-        <div className="flex min-h-14 items-center gap-3 rounded-xl border border-current/15 bg-[var(--itq-color-surface)] p-3 font-black text-[var(--itq-color-ink)]">
-          <span className="grid size-10 shrink-0 place-items-center rounded-xl bg-[var(--itq-color-brand-50)] text-[var(--itq-color-brand-strong)]">
-            <PaperclipIcon className="size-5" />
-          </span>
-          <span className="min-w-0 flex-1">
-            <bdi className="block truncate text-sm" dir="auto">
-              {attachment.originalFilename}
-            </bdi>
-            <span className="mt-0.5 block text-[10px] text-[var(--itq-color-muted)]">
-              {new Intl.NumberFormat(english ? "en" : "ar-SA", {
-                maximumFractionDigits: 1,
-              }).format(attachment.sizeBytes / 1_048_576)}{" "}
-              {english ? "MB" : "م.ب"}
+        <div className="min-w-0">
+          <div className="flex min-h-14 items-center gap-3 rounded-xl border border-current/15 bg-[var(--itq-color-surface)] p-3 font-black text-[var(--itq-color-ink)]">
+            <span className="grid size-10 shrink-0 place-items-center rounded-xl bg-[var(--itq-color-brand-50)] text-[var(--itq-color-brand-strong)]">
+              <PaperclipIcon className="size-5" />
             </span>
-          </span>
-          <DownloadCircle
-            attachmentId={attachment.id}
-            filename={attachment.originalFilename}
-            locale={locale}
-            mimeType={attachment.mimeType}
-            url={download}
-          />
+            <span className="min-w-0 flex-1">
+              <bdi className="block truncate text-sm" dir="auto">
+                {attachment.originalFilename}
+              </bdi>
+              <span className="mt-0.5 block text-[10px] text-[var(--itq-color-muted)]">
+                {new Intl.NumberFormat(english ? "en" : "ar-SA", {
+                  maximumFractionDigits: 1,
+                }).format(attachment.sizeBytes / 1_048_576)}{" "}
+                {english ? "MB" : "م.ب"}
+                {attachment.mimeType === "application/pdf" ? (
+                  <>
+                    {" · "}
+                    <button
+                      className="font-black text-[var(--itq-color-brand-strong)] underline"
+                      onClick={() => setPdfOpen((value) => !value)}
+                      type="button"
+                    >
+                      {pdfOpen
+                        ? english
+                          ? "Hide preview"
+                          : "إخفاء المعاينة"
+                        : english
+                          ? "Preview"
+                          : "معاينة"}
+                    </button>
+                  </>
+                ) : null}
+              </span>
+            </span>
+            <DownloadCircle
+              attachmentId={attachment.id}
+              filename={attachment.originalFilename}
+              locale={locale}
+              mimeType={attachment.mimeType}
+              url={download}
+            />
+          </div>
+          {attachment.mimeType === "application/pdf" && pdfOpen ? (
+            <object
+              aria-label={attachment.originalFilename}
+              className="mt-2 h-[26rem] w-full rounded-xl border border-[var(--itq-color-border)] bg-[var(--itq-color-surface)]"
+              data={preview}
+              type="application/pdf"
+            >
+              <a className="block p-3 text-xs font-black underline" href={download}>
+                {english ? "Open the PDF" : "افتح ملف PDF"}
+              </a>
+            </object>
+          ) : null}
         </div>
       )}
       <AttachmentRetentionHint attachment={attachment} locale={locale} />
@@ -1965,10 +2002,10 @@ export function UnifiedChatWorkspace({
   const [reactionPickerFor, setReactionPickerFor] = useState<string>();
   const [reactionPickerFull, setReactionPickerFull] = useState(false);
   const [emojiPanelOpen, setEmojiPanelOpen] = useState(false);
+  const [quickRepliesOpen, setQuickRepliesOpen] = useState(false);
   const [lightbox, setLightbox] = useState<{
-    readonly src: string;
-    readonly download: string;
-    readonly name: string;
+    readonly images: readonly LightboxImage[];
+    readonly index: number;
   }>();
   const longPressTimer = useRef<number | undefined>(undefined);
   const longPressOrigin = useRef<{ x: number; y: number } | undefined>(undefined);
@@ -2411,6 +2448,38 @@ export function UnifiedChatWorkspace({
     [messages, mode],
   );
 
+  // Every still-available image in the thread, oldest first — the lightbox
+  // opens on the tapped one and lets you page through the rest.
+  const galleryImages = useMemo<readonly (LightboxImage & { readonly id: string })[]>(() => {
+    if (apiBase === undefined) return [];
+    return messages
+      .filter(
+        (message) =>
+          message.contentType === "IMAGE" &&
+          message.attachment !== undefined &&
+          message.attachment.storageStatus !== "EXPIRED" &&
+          message.deletedAt === undefined,
+      )
+      .map((message) => {
+        const download = `${apiBase}/messages/${encodeURIComponent(message.id)}/attachment`;
+        return {
+          id: message.id,
+          src: `${download}/preview`,
+          download,
+          name: message.attachment?.originalFilename ?? "",
+        };
+      });
+  }, [messages, apiBase]);
+
+  const openImageLightbox = useCallback(
+    (messageId: string) => {
+      const at = galleryImages.findIndex((image) => image.id === messageId);
+      if (at === -1) return;
+      setLightbox({ images: galleryImages, index: at });
+    },
+    [galleryImages],
+  );
+
   const normalizedSearch = searchTerm.trim().toLowerCase();
   const searchMatches = useMemo(() => {
     if (normalizedSearch.length < 2) return [] as string[];
@@ -2465,7 +2534,7 @@ export function UnifiedChatWorkspace({
   // Tap anywhere outside an open chat menu (the message action menu, emoji
   // tray) closes it.
   useEffect(() => {
-    if (reactionPickerFor === undefined && !emojiPanelOpen) return undefined;
+    if (reactionPickerFor === undefined && !emojiPanelOpen && !quickRepliesOpen) return undefined;
     const onOutside = (event: Event) => {
       const target = event.target as HTMLElement | null;
       if (target?.closest("[data-chat-menu]")) return;
@@ -2473,10 +2542,11 @@ export function UnifiedChatWorkspace({
       setReactionPickerFull(false);
       setDeleteConfirmFor(undefined);
       setEmojiPanelOpen(false);
+      setQuickRepliesOpen(false);
     };
     document.addEventListener("pointerdown", onOutside, true);
     return () => document.removeEventListener("pointerdown", onOutside, true);
-  }, [reactionPickerFor, emojiPanelOpen]);
+  }, [reactionPickerFor, emojiPanelOpen, quickRepliesOpen]);
 
   const scrollToMessage = useCallback((id: string) => {
     const node = logRef.current?.querySelector(`[data-mid="${id}"]`);
@@ -4830,7 +4900,15 @@ export function UnifiedChatWorkspace({
           </div>
         </header>
 
-        <ConversationStatsBar locale={locale} outstanding={outstanding} requests={requests} />
+        <ConversationStatsBar
+          locale={locale}
+          onOpen={() => {
+            closeContacts(false);
+            setDetailsOpen(true);
+          }}
+          outstanding={outstanding}
+          requests={requests}
+        />
 
         {createRequestOpen && mode === "admin" && services.length > 0 ? (
           <form
@@ -5100,7 +5178,10 @@ export function UnifiedChatWorkspace({
                             metadata={message.metadata}
                             mode={mode}
                             onImage={(source, name) =>
-                              setLightbox({ download: source, name, src: source })
+                              setLightbox({
+                                images: [{ src: source, download: source, name }],
+                                index: 0,
+                              })
                             }
                             onReview={(submissionId, decision) =>
                               void reviewReceipt(submissionId, decision)
@@ -5401,7 +5482,7 @@ export function UnifiedChatWorkspace({
                               contentType={message.contentType}
                               locale={locale}
                               messageId={message.id}
-                              onOpenImage={setLightbox}
+                              onOpenImage={openImageLightbox}
                             />
                           )}
                           {message.archived === true ? (
@@ -5657,6 +5738,55 @@ export function UnifiedChatWorkspace({
               ref={fileInput}
               type="file"
             />
+            {mode === "admin" ? (
+              <div className="relative shrink-0" data-chat-menu>
+                <button
+                  aria-expanded={quickRepliesOpen}
+                  aria-label={english ? "Quick replies" : "ردود سريعة"}
+                  className={`grid size-11 place-items-center rounded-full border border-[var(--itq-color-border)] transition hover:bg-[var(--itq-color-brand-50)] ${
+                    quickRepliesOpen
+                      ? "bg-[var(--itq-color-brand-50)] text-[var(--itq-color-brand-strong)]"
+                      : "text-[var(--itq-color-muted)]"
+                  }`}
+                  disabled={interactionLocked}
+                  onClick={() => setQuickRepliesOpen((value) => !value)}
+                  type="button"
+                >
+                  <SparkleIcon className="size-5" />
+                </button>
+                {quickRepliesOpen ? (
+                  <div
+                    className="absolute bottom-full z-30 mb-2 w-[min(20rem,80vw)] overflow-hidden rounded-2xl border border-[var(--itq-color-border)] bg-[var(--itq-color-surface)] shadow-xl start-0"
+                    data-chat-menu
+                  >
+                    <p className="border-b border-[var(--itq-color-border)] bg-[var(--itq-color-surface-soft)] px-3 py-2 text-[11px] font-black uppercase tracking-wide text-[var(--itq-color-muted)]">
+                      {english ? "Quick replies" : "ردود سريعة"}
+                    </p>
+                    <div className="max-h-72 overflow-y-auto p-1">
+                      {quickReplies(locale).map((reply) => (
+                        <button
+                          className="block w-full rounded-lg px-3 py-2 text-start hover:bg-[var(--itq-color-surface-soft)]"
+                          key={reply.title}
+                          onClick={() => {
+                            setBody(
+                              fillQuickReply(reply.body, conversation?.studentDisplayName, locale),
+                            );
+                            setQuickRepliesOpen(false);
+                            window.requestAnimationFrame(() => composerRef.current?.focus());
+                          }}
+                          type="button"
+                        >
+                          <span className="block text-xs font-black">{reply.title}</span>
+                          <span className="mt-0.5 block truncate text-[11px] text-[var(--itq-color-muted)]">
+                            {reply.body}
+                          </span>
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                ) : null}
+              </div>
+            ) : null}
             <div className="flex min-w-0 flex-1 items-end gap-1 rounded-[1.6rem] border border-[var(--itq-color-border)] bg-[var(--itq-color-surface)] px-1.5 py-1 shadow-sm focus-within:border-[var(--itq-color-brand-500)]">
               <button
                 aria-label={english ? "Emoji" : "الرموز"}
@@ -5774,49 +5904,12 @@ export function UnifiedChatWorkspace({
       ) : null}
 
       {lightbox === undefined ? null : (
-        <div
-          aria-label={english ? "Image preview" : "معاينة الصورة"}
-          aria-modal="true"
-          className="fixed inset-0 z-[130] flex flex-col bg-black/95"
-          onClick={() => setLightbox(undefined)}
-          onKeyDown={(event) => {
-            if (event.key === "Escape") setLightbox(undefined);
-          }}
-          role="dialog"
-          tabIndex={-1}
-        >
-          <div className="flex items-center justify-between gap-3 p-3 text-white">
-            <bdi className="min-w-0 truncate text-sm font-bold" dir="auto">
-              {lightbox.name}
-            </bdi>
-            <div className="flex shrink-0 items-center gap-1">
-              <a
-                aria-label={english ? "Download" : "تنزيل"}
-                className="grid size-10 place-items-center rounded-full hover:bg-white/10"
-                href={lightbox.download}
-                onClick={(event) => event.stopPropagation()}
-              >
-                <ArrowIcon className="size-5 rotate-90" />
-              </a>
-              <button
-                aria-label={english ? "Close" : "إغلاق"}
-                className="grid size-10 place-items-center rounded-full hover:bg-white/10"
-                onClick={() => setLightbox(undefined)}
-                type="button"
-              >
-                <CloseIcon className="size-5" />
-              </button>
-            </div>
-          </div>
-          <div className="flex min-h-0 flex-1 items-center justify-center p-2">
-            <img
-              alt={lightbox.name}
-              className="max-h-full max-w-full object-contain"
-              onClick={(event) => event.stopPropagation()}
-              src={lightbox.src}
-            />
-          </div>
-        </div>
+        <ImageLightbox
+          images={lightbox.images}
+          initialIndex={lightbox.index}
+          locale={locale}
+          onClose={() => setLightbox(undefined)}
+        />
       )}
     </section>
   );
