@@ -1997,6 +1997,7 @@ export function UnifiedChatWorkspace({
   const [emojiPanelOpen, setEmojiPanelOpen] = useState(false);
   const [quickRepliesOpen, setQuickRepliesOpen] = useState(false);
   const [attachSheetOpen, setAttachSheetOpen] = useState(false);
+  const [aiDrafting, setAiDrafting] = useState(false);
   const [lightbox, setLightbox] = useState<{
     readonly images: readonly LightboxImage[];
     readonly index: number;
@@ -2962,6 +2963,48 @@ export function UnifiedChatWorkspace({
       setNotice(english ? "Older messages could not be loaded." : "تعذر تحميل الرسائل الأقدم.");
     } finally {
       setLoadingOlder(false);
+    }
+  }
+
+  async function draftAiReply(): Promise<void> {
+    if (apiBase === undefined || csrfToken === undefined || aiDrafting) return;
+    setQuickRepliesOpen(false);
+    setAiDrafting(true);
+    setNotice(english ? "Drafting a reply…" : "جارٍ صياغة رد…");
+    try {
+      const response = await fetch(`${apiBase}/draft-reply`, {
+        method: "POST",
+        credentials: "same-origin",
+        headers: { "Content-Type": "application/x-www-form-urlencoded" },
+        body: new URLSearchParams({ csrfToken }),
+      });
+      const payload = (await response.json().catch(() => ({}))) as {
+        text?: string;
+        error?: string;
+      };
+      if (!response.ok || typeof payload.text !== "string" || payload.text.trim().length === 0) {
+        setNotice(
+          payload.error === "RATE_LIMITED"
+            ? english
+              ? "Too many AI drafts just now. Wait a moment."
+              : "طلبات صياغة كثيرة الآن. انتظر قليلاً."
+            : english
+              ? "Could not draft a reply. Try again shortly."
+              : "تعذّرت صياغة الرد. حاول بعد قليل.",
+        );
+        return;
+      }
+      setBody(payload.text.trim());
+      setNotice(
+        english
+          ? "AI draft — review and edit before sending."
+          : "مسودة بالذكاء الاصطناعي — راجعها وعدّلها قبل الإرسال.",
+      );
+      window.requestAnimationFrame(() => composerRef.current?.focus());
+    } catch {
+      setNotice(english ? "Could not draft a reply." : "تعذّرت صياغة الرد.");
+    } finally {
+      setAiDrafting(false);
     }
   }
 
@@ -5838,6 +5881,31 @@ export function UnifiedChatWorkspace({
                       {english ? "Quick replies" : "ردود سريعة"}
                     </p>
                     <div className="max-h-72 overflow-y-auto p-1">
+                      <button
+                        className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-start hover:bg-[var(--itq-color-brand-50)] disabled:opacity-50"
+                        disabled={aiDrafting || conversation === undefined}
+                        onClick={() => void draftAiReply()}
+                        type="button"
+                      >
+                        <SparkleIcon className="size-4 shrink-0 text-[var(--itq-color-brand-strong)]" />
+                        <span className="min-w-0">
+                          <span className="block text-xs font-black">
+                            {aiDrafting
+                              ? english
+                                ? "Drafting…"
+                                : "جارٍ الصياغة…"
+                              : english
+                                ? "AI reply"
+                                : "رد بالذكاء الاصطناعي"}
+                          </span>
+                          <span className="mt-0.5 block truncate text-[11px] text-[var(--itq-color-muted)]">
+                            {english
+                              ? "Draft a reply to the last message — review before sending"
+                              : "يصيغ رداً على آخر رسالة — راجعه قبل الإرسال"}
+                          </span>
+                        </span>
+                      </button>
+                      <span className="my-1 block border-t border-[var(--itq-color-border)]" />
                       {quickReplies(locale).map((reply) => (
                         <button
                           className="block w-full rounded-lg px-3 py-2 text-start hover:bg-[var(--itq-color-surface-soft)]"
