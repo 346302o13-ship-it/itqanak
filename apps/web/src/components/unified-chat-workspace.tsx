@@ -1945,56 +1945,69 @@ function ConversationList({
             const href = `${prefix}?student=${encodeURIComponent(item.studentUserId)}${
               search === undefined ? "" : `&q=${encodeURIComponent(search)}`
             }`;
+            const contact = [item.studentPhoneE164, item.studentEmail]
+              .filter((part): part is string => part !== undefined)
+              .join("  ·  ");
             return (
               <Link
                 aria-current={active ? "page" : undefined}
-                className={`mb-1.5 flex gap-3 rounded-2xl border p-3 no-underline transition ${
-                  active
-                    ? "border-[var(--itq-color-brand-200)] bg-[var(--itq-color-brand-50)]"
-                    : "border-transparent hover:bg-[var(--itq-color-surface)]"
+                className={`relative flex gap-3 border-b border-[var(--itq-color-border)]/60 px-2 py-3 no-underline transition ${
+                  active ? "bg-[var(--itq-color-brand-50)]" : "hover:bg-[var(--itq-color-surface)]"
                 }`}
                 href={href}
                 key={item.id}
                 role="listitem"
               >
-                <span className="grid size-12 shrink-0 place-items-center rounded-full bg-[var(--itq-color-ink-deep)] text-sm font-black text-white">
+                {active ? (
+                  <span className="absolute inset-y-2 start-0 w-1 rounded-full bg-[var(--itq-color-brand-600)]" />
+                ) : null}
+                <span className="grid size-14 shrink-0 place-items-center rounded-full bg-[var(--itq-color-ink-deep)] text-base font-black text-white">
                   {initials(item.studentDisplayName)}
                 </span>
                 <span className="min-w-0 flex-1">
-                  <span className="flex items-start justify-between gap-2">
+                  <span className="flex items-baseline justify-between gap-2">
                     <bdi className="truncate text-sm font-black" dir="auto">
                       {item.studentDisplayName}
                     </bdi>
                     {item.lastMessageAt === undefined ? null : (
                       <time
-                        className="shrink-0 text-[10px] font-bold text-[var(--itq-color-muted)]"
+                        className={`shrink-0 text-[10px] font-bold ${
+                          item.unreadCount > 0
+                            ? "text-[var(--itq-color-brand-strong)]"
+                            : "text-[var(--itq-color-muted)]"
+                        }`}
                         dateTime={item.lastMessageAt.toISOString()}
                       >
                         {formatListTimestamp(item.lastMessageAt, locale)}
                       </time>
                     )}
                   </span>
-                  <span className="mt-1 flex items-center justify-between gap-2">
-                    <bdi className="truncate text-xs text-[var(--itq-color-muted)]" dir="auto">
+                  <span className="mt-0.5 flex items-center justify-between gap-2">
+                    <bdi
+                      className={`truncate text-xs ${
+                        item.unreadCount > 0
+                          ? "font-bold text-[var(--itq-color-ink)]"
+                          : "text-[var(--itq-color-muted)]"
+                      }`}
+                      dir="auto"
+                    >
                       {item.lastMessagePreview ??
                         (english ? "No messages yet" : "لا توجد رسائل بعد")}
                     </bdi>
                     {item.unreadCount > 0 ? (
-                      <span className="grid min-w-5 shrink-0 place-items-center rounded-full bg-[var(--itq-color-success-600)] px-1.5 py-0.5 text-[10px] font-black text-white">
+                      <span className="grid min-w-[1.25rem] shrink-0 place-items-center rounded-full bg-[var(--itq-color-brand-600)] px-1.5 py-0.5 text-[10px] font-black text-white">
                         {item.unreadCount > 99 ? "99+" : item.unreadCount}
                       </span>
                     ) : null}
                   </span>
-                  <span className="mt-1.5 flex min-w-0 flex-wrap gap-x-2 text-[10px] font-semibold text-[var(--itq-color-muted)]">
-                    {item.studentPhoneE164 === undefined ? null : (
-                      <bdi dir="ltr">{item.studentPhoneE164}</bdi>
-                    )}
-                    {item.studentEmail === undefined ? null : (
-                      <bdi className="truncate" dir="ltr">
-                        {item.studentEmail}
-                      </bdi>
-                    )}
-                  </span>
+                  {contact.length > 0 ? (
+                    <bdi
+                      className="mt-0.5 block truncate text-[10px] font-semibold text-[var(--itq-color-muted)]"
+                      dir="ltr"
+                    >
+                      {contact}
+                    </bdi>
+                  ) : null}
                 </span>
               </Link>
             );
