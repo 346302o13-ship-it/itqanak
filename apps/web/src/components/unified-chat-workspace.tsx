@@ -95,6 +95,9 @@ interface UnifiedChatWorkspaceProps {
    *  into it. */
   readonly initialContactsOpen?: boolean;
   readonly locale?: "ar" | "en";
+  /** Overrides the header back arrow target. The student portal points it at the
+   *  conversation list instead of the portal home. */
+  readonly backHrefOverride?: string;
   readonly maximumBytes: number;
   readonly mode: "student" | "admin";
   readonly search?: string;
@@ -1897,6 +1900,7 @@ export function UnifiedChatWorkspace({
   assistantInitialMessages,
   assistantMode = false,
   assistantPlaceholder,
+  backHrefOverride,
   conversation,
   conversations = [],
   csrfToken,
@@ -1913,7 +1917,7 @@ export function UnifiedChatWorkspace({
   // Home target for the header back control. Kept as a plain string used by a
   // plain <a> (never next/link) so leaving the chat is always a real browser
   // navigation that nothing can silently swallow.
-  const backHref = `/${locale}/${mode === "admin" ? "admin" : "student"}`;
+  const backHref = backHrefOverride ?? `/${locale}/${mode === "admin" ? "admin" : "student"}`;
   const fileInput = useRef<HTMLInputElement>(null);
   const cameraInput = useRef<HTMLInputElement>(null);
   const galleryInput = useRef<HTMLInputElement>(null);
