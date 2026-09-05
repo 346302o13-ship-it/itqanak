@@ -68,8 +68,15 @@ export function GroupChannelPane({ locale, csrfToken, apiBase, backHref }: Group
   const [draft, setDraft] = useState("");
   const [loadError, setLoadError] = useState(false);
   const [sending, setSending] = useState(false);
+  const [policyBusy, setPolicyBusy] = useState(false);
+  const [aiOpen, setAiOpen] = useState(false);
+  const [aiPrompt, setAiPrompt] = useState("");
+  const [aiBusy, setAiBusy] = useState(false);
+  const [aiError, setAiError] = useState<string | undefined>(undefined);
   const scrollRef = useRef<HTMLDivElement | null>(null);
   const nearBottom = useRef(true);
+
+  const adminMode = apiBase === "/api/admin/group-channel" && view?.isAdmin === true;
 
   const markRead = useCallback(async () => {
     if (csrfToken === undefined) return;
@@ -173,6 +180,63 @@ export function GroupChannelPane({ locale, csrfToken, apiBase, backHref }: Group
     }
   }, [apiBase, csrfToken, draft, refresh, sending, view]);
 
+  const togglePolicy = useCallback(async () => {
+    if (view === undefined || csrfToken === undefined || policyBusy) return;
+    setPolicyBusy(true);
+    try {
+      const response = await fetch("/api/admin/group-channel/policy", {
+        method: "POST",
+        credentials: "same-origin",
+        headers: { "Content-Type": "application/x-www-form-urlencoded" },
+        body: new URLSearchParams({
+          csrfToken,
+          membersCanPost: view.membersCanPost ? "false" : "true",
+          expectedVersion: String(view.settingsVersion),
+        }),
+      });
+      if (response.ok) await refresh();
+    } catch {
+      // Left as-is; the toggle reflects the last confirmed state on refresh.
+    } finally {
+      setPolicyBusy(false);
+    }
+  }, [csrfToken, policyBusy, refresh, view]);
+
+  const runAiDraft = useCallback(async () => {
+    const prompt = aiPrompt.trim();
+    if (prompt.length < 3 || csrfToken === undefined || aiBusy) return;
+    setAiBusy(true);
+    setAiError(undefined);
+    try {
+      const response = await fetch("/api/admin/group-channel/draft", {
+        method: "POST",
+        credentials: "same-origin",
+        headers: { "Content-Type": "application/x-www-form-urlencoded" },
+        body: new URLSearchParams({ csrfToken, prompt }),
+      });
+      const payload = (await response.json()) as { text?: string; error?: string };
+      if (!response.ok || typeof payload.text !== "string") {
+        setAiError(
+          payload.error === "ASSISTANT_UNAVAILABLE"
+            ? english
+              ? "The assistant is unavailable right now."
+              : "المساعد غير متاح حالياً."
+            : english
+              ? "Could not draft the announcement."
+              : "تعذّرت صياغة الإعلان.",
+        );
+        return;
+      }
+      setDraft(payload.text);
+      setAiOpen(false);
+      setAiPrompt("");
+    } catch {
+      setAiError(english ? "Could not draft the announcement." : "تعذّرت صياغة الإعلان.");
+    } finally {
+      setAiBusy(false);
+    }
+  }, [aiBusy, aiPrompt, csrfToken, english]);
+
   const locked = view !== undefined && !view.canPost;
 
   return (
@@ -198,15 +262,31 @@ export function GroupChannelPane({ locale, csrfToken, apiBase, backHref }: Group
             {english ? "Students group" : "قروب الطلاب"}
           </h1>
           <p className="truncate text-[10px] font-bold text-[var(--itq-color-muted)] sm:text-xs">
-            {locked
+            {view?.membersCanPost === true
               ? english
-                ? "Announcements from the administration"
-                : "إعلانات من الإدارة"
-              : english
                 ? "Open chat — everyone can post"
-                : "دردشة مفتوحة — يمكن للجميع الكتابة"}
+                : "دردشة مفتوحة — يمكن للجميع الكتابة"
+              : english
+                ? "Announcements from the administration"
+                : "إعلانات من الإدارة"}
           </p>
         </div>
+        {adminMode && view !== undefined ? (
+          <button
+            className="ms-auto shrink-0 rounded-full border border-[var(--itq-color-border)] px-3 py-1.5 text-[11px] font-black text-[var(--itq-color-ink)] hover:bg-[var(--itq-color-surface-soft)] disabled:opacity-40"
+            disabled={policyBusy || csrfToken === undefined}
+            onClick={() => void togglePolicy()}
+            type="button"
+          >
+            {view.membersCanPost
+              ? english
+                ? "Set to admin-only"
+                : "اجعلها للإدارة فقط"
+              : english
+                ? "Open chat for everyone"
+                : "افتح الدردشة للجميع"}
+          </button>
+        ) : null}
       </header>
 
       <div
@@ -292,6 +372,54 @@ export function GroupChannelPane({ locale, csrfToken, apiBase, backHref }: Group
       </div>
 
       <div className="shrink-0 border-t border-[var(--itq-color-border)] bg-[var(--itq-color-surface)] p-3 sm:p-4">
+        {adminMode ? (
+          <div className="mb-2">
+            <button
+              className="rounded-full bg-[var(--itq-color-brand-50)] px-3 py-1.5 text-[11px] font-black text-[var(--itq-color-brand-strong)]"
+              onClick={() => setAiOpen((open) => !open)}
+              type="button"
+            >
+              {english ? "✨ Draft with AI" : "✨ صياغة بالذكاء الاصطناعي"}
+            </button>
+            {aiOpen ? (
+              <div className="mt-2 rounded-xl border border-[var(--itq-color-border)] bg-[var(--itq-color-surface-soft)] p-2">
+                <textarea
+                  className="w-full resize-none rounded-lg border border-[var(--itq-color-border)] bg-[var(--itq-color-surface)] px-3 py-2 text-xs leading-6 outline-none focus:border-[var(--itq-color-brand-500)]"
+                  dir="auto"
+                  onChange={(event) => setAiPrompt(event.currentTarget.value)}
+                  placeholder={
+                    english
+                      ? "What do you want to announce? e.g. new payment feature, live Sunday"
+                      : "ماذا تريد أن تعلن؟ مثال: ميزة دفع جديدة، تعمل الأحد"
+                  }
+                  rows={2}
+                  value={aiPrompt}
+                />
+                {aiError !== undefined ? (
+                  <p className="mt-1 text-[11px] font-bold text-[var(--itq-color-danger-700)]">
+                    {aiError}
+                  </p>
+                ) : null}
+                <div className="mt-1.5 flex justify-end">
+                  <button
+                    className="rounded-full bg-[var(--itq-color-brand-600)] px-3 py-1.5 text-[11px] font-black text-white disabled:opacity-40"
+                    disabled={aiPrompt.trim().length < 3 || aiBusy || csrfToken === undefined}
+                    onClick={() => void runAiDraft()}
+                    type="button"
+                  >
+                    {aiBusy
+                      ? english
+                        ? "Drafting…"
+                        : "جارٍ الصياغة…"
+                      : english
+                        ? "Generate"
+                        : "توليد"}
+                  </button>
+                </div>
+              </div>
+            ) : null}
+          </div>
+        ) : null}
         {locked ? (
           <p className="rounded-xl bg-[var(--itq-color-surface-soft)] px-4 py-3 text-center text-xs font-bold text-[var(--itq-color-muted)]">
             {english ? "Only the administration can post here." : "الإرسال متاح للإدارة فقط."}

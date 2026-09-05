@@ -34,6 +34,12 @@ const itemsByLocale = {
       Icon: MessageIcon,
     },
     {
+      href: "/ar/admin/group",
+      label: "قروب الطلاب",
+      mobileLabel: "القروب",
+      Icon: BellIcon,
+    },
+    {
       href: "/ar/admin/students",
       label: "الطلاب وإنشاء الطلبات",
       mobileLabel: "الطلاب",
@@ -120,6 +126,12 @@ const itemsByLocale = {
       label: "Requests & chat",
       mobileLabel: "Requests",
       Icon: MessageIcon,
+    },
+    {
+      href: "/en/admin/group",
+      label: "Students group",
+      mobileLabel: "Group",
+      Icon: BellIcon,
     },
     {
       href: "/en/admin/students",
