@@ -2014,6 +2014,8 @@ export function UnifiedChatWorkspace({
   const reactionChoices = chatEmoji.slice(0, 6);
   const [editingId, setEditingId] = useState<string>();
   const [infoFor, setInfoFor] = useState<string>();
+  const [selectionMode, setSelectionMode] = useState(false);
+  const [selectedMsgIds, setSelectedMsgIds] = useState<ReadonlySet<string>>(new Set());
   const [editingText, setEditingText] = useState("");
   const [deleteConfirmFor, setDeleteConfirmFor] = useState<string>();
   // Quotes the student has answered in this session: the card locks its action
@@ -3304,6 +3306,45 @@ export function UnifiedChatWorkspace({
       setMessages((current) => mergeUnifiedMessages(current, [removed]));
     } catch {
       setNotice(english ? "The message could not be deleted." : "تعذر حذف الرسالة.");
+    }
+  }
+
+  const exitSelection = useCallback(() => {
+    setSelectionMode(false);
+    setSelectedMsgIds(new Set());
+  }, []);
+
+  const toggleSelected = useCallback((messageId: string) => {
+    setSelectedMsgIds((current) => {
+      const next = new Set(current);
+      if (next.has(messageId)) next.delete(messageId);
+      else next.add(messageId);
+      return next;
+    });
+  }, []);
+
+  async function bulkDeleteSelected(): Promise<void> {
+    const deletable = messages
+      .filter(
+        (message) =>
+          selectedMsgIds.has(message.id) &&
+          message.deletedAt === undefined &&
+          (mode === "admin" ? message.senderType === "ADMIN" : message.senderType === "STUDENT"),
+      )
+      .map((message) => message.id);
+    if (deletable.length === 0) {
+      exitSelection();
+      return;
+    }
+    setPending(true);
+    try {
+      await deletable.reduce<Promise<void>>(
+        (chain, id) => chain.then(() => deleteMessage(id)),
+        Promise.resolve(),
+      );
+    } finally {
+      setPending(false);
+      exitSelection();
     }
   }
 
@@ -5109,6 +5150,30 @@ export function UnifiedChatWorkspace({
           </div>
         ) : null}
 
+        {selectionMode ? (
+          <div className="flex shrink-0 items-center gap-2 border-b border-[var(--itq-color-border)] bg-[var(--itq-color-brand-50)] px-3 py-2 text-xs font-black sm:px-5">
+            <button
+              aria-label={english ? "Cancel selection" : "إلغاء التحديد"}
+              className="grid size-8 place-items-center rounded-full text-[var(--itq-color-muted)] hover:bg-[var(--itq-color-surface)]"
+              onClick={exitSelection}
+              type="button"
+            >
+              <CloseIcon className="size-4" />
+            </button>
+            <span className="me-auto">
+              {selectedMsgIds.size} {english ? "selected" : "محدد"}
+            </span>
+            <button
+              className="rounded-lg bg-[var(--itq-color-danger-600)] px-3 py-1.5 text-white disabled:opacity-50"
+              disabled={selectedMsgIds.size === 0 || interactionLocked}
+              onClick={() => void bulkDeleteSelected()}
+              type="button"
+            >
+              {english ? "Delete" : "حذف"}
+            </button>
+          </div>
+        ) : null}
+
         {createRequestOpen && mode === "admin" && services.length > 0 ? (
           <form
             className="flex shrink-0 flex-wrap items-center gap-2 border-b border-[var(--itq-color-border)] bg-[var(--itq-color-brand-50)] px-3 py-2 sm:px-5"
@@ -5455,11 +5520,16 @@ export function UnifiedChatWorkspace({
                       ) : null
                     ) : (
                       <li
-                        className={`flex min-w-0 ${mine ? "justify-end" : "justify-start"}`}
+                        className={`flex min-w-0 ${mine ? "justify-end" : "justify-start"} ${
+                          selectionMode ? "cursor-pointer" : ""
+                        }`}
                         data-mid={message.id}
+                        onClick={selectionMode ? () => toggleSelected(message.id) : undefined}
                       >
                         <article
-                          {...(message.deletedAt === undefined && editingId !== message.id
+                          {...(!selectionMode &&
+                          message.deletedAt === undefined &&
+                          editingId !== message.id
                             ? bubbleHoldHandlers(message.id)
                             : {})}
                           className={`group relative min-w-0 max-w-[85%] rounded-xl px-2.5 py-1.5 shadow-sm transition sm:max-w-[75%] ${
@@ -5467,9 +5537,11 @@ export function UnifiedChatWorkspace({
                               ? "rounded-ee-sm bg-[var(--itq-color-bubble-out)] text-[var(--itq-color-bubble-out-ink)]"
                               : "rounded-es-sm bg-[var(--itq-color-bubble-in)] text-[var(--itq-color-bubble-in-ink)]"
                           } ${
-                            highlightId === message.id
-                              ? "ring-2 ring-[var(--itq-color-warning-500)] ring-offset-2 ring-offset-[var(--itq-color-surface-soft)]"
-                              : ""
+                            selectedMsgIds.has(message.id)
+                              ? "ring-2 ring-[var(--itq-color-brand-500)] ring-offset-2 ring-offset-[var(--itq-color-surface-soft)]"
+                              : highlightId === message.id
+                                ? "ring-2 ring-[var(--itq-color-warning-500)] ring-offset-2 ring-offset-[var(--itq-color-surface-soft)]"
+                                : ""
                           }`}
                         >
                           {message.deletedAt === undefined && editingId !== message.id ? (
@@ -5573,6 +5645,19 @@ export function UnifiedChatWorkspace({
                                         >
                                           {english ? "Reply" : "رد"}
                                         </button>
+                                        {mine || mode === "admin" ? (
+                                          <button
+                                            className="flex w-full items-center rounded-lg px-3 py-2 hover:bg-[var(--itq-color-surface-soft)]"
+                                            onClick={() => {
+                                              setSelectionMode(true);
+                                              setSelectedMsgIds(new Set([message.id]));
+                                              setReactionPickerFor(undefined);
+                                            }}
+                                            type="button"
+                                          >
+                                            {english ? "Select" : "تحديد"}
+                                          </button>
+                                        ) : null}
                                         {message.contentType === "TEXT" ? (
                                           <button
                                             className="flex w-full items-center rounded-lg px-3 py-2 hover:bg-[var(--itq-color-surface-soft)]"
