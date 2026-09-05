@@ -125,6 +125,16 @@ export function GroupChannelPane({ locale, csrfToken, apiBase, backHref }: Group
     return () => clearInterval(timer);
   }, [refresh]);
 
+  useEffect(() => {
+    if (typeof EventSource === "undefined") return;
+    const source = new EventSource(`${apiBase}/stream`);
+    source.addEventListener("message", () => void refresh());
+    source.addEventListener("error", () => {
+      // The poll is the reliable transport; EventSource retries on its own.
+    });
+    return () => source.close();
+  }, [apiBase, refresh]);
+
   const merged = useMemo<readonly DisplayMessage[]>(() => {
     const base: readonly DisplayMessage[] = view?.messages ?? [];
     return [...base, ...outbox];
@@ -212,6 +222,27 @@ export function GroupChannelPane({ locale, csrfToken, apiBase, backHref }: Group
       setPolicyBusy(false);
     }
   }, [csrfToken, policyBusy, refresh, view]);
+
+  const deleteMessage = useCallback(
+    async (messageId: string) => {
+      if (csrfToken === undefined || messageId.startsWith("pending-")) return;
+      try {
+        const response = await fetch(
+          `/api/admin/group-channel/messages/${encodeURIComponent(messageId)}`,
+          {
+            method: "POST",
+            credentials: "same-origin",
+            headers: { "Content-Type": "application/x-www-form-urlencoded" },
+            body: new URLSearchParams({ csrfToken }),
+          },
+        );
+        if (response.ok) await refresh();
+      } catch {
+        // Non-fatal — the message stays; the admin can retry.
+      }
+    },
+    [csrfToken, refresh],
+  );
 
   const runAiDraft = useCallback(async () => {
     const prompt = aiPrompt.trim();
@@ -342,16 +373,27 @@ export function GroupChannelPane({ locale, csrfToken, apiBase, backHref }: Group
           }
           const label = authorLabel(message, english);
           const mine = label.tone === "me";
+          const canDelete = adminMode && message.pending !== true && message.failed !== true;
           return (
             <div className={`flex flex-col ${mine ? "items-end" : "items-start"}`} key={message.id}>
               <span
-                className={`mb-0.5 px-1 text-[10px] font-black ${
+                className={`mb-0.5 flex items-center gap-1.5 px-1 text-[10px] font-black ${
                   label.tone === "admin"
                     ? "text-[var(--itq-color-brand-strong)]"
                     : "text-[var(--itq-color-muted)]"
                 }`}
               >
                 {label.name}
+                {canDelete ? (
+                  <button
+                    aria-label={english ? "Delete message" : "حذف الرسالة"}
+                    className="text-[var(--itq-color-danger-700)] hover:underline"
+                    onClick={() => void deleteMessage(message.id)}
+                    type="button"
+                  >
+                    {english ? "delete" : "حذف"}
+                  </button>
+                ) : null}
               </span>
               <div
                 className={`max-w-[85%] rounded-2xl px-3.5 py-2 text-sm leading-7 ${
