@@ -29,10 +29,11 @@ export default async function StudentSupportPage({ searchParams }: PageProps) {
   ]);
   const view = typeof query.view === "string" ? query.view : undefined;
   const assistantRequested = typeof query.assistant === "string";
+  const requestedRequestId = typeof query.request === "string" ? query.request : undefined;
   const active: "admin" | "assistant" | "group" =
     view === "group" ? "group" : assistantRequested ? "assistant" : "admin";
-  const showListOnMobile = view === undefined && !assistantRequested;
-  const requestedRequestId = typeof query.request === "string" ? query.request : undefined;
+  const showListOnMobile =
+    view === undefined && !assistantRequested && requestedRequestId === undefined;
   const backHref = "/ar/student/support";
 
   const runtime = await createStudentRequestRuntime();
