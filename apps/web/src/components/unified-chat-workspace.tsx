@@ -71,6 +71,7 @@ import {
   SparkleIcon,
   UserIcon,
 } from "./icons";
+import { RequestProgress } from "./request-progress";
 import { RequestStatusChip } from "./request-status-chip";
 
 interface UnifiedChatWorkspaceProps {
@@ -4235,6 +4236,7 @@ export function UnifiedChatWorkspace({
                         ))}
                       </span>
                     </button>
+                    <RequestProgress locale={locale} status={request.status} />
                     <Link
                       className="mt-3 flex min-h-9 items-center justify-center rounded-xl border border-[var(--itq-color-border)] bg-[var(--itq-color-surface)] px-3 text-xs font-black no-underline"
                       href={manageHref}
