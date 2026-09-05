@@ -1,11 +1,12 @@
 import Link from "next/link";
 import { headers } from "next/headers";
+import { redirect } from "next/navigation";
 
 import { AuthShell, CsrfInput, FormAlert } from "@/components/auth-shell";
 import { InstallAppButton } from "@/components/install-app-button";
 import { PasswordField } from "@/components/password-field";
 import { SubmitButton } from "@/components/submit-button";
-import { csrfTokenForPage } from "@/lib/auth-runtime";
+import { csrfTokenForPage, loadWebConfig } from "@/lib/auth-runtime";
 import { safeNext } from "@/lib/auth-responses";
 import { supportWhatsAppHref } from "@/lib/support-contact";
 
@@ -36,9 +37,20 @@ export default async function EnglishLoginPage({ searchParams }: LoginPageProps)
   const cameFromGuard =
     status === undefined && typeof query.next === "string" && query.next.length > 0;
   const host = requestHeaders.get("x-forwarded-host") ?? requestHeaders.get("host") ?? "";
-  const admin =
-    host.split(":")[0]?.toLowerCase().startsWith("admin.") === true ||
-    requestedNext.startsWith("/en/admin");
+  const onAdminHost = host.split(":")[0]?.toLowerCase().startsWith("admin.") === true;
+  const admin = onAdminHost || requestedNext.startsWith("/en/admin");
+  // The admin session cookie is Host-only, so an admin login submitted from
+  // the public host produces a cookie the admin host can never see — the user
+  // just bounces back to the admin login guard. Send them to the admin host's
+  // own login page before they can submit a doomed form.
+  if (admin && !onAdminHost) {
+    const adminBase = loadWebConfig().adminAppUrl.replace(/\/$/u, "");
+    const target = new URL(`${adminBase}/en/auth/login`);
+    if (requestedNext.length > 0) target.searchParams.set("next", requestedNext);
+    if (status !== undefined) target.searchParams.set("status", status);
+    if (identity !== undefined) target.searchParams.set("id", identity);
+    redirect(target.toString());
+  }
   const next = admin ? "/en/admin" : requestedNext;
   return (
     <AuthShell

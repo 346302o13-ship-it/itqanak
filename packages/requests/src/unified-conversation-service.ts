@@ -16,6 +16,7 @@ import type { Logger } from "@itqanak/observability";
 
 import { isUuid, normalizeBoundedPage } from "./chat-validation.js";
 import { RequestDomainError } from "./errors.js";
+import { moderateMessagePreview } from "./message-preview-moderation.js";
 import { attachmentStorageStatuses, messageReactionEmojis } from "./types.js";
 import type {
   AttachmentScanStatus,
@@ -409,7 +410,9 @@ function toConversation(row: ConversationListRow): UnifiedConversationSummary {
     studentDisplayName: row.student_display_name,
     ...(row.student_phone_e164 === null ? {} : { studentPhoneE164: row.student_phone_e164 }),
     ...(row.student_email === null ? {} : { studentEmail: row.student_email }),
-    ...(row.last_message_preview === null ? {} : { lastMessagePreview: row.last_message_preview }),
+    ...(row.last_message_preview === null
+      ? {}
+      : { lastMessagePreview: moderateMessagePreview(row.last_message_preview) }),
     ...(row.last_message_at === null ? {} : { lastMessageAt: toDate(row.last_message_at) }),
     unreadCount: toSafeInteger(row.unread_count, "unread count"),
     requestCount: toSafeInteger(row.request_count, "request count"),

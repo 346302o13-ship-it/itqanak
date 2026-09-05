@@ -4,7 +4,6 @@ import type { JSX, ReactNode } from "react";
 import { BrandMark } from "@itqanak/ui";
 
 import { AssistantFab } from "./assistant-fab";
-import { EducationalGuide } from "./educational-guide";
 import { InstallAppButton } from "./install-app-button";
 import { MarketingIcon, PublicHeader, WhatsAppLink, type MarketingLocale } from "./marketing";
 import { csrfTokenForPage } from "@/lib/auth-runtime";
@@ -312,7 +311,6 @@ export async function PublicShell({
         <InstallAppButton locale={locale} surface="public" variant="fab" />
       </div>
       <AssistantFab csrfToken={csrfToken} locale={locale} />
-      <EducationalGuide audience="public" locale={locale} />
     </div>
   );
 }

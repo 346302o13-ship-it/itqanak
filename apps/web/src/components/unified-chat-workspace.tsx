@@ -45,6 +45,7 @@ import { useSetMobileWorkspaceNavVisible } from "@/lib/mobile-workspace-nav";
 import { cacheAttachment, readCachedAttachment } from "@/lib/attachment-cache";
 import { compressImageForUpload } from "@/lib/image-compression";
 import { renderMessageText } from "@/lib/chat-markdown";
+import { draftStorageKey, readDraft, writeDraft } from "@/lib/chat-draft";
 import type { AssistantDisplayMessage } from "@/lib/assistant-display";
 
 import { PaymentReceiptUploader } from "./payment-receipt-uploader";
@@ -1935,14 +1936,16 @@ export function UnifiedChatWorkspace({
   const [loadedPage, setLoadedPage] = useState(initialMessagePage.page);
   const [pageCount, setPageCount] = useState(initialMessagePage.pageCount ?? 1);
   const [linkedRequestId, setLinkedRequestId] = useState(selectedRequestId);
-  const [body, setBody] = useState("");
+  const [body, setBody] = useState(() =>
+    conversation === undefined ? "" : readDraft(draftStorageKey("conversation", conversation.id)),
+  );
   const [pending, setPending] = useState(false);
   const [outbox, setOutbox] = useState<readonly OutboxEntry[]>([]);
   const [loadingOlder, setLoadingOlder] = useState(false);
   const [recording, setRecording] = useState(false);
   const [recordingStarting, setRecordingStarting] = useState(false);
   const [notice, setNotice] = useState<string>();
-  const [newMessagesAvailable, setNewMessagesAvailable] = useState(false);
+  const [newMessagesCount, setNewMessagesCount] = useState(0);
   const [contactsOpen, setContactsOpen] = useState(
     initialContactsOpen ?? conversation === undefined,
   );
@@ -2010,7 +2013,9 @@ export function UnifiedChatWorkspace({
   const [assistantMessages, setAssistantMessages] = useState<readonly AssistantDisplayMessage[]>(
     assistantInitialMessages ?? [],
   );
-  const [assistantInput, setAssistantInput] = useState("");
+  const [assistantInput, setAssistantInput] = useState(() =>
+    readDraft(draftStorageKey("assistant", mode)),
+  );
   const [assistantSending, setAssistantSending] = useState(false);
   const [assistantNotice, setAssistantNotice] = useState<string>();
   const assistantLogRef = useRef<HTMLDivElement>(null);
@@ -2074,6 +2079,20 @@ export function UnifiedChatWorkspace({
       setAssistantSending(false);
     }
   }, [assistantInput, assistantSending, csrfToken, english, locale, mode, scrollAssistantToEnd]);
+
+  // Unsent-message drafts survive a reload/navigation, exactly like a real
+  // WhatsApp draft — see chat-draft.ts. Each effect only fires for the mode
+  // it belongs to; the component remounts fresh per conversation (this route
+  // has a loading.tsx), so there is no stale-key risk from conversation.id
+  // changing under a still-mounted instance.
+  useEffect(() => {
+    if (conversation === undefined) return;
+    writeDraft(draftStorageKey("conversation", conversation.id), body);
+  }, [body, conversation?.id]);
+  useEffect(() => {
+    if (!assistantMode) return;
+    writeDraft(draftStorageKey("assistant", mode), assistantInput);
+  }, [assistantMode, assistantInput, mode]);
 
   const selectedRequest = requests.find((request) => request.id === linkedRequestId);
   const activeRequestCount = requests.filter(
@@ -2373,9 +2392,9 @@ export function UnifiedChatWorkspace({
     }
     if (nearBottom.current) {
       endRef.current?.scrollIntoView({ behavior: "smooth", block: "nearest" });
-      setNewMessagesAvailable(false);
+      setNewMessagesCount(0);
     } else {
-      setNewMessagesAvailable(true);
+      setNewMessagesCount((count) => count + 1);
     }
   }, [latestMessageId]);
 
@@ -4937,7 +4956,7 @@ export function UnifiedChatWorkspace({
             const element = event.currentTarget;
             nearBottom.current =
               element.scrollHeight - element.scrollTop - element.clientHeight < 120;
-            if (nearBottom.current) setNewMessagesAvailable(false);
+            if (nearBottom.current) setNewMessagesCount(0);
           }}
           ref={logRef}
           role="log"
@@ -5304,6 +5323,20 @@ export function UnifiedChatWorkspace({
                               {message.deletedAt !== undefined ||
                               editingId === message.id ? null : (
                                 <>
+                                  {message.contentType === "TEXT" ? (
+                                    <button
+                                      className={`rounded-md px-2 py-1 font-black ${"hover:bg-black/5"}`}
+                                      onClick={() => {
+                                        void navigator.clipboard
+                                          .writeText(message.body)
+                                          .then(() => setNotice(english ? "Copied" : "تم النسخ"))
+                                          .catch(() => undefined);
+                                      }}
+                                      type="button"
+                                    >
+                                      {english ? "Copy" : "نسخ"}
+                                    </button>
+                                  ) : null}
                                   <button
                                     className={`rounded-md px-2 py-1 font-black ${"hover:bg-black/5"}`}
                                     onClick={() =>
@@ -5486,16 +5519,19 @@ export function UnifiedChatWorkspace({
               ))}
             </ul>
           ) : null}
-          {newMessagesAvailable ? (
+          {newMessagesCount > 0 ? (
             <button
-              className="sticky bottom-2 mx-auto mt-4 block rounded-full bg-[var(--itq-color-ink-deep)] px-4 py-2 text-xs font-black text-white shadow-xl"
+              className="sticky bottom-2 mx-auto mt-4 flex items-center gap-2 rounded-full bg-[var(--itq-color-ink-deep)] px-4 py-2 text-xs font-black text-white shadow-xl"
               onClick={() => {
                 nearBottom.current = true;
-                setNewMessagesAvailable(false);
+                setNewMessagesCount(0);
                 endRef.current?.scrollIntoView({ behavior: "smooth", block: "nearest" });
               }}
               type="button"
             >
+              <span className="grid min-w-5 place-items-center rounded-full bg-[var(--itq-color-brand-500)] px-1.5 py-0.5 text-[10px] tabular-nums">
+                {newMessagesCount > 99 ? "99+" : newMessagesCount}
+              </span>
               {english ? "New messages ↓" : "رسائل جديدة ↓"}
             </button>
           ) : null}

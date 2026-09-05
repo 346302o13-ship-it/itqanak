@@ -22,6 +22,7 @@ import {
   normalizeChatMessageInput,
 } from "./chat-validation.js";
 import { RequestDomainError } from "./errors.js";
+import { moderateMessagePreview } from "./message-preview-moderation.js";
 import type {
   ChatContentType,
   ChatMessage,
@@ -320,7 +321,9 @@ function toConversation(row: ConversationListRow): ConversationSummary {
     ...(row.last_message_type === null
       ? {}
       : { lastMessageType: toContentType(row.last_message_type) }),
-    ...(row.last_message_preview === null ? {} : { lastMessagePreview: row.last_message_preview }),
+    ...(row.last_message_preview === null
+      ? {}
+      : { lastMessagePreview: moderateMessagePreview(row.last_message_preview) }),
     ...(row.last_message_at === null ? {} : { lastMessageAt: toDate(row.last_message_at) }),
     unreadCount: toSafeInteger(row.unread_count, "unread_count"),
   };

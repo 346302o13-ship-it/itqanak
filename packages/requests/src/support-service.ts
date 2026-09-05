@@ -14,6 +14,7 @@ import type { Logger } from "@itqanak/observability";
 
 import { isUuid, normalizeBoundedPage } from "./chat-validation.js";
 import { RequestDomainError } from "./errors.js";
+import { moderateMessagePreview } from "./message-preview-moderation.js";
 import type {
   ChatContentType,
   ChatSenderType,
@@ -156,7 +157,9 @@ function toConversation(row: SupportConversationListRow): SupportConversationSum
     studentUserId: row.student_user_id,
     studentDisplayName: row.student_display_name,
     studentPhoneE164: row.student_phone_e164,
-    ...(row.last_message_preview === null ? {} : { lastMessagePreview: row.last_message_preview }),
+    ...(row.last_message_preview === null
+      ? {}
+      : { lastMessagePreview: moderateMessagePreview(row.last_message_preview) }),
     ...(row.last_message_at === null ? {} : { lastMessageAt: toDate(row.last_message_at) }),
     unreadCount: toSafeInteger(row.unread_count, "unread_count"),
     createdAt: toDate(row.created_at),
