@@ -168,6 +168,9 @@ export function GroupChannelPane({ locale, csrfToken, apiBase, backHref }: Group
         );
         return;
       }
+      // The server list has no client id to match on, so drop the optimistic
+      // row now that the post is confirmed and let refresh() bring the real one.
+      setOutbox((current) => current.filter((message) => message.id !== optimistic.id));
       await refresh();
     } catch {
       setOutbox((current) =>
