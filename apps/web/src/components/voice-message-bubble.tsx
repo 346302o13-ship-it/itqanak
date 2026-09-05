@@ -44,6 +44,45 @@ export function VoiceMessageBubble({
   const [current, setCurrent] = useState(0);
   const [duration, setDuration] = useState(0);
   const [speedIndex, setSpeedIndex] = useState(0);
+  const [peaks, setPeaks] = useState<readonly number[] | undefined>(undefined);
+  const peaksRequested = useRef(false);
+
+  // Decode the clip once (on first play) into BARS amplitude peaks for a real
+  // waveform; falls back to the static motif if the browser can't decode it
+  // (common on iOS Safari for webm/opus).
+  const loadPeaks = useCallback(() => {
+    if (peaksRequested.current) return;
+    peaksRequested.current = true;
+    const Ctor =
+      typeof window === "undefined"
+        ? undefined
+        : (window.AudioContext ??
+          (window as unknown as { webkitAudioContext?: typeof AudioContext }).webkitAudioContext);
+    if (Ctor === undefined) return;
+    void (async () => {
+      try {
+        const response = await fetch(src);
+        const buffer = await response.arrayBuffer();
+        const context = new Ctor();
+        const decoded = await context.decodeAudioData(buffer);
+        void context.close();
+        const channel = decoded.getChannelData(0);
+        const per = Math.floor(channel.length / BARS) || 1;
+        const values: number[] = [];
+        let max = 0.0001;
+        for (let bar = 0; bar < BARS; bar += 1) {
+          let sum = 0;
+          for (let i = 0; i < per; i += 1) sum += Math.abs(channel[bar * per + i] ?? 0);
+          const value = sum / per;
+          values.push(value);
+          if (value > max) max = value;
+        }
+        setPeaks(values.map((value) => Math.max(0.12, value / max)));
+      } catch {
+        // Leave `peaks` undefined — the static bars stay.
+      }
+    })();
+  }, [src]);
 
   // webm/opus recordings often report `duration = Infinity` until the element
   // has seeked once; nudge it to the end and read the corrected value.
@@ -91,6 +130,7 @@ export function VoiceMessageBubble({
     const audio = audioRef.current;
     if (audio === null) return;
     if (audio.paused) {
+      loadPeaks();
       void audio
         .play()
         .then(() => setPlaying(true))
@@ -157,7 +197,7 @@ export function VoiceMessageBubble({
         >
           {Array.from({ length: BARS }).map((_, index) => {
             const filled = index / BARS <= progress;
-            const height = 22 + Math.round(14 * Math.abs(Math.sin(index * 1.7)));
+            const amplitude = peaks?.[index] ?? 0.35 + 0.35 * Math.abs(Math.sin(index * 1.7));
             return (
               <span
                 className={`w-[3px] shrink-0 rounded-full ${
@@ -166,7 +206,7 @@ export function VoiceMessageBubble({
                     : "bg-[var(--itq-color-bubble-meta)]/45"
                 }`}
                 key={index}
-                style={{ height: `${height}%` }}
+                style={{ height: `${Math.round(15 + 85 * amplitude)}%` }}
               />
             );
           })}

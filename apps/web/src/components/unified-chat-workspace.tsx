@@ -1912,6 +1912,8 @@ export function UnifiedChatWorkspace({
   // navigation that nothing can silently swallow.
   const backHref = `/${locale}/${mode === "admin" ? "admin" : "student"}`;
   const fileInput = useRef<HTMLInputElement>(null);
+  const cameraInput = useRef<HTMLInputElement>(null);
+  const galleryInput = useRef<HTMLInputElement>(null);
   const logRef = useRef<HTMLDivElement>(null);
   const endRef = useRef<HTMLDivElement>(null);
   const composerRef = useRef<HTMLTextAreaElement>(null);
@@ -1993,6 +1995,7 @@ export function UnifiedChatWorkspace({
   const [reactionPickerFull, setReactionPickerFull] = useState(false);
   const [emojiPanelOpen, setEmojiPanelOpen] = useState(false);
   const [quickRepliesOpen, setQuickRepliesOpen] = useState(false);
+  const [attachSheetOpen, setAttachSheetOpen] = useState(false);
   const [lightbox, setLightbox] = useState<{
     readonly images: readonly LightboxImage[];
     readonly index: number;
@@ -2525,7 +2528,14 @@ export function UnifiedChatWorkspace({
   // Tap anywhere outside an open chat menu (the message action menu, emoji
   // tray) closes it.
   useEffect(() => {
-    if (reactionPickerFor === undefined && !emojiPanelOpen && !quickRepliesOpen) return undefined;
+    if (
+      reactionPickerFor === undefined &&
+      !emojiPanelOpen &&
+      !quickRepliesOpen &&
+      !attachSheetOpen
+    ) {
+      return undefined;
+    }
     const onOutside = (event: Event) => {
       const target = event.target as HTMLElement | null;
       if (target?.closest("[data-chat-menu]")) return;
@@ -2534,10 +2544,11 @@ export function UnifiedChatWorkspace({
       setDeleteConfirmFor(undefined);
       setEmojiPanelOpen(false);
       setQuickRepliesOpen(false);
+      setAttachSheetOpen(false);
     };
     document.addEventListener("pointerdown", onOutside, true);
     return () => document.removeEventListener("pointerdown", onOutside, true);
-  }, [reactionPickerFor, emojiPanelOpen, quickRepliesOpen]);
+  }, [reactionPickerFor, emojiPanelOpen, quickRepliesOpen, attachSheetOpen]);
 
   const scrollToMessage = useCallback((id: string) => {
     const node = logRef.current?.querySelector(`[data-mid="${id}"]`);
@@ -5741,6 +5752,29 @@ export function UnifiedChatWorkspace({
               ref={fileInput}
               type="file"
             />
+            <input
+              accept="image/*"
+              capture="environment"
+              className="sr-only"
+              disabled={interactionLocked}
+              onChange={(event) => {
+                const file = event.currentTarget.files?.[0];
+                if (file !== undefined) void uploadAndSend(file);
+              }}
+              ref={cameraInput}
+              type="file"
+            />
+            <input
+              accept="image/*,video/*"
+              className="sr-only"
+              disabled={interactionLocked}
+              onChange={(event) => {
+                const file = event.currentTarget.files?.[0];
+                if (file !== undefined) void uploadAndSend(file);
+              }}
+              ref={galleryInput}
+              type="file"
+            />
             {mode === "admin" ? (
               <div className="relative shrink-0" data-chat-menu>
                 <button
@@ -5827,15 +5861,44 @@ export function UnifiedChatWorkspace({
                 rows={1}
                 value={body}
               />
-              <button
-                aria-label={english ? "Attach an image or file" : "إرفاق صورة أو ملف"}
-                className="grid size-9 shrink-0 place-items-center rounded-full text-[var(--itq-color-muted)] transition hover:bg-[var(--itq-color-surface-soft)] disabled:opacity-50"
-                disabled={interactionLocked}
-                onClick={() => fileInput.current?.click()}
-                type="button"
-              >
-                <PaperclipIcon className="size-5" />
-              </button>
+              <span className="relative shrink-0" data-chat-menu>
+                <button
+                  aria-expanded={attachSheetOpen}
+                  aria-label={english ? "Attach" : "إرفاق"}
+                  className="grid size-9 place-items-center rounded-full text-[var(--itq-color-muted)] transition hover:bg-[var(--itq-color-surface-soft)] disabled:opacity-50"
+                  disabled={interactionLocked}
+                  onClick={() => setAttachSheetOpen((value) => !value)}
+                  type="button"
+                >
+                  <PaperclipIcon className="size-5" />
+                </button>
+                {attachSheetOpen ? (
+                  <span
+                    className="absolute bottom-full z-30 mb-2 flex w-44 flex-col overflow-hidden rounded-2xl border border-[var(--itq-color-border)] bg-[var(--itq-color-surface)] py-1 text-[13px] font-black shadow-xl end-0"
+                    data-chat-menu
+                  >
+                    {(
+                      [
+                        [english ? "Camera" : "الكاميرا", cameraInput],
+                        [english ? "Photo / video" : "صورة أو فيديو", galleryInput],
+                        [english ? "Document" : "ملف", fileInput],
+                      ] as const
+                    ).map(([label, ref]) => (
+                      <button
+                        className="px-3 py-2.5 text-start hover:bg-[var(--itq-color-surface-soft)]"
+                        key={label}
+                        onClick={() => {
+                          setAttachSheetOpen(false);
+                          ref.current?.click();
+                        }}
+                        type="button"
+                      >
+                        {label}
+                      </button>
+                    ))}
+                  </span>
+                ) : null}
+              </span>
             </div>
             {body.trim().length > 0 && !recording ? (
               <button
