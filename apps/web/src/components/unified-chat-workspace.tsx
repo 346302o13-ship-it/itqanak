@@ -51,6 +51,7 @@ import type { AssistantDisplayMessage } from "@/lib/assistant-display";
 
 import { ImageLightbox, type LightboxImage } from "./image-lightbox";
 import { PaymentReceiptUploader } from "./payment-receipt-uploader";
+import { VoiceMessageBubble } from "./voice-message-bubble";
 
 import {
   ArrowIcon,
@@ -1661,23 +1662,12 @@ function AttachmentBody({
           />
         </div>
       ) : contentType === "AUDIO" ? (
-        <div className="min-w-56 max-w-full">
-          <audio className="w-full" controls preload="metadata" src={preview}>
-            <a href={download}>{english ? "Download voice message" : "تنزيل الرسالة الصوتية"}</a>
-          </audio>
-          <div className="mt-2 flex items-center gap-2">
-            <bdi className="min-w-0 flex-1 truncate text-xs font-black" dir="auto">
-              {attachment.originalFilename}
-            </bdi>
-            <DownloadCircle
-              attachmentId={attachment.id}
-              filename={attachment.originalFilename}
-              locale={locale}
-              mimeType={attachment.mimeType}
-              url={download}
-            />
-          </div>
-        </div>
+        <VoiceMessageBubble
+          download={download}
+          filename={attachment.originalFilename}
+          locale={locale}
+          src={preview}
+        />
       ) : (
         <div className="min-w-0">
           <div className="flex min-h-14 items-center gap-3 rounded-xl border border-current/15 bg-[var(--itq-color-surface)] p-3 font-black text-[var(--itq-color-ink)]">
