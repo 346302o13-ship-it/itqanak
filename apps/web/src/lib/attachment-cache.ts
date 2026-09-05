@@ -10,7 +10,10 @@
 
 const DB_NAME = "itqanak-attachments";
 const STORE = "files";
-const DB_VERSION = 1;
+const DB_VERSION = 2;
+/** Keep this device-local cache from growing without bound: once past this,
+ *  the oldest files are evicted after each write. */
+const MAX_CACHE_BYTES = 120 * 1024 * 1024;
 
 interface CachedAttachment {
   readonly id: string;
@@ -18,6 +21,7 @@ interface CachedAttachment {
   readonly filename: string;
   readonly mimeType: string;
   readonly cachedAt: number;
+  readonly size: number;
 }
 
 function openDb(): Promise<IDBDatabase | undefined> {
@@ -35,13 +39,42 @@ function openDb(): Promise<IDBDatabase | undefined> {
     }
     request.onupgradeneeded = () => {
       const db = request.result;
-      if (!db.objectStoreNames.contains(STORE)) {
-        db.createObjectStore(STORE, { keyPath: "id" });
+      const store = db.objectStoreNames.contains(STORE)
+        ? request.transaction?.objectStore(STORE)
+        : db.createObjectStore(STORE, { keyPath: "id" });
+      if (store !== undefined && store !== null && !store.indexNames.contains("cachedAt")) {
+        store.createIndex("cachedAt", "cachedAt");
       }
     };
     request.onsuccess = () => resolve(request.result);
     request.onerror = () => resolve(undefined);
     request.onblocked = () => resolve(undefined);
+  });
+}
+
+/** Walk newest→oldest by cachedAt; once the running total passes the cap,
+ *  delete every remaining (older) record. Streams one record at a time. */
+function evictOverflow(db: IDBDatabase): Promise<void> {
+  return new Promise((resolve) => {
+    try {
+      const tx = db.transaction(STORE, "readwrite");
+      tx.oncomplete = () => resolve();
+      tx.onerror = () => resolve();
+      tx.onabort = () => resolve();
+      let running = 0;
+      const cursorRequest = tx.objectStore(STORE).index("cachedAt").openCursor(null, "prev");
+      cursorRequest.onsuccess = () => {
+        const cursor = cursorRequest.result;
+        if (cursor === null) return;
+        const record = cursor.value as CachedAttachment;
+        running += typeof record.size === "number" ? record.size : 0;
+        if (running > MAX_CACHE_BYTES) cursor.delete();
+        cursor.continue();
+      };
+      cursorRequest.onerror = () => resolve();
+    } catch {
+      resolve();
+    }
   });
 }
 
@@ -65,9 +98,11 @@ export async function cacheAttachment(
         filename,
         mimeType,
         cachedAt: Date.now(),
+        size: blob.size,
       };
       tx.objectStore(STORE).put(record);
     });
+    await evictOverflow(db);
   } catch {
     // Quota or transaction failure: the file simply is not cached.
   } finally {

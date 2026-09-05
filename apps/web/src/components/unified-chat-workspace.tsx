@@ -3341,9 +3341,20 @@ export function UnifiedChatWorkspace({
           ? "Recording… Press the microphone again to stop and send."
           : "جارٍ التسجيل… اضغط الميكروفون مرة أخرى للإيقاف والإرسال.",
       );
-    } catch {
+    } catch (error: unknown) {
+      const name = error instanceof Error ? error.name : "";
       setNotice(
-        english ? "Microphone permission was not granted." : "لم يُمنح إذن استخدام الميكروفون.",
+        name === "NotAllowedError" || name === "SecurityError"
+          ? english
+            ? "Microphone access is blocked. Allow it for this site in your browser settings, then try again."
+            : "الوصول للميكروفون محظور. فعّله لهذا الموقع من إعدادات المتصفح ثم حاول مجدداً."
+          : name === "NotFoundError"
+            ? english
+              ? "No microphone was found on this device."
+              : "لا يوجد ميكروفون في هذا الجهاز."
+            : english
+              ? "The microphone could not be started. You can attach an audio file instead."
+              : "تعذّر بدء الميكروفون. يمكنك إرفاق ملف صوتي بدلاً من ذلك.",
       );
       stream?.getTracks().forEach((track) => track.stop());
       mediaStream.current = undefined;
