@@ -2011,6 +2011,7 @@ export function UnifiedChatWorkspace({
   const longPressOrigin = useRef<{ x: number; y: number } | undefined>(undefined);
   const reactionChoices = chatEmoji.slice(0, 6);
   const [editingId, setEditingId] = useState<string>();
+  const [infoFor, setInfoFor] = useState<string>();
   const [editingText, setEditingText] = useState("");
   const [deleteConfirmFor, setDeleteConfirmFor] = useState<string>();
   // Quotes the student has answered in this session: the card locks its action
@@ -5391,6 +5392,18 @@ export function UnifiedChatWorkspace({
                                             {english ? "Copy" : "نسخ"}
                                           </button>
                                         ) : null}
+                                        {mine ? (
+                                          <button
+                                            className="flex w-full items-center rounded-lg px-3 py-2 hover:bg-[var(--itq-color-surface-soft)]"
+                                            onClick={() => {
+                                              setInfoFor(message.id);
+                                              setReactionPickerFor(undefined);
+                                            }}
+                                            type="button"
+                                          >
+                                            {english ? "Info" : "معلومات"}
+                                          </button>
+                                        ) : null}
                                         {mine &&
                                         message.contentType === "TEXT" &&
                                         Date.now() - message.sentAt.getTime() < 15 * 60_000 ? (
@@ -5902,6 +5915,66 @@ export function UnifiedChatWorkspace({
           </aside>
         </>
       ) : null}
+
+      {(() => {
+        if (infoFor === undefined) return null;
+        const target = messages.find((entry) => entry.id === infoFor);
+        if (target === undefined) return null;
+        const stamp = (value: Date) =>
+          `${formatMessageDate(value, locale)} · ${formatMessageTime(value, locale)}`;
+        const rows: readonly (readonly [string, string])[] = [
+          [english ? "Sent" : "أُرسلت", stamp(target.sentAt)],
+          [
+            english ? "Delivered" : "وصلت",
+            target.deliveredAt === undefined
+              ? english
+                ? "Not yet"
+                : "لم تصل بعد"
+              : stamp(target.deliveredAt),
+          ],
+          [
+            english ? "Read" : "قُرئت",
+            target.readAt === undefined
+              ? english
+                ? "Not yet"
+                : "لم تُقرأ بعد"
+              : stamp(target.readAt),
+          ],
+        ];
+        return (
+          <div
+            aria-modal="true"
+            className="fixed inset-0 z-[120] grid place-items-center bg-black/40 p-4"
+            onClick={() => setInfoFor(undefined)}
+            role="dialog"
+          >
+            <div
+              className="w-[min(22rem,92vw)] overflow-hidden rounded-2xl border border-[var(--itq-color-border)] bg-[var(--itq-color-surface)] shadow-2xl"
+              onClick={(event) => event.stopPropagation()}
+            >
+              <div className="flex items-center justify-between border-b border-[var(--itq-color-border)] px-4 py-3">
+                <p className="text-sm font-black">{english ? "Message info" : "معلومات الرسالة"}</p>
+                <button
+                  aria-label={english ? "Close" : "إغلاق"}
+                  className="grid size-8 place-items-center rounded-full text-[var(--itq-color-muted)] hover:bg-[var(--itq-color-surface-soft)]"
+                  onClick={() => setInfoFor(undefined)}
+                  type="button"
+                >
+                  <CloseIcon className="size-4" />
+                </button>
+              </div>
+              <dl className="divide-y divide-[var(--itq-color-border)]">
+                {rows.map(([label, value]) => (
+                  <div className="flex items-center justify-between gap-3 px-4 py-3" key={label}>
+                    <dt className="text-xs font-black text-[var(--itq-color-muted)]">{label}</dt>
+                    <dd className="text-sm font-bold">{value}</dd>
+                  </div>
+                ))}
+              </dl>
+            </div>
+          </div>
+        );
+      })()}
 
       {lightbox === undefined ? null : (
         <ImageLightbox

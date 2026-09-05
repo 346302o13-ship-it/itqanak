@@ -24,7 +24,14 @@ type WireQuote = Omit<ServiceQuote, "createdAt" | "expiresAt" | "respondedAt" | 
 
 export type WireUnifiedMessage = Omit<
   UnifiedMessage,
-  "quote" | "request" | "attachment" | "sentAt" | "editedAt" | "deletedAt"
+  | "quote"
+  | "request"
+  | "attachment"
+  | "sentAt"
+  | "editedAt"
+  | "deletedAt"
+  | "deliveredAt"
+  | "readAt"
 > & {
   readonly quote?: WireQuote;
   readonly request?: WireRequest;
@@ -32,6 +39,8 @@ export type WireUnifiedMessage = Omit<
   readonly sentAt: Date | string;
   readonly editedAt?: Date | string;
   readonly deletedAt?: Date | string;
+  readonly deliveredAt?: Date | string;
+  readonly readAt?: Date | string;
 };
 
 export type WireUnifiedConversationSummary = Omit<
@@ -87,7 +96,16 @@ function hydrateAttachment(attachment: WireAttachment): UnifiedMessageAttachment
 }
 
 export function hydrateUnifiedMessage(message: WireUnifiedMessage): UnifiedMessage {
-  const { quote, request, attachment, editedAt, deletedAt, ...messageWithoutRelations } = message;
+  const {
+    quote,
+    request,
+    attachment,
+    editedAt,
+    deletedAt,
+    deliveredAt,
+    readAt,
+    ...messageWithoutRelations
+  } = message;
   return {
     ...messageWithoutRelations,
     ...(request === undefined ? {} : { request: hydrateRequest(request) }),
@@ -95,6 +113,8 @@ export function hydrateUnifiedMessage(message: WireUnifiedMessage): UnifiedMessa
     ...(attachment === undefined ? {} : { attachment: hydrateAttachment(attachment) }),
     ...(editedAt === undefined ? {} : { editedAt: validDate(editedAt) }),
     ...(deletedAt === undefined ? {} : { deletedAt: validDate(deletedAt) }),
+    ...(deliveredAt === undefined ? {} : { deliveredAt: validDate(deliveredAt) }),
+    ...(readAt === undefined ? {} : { readAt: validDate(readAt) }),
     sentAt: validDate(message.sentAt),
   };
 }

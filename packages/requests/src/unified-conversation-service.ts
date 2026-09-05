@@ -96,6 +96,8 @@ interface MessageRow {
   readonly client_payload_fingerprint: string | null;
   readonly metadata: unknown;
   readonly message_status: string;
+  readonly receipt_delivered_at: Date | string | null;
+  readonly receipt_read_at: Date | string | null;
   readonly sent_at: Date | string;
   readonly archived_at: Date | string | null;
   readonly reply_to_message_id: string | null;
@@ -193,6 +195,14 @@ const messageSelect = `
     ) THEN 'DELIVERED'
     ELSE 'SENT'
   END AS message_status,
+  (
+    SELECT min(receipts.delivered_at) FROM support_message_receipts AS receipts
+    WHERE receipts.message_id = messages.id
+  ) AS receipt_delivered_at,
+  (
+    SELECT min(receipts.read_at) FROM support_message_receipts AS receipts
+    WHERE receipts.message_id = messages.id
+  ) AS receipt_read_at,
   requests.id AS request_id, requests.request_number, requests.title AS request_title,
   requests.status AS request_status, requests.version AS request_version,
   requests.updated_at AS request_updated_at,
@@ -501,6 +511,8 @@ function toMessage(row: MessageRow): UnifiedMessage {
     });
   }
   const quote = toQuote(row);
+  const deliveredAt = optionalDate(row.receipt_delivered_at);
+  const readAt = optionalDate(row.receipt_read_at);
   const archived = row.archived_at !== null;
   const deleted = row.revision_action === "DELETE";
   const edited = row.revision_action === "EDIT";
@@ -575,6 +587,8 @@ function toMessage(row: MessageRow): UnifiedMessage {
     metadata: toJsonObject(row.metadata),
     status: toReceiptStatus(row.message_status),
     sentAt: toDate(row.sent_at),
+    ...(deliveredAt === undefined ? {} : { deliveredAt }),
+    ...(readAt === undefined ? {} : { readAt }),
   };
 }
 

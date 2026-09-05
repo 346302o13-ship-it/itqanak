@@ -611,6 +611,10 @@ export interface UnifiedMessage {
   readonly metadata: JsonObject;
   readonly status: MessageReceiptStatus;
   readonly sentAt: Date;
+  /** When the other party's receipt first flipped to DELIVERED / READ. Only
+   *  meaningful for a message the current viewer sent. */
+  readonly deliveredAt?: Date;
+  readonly readAt?: Date;
   /** Set when the sender has edited the message; `body` is the current text. */
   readonly editedAt?: Date;
   /** Set when the sender has deleted the message; `body` is blanked. */
