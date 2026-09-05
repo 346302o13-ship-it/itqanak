@@ -49,6 +49,7 @@ import { draftStorageKey, readDraft, writeDraft } from "@/lib/chat-draft";
 import { fillQuickReply, quickReplies } from "@/lib/quick-replies";
 import type { AssistantDisplayMessage } from "@/lib/assistant-display";
 
+import { GroupChannelPane } from "./group-channel-pane";
 import { ImageLightbox, type LightboxImage } from "./image-lightbox";
 import { LinkPreview, firstUrl } from "./link-preview";
 import { PaymentReceiptUploader } from "./payment-receipt-uploader";
@@ -81,6 +82,10 @@ interface UnifiedChatWorkspaceProps {
    *  real conversation — same header/list/bubble chrome, so it reads as one
    *  more entry in the chat, not a separate page. */
   readonly assistantMode?: boolean;
+  /** Admin only: render the platform-wide student group as this workspace's
+   *  main panel — the same chrome and conversation list, minus the per-student
+   *  request/quote machinery the group has no use for. */
+  readonly groupMode?: boolean;
   readonly assistantGreeting?: string;
   readonly assistantInitialMessages?: readonly AssistantDisplayMessage[];
   readonly assistantPlaceholder?: string;
@@ -104,6 +109,16 @@ interface UnifiedChatWorkspaceProps {
   readonly selectedRequestId?: string;
   /** Active services, so the admin can create a request from the chat panel. */
   readonly services?: readonly { readonly id: string; readonly name: string }[];
+}
+
+interface StudentSessionRow {
+  readonly id: string;
+  readonly device?: string;
+  readonly createdAt: string;
+  readonly lastSeenAt: string;
+  readonly expiresAt: string;
+  readonly active: boolean;
+  readonly revokedReason?: string;
 }
 
 interface MessageListWire {
@@ -400,6 +415,47 @@ function formatMessageDate(value: Date, locale: "ar" | "en"): string {
     month: "short",
     year: value.getFullYear() === now.getFullYear() ? undefined : "numeric",
   }).format(value);
+}
+
+/** Days between two dates by calendar day, ignoring the clock. */
+function calendarDaysAgo(value: Date, now: Date): number {
+  const a = new Date(value.getFullYear(), value.getMonth(), value.getDate());
+  const b = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  return Math.round((b.getTime() - a.getTime()) / 86_400_000);
+}
+
+/** WhatsApp-style stamp for a conversation-list row: the time today, "أمس"
+ *  yesterday, the weekday within the last week, otherwise the date. */
+function formatListTimestamp(value: Date, locale: "ar" | "en"): string {
+  const days = calendarDaysAgo(value, new Date());
+  if (days <= 0) return formatMessageTime(value, locale);
+  if (days === 1) return locale === "en" ? "Yesterday" : "أمس";
+  if (days < 7) {
+    return new Intl.DateTimeFormat(locale === "en" ? "en-GB" : "ar-SA", {
+      weekday: "long",
+    }).format(value);
+  }
+  return formatMessageDate(value, locale);
+}
+
+/** "آخر ظهور اليوم 3:45" style — a day word plus the clock, never a bare
+ *  time that leaves the reader guessing which day it was. */
+function formatLastSeen(value: Date, locale: "ar" | "en"): string {
+  const now = new Date();
+  const days = calendarDaysAgo(value, now);
+  const time = formatMessageTime(value, locale);
+  const prefix = locale === "en" ? "Last seen" : "آخر ظهور";
+  if (days <= 0) return locale === "en" ? `${prefix} today at ${time}` : `${prefix} اليوم ${time}`;
+  if (days === 1) {
+    return locale === "en" ? `${prefix} yesterday at ${time}` : `${prefix} أمس ${time}`;
+  }
+  if (days < 7) {
+    const weekday = new Intl.DateTimeFormat(locale === "en" ? "en-GB" : "ar-SA", {
+      weekday: "long",
+    }).format(value);
+    return locale === "en" ? `${prefix} ${weekday} at ${time}` : `${prefix} ${weekday} ${time}`;
+  }
+  return `${prefix} ${formatMessageDate(value, locale)} ${time}`;
 }
 
 function systemMessageLabel(message: UnifiedMessage, locale: "ar" | "en"): string {
@@ -1739,6 +1795,7 @@ function AttachmentBody({
 function ConversationList({
   assistantActive = false,
   conversations,
+  groupActive,
   locale,
   onClose,
   search,
@@ -1746,6 +1803,7 @@ function ConversationList({
 }: Readonly<{
   assistantActive?: boolean;
   conversations: readonly UnifiedConversationSummary[];
+  groupActive?: boolean;
   locale: "ar" | "en";
   onClose?: () => void;
   search?: string;
@@ -1818,6 +1876,29 @@ function ConversationList({
             </bdi>
           </span>
         </Link>
+        <Link
+          aria-current={groupActive ? "page" : undefined}
+          className={`mt-2 flex items-center gap-3 rounded-2xl border p-3 no-underline transition hover:bg-[var(--itq-color-brand-100)] ${
+            groupActive
+              ? "border-[var(--itq-color-brand-400)] bg-[var(--itq-color-brand-100)] ring-2 ring-[var(--itq-color-brand-300)]"
+              : "border-[var(--itq-color-accent-200)] bg-[var(--itq-color-brand-50)]"
+          }`}
+          href={`/${locale}/admin/support?view=group`}
+        >
+          <span className="grid size-12 shrink-0 place-items-center rounded-full bg-[var(--itq-color-brand-700)] text-white">
+            <span aria-hidden className="text-lg">
+              📢
+            </span>
+          </span>
+          <span className="min-w-0 flex-1">
+            <bdi className="truncate text-sm font-black" dir="auto">
+              {english ? "Students group" : "قروب الطلاب"}
+            </bdi>
+            <bdi className="mt-0.5 block truncate text-xs text-[var(--itq-color-muted)]" dir="auto">
+              {english ? "Broadcast an announcement to every student" : "أرسل إعلاناً لكل الطلاب"}
+            </bdi>
+          </span>
+        </Link>
       </div>
       <div className="itq-scroll min-h-0 flex-1 overflow-y-auto overscroll-contain p-2" role="list">
         {conversations.length === 0 ? (
@@ -1860,7 +1941,7 @@ function ConversationList({
                         className="shrink-0 text-[10px] font-bold text-[var(--itq-color-muted)]"
                         dateTime={item.lastMessageAt.toISOString()}
                       >
-                        {formatMessageTime(item.lastMessageAt, locale)}
+                        {formatListTimestamp(item.lastMessageAt, locale)}
                       </time>
                     )}
                   </span>
@@ -1899,6 +1980,7 @@ export function UnifiedChatWorkspace({
   assistantGreeting,
   assistantInitialMessages,
   assistantMode = false,
+  groupMode = false,
   assistantPlaceholder,
   backHrefOverride,
   conversation,
@@ -2226,13 +2308,40 @@ export function UnifiedChatWorkspace({
       ? english
         ? "Not signed in"
         : "غير متصل"
-      : `${english ? "Last seen " : "آخر ظهور "}${formatMessageTime(studentLastSeen, locale)}`;
+      : formatLastSeen(studentLastSeen, locale);
   const apiBase =
     mode === "student"
       ? "/api/student/conversation"
       : conversation === undefined
         ? undefined
         : `/api/admin/conversations/${encodeURIComponent(conversation.studentUserId)}`;
+
+  // The student's login sessions/devices — fetched lazily the first time an
+  // admin opens the requests panel, for a "was this really them?" check.
+  const [studentSessions, setStudentSessions] = useState<readonly StudentSessionRow[] | undefined>(
+    undefined,
+  );
+  useEffect(() => {
+    if (mode !== "admin" || !detailsOpen || apiBase === undefined) return;
+    if (studentSessions !== undefined) return;
+    let alive = true;
+    void (async () => {
+      try {
+        const response = await fetch(`${apiBase}/sessions`, {
+          credentials: "same-origin",
+          cache: "no-store",
+        });
+        if (!response.ok) return;
+        const payload = (await response.json()) as { sessions?: readonly StudentSessionRow[] };
+        if (alive) setStudentSessions(payload.sessions ?? []);
+      } catch {
+        // Non-fatal — the panel just omits the sessions block.
+      }
+    })();
+    return () => {
+      alive = false;
+    };
+  }, [mode, detailsOpen, apiBase, studentSessions]);
 
   // Pinned messages (migration 042) — a small strip at the top of the thread,
   // shared between both parties.
@@ -4338,6 +4447,58 @@ export function UnifiedChatWorkspace({
                 : "طلب دفع لكل الطلبات غير المدفوعة"}
             </button>
           ) : null}
+          {mode === "admin" && studentSessions !== undefined && studentSessions.length > 0 ? (
+            <details className="mb-3 rounded-2xl border border-[var(--itq-color-border)] bg-[var(--itq-color-surface-soft)] p-3">
+              <summary className="cursor-pointer text-xs font-black text-[var(--itq-color-ink)]">
+                {english
+                  ? `Login sessions (${studentSessions.length})`
+                  : `جلسات الدخول (${studentSessions.length})`}
+              </summary>
+              <ul className="mt-2 space-y-2">
+                {studentSessions.map((session) => (
+                  <li
+                    className="rounded-xl border border-[var(--itq-color-border)] bg-[var(--itq-color-surface)] p-2 text-[11px]"
+                    key={session.id}
+                  >
+                    <p className="flex items-center justify-between gap-2 font-black">
+                      <span className="truncate">
+                        {session.device ?? (english ? "Unknown device" : "جهاز غير معروف")}
+                      </span>
+                      <span
+                        className={
+                          session.active
+                            ? "shrink-0 text-[var(--itq-color-success-700)]"
+                            : "shrink-0 text-[var(--itq-color-muted)]"
+                        }
+                      >
+                        {session.active
+                          ? english
+                            ? "active"
+                            : "نشطة"
+                          : english
+                            ? "ended"
+                            : "منتهية"}
+                      </span>
+                    </p>
+                    <p className="mt-1 text-[var(--itq-color-muted)]">
+                      {english ? "First seen: " : "أول ظهور: "}
+                      {formatMessageDate(new Date(session.createdAt), locale)}{" "}
+                      {formatMessageTime(new Date(session.createdAt), locale)}
+                    </p>
+                    <p className="text-[var(--itq-color-muted)]">
+                      {formatLastSeen(new Date(session.lastSeenAt), locale)}
+                    </p>
+                    {session.revokedReason !== undefined ? (
+                      <p className="text-[var(--itq-color-muted)]">
+                        {english ? "Reason: " : "السبب: "}
+                        {session.revokedReason}
+                      </p>
+                    ) : null}
+                  </li>
+                ))}
+              </ul>
+            </details>
+          ) : null}
           {services.length > 0 ? (
             <form
               className="mb-3 rounded-2xl border border-[var(--itq-color-brand-200)] bg-[var(--itq-color-brand-50)] p-3"
@@ -4639,6 +4800,52 @@ export function UnifiedChatWorkspace({
         </div>
       </div>
     );
+
+  if (groupMode) {
+    return (
+      <section
+        aria-label={english ? "Students group" : "قروب الطلاب"}
+        className="relative flex h-full min-h-0 overflow-hidden border-x border-[var(--itq-color-border)] bg-[var(--itq-color-surface)]"
+      >
+        <button
+          aria-label={english ? "Close conversations" : "إغلاق قائمة المحادثات"}
+          className={`fixed inset-0 z-40 bg-black/35 backdrop-blur-[1px] lg:hidden ${contactsOpen ? "block" : "hidden"}`}
+          onClick={() => closeContacts()}
+          type="button"
+        />
+        <aside
+          aria-label={english ? "Student conversations" : "محادثات الطلاب"}
+          aria-modal={contactsOpen ? true : undefined}
+          className={`itq-bottom-nav-space fixed top-0 start-0 z-50 flex w-[min(88vw,24rem)] min-h-0 flex-col border-e border-[var(--itq-color-border)] bg-[var(--itq-color-surface-soft)] shadow-2xl transition-[transform,visibility] lg:static lg:z-auto lg:w-[21rem] lg:shrink-0 lg:translate-x-0 lg:shadow-none ${
+            contactsOpen
+              ? "visible translate-x-0"
+              : english
+                ? "invisible -translate-x-full lg:visible"
+                : "invisible translate-x-full lg:visible"
+          }`}
+          id={contactsPanelId}
+          ref={contactsPanelRef}
+          role={contactsOpen ? "dialog" : undefined}
+          tabIndex={contactsOpen ? -1 : undefined}
+          {...contactsSwipeHandlers}
+        >
+          <ConversationList
+            conversations={contactItems}
+            groupActive
+            locale={locale}
+            onClose={() => closeContacts()}
+            {...(search === undefined ? {} : { search })}
+          />
+        </aside>
+        <GroupChannelPane
+          apiBase="/api/admin/group-channel"
+          backHref={backHref}
+          csrfToken={csrfToken}
+          locale={locale}
+        />
+      </section>
+    );
+  }
 
   if (assistantMode) {
     const assistantGreetingBubble =

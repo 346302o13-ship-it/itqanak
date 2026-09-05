@@ -1,26 +1,10 @@
-import { AdminShell } from "@/components/admin-shell";
-import { GroupChannelPane } from "@/components/group-channel-pane";
-import { csrfTokenForPage } from "@/lib/auth-runtime";
-import { requireAdminPagePrincipal } from "@/lib/admin-page";
+import { redirect } from "next/navigation";
 
-export const metadata = { title: "Students group" };
 export const dynamic = "force-dynamic";
 
-export default async function EnglishAdminGroupChannelPage() {
-  const [principal, csrfToken] = await Promise.all([
-    requireAdminPagePrincipal("/en/admin/group", "en", "admin.conversations.read"),
-    csrfTokenForPage(),
-  ]);
-  return (
-    <AdminShell csrfToken={csrfToken} displayName={principal.displayName} locale="en" workspace>
-      <div className="itq-screen-h flex min-h-0">
-        <GroupChannelPane
-          apiBase="/api/admin/group-channel"
-          backHref="/en/admin/support"
-          csrfToken={csrfToken}
-          locale="en"
-        />
-      </div>
-    </AdminShell>
-  );
+// The student group now lives inside the unified conversation workspace,
+// selectable from the conversation list — this route only keeps old links
+// and bookmarks pointing at the right place.
+export default function EnglishAdminGroupRedirect() {
+  redirect("/en/admin/support?view=group");
 }

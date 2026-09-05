@@ -39,6 +39,7 @@ import type {
   UnifiedMessageListResult,
   UnifiedPinnedMessage,
   UnifiedRequestSummary,
+  StudentSessionSummary,
 } from "./types.js";
 import { normalizeUnifiedEditBody, normalizeUnifiedMessageInput } from "./unified-validation.js";
 
@@ -626,6 +627,45 @@ export class UnifiedConversationService {
     if (!isUuid(studentUserId)) throw new RequestDomainError("CONVERSATION_NOT_FOUND");
     const conversationId = await this.ensureConversation(studentUserId, principal.userId);
     return this.getConversation(principal, conversationId, context);
+  }
+
+  /** The student's recent login sessions, for an administrator triaging a
+   *  "was this really them?" question in the chat. Device summary + timing
+   *  only — the stored IP is a hash and is never returned. */
+  public async listStudentSessions(
+    principal: AuthenticatedPrincipal,
+    studentUserId: string,
+  ): Promise<readonly StudentSessionSummary[]> {
+    requirePermission(requireRole(principal, "ADMIN"), "admin.conversations.read");
+    if (!isUuid(studentUserId)) throw new RequestDomainError("CONVERSATION_NOT_FOUND");
+    const rows = await this.database<
+      {
+        readonly id: string;
+        readonly user_agent_summary: string | null;
+        readonly created_at: Date | string;
+        readonly last_seen_at: Date | string;
+        readonly expires_at: Date | string;
+        readonly revoked_at: Date | string | null;
+        readonly revoked_reason: string | null;
+      }[]
+    >`
+      SELECT s.id, s.user_agent_summary, s.created_at, s.last_seen_at, s.expires_at,
+             s.revoked_at, s.revoked_reason
+      FROM user_sessions s
+      INNER JOIN user_roles r ON r.user_id = s.user_id AND r.role_code = 'STUDENT'
+      WHERE s.user_id = ${studentUserId}
+      ORDER BY s.created_at DESC
+      LIMIT 25
+    `;
+    return rows.map((row) => ({
+      id: row.id,
+      ...(row.user_agent_summary === null ? {} : { device: row.user_agent_summary }),
+      createdAt: toDate(row.created_at),
+      lastSeenAt: toDate(row.last_seen_at),
+      expiresAt: toDate(row.expires_at),
+      active: row.revoked_at === null && toDate(row.expires_at).getTime() > Date.now(),
+      ...(row.revoked_reason === null ? {} : { revokedReason: row.revoked_reason }),
+    }));
   }
 
   public async getConversation(

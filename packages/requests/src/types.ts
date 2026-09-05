@@ -752,6 +752,18 @@ export interface UnifiedPinnedMessage {
   readonly pinnedAt: Date;
 }
 
+/** A student's login session as an administrator sees it in the chat — device
+ *  summary and timing only; the IP is stored hashed and never surfaced. */
+export interface StudentSessionSummary {
+  readonly id: string;
+  readonly device?: string;
+  readonly createdAt: Date;
+  readonly lastSeenAt: Date;
+  readonly expiresAt: Date;
+  readonly active: boolean;
+  readonly revokedReason?: string;
+}
+
 export interface UnifiedMessageListResult {
   /** Items are chronological within the selected page. */
   readonly items: readonly UnifiedMessage[];

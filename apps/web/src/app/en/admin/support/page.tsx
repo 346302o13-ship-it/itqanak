@@ -14,6 +14,7 @@ interface PageProps {
     readonly q?: string | readonly string[];
     readonly request?: string | readonly string[];
     readonly student?: string | readonly string[];
+    readonly view?: string | readonly string[];
   }>;
 }
 
@@ -27,7 +28,8 @@ export default async function EnglishAdminSupportPage({ searchParams }: PageProp
     searchParams,
   ]);
   const search = typeof query.q === "string" ? query.q.trim().slice(0, 100) : undefined;
-  const assistantRequested = typeof query.assistant === "string";
+  const groupRequested = typeof query.view === "string" && query.view === "group";
+  const assistantRequested = typeof query.assistant === "string" && !groupRequested;
   const requestedStudent = typeof query.student === "string" ? query.student : undefined;
   const requestedConversation =
     typeof query.conversation === "string" ? query.conversation : undefined;
@@ -69,7 +71,7 @@ export default async function EnglishAdminSupportPage({ searchParams }: PageProp
         principal,
         requestedConversation,
       );
-    } else if (list.items[0] !== undefined) {
+    } else if (!groupRequested && list.items[0] !== undefined) {
       conversation = await runtime.unifiedConversations.openConversationForStudent(
         principal,
         list.items[0].studentUserId,
@@ -95,12 +97,16 @@ export default async function EnglishAdminSupportPage({ searchParams }: PageProp
       ? list.items
       : [conversation, ...list.items];
   const explicitlySelected =
-    assistantRequested || requestedStudent !== undefined || requestedConversation !== undefined;
+    assistantRequested ||
+    groupRequested ||
+    requestedStudent !== undefined ||
+    requestedConversation !== undefined;
   return (
     <AdminShell csrfToken={csrfToken} displayName={principal.displayName} locale="en" workspace>
       <UnifiedChatWorkspace
         assistantGreeting={`Hi ${principal.displayName}! Ask me about any student, request, or conversation, stale requests, or service health.`}
         assistantMode={assistantRequested}
+        groupMode={groupRequested}
         assistantPlaceholder="Type your question… e.g. find student Ahmed"
         conversations={conversationItems}
         csrfToken={csrfToken}

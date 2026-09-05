@@ -213,6 +213,7 @@ export {
   type UnifiedMessageListInput,
   type UnifiedMessageListResult,
   type UnifiedPinnedMessage,
+  type StudentSessionSummary,
   type UnifiedRequestSummary,
   type UserNotification,
 } from "./types.js";

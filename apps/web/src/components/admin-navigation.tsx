@@ -34,7 +34,7 @@ const itemsByLocale = {
       Icon: MessageIcon,
     },
     {
-      href: "/ar/admin/group",
+      href: "/ar/admin/support?view=group",
       label: "قروب الطلاب",
       mobileLabel: "القروب",
       Icon: BellIcon,
@@ -128,7 +128,7 @@ const itemsByLocale = {
       Icon: MessageIcon,
     },
     {
-      href: "/en/admin/group",
+      href: "/en/admin/support?view=group",
       label: "Students group",
       mobileLabel: "Group",
       Icon: BellIcon,
@@ -216,15 +216,23 @@ const itemsByLocale = {
  * separately and special-cases those two items before falling through to
  * the ordinary prefix matching.
  */
-function adminNavActive(pathname: string, href: string, assistantActive: boolean): boolean {
+function adminNavActive(
+  pathname: string,
+  href: string,
+  assistantActive: boolean,
+  groupActive: boolean,
+): boolean {
   const [hrefPath = href, hrefQuery] = href.split("?");
   if (hrefQuery?.includes("assistant") === true) {
     return pathname === hrefPath && assistantActive;
   }
+  if (hrefQuery?.includes("view=group") === true) {
+    return pathname === hrefPath && groupActive;
+  }
   if (
     (hrefPath === "/ar/admin/support" || hrefPath === "/en/admin/support") &&
     pathname === hrefPath &&
-    assistantActive
+    (assistantActive || groupActive)
   ) {
     return false;
   }
@@ -253,7 +261,9 @@ function adminNavActive(pathname: string, href: string, assistantActive: boolean
 
 export function AdminNavigation({ locale = "ar" }: Readonly<{ locale?: "ar" | "en" }>) {
   const pathname = usePathname();
-  const assistantActive = useSearchParams().has("assistant");
+  const params = useSearchParams();
+  const assistantActive = params.has("assistant");
+  const groupActive = params.get("view") === "group";
   const items = itemsByLocale[locale];
   const firstSystemHref = items.find((item) => "system" in item && item.system)?.href;
   return (
@@ -262,7 +272,7 @@ export function AdminNavigation({ locale = "ar" }: Readonly<{ locale?: "ar" | "e
       className="grid gap-1.5"
     >
       {items.map(({ href, label, Icon }) => {
-        const active = adminNavActive(pathname, href, assistantActive);
+        const active = adminNavActive(pathname, href, assistantActive, groupActive);
         return (
           <div className="contents" key={href}>
             {href === firstSystemHref ? (
@@ -305,12 +315,14 @@ export function AdminNavigation({ locale = "ar" }: Readonly<{ locale?: "ar" | "e
 
 export function AdminMobileNavigation({ locale = "ar" }: Readonly<{ locale?: "ar" | "en" }>) {
   const pathname = usePathname();
-  const assistantActive = useSearchParams().has("assistant");
+  const params = useSearchParams();
+  const assistantActive = params.has("assistant");
+  const groupActive = params.get("view") === "group";
   const items = itemsByLocale[locale].map(({ href, mobileLabel, Icon }) => ({
     href,
     label: mobileLabel,
     icon: Icon,
-    active: adminNavActive(pathname, href, assistantActive),
+    active: adminNavActive(pathname, href, assistantActive, groupActive),
   }));
   return (
     <MobileNavBar
