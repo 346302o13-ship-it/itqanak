@@ -133,6 +133,8 @@ function config(databaseUrl: string, storagePath: string): AppConfig {
       maxFileBytes: 20 * 1_024 * 1_024,
       maxFilesPerRequest: 10,
       maxTotalBytesPerRequest: 100 * 1_024 * 1_024,
+      maxConversationFilesPerDay: 60,
+      maxConversationBytesPerDay: 300 * 1_024 * 1_024,
     },
     fileScanning: {
       mode: "disabled",

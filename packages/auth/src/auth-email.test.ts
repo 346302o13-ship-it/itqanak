@@ -26,6 +26,8 @@ const config: AppConfig = {
     maxFileBytes: 20_971_520,
     maxFilesPerRequest: 10,
     maxTotalBytesPerRequest: 104_857_600,
+    maxConversationFilesPerDay: 60,
+    maxConversationBytesPerDay: 314_572_800,
   },
   fileScanning: {
     mode: "disabled",

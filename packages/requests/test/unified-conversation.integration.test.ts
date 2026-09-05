@@ -372,6 +372,8 @@ integrationDescribe.sequential("unified student conversation, quotes, and notifi
         maxFileBytes: 20_971_520,
         maxFilesPerRequest: 10,
         maxTotalBytesPerRequest: 104_857_600,
+        maxConversationFilesPerDay: 60,
+        maxConversationBytesPerDay: 314_572_800,
       },
     } as unknown as AppConfig;
     const storedKeys = new Set<string>();

@@ -606,10 +606,20 @@ export class UnifiedConversationAttachmentService {
           `;
     const fileCount = integer(rows[0]?.file_count ?? "0", "file count");
     const totalBytes = integer(rows[0]?.total_bytes ?? "0", "total bytes");
-    if (fileCount >= this.config.storage.maxFilesPerRequest) {
+    // A general support chat carries far more files than one service request
+    // should, so the non-request branch uses its own, roomier rolling-24h caps.
+    const fileCap =
+      requestId === undefined
+        ? this.config.storage.maxConversationFilesPerDay
+        : this.config.storage.maxFilesPerRequest;
+    const byteCap =
+      requestId === undefined
+        ? this.config.storage.maxConversationBytesPerDay
+        : this.config.storage.maxTotalBytesPerRequest;
+    if (fileCount >= fileCap) {
       throw new RequestDomainError("MAX_FILES_EXCEEDED");
     }
-    if (totalBytes + contentLength > this.config.storage.maxTotalBytesPerRequest) {
+    if (totalBytes + contentLength > byteCap) {
       throw new RequestDomainError("TOTAL_FILE_SIZE_EXCEEDED");
     }
   }

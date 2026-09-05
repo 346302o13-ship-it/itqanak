@@ -78,6 +78,11 @@ export interface AppConfig {
     readonly maxFileBytes: number;
     readonly maxFilesPerRequest: number;
     readonly maxTotalBytesPerRequest: number;
+    /** Rolling 24h cap on attachments in a general (non-request) conversation.
+     *  Kept separate from the per-request caps: a support chat legitimately
+     *  carries many more files than one service request should. */
+    readonly maxConversationFilesPerDay: number;
+    readonly maxConversationBytesPerDay: number;
     readonly s3?: {
       readonly endpoint?: string;
       readonly region: string;
@@ -155,6 +160,8 @@ export interface SafeAppConfig {
     readonly maxFileBytes: number;
     readonly maxFilesPerRequest: number;
     readonly maxTotalBytesPerRequest: number;
+    readonly maxConversationFilesPerDay: number;
+    readonly maxConversationBytesPerDay: number;
     readonly hasLocalPath: boolean;
     readonly hasS3Configuration: boolean;
   };
@@ -761,8 +768,31 @@ export function loadConfig(options: LoadConfigOptions = {}): AppConfig {
     environment.UPLOAD_MAX_TOTAL_BYTES_PER_REQUEST,
     100 * 1_024 * 1_024,
   );
+  const maxConversationFilesPerDay = parsePositiveInteger(
+    issues,
+    "UPLOAD_MAX_CONVERSATION_FILES_PER_DAY",
+    environment.UPLOAD_MAX_CONVERSATION_FILES_PER_DAY,
+    60,
+  );
+  const maxConversationBytesPerDay = parsePositiveInteger(
+    issues,
+    "UPLOAD_MAX_CONVERSATION_BYTES_PER_DAY",
+    environment.UPLOAD_MAX_CONVERSATION_BYTES_PER_DAY,
+    300 * 1_024 * 1_024,
+  );
   if (maxFilesPerRequest > 100) {
     pushIssue(issues, "UPLOAD_MAX_FILES_PER_REQUEST", "invalid", "must not exceed 100");
+  }
+  if (maxConversationFilesPerDay > 1_000) {
+    pushIssue(issues, "UPLOAD_MAX_CONVERSATION_FILES_PER_DAY", "invalid", "must not exceed 1000");
+  }
+  if (maxConversationBytesPerDay < maxFileBytes) {
+    pushIssue(
+      issues,
+      "UPLOAD_MAX_CONVERSATION_BYTES_PER_DAY",
+      "invalid",
+      "must be at least UPLOAD_MAX_FILE_BYTES",
+    );
   }
   if (maxTotalBytesPerRequest < maxFileBytes) {
     pushIssue(
@@ -921,6 +951,8 @@ export function loadConfig(options: LoadConfigOptions = {}): AppConfig {
       maxFileBytes,
       maxFilesPerRequest,
       maxTotalBytesPerRequest,
+      maxConversationFilesPerDay,
+      maxConversationBytesPerDay,
       ...(storageS3 === undefined ? {} : { s3: storageS3 }),
     },
     fileScanning: {
@@ -1042,6 +1074,8 @@ export function toSafeConfig(config: AppConfig): SafeAppConfig {
       maxFileBytes: config.storage.maxFileBytes,
       maxFilesPerRequest: config.storage.maxFilesPerRequest,
       maxTotalBytesPerRequest: config.storage.maxTotalBytesPerRequest,
+      maxConversationFilesPerDay: config.storage.maxConversationFilesPerDay,
+      maxConversationBytesPerDay: config.storage.maxConversationBytesPerDay,
       hasLocalPath: config.storage.localPath.length > 0,
       hasS3Configuration: config.storage.s3 !== undefined,
     },
