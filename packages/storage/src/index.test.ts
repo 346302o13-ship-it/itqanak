@@ -4,7 +4,7 @@ import { createServer, type Server } from "node:net";
 import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 import { Readable } from "node:stream";
-import { crc32 } from "node:zlib";
+import { crc32, deflateRawSync } from "node:zlib";
 
 import { S3Client } from "@aws-sdk/client-s3";
 
@@ -66,6 +66,80 @@ function createStoredZip(
   end.writeUInt32LE(centralDirectory.length, 12);
   end.writeUInt32LE(localOffset, 16);
   return Buffer.concat([...localParts, centralDirectory, end]);
+}
+
+/** A DEFLATE archive whose every central-directory entry carries a 0x0001
+ *  Zip64 extended-information field — what macOS Archive Utility emits even for
+ *  tiny files. `sentinelSizes` puts 0xFFFFFFFF in the 32-bit size fields so the
+ *  real values come only from the extra; `zip64Eocd` inserts a Zip64 EOCD
+ *  record + locator before the classic EOCD. */
+function createDeflatedZipWithZip64Extras(
+  entries: readonly { name: string; content: Buffer }[],
+  options: { sentinelSizes?: boolean; zip64Eocd?: boolean } = {},
+): Buffer {
+  const localParts: Buffer[] = [];
+  const centralParts: Buffer[] = [];
+  let localOffset = 0;
+  for (const entry of entries) {
+    const name = Buffer.from(entry.name, "ascii");
+    const deflated = deflateRawSync(entry.content);
+    const checksum = crc32(entry.content);
+    const local = Buffer.alloc(30);
+    local.writeUInt32LE(0x0403_4b50, 0);
+    local.writeUInt16LE(20, 4);
+    local.writeUInt16LE(8, 8);
+    local.writeUInt32LE(checksum, 14);
+    local.writeUInt32LE(deflated.length, 18);
+    local.writeUInt32LE(entry.content.length, 22);
+    local.writeUInt16LE(name.length, 26);
+    localParts.push(local, name, deflated);
+
+    const zip64Extra = Buffer.alloc(20);
+    zip64Extra.writeUInt16LE(0x0001, 0);
+    zip64Extra.writeUInt16LE(16, 2);
+    zip64Extra.writeBigUInt64LE(BigInt(entry.content.length), 4);
+    zip64Extra.writeBigUInt64LE(BigInt(deflated.length), 12);
+
+    const central = Buffer.alloc(46);
+    central.writeUInt32LE(0x0201_4b50, 0);
+    central.writeUInt16LE(20, 4);
+    central.writeUInt16LE(45, 6);
+    central.writeUInt16LE(8, 10);
+    central.writeUInt32LE(checksum, 16);
+    central.writeUInt32LE(options.sentinelSizes === true ? 0xffff_ffff : deflated.length, 20);
+    central.writeUInt32LE(options.sentinelSizes === true ? 0xffff_ffff : entry.content.length, 24);
+    central.writeUInt16LE(name.length, 28);
+    central.writeUInt16LE(zip64Extra.length, 30);
+    central.writeUInt32LE(localOffset, 42);
+    centralParts.push(central, name, zip64Extra);
+    localOffset += local.length + name.length + deflated.length;
+  }
+  const centralDirectory = Buffer.concat(centralParts);
+  const centralStart = localOffset;
+  const tailParts: Buffer[] = [];
+  if (options.zip64Eocd === true) {
+    const record = Buffer.alloc(56);
+    record.writeUInt32LE(0x0606_4b50, 0);
+    record.writeBigUInt64LE(44n, 4);
+    record.writeUInt16LE(45, 12);
+    record.writeUInt16LE(45, 14);
+    record.writeBigUInt64LE(BigInt(entries.length), 24);
+    record.writeBigUInt64LE(BigInt(entries.length), 32);
+    record.writeBigUInt64LE(BigInt(centralDirectory.length), 40);
+    record.writeBigUInt64LE(BigInt(centralStart), 48);
+    const locator = Buffer.alloc(20);
+    locator.writeUInt32LE(0x0706_4b50, 0);
+    locator.writeBigUInt64LE(BigInt(centralStart + centralDirectory.length), 8);
+    locator.writeUInt32LE(1, 16);
+    tailParts.push(record, locator);
+  }
+  const end = Buffer.alloc(22);
+  end.writeUInt32LE(0x0605_4b50, 0);
+  end.writeUInt16LE(entries.length, 8);
+  end.writeUInt16LE(entries.length, 10);
+  end.writeUInt32LE(centralDirectory.length, 12);
+  end.writeUInt32LE(centralStart, 16);
+  return Buffer.concat([...localParts, centralDirectory, ...tailParts, end]);
 }
 
 function createOoxmlArchive(family: "docx" | "pptx" | "xlsx"): Buffer {
@@ -474,6 +548,121 @@ describe("upload validation", () => {
         "MIME_MISMATCH",
       );
     }
+  });
+
+  it("accepts a ZIP whose central directory carries redundant Zip64 extra fields", () => {
+    const archive = createDeflatedZipWithZip64Extras([
+      { name: "notes.txt", content: Buffer.from("hello world\n") },
+      { name: "data/report.csv", content: Buffer.from("a,b\n1,2\n") },
+    ]);
+    expect(
+      validateUpload({
+        filename: "submission.zip",
+        declaredMimeType: "application/zip",
+        size: archive.length,
+        maxBytes: 65_536,
+        header: archive,
+        trailer: archive,
+      }),
+    ).toMatchObject({ normalizedExtension: ".zip", detectedMimeType: "application/zip" });
+  });
+
+  it("accepts a ZIP with a Zip64 EOCD record and locator before the classic EOCD", () => {
+    const archive = createDeflatedZipWithZip64Extras(
+      [{ name: "notes.txt", content: Buffer.from("hello world\n") }],
+      { zip64Eocd: true },
+    );
+    expect(
+      validateUpload({
+        filename: "submission.zip",
+        declaredMimeType: "application/zip",
+        size: archive.length,
+        maxBytes: 65_536,
+        header: archive,
+        trailer: archive,
+      }).normalizedExtension,
+    ).toBe(".zip");
+  });
+
+  it("resolves 0xFFFFFFFF sentinel sizes from the Zip64 extra", () => {
+    const archive = createDeflatedZipWithZip64Extras(
+      [
+        { name: "notes.txt", content: Buffer.from("hello world\n") },
+        { name: "big.log", content: Buffer.from("repeat me ".repeat(40_000)) },
+      ],
+      { sentinelSizes: true, zip64Eocd: true },
+    );
+    expect(
+      validateUpload({
+        filename: "submission.zip",
+        declaredMimeType: "application/zip",
+        size: archive.length,
+        maxBytes: 5_000_000,
+        header: archive,
+        trailer: archive,
+      }).normalizedExtension,
+    ).toBe(".zip");
+  });
+
+  it("accepts highly compressible text below DEFLATE's real expansion ceiling", () => {
+    const archive = createDeflatedZipWithZip64Extras([
+      { name: "big.log", content: Buffer.from("the quick brown fox\n".repeat(120_000)) },
+    ]);
+    expect(
+      validateUpload({
+        filename: "logs.zip",
+        declaredMimeType: "application/zip",
+        size: archive.length,
+        maxBytes: 8_000_000,
+        header: archive,
+        trailer: archive,
+      }).normalizedExtension,
+    ).toBe(".zip");
+  });
+
+  it("rejects a ZIP whose Zip64 extra inflates a sentinel size past the 100 MB ceiling", () => {
+    const archive = createDeflatedZipWithZip64Extras([
+      { name: "bomb.bin", content: Buffer.from("small input\n") },
+    ]);
+    const marker = archive.indexOf(Buffer.from([0x50, 0x4b, 0x01, 0x02]));
+    archive.writeUInt32LE(0xffff_ffff, marker + 24);
+    const nameLength = archive.readUInt16LE(marker + 28);
+    archive.writeBigUInt64LE(BigInt(500 * 1024 * 1024), marker + 46 + nameLength + 4);
+    expectStorageValidationCode(
+      () =>
+        validateUpload({
+          filename: "bomb.zip",
+          declaredMimeType: "application/zip",
+          size: archive.length,
+          maxBytes: 65_536,
+          header: archive,
+          trailer: archive,
+        }),
+      "MIME_MISMATCH",
+    );
+  });
+
+  it("rejects a ZIP with a non-Zip64 junk gap before the classic EOCD", () => {
+    const good = createDeflatedZipWithZip64Extras([
+      { name: "a.txt", content: Buffer.from("hello") },
+    ]);
+    const spliced = Buffer.concat([
+      good.subarray(0, good.length - 22),
+      Buffer.alloc(90),
+      good.subarray(good.length - 22),
+    ]);
+    expectStorageValidationCode(
+      () =>
+        validateUpload({
+          filename: "gap.zip",
+          declaredMimeType: "application/zip",
+          size: spliced.length,
+          maxBytes: 65_536,
+          header: spliced,
+          trailer: spliced,
+        }),
+      "MIME_MISMATCH",
+    );
   });
 });
 

@@ -14,6 +14,9 @@ const MAX_ZIP_ENTRIES = 4096;
 const ALLOWED_ZIP_FLAG_BITS = 0x0002 | 0x0004 | 0x0008 | 0x0800;
 const MAX_ZIP_CENTRAL_DIRECTORY_BYTES = 1_048_576;
 const MAX_ZIP_TOTAL_UNCOMPRESSED_BYTES = 100 * 1_024 * 1_024;
+// A raw DEFLATE stream cannot expand by more than 1032:1; a declared ratio
+// beyond that is a crafted or corrupt central directory, not compression.
+const MAX_DEFLATE_EXPANSION_RATIO = 1032;
 const MAX_CONTENT_TYPES_BYTES = 1_048_576;
 
 export const allowedUploadMimeTypes = [
@@ -221,21 +224,144 @@ function safeZipEntryName(bytes: Buffer): string | undefined {
   return name;
 }
 
-function hasValidNonZip64ExtraFields(extra: Buffer): boolean {
+type Zip64EntryOverrides = Readonly<{
+  uncompressedSize?: number;
+  compressedSize?: number;
+  localHeaderOffset?: number;
+}>;
+
+type Zip64Sentinels = Readonly<{
+  uncompressedSize: boolean;
+  compressedSize: boolean;
+  localHeaderOffset: boolean;
+}>;
+
+function readUInt64AsSafeInteger(buffer: Buffer, offset: number): number | undefined {
+  const value = buffer.readBigUInt64LE(offset);
+  return value <= BigInt(Number.MAX_SAFE_INTEGER) ? Number(value) : undefined;
+}
+
+/** Walk the extra-field TLV chunks of a central-directory or local-file header.
+ *  Unknown fields are tolerated (skipped). A Zip64 extended-information field
+ *  (0x0001) is parsed the way APPNOTE 4.5.3 / Info-ZIP / Python's zipfile do:
+ *  the 8-byte replacements appear *only* for the 32-bit fields carrying the
+ *  0xFFFFFFFF sentinel, in the fixed order uncompressed size, compressed size,
+ *  local-header offset. Writers such as macOS Archive Utility emit this field
+ *  even when nothing overflows 32 bits (no replacements to read, still
+ *  well-formed). Returns the resolved 64-bit values, or undefined if a chunk is
+ *  malformed or a needed replacement is missing or exceeds a safe integer. */
+function readZipExtraFields(
+  extra: Buffer,
+  sentinels: Zip64Sentinels,
+): Zip64EntryOverrides | undefined {
+  const overrides: {
+    uncompressedSize?: number;
+    compressedSize?: number;
+    localHeaderOffset?: number;
+  } = {};
   let cursor = 0;
   while (cursor < extra.length) {
     if (cursor + 4 > extra.length) {
-      return false;
+      return undefined;
     }
     const identifier = extra.readUInt16LE(cursor);
     const size = extra.readUInt16LE(cursor + 2);
     cursor += 4;
-    if (identifier === 0x0001 || cursor + size > extra.length) {
-      return false;
+    if (cursor + size > extra.length) {
+      return undefined;
+    }
+    if (identifier === 0x0001) {
+      let field = cursor;
+      const fieldEnd = cursor + size;
+      if (sentinels.uncompressedSize) {
+        if (field + 8 > fieldEnd) return undefined;
+        const resolved = readUInt64AsSafeInteger(extra, field);
+        if (resolved === undefined) return undefined;
+        overrides.uncompressedSize = resolved;
+        field += 8;
+      }
+      if (sentinels.compressedSize) {
+        if (field + 8 > fieldEnd) return undefined;
+        const resolved = readUInt64AsSafeInteger(extra, field);
+        if (resolved === undefined) return undefined;
+        overrides.compressedSize = resolved;
+        field += 8;
+      }
+      if (sentinels.localHeaderOffset) {
+        if (field + 8 > fieldEnd) return undefined;
+        const resolved = readUInt64AsSafeInteger(extra, field);
+        if (resolved === undefined) return undefined;
+        overrides.localHeaderOffset = resolved;
+      }
     }
     cursor += size;
   }
-  return cursor === extra.length;
+  return cursor === extra.length ? overrides : undefined;
+}
+
+const NO_ZIP64_SENTINELS: Zip64Sentinels = {
+  uncompressedSize: false,
+  compressedSize: false,
+  localHeaderOffset: false,
+};
+
+/** macOS Archive Utility (and other writers) place a Zip64 end-of-central-
+ *  directory record + locator between the central directory and the classic
+ *  EOCD even for tiny archives. Accept that gap only when it is exactly that
+ *  structure and its entry count / directory size / directory offset match the
+ *  classic record already parsed. `gapStart` and `eocdOffset` are trailer-
+ *  relative; `recordAbsoluteOffset` is the whole-file offset the locator names. */
+function zip64EocdGapIsWellFormed(
+  trailer: Buffer,
+  gapStart: number,
+  eocdOffset: number,
+  recordAbsoluteOffset: number,
+  entryCount: number,
+  centralDirectorySize: number,
+  centralDirectoryOffset: number,
+): boolean {
+  if (gapStart < 0 || gapStart + 56 > trailer.length || gapStart + 56 > eocdOffset) {
+    return false;
+  }
+  if (trailer.readUInt32LE(gapStart) !== 0x0606_4b50) {
+    return false;
+  }
+  const recordBodySize = trailer.readBigUInt64LE(gapStart + 4);
+  // 44 = the fixed portion after the 12-byte prefix; bound the extensible sector.
+  if (recordBodySize < 44n || recordBodySize > 65_536n) {
+    return false;
+  }
+  const locatorStart = gapStart + 12 + Number(recordBodySize);
+  if (locatorStart + 20 !== eocdOffset || locatorStart + 20 > trailer.length) {
+    return false;
+  }
+  const recordDisk = trailer.readUInt32LE(gapStart + 16);
+  const recordCentralDirectoryDisk = trailer.readUInt32LE(gapStart + 20);
+  const recordEntriesOnDisk = trailer.readBigUInt64LE(gapStart + 24);
+  const recordTotalEntries = trailer.readBigUInt64LE(gapStart + 32);
+  const recordCentralDirectorySize = trailer.readBigUInt64LE(gapStart + 40);
+  const recordCentralDirectoryOffset = trailer.readBigUInt64LE(gapStart + 48);
+  if (
+    recordDisk !== 0 ||
+    recordCentralDirectoryDisk !== 0 ||
+    recordEntriesOnDisk !== BigInt(entryCount) ||
+    recordTotalEntries !== BigInt(entryCount) ||
+    recordCentralDirectorySize !== BigInt(centralDirectorySize) ||
+    recordCentralDirectoryOffset !== BigInt(centralDirectoryOffset)
+  ) {
+    return false;
+  }
+  if (trailer.readUInt32LE(locatorStart) !== 0x0706_4b50) {
+    return false;
+  }
+  const locatorDisk = trailer.readUInt32LE(locatorStart + 4);
+  const locatorRecordOffset = trailer.readBigUInt64LE(locatorStart + 8);
+  const locatorTotalDisks = trailer.readUInt32LE(locatorStart + 16);
+  return (
+    locatorDisk === 0 &&
+    locatorTotalDisks === 1 &&
+    locatorRecordOffset === BigInt(recordAbsoluteOffset)
+  );
 }
 
 function parseCentralDirectory(
@@ -270,8 +396,27 @@ function parseCentralDirectory(
     entryCount === 0xffff ||
     centralDirectorySize > MAX_ZIP_CENTRAL_DIRECTORY_BYTES ||
     centralDirectorySize === 0xffff_ffff ||
-    centralDirectoryOffset === 0xffff_ffff ||
-    centralDirectoryOffset + centralDirectorySize !== trailerStart + endOffset
+    centralDirectoryOffset === 0xffff_ffff
+  ) {
+    return undefined;
+  }
+
+  const centralDirectoryEnd = centralDirectoryOffset + centralDirectorySize;
+  const classicEocdAbsolute = trailerStart + endOffset;
+  if (centralDirectoryEnd > classicEocdAbsolute) {
+    return undefined;
+  }
+  if (
+    centralDirectoryEnd < classicEocdAbsolute &&
+    !zip64EocdGapIsWellFormed(
+      trailer,
+      centralDirectoryEnd - trailerStart,
+      endOffset,
+      centralDirectoryEnd,
+      entryCount,
+      centralDirectorySize,
+      centralDirectoryOffset,
+    )
   ) {
     return undefined;
   }
@@ -295,23 +440,19 @@ function parseCentralDirectory(
     const flags = trailer.readUInt16LE(cursor + 8);
     const compressionMethod = trailer.readUInt16LE(cursor + 10);
     const checksumCrc32 = trailer.readUInt32LE(cursor + 16);
-    const compressedSize = trailer.readUInt32LE(cursor + 20);
-    const uncompressedSize = trailer.readUInt32LE(cursor + 24);
+    const rawCompressedSize = trailer.readUInt32LE(cursor + 20);
+    const rawUncompressedSize = trailer.readUInt32LE(cursor + 24);
     const filenameLength = trailer.readUInt16LE(cursor + 28);
     const extraLength = trailer.readUInt16LE(cursor + 30);
     const commentLength = trailer.readUInt16LE(cursor + 32);
     const diskStart = trailer.readUInt16LE(cursor + 34);
     const externalAttributes = trailer.readUInt32LE(cursor + 38);
-    const localHeaderOffset = trailer.readUInt32LE(cursor + 42);
+    const rawLocalHeaderOffset = trailer.readUInt32LE(cursor + 42);
     const entryEnd = cursor + 46 + filenameLength + extraLength + commentLength;
     if (
       entryEnd > centralEnd ||
       (flags & ~ALLOWED_ZIP_FLAG_BITS) !== 0 ||
       (compressionMethod !== 0 && compressionMethod !== 8) ||
-      compressedSize === 0xffff_ffff ||
-      uncompressedSize === 0xffff_ffff ||
-      localHeaderOffset === 0xffff_ffff ||
-      localHeaderOffset >= centralDirectoryOffset ||
       diskStart !== 0
     ) {
       return undefined;
@@ -325,10 +466,27 @@ function parseCentralDirectory(
       cursor + 46 + filenameLength,
       cursor + 46 + filenameLength + extraLength,
     );
+    const sentinels: Zip64Sentinels = {
+      uncompressedSize: rawUncompressedSize === 0xffff_ffff,
+      compressedSize: rawCompressedSize === 0xffff_ffff,
+      localHeaderOffset: rawLocalHeaderOffset === 0xffff_ffff,
+    };
+    const zip64 = readZipExtraFields(extra, sentinels);
+    if (name === undefined || normalizedNames.has(name.toLowerCase()) || zip64 === undefined) {
+      return undefined;
+    }
+    const compressedSize = sentinels.compressedSize ? zip64.compressedSize : rawCompressedSize;
+    const uncompressedSize = sentinels.uncompressedSize
+      ? zip64.uncompressedSize
+      : rawUncompressedSize;
+    const localHeaderOffset = sentinels.localHeaderOffset
+      ? zip64.localHeaderOffset
+      : rawLocalHeaderOffset;
     if (
-      name === undefined ||
-      normalizedNames.has(name.toLowerCase()) ||
-      !hasValidNonZip64ExtraFields(extra)
+      compressedSize === undefined ||
+      uncompressedSize === undefined ||
+      localHeaderOffset === undefined ||
+      localHeaderOffset >= centralDirectoryOffset
     ) {
       return undefined;
     }
@@ -354,7 +512,10 @@ function parseCentralDirectory(
     });
     cursor = entryEnd;
   }
-  const expansionAllowance = Math.max(totalCompressedBytes * 200, 1_048_576);
+  const expansionAllowance = Math.max(
+    totalCompressedBytes * MAX_DEFLATE_EXPANSION_RATIO,
+    1_048_576,
+  );
   return cursor === centralEnd && totalUncompressedBytes <= expansionAllowance
     ? entries
     : undefined;
@@ -381,7 +542,7 @@ function readBoundedZipEntry(entry: ZipEntry, prefix: Buffer): Buffer | undefine
     (localFlags & ~0x0008) !== (entry.flags & ~0x0008) ||
     localMethod !== entry.compressionMethod ||
     dataEnd > prefix.length ||
-    !hasValidNonZip64ExtraFields(prefix.subarray(extraStart, dataStart)) ||
+    readZipExtraFields(prefix.subarray(extraStart, dataStart), NO_ZIP64_SENTINELS) === undefined ||
     prefix.subarray(filenameStart, filenameStart + filenameLength).toString("ascii") !== entry.name
   ) {
     return undefined;
