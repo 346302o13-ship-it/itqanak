@@ -50,6 +50,7 @@ import { fillQuickReply, quickReplies } from "@/lib/quick-replies";
 import type { AssistantDisplayMessage } from "@/lib/assistant-display";
 
 import { ImageLightbox, type LightboxImage } from "./image-lightbox";
+import { LinkPreview, firstUrl } from "./link-preview";
 import { PaymentReceiptUploader } from "./payment-receipt-uploader";
 import { VoiceMessageBubble } from "./voice-message-bubble";
 
@@ -5629,9 +5630,17 @@ export function UnifiedChatWorkspace({
                               </div>
                             </div>
                           ) : message.contentType === "TEXT" ? (
-                            <p className="whitespace-pre-wrap break-words text-sm leading-7">
-                              <bdi dir="auto">{message.body}</bdi>
-                            </p>
+                            <>
+                              <p className="whitespace-pre-wrap break-words text-sm leading-7">
+                                <bdi dir="auto">{message.body}</bdi>
+                              </p>
+                              {(() => {
+                                const link = firstUrl(message.body);
+                                return link === undefined ? null : (
+                                  <LinkPreview locale={locale} url={link} />
+                                );
+                              })()}
+                            </>
                           ) : null}
                           {(message.reactions?.length ?? 0) > 0 &&
                           message.deletedAt === undefined ? (
