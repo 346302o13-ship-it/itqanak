@@ -2023,6 +2023,29 @@ export function UnifiedChatWorkspace({
     if (restoreFocus) window.requestAnimationFrame(() => contactsTriggerRef.current?.focus());
   }, []);
 
+  // Swipe the mobile conversation drawer toward its own edge to dismiss it,
+  // WhatsApp-style. Only a clearly horizontal drag counts, so a vertical
+  // scroll of the list is never mistaken for a dismiss.
+  const contactsSwipeStart = useRef<{ x: number; y: number } | null>(null);
+  const contactsSwipeHandlers = {
+    onPointerDown: (event: ReactPointerEvent) => {
+      if (event.pointerType === "mouse") return;
+      contactsSwipeStart.current = { x: event.clientX, y: event.clientY };
+    },
+    onPointerUp: (event: ReactPointerEvent) => {
+      const start = contactsSwipeStart.current;
+      contactsSwipeStart.current = null;
+      if (start === null) return;
+      const dx = event.clientX - start.x;
+      const dy = event.clientY - start.y;
+      if (Math.abs(dx) < 55 || Math.abs(dx) < Math.abs(dy) * 1.4) return;
+      if (english ? dx < 0 : dx > 0) closeContacts();
+    },
+    onPointerCancel: () => {
+      contactsSwipeStart.current = null;
+    },
+  };
+
   // WhatsApp rule: the shell's bottom tab bar shows while the mobile
   // conversation list is open and hides once a chat is showing. Only admin
   // has a browsable list here; the effect cleans up on unmount so leaving
@@ -4445,6 +4468,7 @@ export function UnifiedChatWorkspace({
               ref={contactsPanelRef}
               role={contactsOpen ? "dialog" : undefined}
               tabIndex={contactsOpen ? -1 : undefined}
+              {...contactsSwipeHandlers}
             >
               <ConversationList
                 assistantActive
@@ -4710,6 +4734,7 @@ export function UnifiedChatWorkspace({
             ref={contactsPanelRef}
             role={contactsOpen ? "dialog" : undefined}
             tabIndex={contactsOpen ? -1 : undefined}
+            {...contactsSwipeHandlers}
           >
             <ConversationList
               conversations={contactItems}
