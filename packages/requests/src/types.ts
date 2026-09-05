@@ -742,6 +742,16 @@ export interface UnifiedMessageListInput {
   readonly revisedAfter?: string;
 }
 
+export interface UnifiedPinnedMessage {
+  readonly id: string;
+  readonly senderType: ChatSenderType;
+  readonly contentType: ChatContentType;
+  /** Current text (empty for a deleted/attachment-only message). */
+  readonly body: string;
+  readonly sentAt: Date;
+  readonly pinnedAt: Date;
+}
+
 export interface UnifiedMessageListResult {
   /** Items are chronological within the selected page. */
   readonly items: readonly UnifiedMessage[];

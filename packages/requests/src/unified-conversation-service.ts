@@ -37,6 +37,7 @@ import type {
   UnifiedMessage,
   UnifiedMessageListInput,
   UnifiedMessageListResult,
+  UnifiedPinnedMessage,
   UnifiedRequestSummary,
 } from "./types.js";
 import { normalizeUnifiedEditBody, normalizeUnifiedMessageInput } from "./unified-validation.js";
@@ -1355,6 +1356,94 @@ export class UnifiedConversationService {
     context: RequestAuditContext = {},
   ): Promise<MarkConversationResult> {
     return this.markConversation(principal, conversationId, "READ", context);
+  }
+
+  public async listPinnedMessages(
+    principal: AuthenticatedPrincipal,
+    conversationId: string,
+  ): Promise<readonly UnifiedPinnedMessage[]> {
+    const access = await this.resolveConversation(this.database, principal, conversationId, "read");
+    const rows = await this.database<
+      {
+        readonly id: string;
+        readonly sender_type: string;
+        readonly content_type: string;
+        readonly body: string;
+        readonly revision_action: string | null;
+        readonly revision_body: string | null;
+        readonly archived_at: Date | string | null;
+        readonly sent_at: Date | string;
+        readonly pinned_at: Date | string;
+      }[]
+    >`
+      SELECT messages.id, messages.sender_type, messages.content_type, messages.body,
+             messages.archived_at, messages.sent_at, pins.pinned_at,
+             revision.action AS revision_action, revision.new_body AS revision_body
+      FROM support_pinned_messages AS pins
+      INNER JOIN support_messages AS messages ON messages.id = pins.message_id
+      LEFT JOIN LATERAL (
+        SELECT action, new_body FROM support_message_revisions
+        WHERE support_message_revisions.message_id = messages.id
+        ORDER BY created_at DESC, id DESC LIMIT 1
+      ) AS revision ON TRUE
+      WHERE pins.conversation_id = ${access.row.id}
+      ORDER BY pins.pinned_at DESC, messages.id DESC
+    `;
+    return rows.map((row) => {
+      const deleted = row.revision_action === "DELETE";
+      const edited = row.revision_action === "EDIT";
+      const suppressed = deleted || row.archived_at !== null;
+      return {
+        id: row.id,
+        senderType: toSenderType(row.sender_type),
+        contentType: toContentType(row.content_type),
+        body: suppressed ? "" : edited ? (row.revision_body ?? row.body) : row.body,
+        sentAt: toDate(row.sent_at),
+        pinnedAt: toDate(row.pinned_at),
+      };
+    });
+  }
+
+  public async pinMessage(
+    principal: AuthenticatedPrincipal,
+    conversationId: string,
+    messageId: string,
+  ): Promise<void> {
+    if (!isUuid(messageId)) throw new RequestDomainError("MESSAGE_NOT_FOUND");
+    await this.database.begin(async (transaction) => {
+      const tx = transaction as DatabaseClient;
+      const access = await this.resolveConversation(tx, principal, conversationId, "read");
+      const [message] = await tx<{ id: string }[]>`
+        SELECT id FROM support_messages
+        WHERE id = ${messageId} AND conversation_id = ${access.row.id}
+      `;
+      if (message === undefined) throw new RequestDomainError("MESSAGE_NOT_FOUND");
+      const [countRow] = await tx<{ count: string }[]>`
+        SELECT count(*)::text AS count FROM support_pinned_messages
+        WHERE conversation_id = ${access.row.id}
+      `;
+      if (countRow !== undefined && Number(countRow.count) >= 5) {
+        throw new RequestDomainError("PINNED_MESSAGE_LIMIT");
+      }
+      await tx`
+        INSERT INTO support_pinned_messages (conversation_id, message_id, pinned_by_user_id)
+        VALUES (${access.row.id}, ${messageId}, ${principal.userId})
+        ON CONFLICT (conversation_id, message_id) DO NOTHING
+      `;
+    });
+  }
+
+  public async unpinMessage(
+    principal: AuthenticatedPrincipal,
+    conversationId: string,
+    messageId: string,
+  ): Promise<void> {
+    if (!isUuid(messageId)) throw new RequestDomainError("MESSAGE_NOT_FOUND");
+    const access = await this.resolveConversation(this.database, principal, conversationId, "read");
+    await this.database`
+      DELETE FROM support_pinned_messages
+      WHERE conversation_id = ${access.row.id} AND message_id = ${messageId}
+    `;
   }
 
   public async readMessage(database: DatabaseClient, messageId: string): Promise<UnifiedMessage> {

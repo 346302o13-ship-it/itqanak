@@ -192,6 +192,7 @@ export {
   type UnifiedMessageReply,
   type UnifiedMessageListInput,
   type UnifiedMessageListResult,
+  type UnifiedPinnedMessage,
   type UnifiedRequestSummary,
   type UserNotification,
 } from "./types.js";

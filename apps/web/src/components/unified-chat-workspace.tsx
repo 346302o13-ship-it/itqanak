@@ -2002,6 +2002,9 @@ export function UnifiedChatWorkspace({
   const [aiDrafting, setAiDrafting] = useState(false);
   const [customReplies, setCustomReplies] = useState<readonly CustomQuickReply[]>([]);
   const [quickRepliesManagerOpen, setQuickRepliesManagerOpen] = useState(false);
+  const [pinnedMessages, setPinnedMessages] = useState<
+    readonly { id: string; body: string; contentType: string; senderType: string }[]
+  >([]);
   const [lightbox, setLightbox] = useState<{
     readonly images: readonly LightboxImage[];
     readonly index: number;
@@ -2201,6 +2204,60 @@ export function UnifiedChatWorkspace({
       : conversation === undefined
         ? undefined
         : `/api/admin/conversations/${encodeURIComponent(conversation.studentUserId)}`;
+
+  // Pinned messages (migration 042) — a small strip at the top of the thread,
+  // shared between both parties.
+  useEffect(() => {
+    if (apiBase === undefined) return;
+    let alive = true;
+    void (async () => {
+      try {
+        const response = await fetch(`${apiBase}/pins`, { credentials: "same-origin" });
+        if (!response.ok) return;
+        const payload = (await response.json()) as { items?: typeof pinnedMessages };
+        if (alive && Array.isArray(payload.items)) setPinnedMessages(payload.items);
+      } catch {
+        // No strip if it can't load — non-critical.
+      }
+    })();
+    return () => {
+      alive = false;
+    };
+  }, [apiBase]);
+
+  const togglePin = useCallback(
+    async (messageId: string, pin: boolean): Promise<void> => {
+      if (apiBase === undefined || csrfToken === undefined) return;
+      try {
+        const response = await fetch(`${apiBase}/pins`, {
+          method: "POST",
+          credentials: "same-origin",
+          headers: { "Content-Type": "application/x-www-form-urlencoded" },
+          body: new URLSearchParams({ csrfToken, messageId, action: pin ? "pin" : "unpin" }),
+        });
+        const payload = (await response.json().catch(() => ({}))) as {
+          items?: typeof pinnedMessages;
+          error?: string;
+        };
+        if (!response.ok) {
+          setNotice(
+            payload.error === "PINNED_MESSAGE_LIMIT"
+              ? english
+                ? "You can pin up to 5 messages."
+                : "يمكن تثبيت 5 رسائل كحد أقصى."
+              : english
+                ? "Could not update the pin."
+                : "تعذّر تحديث التثبيت.",
+          );
+          return;
+        }
+        if (Array.isArray(payload.items)) setPinnedMessages(payload.items);
+      } catch {
+        setNotice(english ? "Could not update the pin." : "تعذّر تحديث التثبيت.");
+      }
+    },
+    [apiBase, csrfToken, english],
+  );
 
   // Tell the other side "…is typing", WhatsApp-style. Throttled to one ping
   // every 2.5s; the receiver clears the indicator on its own after ~6s.
@@ -5018,6 +5075,40 @@ export function UnifiedChatWorkspace({
           requests={requests}
         />
 
+        {pinnedMessages.length > 0 ? (
+          <div className="flex shrink-0 gap-2 overflow-x-auto border-b border-[var(--itq-color-border)] bg-[var(--itq-color-surface)] px-3 py-2 sm:px-5">
+            <span className="grid size-6 shrink-0 place-items-center rounded-full bg-[var(--itq-color-brand-50)] text-[var(--itq-color-brand-strong)]">
+              <ChevronIcon className="size-3.5 -rotate-45" />
+            </span>
+            {pinnedMessages.map((pin) => (
+              <span
+                className="flex shrink-0 items-center gap-1 rounded-full bg-[var(--itq-color-surface-soft)] py-1 pe-1 ps-2.5 text-[11px] font-bold"
+                key={pin.id}
+              >
+                <button
+                  className="max-w-[12rem] truncate text-start text-[var(--itq-color-ink)]"
+                  onClick={() => scrollToMessage(pin.id)}
+                  type="button"
+                >
+                  {pin.contentType === "TEXT" && pin.body.length > 0
+                    ? pin.body
+                    : english
+                      ? "Attachment"
+                      : "مرفق"}
+                </button>
+                <button
+                  aria-label={english ? "Unpin" : "إلغاء التثبيت"}
+                  className="grid size-4 shrink-0 place-items-center rounded-full text-[var(--itq-color-muted)] hover:bg-[var(--itq-color-border)]"
+                  onClick={() => void togglePin(pin.id, false)}
+                  type="button"
+                >
+                  <CloseIcon className="size-3" />
+                </button>
+              </span>
+            ))}
+          </div>
+        ) : null}
+
         {createRequestOpen && mode === "admin" && services.length > 0 ? (
           <form
             className="flex shrink-0 flex-wrap items-center gap-2 border-b border-[var(--itq-color-border)] bg-[var(--itq-color-brand-50)] px-3 py-2 sm:px-5"
@@ -5499,6 +5590,29 @@ export function UnifiedChatWorkspace({
                                             {english ? "Copy" : "نسخ"}
                                           </button>
                                         ) : null}
+                                        {(() => {
+                                          const isPinned = pinnedMessages.some(
+                                            (pin) => pin.id === message.id,
+                                          );
+                                          return (
+                                            <button
+                                              className="flex w-full items-center rounded-lg px-3 py-2 hover:bg-[var(--itq-color-surface-soft)]"
+                                              onClick={() => {
+                                                void togglePin(message.id, !isPinned);
+                                                setReactionPickerFor(undefined);
+                                              }}
+                                              type="button"
+                                            >
+                                              {isPinned
+                                                ? english
+                                                  ? "Unpin"
+                                                  : "إلغاء التثبيت"
+                                                : english
+                                                  ? "Pin"
+                                                  : "تثبيت"}
+                                            </button>
+                                          );
+                                        })()}
                                         {mine ? (
                                           <button
                                             className="flex w-full items-center rounded-lg px-3 py-2 hover:bg-[var(--itq-color-surface-soft)]"

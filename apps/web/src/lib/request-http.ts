@@ -48,6 +48,7 @@ const statusByCode: Readonly<Record<RequestDomainError["code"], number>> = {
   INVALID_QUICK_REPLY: 422,
   QUICK_REPLY_LIMIT: 409,
   QUICK_REPLY_NOT_FOUND: 404,
+  PINNED_MESSAGE_LIMIT: 409,
 };
 
 const messageByStatus: Readonly<Record<number, string>> = {

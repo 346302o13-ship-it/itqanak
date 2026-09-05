@@ -42,6 +42,7 @@ export const requestErrorCodes = [
   "INVALID_QUICK_REPLY",
   "QUICK_REPLY_LIMIT",
   "QUICK_REPLY_NOT_FOUND",
+  "PINNED_MESSAGE_LIMIT",
 ] as const;
 
 export type RequestErrorCode = (typeof requestErrorCodes)[number];
