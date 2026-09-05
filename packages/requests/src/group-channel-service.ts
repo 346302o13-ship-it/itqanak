@@ -115,8 +115,7 @@ export class GroupChannelService {
         SELECT
           m.id, m.sender_type, m.sender_user_id, m.content_type,
           CASE WHEN m.deleted_at IS NULL THEN m.body ELSE '' END AS body,
-          m.sent_at, m.deleted_at,
-          CASE WHEN ${admin} THEN author.display_name ELSE NULL END AS author_name
+          m.sent_at, m.deleted_at, author.display_name AS author_name
         FROM group_channel_messages m
         LEFT JOIN users author ON author.id = m.sender_user_id
         ORDER BY m.sent_at DESC, m.id DESC
@@ -127,11 +126,13 @@ export class GroupChannelService {
       `,
     ]);
     const ordered = [...rows].reverse();
+    // The real author name is exposed only to an administrator — students never
+    // learn who posted another student's message.
     const messages: GroupChannelMessage[] = ordered.map((row) => ({
       id: row.id,
       senderType: row.sender_type,
       authoredByMe: row.sender_user_id === principal.userId,
-      ...(row.author_name === null ? {} : { authorName: row.author_name }),
+      ...(admin && row.author_name !== null ? { authorName: row.author_name } : {}),
       contentType: row.content_type,
       body: row.body,
       sentAt: toDate(row.sent_at).toISOString(),
