@@ -11,7 +11,7 @@ import {
 } from "@/lib/assistant-admin";
 import { assertProtectedAssistantRequest } from "@/lib/assistant-http";
 import { enforceAssistantRateLimit, assistantRateLimitRules } from "@/lib/assistant-rate-limit";
-import { geminiClient } from "@/lib/assistant-runtime";
+import { assistantLogger, geminiClient } from "@/lib/assistant-runtime";
 import { getRequestId } from "@/lib/request-id";
 import { createStudentRequestRuntime } from "@/lib/request-runtime";
 import { principalForRequest } from "@/lib/route-principal";
@@ -55,9 +55,10 @@ export async function POST(request: NextRequest) {
         history: priorHistory,
         tools: adminTools,
         toolExecutor,
-        maxOutputTokens: 500,
+        maxOutputTokens: 1536,
         maxIterations: 8,
         isAllowedActionHref: isAllowedAdminActionHref,
+        logger: assistantLogger(),
       });
       const newTurns = result.history.slice(priorHistory.length);
       await runtime.assistantHistory.append(principal.userId, newTurns);

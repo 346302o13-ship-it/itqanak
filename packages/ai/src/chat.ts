@@ -1,3 +1,5 @@
+import type { Logger } from "@itqanak/observability";
+
 import type {
   GeminiClient,
   GeminiContent,
@@ -67,11 +69,22 @@ export interface ChatOptions {
   readonly userMessage: string;
   readonly tools?: readonly GeminiFunctionDeclaration[];
   readonly toolExecutor?: ToolExecutor;
+  /** Ceiling on the model's own output for one turn — thought tokens plus the
+   *  visible answer. A "flash" thinking model spends 150-500 tokens reasoning
+   *  before it writes anything, so this must stay well clear of that or the
+   *  `present_answer` call comes back empty. Default 2048. */
   readonly maxOutputTokens?: number;
   readonly temperature?: number;
+  /** Upper bound on reasoning tokens for one turn. Default 512 — enough for
+   *  the lookups these surfaces do, low enough to leave room for the answer. */
+  readonly thinkingBudget?: number;
   /** Tool-call rounds before the model is forced to answer immediately.
    *  Default 6. */
   readonly maxIterations?: number;
+  /** Optional — records why a turn produced no usable answer (a safety block,
+   *  a MAX_TOKENS cut-off) so a spike of fallbacks is diagnosable. Only `warn`
+   *  is used. */
+  readonly logger?: Pick<Logger, "warn">;
   /** Tests a present_answer action's `href` before it is allowed through —
    *  defaults to any internal /ar or /en path plus a wa.me link. A
    *  signed-in surface (student/admin) should pass a tighter test so the
@@ -158,13 +171,21 @@ export async function runChat(client: GeminiClient, options: ChatOptions): Promi
         },
       },
       generationConfig: {
-        maxOutputTokens: options.maxOutputTokens ?? 500,
+        maxOutputTokens: options.maxOutputTokens ?? 2048,
+        thinkingConfig: { thinkingBudget: options.thinkingBudget ?? 512 },
         ...(options.temperature === undefined ? {} : { temperature: options.temperature }),
       },
     });
 
-    const parts = response.candidates?.[0]?.content?.parts ?? [];
+    const candidate = response.candidates?.[0];
+    const parts = candidate?.content?.parts ?? [];
     if (parts.length === 0) {
+      options.logger?.warn("chat_empty_response", {
+        iteration,
+        finishReason: candidate?.finishReason ?? "unknown",
+        thoughtsTokenCount: response.usageMetadata?.thoughtsTokenCount ?? 0,
+        maxOutputTokens: options.maxOutputTokens ?? 2048,
+      });
       return { text: FALLBACK_TEXT, actions: [], history };
     }
     history = [...history, { role: "model", parts }];

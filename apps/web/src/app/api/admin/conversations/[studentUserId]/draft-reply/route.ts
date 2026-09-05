@@ -5,7 +5,7 @@ import { NextResponse } from "next/server";
 
 import { assertProtectedForm } from "@/lib/auth-runtime";
 import { enforceAssistantRateLimit, assistantRateLimitRules } from "@/lib/assistant-rate-limit";
-import { geminiClient } from "@/lib/assistant-runtime";
+import { assistantLogger, geminiClient } from "@/lib/assistant-runtime";
 import { getRequestId } from "@/lib/request-id";
 import { createStudentRequestRuntime } from "@/lib/request-runtime";
 import { principalForRequest } from "@/lib/route-principal";
@@ -90,8 +90,9 @@ export async function POST(request: NextRequest, context: RouteContext) {
       const result = await runChat(client, {
         systemInstruction: SYSTEM_INSTRUCTION,
         userMessage: `Conversation so far:\n${lines}\n\nWrite the agent's next reply.`,
-        maxOutputTokens: 300,
+        maxOutputTokens: 1024,
         maxIterations: 1,
+        logger: assistantLogger(),
       });
       return NextResponse.json(
         { text: result.text },

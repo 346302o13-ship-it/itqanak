@@ -10,7 +10,7 @@ import {
   assistantRateLimitRules,
 } from "@/lib/assistant-rate-limit";
 import { buildVisitorSystemInstruction } from "@/lib/assistant-visitor";
-import { geminiClient } from "@/lib/assistant-runtime";
+import { assistantLogger, geminiClient } from "@/lib/assistant-runtime";
 import { getRequestId } from "@/lib/request-id";
 import { createStudentRequestRuntime } from "@/lib/request-runtime";
 
@@ -37,7 +37,8 @@ export async function POST(request: NextRequest) {
         systemInstruction,
         userMessage: body.message,
         history: body.history,
-        maxOutputTokens: 350,
+        maxOutputTokens: 1536,
+        logger: assistantLogger(),
       });
       return NextResponse.json(
         { text: result.text, actions: result.actions, history: result.history },

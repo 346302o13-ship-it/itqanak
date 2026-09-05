@@ -6,7 +6,7 @@ import { NextResponse } from "next/server";
 
 import { assertProtectedAssistantRequest } from "@/lib/assistant-http";
 import { enforceAssistantRateLimit, assistantRateLimitRules } from "@/lib/assistant-rate-limit";
-import { geminiClient } from "@/lib/assistant-runtime";
+import { assistantLogger, geminiClient } from "@/lib/assistant-runtime";
 import {
   buildStudentSystemInstruction,
   createStudentToolExecutor,
@@ -56,8 +56,9 @@ export async function POST(request: NextRequest) {
         history: priorHistory,
         tools: studentTools,
         toolExecutor,
-        maxOutputTokens: 400,
+        maxOutputTokens: 1536,
         isAllowedActionHref: isAllowedStudentActionHref,
+        logger: assistantLogger(),
       });
       const newTurns = result.history.slice(priorHistory.length);
       await runtime.assistantHistory.append(principal.userId, newTurns);

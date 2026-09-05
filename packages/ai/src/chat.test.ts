@@ -105,6 +105,47 @@ describe("runChat", () => {
     expect(toolResultTurn?.parts[0]?.functionResponse).toBeDefined();
   });
 
+  it("sends a bounded thinking budget and a generous output ceiling by default", async () => {
+    const fetchMock = vi.fn().mockResolvedValue(jsonResponse(presentAnswerBody({ text: "تم." })));
+    vi.stubGlobal("fetch", fetchMock);
+    const client = new GeminiClient({ apiKeys: ["key-a"], model: "gemini-3.6-flash" });
+
+    await runChat(client, { systemInstruction: "sys", userMessage: "hi" });
+
+    const sent = JSON.parse(String(fetchMock.mock.calls[0]?.[1]?.body)) as {
+      generationConfig?: {
+        maxOutputTokens?: number;
+        thinkingConfig?: { thinkingBudget?: number };
+      };
+    };
+    expect(sent.generationConfig?.maxOutputTokens).toBe(2048);
+    expect(sent.generationConfig?.thinkingConfig?.thinkingBudget).toBe(512);
+  });
+
+  it("logs why a turn came back empty (a MAX_TOKENS cut-off)", async () => {
+    const fetchMock = vi.fn().mockResolvedValue(
+      jsonResponse({
+        candidates: [{ content: { role: "model", parts: [] }, finishReason: "MAX_TOKENS" }],
+        usageMetadata: { thoughtsTokenCount: 900 },
+      }),
+    );
+    vi.stubGlobal("fetch", fetchMock);
+    const client = new GeminiClient({ apiKeys: ["key-a"], model: "gemini-3.6-flash" });
+    const warn = vi.fn();
+
+    const result = await runChat(client, {
+      systemInstruction: "sys",
+      userMessage: "hi",
+      logger: { warn },
+    });
+
+    expect(result.text).toContain("تعذر");
+    expect(warn).toHaveBeenCalledWith(
+      "chat_empty_response",
+      expect.objectContaining({ finishReason: "MAX_TOKENS", thoughtsTokenCount: 900 }),
+    );
+  });
+
   it("forces a final answer once maxIterations is reached", async () => {
     const fetchMock = vi.fn().mockImplementation(async (_url: string, init: RequestInit) => {
       const body = JSON.parse(String(init.body)) as {

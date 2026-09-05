@@ -52,6 +52,10 @@ export interface GeminiGenerateRequest {
   readonly generationConfig?: {
     readonly maxOutputTokens?: number;
     readonly temperature?: number;
+    /** Gemini 2.5+/3.x "flash" models always reason before answering; the
+     *  thought tokens count against maxOutputTokens. Bounding the budget keeps
+     *  a structured `present_answer` call from being starved by a long think. */
+    readonly thinkingConfig?: { readonly thinkingBudget?: number };
   };
 }
 
@@ -64,6 +68,7 @@ export interface GeminiRawResponse {
     readonly promptTokenCount?: number;
     readonly candidatesTokenCount?: number;
     readonly totalTokenCount?: number;
+    readonly thoughtsTokenCount?: number;
   };
 }
 

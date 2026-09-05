@@ -1,13 +1,27 @@
 import "server-only";
 
 import { GeminiClient } from "@itqanak/ai";
-import { createLogger } from "@itqanak/observability";
+import { createLogger, type Logger } from "@itqanak/observability";
 
 import { loadWebConfig } from "./auth-runtime";
 
 const webProcess = globalThis as typeof globalThis & {
   __itqanakGeminiClient?: GeminiClient;
+  __itqanakAssistantLogger?: Logger;
 };
+
+/** Shared logger for the assistant surfaces — lets runChat record why a turn
+ *  produced no answer (safety block, MAX_TOKENS) without each route wiring its
+ *  own. */
+export function assistantLogger(): Logger {
+  const config = loadWebConfig();
+  webProcess.__itqanakAssistantLogger ??= createLogger({
+    service: config.serviceName,
+    environment: config.nodeEnv,
+    level: config.logLevel,
+  });
+  return webProcess.__itqanakAssistantLogger;
+}
 
 /**
  * One `GeminiClient` for the process lifetime, not per request — its "stick
