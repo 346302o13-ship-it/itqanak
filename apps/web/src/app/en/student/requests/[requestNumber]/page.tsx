@@ -230,7 +230,7 @@ export default async function EnglishRequestDetailPage({
             className="mt-4 inline-flex min-h-12 shrink-0 items-center justify-center rounded-xl bg-[var(--itq-color-brand-700)] px-5 text-sm font-black text-white no-underline sm:mt-0"
             href={`/en/student/support?request=${encodeURIComponent(detail.id)}`}
           >
-            Open conversation
+            Discuss this request
           </Link>
         </section>
       </div>

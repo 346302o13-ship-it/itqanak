@@ -234,7 +234,7 @@ export default async function RequestDetailPage({ params, searchParams }: Reques
             className="mt-4 inline-flex min-h-12 shrink-0 items-center justify-center rounded-xl bg-[var(--itq-color-brand-700)] px-5 text-sm font-black text-white no-underline sm:mt-0"
             href={`/ar/student/support?request=${encodeURIComponent(detail.id)}`}
           >
-            فتح المحادثة
+            تحدّث عن هذا الطلب
           </Link>
         </section>
       </div>

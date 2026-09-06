@@ -71,6 +71,14 @@ export function FinanceStudent({
         <FinanceReportCards locale={locale} report={report} />
       </div>
 
+      <Link
+        className="mt-5 inline-flex min-h-11 items-center gap-2 rounded-xl border border-[var(--itq-color-brand-200)] bg-[var(--itq-color-brand-50)] px-4 text-sm font-black text-[var(--itq-color-brand-strong)] no-underline"
+        href={`/${locale}/student/support`}
+      >
+        <span aria-hidden>💬</span>
+        {english ? "Ask support about your dues" : "اسأل الدعم عن مستحقاتك"}
+      </Link>
+
       <FilterDisclosure
         activeCount={
           [filters.search && filters.search.length > 0, filters.status, filters.currency].filter(

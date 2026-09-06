@@ -76,6 +76,15 @@ export interface LandingPageCopy {
     readonly points: readonly string[];
     readonly cta: string;
   };
+  readonly compare?: {
+    readonly eyebrow: string;
+    readonly title: string;
+    readonly description: string;
+    readonly whatsappTitle: string;
+    readonly whatsappPoints: readonly string[];
+    readonly platformTitle: string;
+    readonly platformPoints: readonly string[];
+  };
   readonly why: {
     readonly eyebrow: string;
     readonly title: string;
@@ -339,6 +348,60 @@ export function LandingPage({
           </Link>
         </div>
       </section>
+
+      {copy.compare === undefined ? null : (
+        <section
+          aria-labelledby="compare-title"
+          className="itq-section scroll-mt-28 border-y border-[var(--itq-color-border)] bg-[var(--itq-color-surface-soft)]"
+          id="why-not-whatsapp"
+        >
+          <SectionIntro
+            align="center"
+            description={copy.compare.description}
+            eyebrow={copy.compare.eyebrow}
+            title={copy.compare.title}
+            titleId="compare-title"
+          />
+          <div className="mt-9 grid gap-4 md:grid-cols-2">
+            <div className="rounded-[var(--itq-radius-panel)] border border-[var(--itq-color-danger-200)] bg-[var(--itq-color-danger-50)] p-6">
+              <p className="text-sm font-black text-[var(--itq-color-danger-800)]">
+                {copy.compare.whatsappTitle}
+              </p>
+              <ul className="mt-4 grid gap-2.5">
+                {copy.compare.whatsappPoints.map((point) => (
+                  <li
+                    className="flex items-start gap-2.5 text-sm font-semibold leading-6 text-[var(--itq-color-ink-soft)]"
+                    key={point}
+                  >
+                    <span
+                      aria-hidden
+                      className="mt-0.5 inline-flex size-5 shrink-0 items-center justify-center rounded-md bg-[var(--itq-color-danger-100)] text-[var(--itq-color-danger-700)]"
+                    >
+                      ✕
+                    </span>
+                    {point}
+                  </li>
+                ))}
+              </ul>
+            </div>
+            <div className="rounded-[var(--itq-radius-panel)] border border-[var(--itq-color-brand-200)] bg-[var(--itq-color-brand-50)] p-6">
+              <p className="text-sm font-black text-[var(--itq-color-brand-strong)]">
+                {copy.compare.platformTitle}
+              </p>
+              <ul className="mt-4 grid gap-2.5">
+                {copy.compare.platformPoints.map((point) => (
+                  <li className="flex items-start gap-2.5 text-sm font-bold leading-6" key={point}>
+                    <span className="mt-0.5 inline-flex size-5 shrink-0 items-center justify-center rounded-md bg-[var(--itq-color-brand-100)] text-[var(--itq-color-brand-strong)]">
+                      <MarketingIcon className="size-3.5" name="check" />
+                    </span>
+                    {point}
+                  </li>
+                ))}
+              </ul>
+            </div>
+          </div>
+        </section>
+      )}
 
       <section
         aria-labelledby="why-title"

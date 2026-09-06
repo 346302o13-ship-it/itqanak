@@ -169,6 +169,28 @@ const landingCopy = {
     ],
     cta: "Open the student portal",
   },
+  compare: {
+    eyebrow: "ITQANAK or WhatsApp?",
+    title: "Why the platform beats a WhatsApp chat",
+    description:
+      "WhatsApp is great for chatting, but it was never built to run an academic request end to end. Here's the difference.",
+    whatsappTitle: "On WhatsApp",
+    whatsappPoints: [
+      "Requests and files get lost in the thread and are hard to find later",
+      "No written price, no invoice, no organised proof of payment",
+      "You can't tell where your request stands: accepted? in progress? ready?",
+      "The number can change, the chat can be deleted, nothing is on record",
+      "No separation between your different requests — all in one thread",
+    ],
+    platformTitle: "On ITQANAK",
+    platformPoints: [
+      "Every request keeps its files and messages together, saved and organised",
+      "A clear price up front, with invoices, dues and receipts in your account",
+      "Live status for every request, with a push to your phone on any change",
+      "A permanent verified account and a full history that never disappears",
+      "Support chat, the AI assistant and the announcements group — each in its place",
+    ],
+  },
   why: {
     eyebrow: "Why ITQANAK?",
     title: "Designed around clarity and privacy",
