@@ -65,115 +65,26 @@ label:has(> input[type="radio"]) {
   -webkit-overflow-scrolling: touch;
 }
 
-/* Conversation backdrop: a soft green-tinted paper (distinct from the plain
-   canvas, so the thread reads as a messaging surface, not a form) with real
-   depth instead of one flat tone — a soft brand-tinted light near the top
-   (the same device GreenBand's corner light uses, echoed here for one
-   consistent site-wide "light source"), a gentle tonal sweep across the
-   surface, and the same faint eight-point-star field used on the
-   institutional GreenBand sections (green-band.tsx), recoloured for a light
-   background instead of a dark one — so the chat surface is drawn from the
-   site's own motif, not a generic messaging-app skin. Layer order: glow,
-   sweep, pattern, base colour. */
+/* Conversation backdrop: the illustrated education doodle (chat-bg-*.webp,
+   light or dark picked by theme) on a soft green-tinted paper, with the same
+   brand-tinted corner light used site-wide as one consistent "light source".
+   Layer order: glow, doodle tile, base colour. */
 .itq-chat-bg {
   background-color: var(--itq-color-chat-bg);
   background-image:
     radial-gradient(52rem 26rem at 16% -10%, rgb(4 102 58 / 0.08), transparent 62%),
-    linear-gradient(
-      165deg,
-      color-mix(in srgb, var(--itq-color-chat-bg) 55%, white) 0%,
-      var(--itq-color-chat-bg) 58%
-    ),
-    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='128' height='128' viewBox='0 0 128 128'%3E%3Cg fill='none' stroke='%23000' stroke-opacity='0.06' stroke-width='1.2'%3E%3Crect x='34' y='34' width='60' height='60'/%3E%3Crect x='34' y='34' width='60' height='60' transform='rotate(45 64 64)'/%3E%3C/g%3E%3C/svg%3E");
+    url("/images/backgrounds/chat-bg-light.webp");
+  background-repeat: no-repeat, repeat;
+  background-size:
+    auto,
+    380px auto;
 }
 
 :root:not([data-theme="light"]) .itq-chat-bg,
 :root[data-theme="dark"] .itq-chat-bg {
   background-image:
     radial-gradient(52rem 26rem at 16% -10%, rgb(72 194 129 / 0.1), transparent 62%),
-    linear-gradient(
-      165deg,
-      color-mix(in srgb, var(--itq-color-chat-bg) 70%, white 6%) 0%,
-      var(--itq-color-chat-bg) 58%
-    ),
-    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='128' height='128' viewBox='0 0 128 128'%3E%3Cg fill='none' stroke='%23fff' stroke-opacity='0.055' stroke-width='1.2'%3E%3Crect x='34' y='34' width='60' height='60'/%3E%3Crect x='34' y='34' width='60' height='60' transform='rotate(45 64 64)'/%3E%3C/g%3E%3C/svg%3E");
-}
-
-/* Per-viewer chat wallpaper (chat-wallpaper.ts). Default (no attribute or
-   data-wallpaper="brand") keeps the institutional motif above. "plain" drops
-   the pattern; "dots" swaps it for a soft dot grid — both keep the same brand
-   glow and base colour so the surface still reads as part of the platform. */
-.itq-chat-bg[data-wallpaper="plain"] {
-  background-image:
-    radial-gradient(52rem 26rem at 16% -10%, rgb(4 102 58 / 0.07), transparent 62%),
-    linear-gradient(
-      165deg,
-      color-mix(in srgb, var(--itq-color-chat-bg) 55%, white) 0%,
-      var(--itq-color-chat-bg) 58%
-    );
-}
-
-.itq-chat-bg[data-wallpaper="dots"] {
-  background-image:
-    radial-gradient(52rem 26rem at 16% -10%, rgb(4 102 58 / 0.07), transparent 62%),
-    linear-gradient(
-      165deg,
-      color-mix(in srgb, var(--itq-color-chat-bg) 55%, white) 0%,
-      var(--itq-color-chat-bg) 58%
-    ),
-    radial-gradient(circle, rgb(0 0 0 / 0.05) 1px, transparent 1.6px);
-  background-size:
-    auto,
-    auto,
-    22px 22px;
-}
-
-:root:not([data-theme="light"]) .itq-chat-bg[data-wallpaper="plain"],
-:root[data-theme="dark"] .itq-chat-bg[data-wallpaper="plain"] {
-  background-image:
-    radial-gradient(52rem 26rem at 16% -10%, rgb(72 194 129 / 0.1), transparent 62%),
-    linear-gradient(
-      165deg,
-      color-mix(in srgb, var(--itq-color-chat-bg) 70%, white 6%) 0%,
-      var(--itq-color-chat-bg) 58%
-    );
-}
-
-:root:not([data-theme="light"]) .itq-chat-bg[data-wallpaper="dots"],
-:root[data-theme="dark"] .itq-chat-bg[data-wallpaper="dots"] {
-  background-image:
-    radial-gradient(52rem 26rem at 16% -10%, rgb(72 194 129 / 0.1), transparent 62%),
-    linear-gradient(
-      165deg,
-      color-mix(in srgb, var(--itq-color-chat-bg) 70%, white 6%) 0%,
-      var(--itq-color-chat-bg) 58%
-    ),
-    radial-gradient(circle, rgb(255 255 255 / 0.045) 1px, transparent 1.6px);
-  background-size:
-    auto,
-    auto,
-    22px 22px;
-}
-
-/* "doodle" — the illustrated education tile (chat-bg-*.webp), light or dark
-   picked by theme. The brand glow stays on top so it still reads as ours. */
-.itq-chat-bg[data-wallpaper="doodle"] {
-  background-image:
-    radial-gradient(52rem 26rem at 16% -10%, rgb(4 102 58 / 0.07), transparent 62%),
-    url("/images/backgrounds/chat-bg-light.webp");
-  background-size:
-    auto,
-    360px auto;
-}
-
-:root:not([data-theme="light"]) .itq-chat-bg[data-wallpaper="doodle"],
-:root[data-theme="dark"] .itq-chat-bg[data-wallpaper="doodle"] {
-  background-image:
-    radial-gradient(52rem 26rem at 16% -10%, rgb(72 194 129 / 0.1), transparent 62%),
     url("/images/backgrounds/chat-bg-dark.webp");
-  background-size:
-    auto,
-    360px auto;
 }
 
 /* Subtle arabesque field behind the public/visitor pages

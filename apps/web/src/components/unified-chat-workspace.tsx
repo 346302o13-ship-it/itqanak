@@ -46,7 +46,6 @@ import { cacheAttachment, readCachedAttachment } from "@/lib/attachment-cache";
 import { compressImageForUpload } from "@/lib/image-compression";
 import { renderMessageText } from "@/lib/chat-markdown";
 import { draftStorageKey, readDraft, writeDraft } from "@/lib/chat-draft";
-import { chatWallpaperLabel, useChatWallpaper } from "@/lib/chat-wallpaper";
 import { fillQuickReply, quickReplies } from "@/lib/quick-replies";
 import type { AssistantDisplayMessage } from "@/lib/assistant-display";
 
@@ -2110,7 +2109,6 @@ export function UnifiedChatWorkspace({
   const [recording, setRecording] = useState(false);
   const [recordingStarting, setRecordingStarting] = useState(false);
   const [notice, setNotice] = useState<string>();
-  const { wallpaper, cycle: cycleWallpaper } = useChatWallpaper();
   const [newMessagesCount, setNewMessagesCount] = useState(0);
   const [contactsOpen, setContactsOpen] = useState(
     initialContactsOpen ?? conversation === undefined,
@@ -5039,7 +5037,6 @@ export function UnifiedChatWorkspace({
 
           <div
             className="itq-chat-bg itq-scroll relative min-h-0 flex-1 overflow-y-auto overscroll-contain px-3 py-4 sm:px-6"
-            data-wallpaper={wallpaper}
             ref={assistantLogRef}
           >
             <ol className="mx-auto grid max-w-4xl gap-2.5">
@@ -5367,24 +5364,6 @@ export function UnifiedChatWorkspace({
               </button>
             ) : null}
             <button
-              aria-label={english ? "Change chat wallpaper" : "تغيير خلفية المحادثة"}
-              className="grid size-10 place-items-center rounded-xl border border-[var(--itq-color-border)] hover:bg-[var(--itq-color-brand-50)]"
-              onClick={() => {
-                const next = cycleWallpaper();
-                setNotice(
-                  english
-                    ? `Wallpaper: ${chatWallpaperLabel(next, true)}`
-                    : `الخلفية: ${chatWallpaperLabel(next, false)}`,
-                );
-              }}
-              title={english ? "Change chat wallpaper" : "تغيير خلفية المحادثة"}
-              type="button"
-            >
-              <span aria-hidden className="text-base">
-                🎨
-              </span>
-            </button>
-            <button
               aria-expanded={searchOpen}
               aria-label={english ? "Search this conversation" : "البحث في المحادثة"}
               className={`grid size-10 place-items-center rounded-xl border border-[var(--itq-color-border)] hover:bg-[var(--itq-color-brand-50)] ${
@@ -5623,7 +5602,6 @@ export function UnifiedChatWorkspace({
           aria-live="polite"
           aria-relevant="additions"
           className="itq-chat-bg itq-scroll relative min-h-0 flex-1 overflow-y-auto overscroll-contain px-3 py-4 sm:px-6"
-          data-wallpaper={wallpaper}
           onDragLeave={(event) => {
             if (event.currentTarget === event.target) setDragging(false);
           }}
