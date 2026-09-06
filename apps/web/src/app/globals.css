@@ -155,6 +155,82 @@ label:has(> input[type="radio"]) {
     22px 22px;
 }
 
+/* "doodle" — the illustrated education tile (chat-bg-*.webp), light or dark
+   picked by theme. The brand glow stays on top so it still reads as ours. */
+.itq-chat-bg[data-wallpaper="doodle"] {
+  background-image:
+    radial-gradient(52rem 26rem at 16% -10%, rgb(4 102 58 / 0.07), transparent 62%),
+    url("/images/backgrounds/chat-bg-light.webp");
+  background-size:
+    auto,
+    360px auto;
+}
+
+:root:not([data-theme="light"]) .itq-chat-bg[data-wallpaper="doodle"],
+:root[data-theme="dark"] .itq-chat-bg[data-wallpaper="doodle"] {
+  background-image:
+    radial-gradient(52rem 26rem at 16% -10%, rgb(72 194 129 / 0.1), transparent 62%),
+    url("/images/backgrounds/chat-bg-dark.webp");
+  background-size:
+    auto,
+    360px auto;
+}
+
+/* Subtle arabesque field behind the public/visitor pages
+   (visitor-bg-pattern.webp), with the same single site-wide green corner
+   light. Dropped entirely in dark mode, where a light pattern reads wrong. */
+.itq-visitor-bg {
+  background-color: var(--itq-color-canvas);
+  background-image:
+    radial-gradient(60rem 32rem at 82% 4%, rgb(4 102 58 / 0.06), transparent 55%),
+    url("/images/backgrounds/visitor-bg-pattern.webp");
+  background-repeat: no-repeat, repeat;
+  background-size:
+    auto,
+    460px auto;
+  background-position:
+    top right,
+    top left;
+}
+
+:root:not([data-theme="light"]) .itq-visitor-bg,
+:root[data-theme="dark"] .itq-visitor-bg {
+  background-image: radial-gradient(60rem 32rem at 82% 4%, rgb(72 194 129 / 0.08), transparent 55%);
+  background-repeat: no-repeat;
+}
+
+/* Calm white → light-green wash behind the student portal pages
+   (student-portal-bg.webp), fading into the plain canvas below the fold.
+   Behind the chat workspace it is simply covered by .itq-chat-bg. */
+.itq-student-bg {
+  background-color: var(--itq-color-canvas);
+  background-image:
+    linear-gradient(
+      180deg,
+      color-mix(in srgb, var(--itq-color-brand-50) 55%, white) 0%,
+      var(--itq-color-canvas) 46%
+    ),
+    url("/images/backgrounds/student-portal-bg.webp");
+  background-repeat: no-repeat, repeat;
+  background-size:
+    100% 56rem,
+    340px auto;
+  background-position:
+    top center,
+    top left;
+}
+
+:root:not([data-theme="light"]) .itq-student-bg,
+:root[data-theme="dark"] .itq-student-bg {
+  background-image: linear-gradient(
+    180deg,
+    color-mix(in srgb, var(--itq-color-canvas) 88%, white 4%) 0%,
+    var(--itq-color-canvas) 46%
+  );
+  background-repeat: no-repeat;
+  background-size: 100% 56rem;
+}
+
 /* Icon-only appearance toggle (theme-toggle-button.tsx): the sun/moon icon
    shown is decided purely by CSS, in the same data-theme/prefers-color-scheme
    layering as the token palette, so the right icon is already correct on

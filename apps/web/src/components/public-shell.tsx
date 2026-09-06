@@ -118,7 +118,7 @@ export async function PublicShell({
 
   return (
     <div
-      className="itq-screen-min-h overflow-x-clip bg-[var(--itq-color-canvas)] text-[var(--itq-color-ink)]"
+      className="itq-visitor-bg itq-screen-min-h overflow-x-clip bg-[var(--itq-color-canvas)] text-[var(--itq-color-ink)]"
       dir={direction}
       lang={locale}
     >

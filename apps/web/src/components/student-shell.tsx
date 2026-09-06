@@ -34,7 +34,7 @@ export function StudentShell({
   const initial = displayName.trim().slice(0, 1) || (english ? "S" : "ط");
   return (
     <div
-      className="itq-screen-min-h bg-[var(--itq-color-canvas)]"
+      className={`itq-screen-min-h bg-[var(--itq-color-canvas)]${workspace ? "" : " itq-student-bg"}`}
       dir={english ? "ltr" : "rtl"}
       lang={locale}
     >

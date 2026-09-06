@@ -6,6 +6,7 @@ const STORAGE_KEY = "itq-chat-wallpaper";
 
 export const chatWallpapers = [
   { id: "brand", labelAr: "زخرفة إتقانك", labelEn: "ITQANAK motif" },
+  { id: "doodle", labelAr: "رسوم تعليمية", labelEn: "Education doodle" },
   { id: "plain", labelAr: "هادئ", labelEn: "Plain" },
   { id: "dots", labelAr: "نقاط", labelEn: "Dots" },
 ] as const;
