@@ -5103,7 +5103,29 @@ export function UnifiedChatWorkspace({
             }}
           >
             <div className="flex items-end gap-1.5 sm:gap-2">
-              <div className="flex min-w-0 flex-1 items-end gap-1 rounded-[1.6rem] border border-[var(--itq-color-border)] bg-[var(--itq-color-surface)] px-3 py-1 shadow-sm focus-within:border-[var(--itq-color-brand-500)]">
+              <div className="flex min-w-0 flex-1 items-end gap-1 rounded-[1.6rem] border border-[var(--itq-color-border)] bg-[var(--itq-color-surface)] px-2 py-1 shadow-sm focus-within:border-[var(--itq-color-brand-500)]">
+                <button
+                  aria-label={
+                    english ? "Attachments are not available here" : "المرفقات غير متاحة هنا"
+                  }
+                  className="grid size-9 shrink-0 cursor-not-allowed place-items-center rounded-full text-[var(--itq-color-muted)] opacity-40"
+                  disabled
+                  title={english ? "Not available with the assistant" : "غير متاح مع المساعد"}
+                  type="button"
+                >
+                  <span aria-hidden>📎</span>
+                </button>
+                <button
+                  aria-label={
+                    english ? "Reactions are not available here" : "التفاعلات غير متاحة هنا"
+                  }
+                  className="grid size-9 shrink-0 cursor-not-allowed place-items-center rounded-full text-[var(--itq-color-muted)] opacity-40"
+                  disabled
+                  title={english ? "Not available with the assistant" : "غير متاح مع المساعد"}
+                  type="button"
+                >
+                  <span aria-hidden>😊</span>
+                </button>
                 <textarea
                   aria-label={english ? "Message" : "الرسالة"}
                   className="max-h-32 min-h-9 min-w-0 flex-1 resize-none bg-transparent py-1.5 text-sm leading-6 outline-none"

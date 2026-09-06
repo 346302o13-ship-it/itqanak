@@ -398,7 +398,7 @@ export function GroupChannelPane({ locale, csrfToken, apiBase, backHref }: Group
 
       <div
         aria-label={english ? "Group messages" : "رسائل القروب"}
-        className="flex min-h-0 flex-1 flex-col gap-3 overflow-y-auto px-3 py-4 sm:px-6"
+        className="itq-chat-bg itq-scroll relative flex min-h-0 flex-1 flex-col gap-3 overflow-y-auto px-3 py-4 sm:px-6"
         onScroll={onScroll}
         ref={scrollRef}
       >
@@ -465,12 +465,12 @@ export function GroupChannelPane({ locale, csrfToken, apiBase, backHref }: Group
                 ) : null}
               </span>
               <div
-                className={`max-w-[85%] overflow-hidden rounded-2xl text-sm leading-7 ${
+                className={`max-w-[85%] overflow-hidden rounded-xl text-sm leading-7 shadow-sm ${
                   isImage
-                    ? "border border-[var(--itq-color-border)] bg-[var(--itq-color-surface)]"
+                    ? "bg-[var(--itq-color-bubble-in)] text-[var(--itq-color-bubble-in-ink)]"
                     : mine
-                      ? "bg-[var(--itq-color-brand-600)] px-3.5 py-2 text-white"
-                      : "border border-[var(--itq-color-border)] bg-[var(--itq-color-surface)] px-3.5 py-2"
+                      ? "rounded-ee-sm bg-[var(--itq-color-bubble-out)] px-3.5 py-2 text-[var(--itq-color-bubble-out-ink)]"
+                      : "rounded-es-sm bg-[var(--itq-color-bubble-in)] px-3.5 py-2 text-[var(--itq-color-bubble-in-ink)]"
                 } ${message.failed === true ? "opacity-60 ring-1 ring-[var(--itq-color-danger-500)]" : ""} ${
                   message.pending === true ? "opacity-70" : ""
                 }`}
@@ -572,53 +572,78 @@ export function GroupChannelPane({ locale, csrfToken, apiBase, backHref }: Group
           </p>
         ) : (
           <form
-            className="flex items-end gap-2"
+            className="flex items-end gap-1.5 sm:gap-2"
             onSubmit={(event) => {
               event.preventDefault();
               void send();
             }}
           >
-            {adminMode ? (
-              <>
-                <input
-                  accept="image/png,image/jpeg,image/webp,image/gif"
-                  className="hidden"
-                  onChange={(event) => {
-                    const file = event.currentTarget.files?.[0];
-                    event.currentTarget.value = "";
-                    if (file !== undefined) void sendImage(file);
-                  }}
-                  ref={imageInputRef}
-                  type="file"
-                />
+            <div className="flex min-w-0 flex-1 items-end gap-1 rounded-[1.6rem] border border-[var(--itq-color-border)] bg-[var(--itq-color-surface)] px-2 py-1 shadow-sm focus-within:border-[var(--itq-color-brand-500)]">
+              {adminMode ? (
+                <>
+                  <input
+                    accept="image/png,image/jpeg,image/webp,image/gif"
+                    className="hidden"
+                    onChange={(event) => {
+                      const file = event.currentTarget.files?.[0];
+                      event.currentTarget.value = "";
+                      if (file !== undefined) void sendImage(file);
+                    }}
+                    ref={imageInputRef}
+                    type="file"
+                  />
+                  <button
+                    aria-label={english ? "Attach an image" : "إرفاق صورة"}
+                    className="grid size-9 shrink-0 place-items-center rounded-full text-[var(--itq-color-muted)] hover:bg-[var(--itq-color-surface-soft)] disabled:opacity-40"
+                    disabled={imageBusy || csrfToken === undefined}
+                    onClick={() => imageInputRef.current?.click()}
+                    type="button"
+                  >
+                    <span aria-hidden>🖼️</span>
+                  </button>
+                </>
+              ) : (
                 <button
-                  aria-label={english ? "Attach an image" : "إرفاق صورة"}
-                  className="grid size-11 shrink-0 place-items-center rounded-full border border-[var(--itq-color-border)] text-[var(--itq-color-ink)] disabled:opacity-40"
-                  disabled={imageBusy || csrfToken === undefined}
-                  onClick={() => imageInputRef.current?.click()}
+                  aria-label={
+                    english ? "Attachments are not available here" : "المرفقات غير متاحة هنا"
+                  }
+                  className="grid size-9 shrink-0 cursor-not-allowed place-items-center rounded-full text-[var(--itq-color-muted)] opacity-40"
+                  disabled
+                  title={english ? "Not available in this chat" : "غير متاح في هذه المحادثة"}
                   type="button"
                 >
-                  <span aria-hidden>🖼️</span>
+                  <span aria-hidden>📎</span>
                 </button>
-              </>
-            ) : null}
-            <textarea
-              className="max-h-40 min-h-10 flex-1 resize-none rounded-2xl border border-[var(--itq-color-border)] bg-[var(--itq-color-surface-soft)] px-4 py-2.5 text-sm leading-6 outline-none focus:border-[var(--itq-color-brand-500)]"
-              dir="auto"
-              onChange={(event) => setDraft(event.currentTarget.value)}
-              onKeyDown={(event) => {
-                if (event.key === "Enter" && !event.shiftKey) {
-                  event.preventDefault();
-                  void send();
+              )}
+              <button
+                aria-label={
+                  english ? "Reactions are not available here" : "التفاعلات غير متاحة هنا"
                 }
-              }}
-              placeholder={english ? "Write a message…" : "اكتب رسالة…"}
-              ref={composerRef}
-              rows={1}
-              value={draft}
-            />
+                className="grid size-9 shrink-0 cursor-not-allowed place-items-center rounded-full text-[var(--itq-color-muted)] opacity-40"
+                disabled
+                title={english ? "Not available in this chat" : "غير متاح في هذه المحادثة"}
+                type="button"
+              >
+                <span aria-hidden>😊</span>
+              </button>
+              <textarea
+                className="max-h-40 min-h-9 min-w-0 flex-1 resize-none bg-transparent py-1.5 text-sm leading-6 outline-none"
+                dir="auto"
+                onChange={(event) => setDraft(event.currentTarget.value)}
+                onKeyDown={(event) => {
+                  if (event.key === "Enter" && !event.shiftKey) {
+                    event.preventDefault();
+                    void send();
+                  }
+                }}
+                placeholder={english ? "Write a message…" : "اكتب رسالة…"}
+                ref={composerRef}
+                rows={1}
+                value={draft}
+              />
+            </div>
             <button
-              className="grid size-11 shrink-0 place-items-center rounded-full bg-[var(--itq-color-brand-600)] text-white disabled:opacity-40"
+              className="grid size-11 shrink-0 place-items-center rounded-full bg-[var(--itq-color-brand-600)] text-white shadow-sm transition hover:bg-[var(--itq-color-brand-700)] disabled:opacity-40"
               disabled={draft.trim().length === 0 || sending || csrfToken === undefined}
               type="submit"
             >
